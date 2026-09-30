@@ -19,6 +19,10 @@ variants = ["on", "off"]
 [key.page]
 kind = "mouse_and_gestures"
 
+[key.labels]
+off = "Off"
+on = "On"
+
 [[key]]
 path = "foreign_output"
 default = "touchpad"
@@ -35,6 +39,11 @@ variants = ["touchpad", "wheel", "off"]
 
 [key.page]
 kind = "mouse_and_gestures"
+
+[key.labels]
+off = "Off"
+touchpad = "Touchpad"
+wheel = "Wheel"
 
 [[key]]
 path = "foreign_momentum"
@@ -53,6 +62,10 @@ variants = ["toolkit", "ours"]
 [key.page]
 kind = "mouse_and_gestures"
 
+[key.labels]
+ours = "palmrest"
+toolkit = "The app"
+
 [[key]]
 path = "gestures.gesture_action_map.one_finger_swipe_right"
 default = "back"
@@ -69,6 +82,15 @@ variants = ["none", "back", "forward", "workspace_prev", "workspace_next", "work
 
 [key.page]
 kind = "mouse_and_gestures"
+
+[key.labels]
+back = "Back"
+forward = "Forward"
+none = "Nothing"
+smart_zoom = "Smart zoom"
+workspace_next = "Next workspace"
+workspace_overview = "Workspace overview"
+workspace_prev = "Previous workspace"
 
 [[key]]
 path = "gestures.gesture_action_map.one_finger_swipe_left"
@@ -87,6 +109,15 @@ variants = ["none", "back", "forward", "workspace_prev", "workspace_next", "work
 [key.page]
 kind = "mouse_and_gestures"
 
+[key.labels]
+back = "Back"
+forward = "Forward"
+none = "Nothing"
+smart_zoom = "Smart zoom"
+workspace_next = "Next workspace"
+workspace_overview = "Workspace overview"
+workspace_prev = "Previous workspace"
+
 [[key]]
 path = "gestures.gesture_action_map.two_finger_swipe_right"
 default = "workspace_prev"
@@ -103,6 +134,15 @@ variants = ["none", "back", "forward", "workspace_prev", "workspace_next", "work
 
 [key.page]
 kind = "mouse_and_gestures"
+
+[key.labels]
+back = "Back"
+forward = "Forward"
+none = "Nothing"
+smart_zoom = "Smart zoom"
+workspace_next = "Next workspace"
+workspace_overview = "Workspace overview"
+workspace_prev = "Previous workspace"
 
 [[key]]
 path = "gestures.gesture_action_map.two_finger_swipe_left"
@@ -121,6 +161,15 @@ variants = ["none", "back", "forward", "workspace_prev", "workspace_next", "work
 [key.page]
 kind = "mouse_and_gestures"
 
+[key.labels]
+back = "Back"
+forward = "Forward"
+none = "Nothing"
+smart_zoom = "Smart zoom"
+workspace_next = "Next workspace"
+workspace_overview = "Workspace overview"
+workspace_prev = "Previous workspace"
+
 [[key]]
 path = "gestures.gesture_action_map.two_finger_double_tap"
 default = "workspace_overview"
@@ -137,6 +186,15 @@ variants = ["none", "back", "forward", "workspace_prev", "workspace_next", "work
 
 [key.page]
 kind = "mouse_and_gestures"
+
+[key.labels]
+back = "Back"
+forward = "Forward"
+none = "Nothing"
+smart_zoom = "Smart zoom"
+workspace_next = "Next workspace"
+workspace_overview = "Workspace overview"
+workspace_prev = "Previous workspace"
 
 [[key]]
 path = "gestures.gesture_action_map.one_finger_double_tap"
@@ -155,6 +213,15 @@ variants = ["none", "back", "forward", "workspace_prev", "workspace_next", "work
 [key.page]
 kind = "mouse_and_gestures"
 
+[key.labels]
+back = "Back"
+forward = "Forward"
+none = "Nothing"
+smart_zoom = "Smart zoom"
+workspace_next = "Next workspace"
+workspace_overview = "Workspace overview"
+workspace_prev = "Previous workspace"
+
 [[key]]
 path = "swipe.repeat"
 default = "after_cooldown"
@@ -171,6 +238,10 @@ variants = ["after_cooldown", "once_per_gesture"]
 
 [key.page]
 kind = "mouse_and_gestures"
+
+[key.labels]
+after_cooldown = "After the pause"
+once_per_gesture = "Once"
 
 [[key]]
 path = "scroll.speed"
@@ -336,6 +407,10 @@ variants = ["classic", "mac_like"]
 
 [key.page]
 kind = "mouse_and_gestures"
+
+[key.labels]
+classic = "Classic"
+mac_like = "Mac-like"
 
 [[key]]
 path = "feel.mac_like_threshold_units_s"
@@ -762,6 +837,10 @@ variants = ["inject_and_scroll", "native"]
 [key.page]
 kind = "mouse_and_gestures"
 
+[key.labels]
+inject_and_scroll = "Keys and scroll"
+native = "Scroll only"
+
 [[key]]
 path = "gestures.g4_travel_um"
 default = 11538
@@ -872,6 +951,10 @@ variants = ["one_to_four", "kernel_only"]
 
 [key.page]
 kind = "mouse_and_gestures"
+
+[key.labels]
+kernel_only = "Touching only"
+one_to_four = "Touching or nearly"
 
 [[key]]
 path = "palm_rejection.light_touch_size_max"
@@ -1169,3 +1252,7 @@ variants = ["hidraw", "evdev"]
 
 [key.page]
 kind = "mouse_and_gestures"
+
+[key.labels]
+evdev = "Evdev"
+hidraw = "Hidraw"

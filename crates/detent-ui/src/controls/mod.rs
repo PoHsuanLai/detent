@@ -13,7 +13,7 @@ use detent_model::{Control as Kind, KeyEntry};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::prelude::*;
-use file_only::FileOnlyControl;
+pub(crate) use file_only::FileOnlyControl;
 use menu::MenuControl;
 use segmented::SegmentedKey;
 use slider::SliderControl;
@@ -30,18 +30,19 @@ pub fn Control(
     onchange: EventHandler<toml::Value>,
 ) -> Element {
     let label = entry.spec.label.0.clone();
+    let labels = entry.spec.labels.clone();
     match entry.control {
         Kind::Toggle(pair) => rsx! { ToggleControl { label, pair, value, onchange } },
         Kind::Segmented(words) | Kind::Menu(words) if swatch_words(&words) => {
             rsx! { SwatchControl { label, value, onchange } }
         }
-        Kind::Segmented(words) => rsx! { SegmentedKey { label, words, value, onchange } },
-        Kind::Menu(words) => rsx! { MenuControl { words, value, onchange } },
+        Kind::Segmented(words) => rsx! { SegmentedKey { label, words, labels, value, onchange } },
+        Kind::Menu(words) => rsx! { MenuControl { words, labels, value, onchange } },
         Kind::Slider(range) => rsx! { SliderControl { label, range, value, onchange } },
         Kind::Text => rsx! { TextControl { label, value, onchange } },
         Kind::Colour => rsx! { SwatchControl { label, value, onchange } },
         Kind::Readout(word) => {
-            rsx! { Label { text: detent_model::humanize(&word), role: LabelRole::Secondary } }
+            rsx! { Label { text: detent_model::word_label(&labels, &word), role: LabelRole::Secondary } }
         }
         Kind::FileOnly(_) => rsx! { FileOnlyControl { value } },
     }

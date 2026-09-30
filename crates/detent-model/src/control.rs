@@ -140,6 +140,7 @@ mod tests {
             page: Page::Appearance,
             section: Section(String::new()),
             exposure: Exposure::Basic,
+            labels: Default::default(),
         }
     }
 

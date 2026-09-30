@@ -30,7 +30,7 @@ fn defaults(spec: &FileSpec) -> FileValues {
         .iter()
         .map(|key| (key.path.clone(), key.default.clone()))
         .collect();
-    FileValues::from_parts(values, None)
+    FileValues::from_parts(values, BTreeMap::new())
 }
 
 fn lookup<'a>(table: &'a toml::Table, path: &KeyPath) -> Option<&'a toml::Value> {
@@ -41,18 +41,21 @@ fn lookup<'a>(table: &'a toml::Table, path: &KeyPath) -> Option<&'a toml::Value>
 
 fn overlay(spec: &FileSpec, table: &toml::Table) -> Loaded<FileValues> {
     let mut invalid = Vec::new();
+    let mut as_written = BTreeMap::new();
     let values: BTreeMap<KeyPath, toml::Value> = spec
         .keys
         .iter()
         .map(|key| {
             let admitted = lookup(table, &key.path).and_then(|given| {
-                let control = Control::of(key);
-                let ok = control.admit(given);
+                let ok = Control::of(key).admit(given);
                 if ok.is_none() {
                     invalid.push(InvalidKey {
                         path: key.path.0.clone(),
-                        reason: format!("{given} is not a value of this key"),
+                        reason: format!(
+                            "{given} is not a value this control holds, kept as written"
+                        ),
                     });
+                    as_written.insert(key.path.clone(), given.clone());
                 }
                 ok
             });
@@ -63,7 +66,7 @@ fn overlay(spec: &FileSpec, table: &toml::Table) -> Loaded<FileValues> {
         })
         .collect();
     Loaded {
-        value: FileValues::from_parts(values, table.get("version").cloned()),
+        value: FileValues::from_parts(values, as_written),
         unknown: unknown_keys(table, &spec.keys),
         invalid,
     }

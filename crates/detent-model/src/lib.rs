@@ -24,4 +24,4 @@ pub use page::PageSlug;
 pub use range::{Number, Range};
 pub use search::{Hit, Rank, Search, search};
 pub use warning::{StaleReason, Warning};
-pub use words::humanize;
+pub use words::{humanize, word_label};

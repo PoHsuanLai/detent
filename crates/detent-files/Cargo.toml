@@ -13,6 +13,7 @@ detent-model = { workspace = true }
 ds-settings = { workspace = true }
 thiserror = { workspace = true }
 toml = { workspace = true }
+toml_edit = { workspace = true }
 
 [dev-dependencies]
 detent-testkit = { workspace = true }

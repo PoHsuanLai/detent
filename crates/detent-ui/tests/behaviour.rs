@@ -314,3 +314,71 @@ fn a_page_has_one_advanced_disclosure_at_its_end_grouped_by_section() {
         assert!(last_section < advanced, "{page}: the disclosure is last");
     }
 }
+
+const CUSTOM_ACTION: &str = "two_finger_swipe_left = { kind = \"keys\", v = \"alt+left\" }";
+
+#[test]
+fn a_custom_gesture_action_is_read_only_and_survives_a_save() {
+    let sandbox = Sandbox::new("custom-action");
+    let before = format!(
+        "# mine\nrejection = \"on\"\n[gestures.gesture_action_map]\n{CUSTOM_ACTION}\n[feel]\nfuture_key = 3\n"
+    );
+    sandbox.write("palmrest/gestures.toml", &before);
+    let mut harness = sandbox.harness(opening("mouse_and_gestures"));
+    let row = harness
+        .text_of(".key-file-only")
+        .expect("the custom action row is read-only");
+    assert!(row.contains("Edit in file"), "{row}");
+    assert_eq!(harness.count(".key-file-only"), 1, "only the custom action");
+
+    click(&mut harness, ".section .ds-toggle");
+    let after = sandbox.read("palmrest/gestures.toml").expect("written");
+    assert_eq!(
+        after,
+        before.replace("\"on\"", "\"off\""),
+        "one value changed"
+    );
+}
+
+#[test]
+fn a_gesture_action_menu_reads_in_the_schemas_words() {
+    let sandbox = Sandbox::new("action-labels");
+    let harness = sandbox.harness(opening("mouse_and_gestures"));
+    let html = harness.html();
+    for label in [
+        "Previous workspace",
+        "Next workspace",
+        "Workspace overview",
+        "Smart zoom",
+    ] {
+        assert!(html.contains(label), "{label}");
+    }
+    assert!(!html.contains("Workspace prev<"), "no code-like label");
+}
+
+#[test]
+fn saving_never_removes_a_key_from_sill_or_quire_files() {
+    let sandbox = Sandbox::new("keep-unknown");
+    let sill = "[dock]\npuppy = true\nposition = \"sideways\"\n[mystery]\nx = 1\n";
+    let quire = "version = 1\n[appearance]\nold_key = 1\n";
+    sandbox.write("sill/settings.toml", sill);
+    sandbox.write("quire/appearance.toml", quire);
+
+    let mut harness = sandbox.harness(opening("dock"));
+    click(&mut harness, ".ds-toggle");
+    let text = sandbox.read("sill/settings.toml").expect("written");
+    assert!(
+        text.contains("puppy = true") && text.contains("[mystery]\nx = 1"),
+        "{text}"
+    );
+    assert!(
+        text.contains("position = \"sideways\""),
+        "an unknown word stays: {text}"
+    );
+
+    let mut harness = sandbox.harness(opening("appearance"));
+    click(&mut harness, ".ds-segmented-segment:nth-of-type(3)");
+    let text = sandbox.read("quire/appearance.toml").expect("written");
+    assert!(text.starts_with("version = 1\n"), "{text}");
+    assert!(text.contains("old_key = 1"), "{text}");
+}

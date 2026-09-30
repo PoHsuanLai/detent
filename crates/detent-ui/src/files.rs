@@ -1,4 +1,4 @@
-//! The values the window shows: every settings file read once, and rewritten on an edit.
+//! The values the window shows: every settings file read once, and one key set on an edit.
 
 use crate::env::Env;
 use detent_files::{FileValues, FilesError, load, save};
@@ -21,15 +21,15 @@ pub struct Edit {
 fn report(spec: &FileSpec, unknown: &[String], invalid: &[String]) {
     let file = spec.file.relative().display();
     for key in unknown {
-        eprintln!("detent: {file}: unknown key `{key}` is not read and not kept");
+        eprintln!("detent: {file}: unknown key `{key}` is not read and is left as it is");
     }
     for key in invalid {
         eprintln!("detent: {file}: {key}");
     }
 }
 
-/// Every file of the catalogue, read leniently. What no schema describes, or the schema
-/// refuses, is reported and left out.
+/// Every file of the catalogue, read leniently. What no schema describes, or a control
+/// cannot hold, is reported and stays in the file untouched.
 pub fn load_all(env: &Env) -> Files {
     env.catalogue
         .files
@@ -63,6 +63,14 @@ pub fn value_of(files: &Files, entry: &KeyEntry) -> toml::Value {
         .unwrap_or_else(|| entry.spec.default.clone())
 }
 
+/// The value the file holds for `entry` when no control can represent it.
+pub fn written_value(files: &Files, entry: &KeyEntry) -> Option<toml::Value> {
+    files
+        .get(&entry.file)
+        .and_then(|values| values.as_written(&entry.spec.path))
+        .cloned()
+}
+
 /// `files` with `edit` applied and written to disk, or why it could not be written.
 pub fn apply(env: &Env, files: &Files, edit: &Edit) -> Result<Files, FilesError> {
     let file = &edit.entry.file;
@@ -73,7 +81,12 @@ pub fn apply(env: &Env, files: &Files, edit: &Edit) -> Result<Files, FilesError>
     };
     let before = files.get(file).cloned().unwrap_or_default();
     let after = before.with(&edit.entry.spec.path, edit.value.clone());
-    save(&env.config_home, spec, &after)?;
+    save(
+        &env.config_home,
+        &spec.file,
+        &edit.entry.spec.path,
+        &edit.value,
+    )?;
     let mut next = files.clone();
     next.insert(file.clone(), after);
     Ok(next)

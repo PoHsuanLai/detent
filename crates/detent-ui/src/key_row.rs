@@ -1,7 +1,7 @@
 //! One key: its label and help beside the control its kind gets.
 
-use crate::controls::Control;
-use crate::files::{Edit, Files, value_of};
+use crate::controls::{Control, FileOnlyControl};
+use crate::files::{Edit, Files, value_of, written_value};
 use detent_model::KeyEntry;
 use dioxus::prelude::*;
 use ds::components::fields::field_row::FieldRow;
@@ -47,10 +47,14 @@ pub fn KeyRow(
             label: TextLine::from(entry.spec.label.0.clone()),
             help,
             common: common_for(found),
-            Control {
-                entry: entry.clone(),
-                value,
-                onchange: move |value| onedit.call(Edit { entry: sent.clone(), value }),
+            if let Some(written) = written_value(&files(), &entry) {
+                FileOnlyControl { value: written }
+            } else {
+                Control {
+                    entry: entry.clone(),
+                    value,
+                    onchange: move |value| onedit.call(Edit { entry: sent.clone(), value }),
+                }
             }
         }
     }

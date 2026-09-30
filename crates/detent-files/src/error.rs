@@ -13,9 +13,6 @@ pub enum FilesError {
         /// Why.
         source: std::io::Error,
     },
-    /// The values could not be written as TOML.
-    #[error("encoding settings as TOML: {0}")]
-    Encode(#[from] toml::ser::Error),
     /// The file on disk is not valid TOML: writing would replace what the person typed.
     #[error("{path} is not valid TOML, fix it by hand first: {reason}")]
     Garbled {

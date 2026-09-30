@@ -29,6 +29,9 @@ ds-harness  = { path = "../quire/crates/ds-harness" }
 ds-lint     = { path = "../quire/crates/ds-lint" }
 ds-settings = { path = "../quire/crates/ds-settings" }  # detent-ui adds the `dioxus` feature for `use_environment`
 
+# Editing a settings file in place, keeping every key, comment and spacing the edit does not touch.
+toml_edit = "0.25"
+
 # ---- BEGIN PINNED BLOCK (source of truth: quire/docs/workspace-deps.toml) ----
 # Copied verbatim into [workspace.dependencies] of quire, shell-host and sill. Bumped only by a
 # dedicated "toolchain bump" wave that runs every repo's gates. Versions of the render stack

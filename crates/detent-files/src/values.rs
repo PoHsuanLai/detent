@@ -17,13 +17,16 @@ impl ConfigHome {
     }
 }
 
-/// The current value of every key of a file that has one: what the file says where it says
-/// something valid, and the key's default elsewhere.
+/// The current value of every key of a file that has one: what the file says where the key's
+/// control can hold it, and the key's default elsewhere.
+///
+/// A value the control cannot hold (a gesture bound to a key chord, an out-of-range number, an
+/// unknown word) is kept apart as it was written: the window shows it read-only, and nothing
+/// ever rewrites it.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct FileValues {
     values: BTreeMap<KeyPath, toml::Value>,
-    /// The file's top-level `version`, carried through a save when the file has one.
-    pub(crate) version: Option<toml::Value>,
+    as_written: BTreeMap<KeyPath, toml::Value>,
 }
 
 impl FileValues {
@@ -32,17 +35,23 @@ impl FileValues {
         self.values.get(path)
     }
 
-    /// These values with `path` set to `value`.
+    /// The value the file holds at `path` when no control can represent it.
+    pub fn as_written(&self, path: &KeyPath) -> Option<&toml::Value> {
+        self.as_written.get(path)
+    }
+
+    /// These values with `path` set to `value`, which the person chose, so it is representable.
     #[must_use]
     pub fn with(mut self, path: &KeyPath, value: toml::Value) -> FileValues {
+        self.as_written.remove(path);
         self.values.insert(path.clone(), value);
         self
     }
 
     pub(crate) fn from_parts(
         values: BTreeMap<KeyPath, toml::Value>,
-        version: Option<toml::Value>,
+        as_written: BTreeMap<KeyPath, toml::Value>,
     ) -> FileValues {
-        FileValues { values, version }
+        FileValues { values, as_written }
     }
 }

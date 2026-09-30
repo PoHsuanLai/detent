@@ -19,7 +19,7 @@ rules every repo shares; this file is detent's map and rules, and wins where the
 | --- | --- | --- | --- |
 | 0 | `detent-testkit` | Dev only: `Scratch` directories under the target directory, the committed schema fixtures | std only |
 | 1 | `detent-model` | Pure: `discover` (stale schemas skipped with a `Warning`), `Catalogue` (page then section grouping, fixed page order), `Control` per `KeyKind` (a two-word enum is a switch only when it is on and off), `Range`, `search`, `visible_pages`/`landing` | `ds-settings` (no features) |
-| 2 | `detent-files` | Effects on the settings files: `load` (lenient, unknown keys reported), `save` (atomic temp and rename) | `detent-model`, `ds-settings` (no features) |
+| 2 | `detent-files` | Effects on the settings files: `load` (lenient, unknown keys reported, unrepresentable values kept as written), `save` (one key set in place, atomic temp and rename) | `detent-model`, `ds-settings` (no features) |
 | 3 | `detent-ui` | The window: `App`, `Env`, sidebar, pages, sections, one control component per `Control` | `detent-model`, `detent-files`, `ds`, `ds-settings` (dioxus), `ds-blitz`; dev: `ds-harness`, `ds-lint` |
 | 4 | `detent` | The binary: flags, the environment read once, `ds_blitz::launch` | `detent-ui`, `detent-model`, `detent-files`, `ds-blitz`, `ds-settings`; clap |
 
@@ -68,5 +68,6 @@ A new fixed page is a variant of `ds_settings::schema::Page` (quire first), then
 - No `unsafe` anywhere (`unsafe_code = "deny"`).
 - No widget is drawn locally. A kind quire has no component for is shown read-only with an "Edit in
   file" note and listed in FINDINGS.
-- Nothing is written that no schema describes: unknown keys are reported on load and dropped by the
-  next save; a schema whose `file` is not `<app>/<name>.toml` is stale and skipped.
+- detent never removes anything: a save sets only the key the person changed, and every other key,
+  known or not, keeps its text (only the owning program may drop what it does not read). A value a
+  key's control cannot hold is shown read-only with "Edit in file". A schema whose `file` is not `<app>/<name>.toml` is stale and skipped.

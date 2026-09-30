@@ -20,6 +20,7 @@ fn key(path: &str, kind: KeyKind, default: Value) -> KeySpec {
         page: Page::Dock,
         section: Section("S".to_owned()),
         exposure: Exposure::Basic,
+        labels: Default::default(),
     }
 }
 
@@ -123,7 +124,7 @@ fn a_bad_value_costs_only_its_own_key() {
     assert_eq!(
         got("dock.size_px"),
         Some(Value::Integer(48)),
-        "out of range: default"
+        "out of range: the control shows its default, the file's number stays (as_written)"
     );
     let invalid: Vec<&str> = loaded.invalid.iter().map(|k| k.path.as_str()).collect();
     assert_eq!(invalid, ["dock.bounce", "dock.size_px"]);
@@ -135,29 +136,44 @@ fn a_bad_value_costs_only_its_own_key() {
     );
 }
 
+fn save_key(home: &ConfigHome, path: &str, value: Value) -> Result<(), FilesError> {
+    save(home, &spec().file, &KeyPath(path.to_owned()), &value)
+}
+
 #[test]
-fn a_write_round_trips_and_drops_what_no_schema_describes() {
-    let (_scratch, home) = home("files-round-trip");
-    write_file(&home, "[dock]\nposition = \"right\"\npuppy = true\n");
+fn a_value_no_control_holds_is_kept_as_written_and_reported() {
+    let (_scratch, home) = home("files-as-written");
+    write_file(
+        &home,
+        "[dock]\nbounce = { kind = \"keys\", v = \"alt+left\" }\nsize_px = 999\n",
+    );
     let loaded = load(&home, &spec());
-    let edited = loaded
-        .value
-        .with(&KeyPath("dock.bounce".to_owned()), word("off"));
-    save(&home, &spec(), &edited).expect("save");
-
-    let text = read_file(&home);
-    assert!(
-        !text.contains("puppy"),
-        "unknown keys are not written back:\n{text}"
+    let held = |path: &str| loaded.value.as_written(&KeyPath(path.to_owned())).cloned();
+    assert_eq!(held("dock.size_px"), Some(Value::Integer(999)));
+    assert!(matches!(held("dock.bounce"), Some(Value::Table(_))));
+    assert_eq!(
+        held("dock.position"),
+        None,
+        "a representable key is not held aside"
     );
-    assert!(
-        text.contains("bounce = \"off\""),
-        "the edit is written:\n{text}"
+    assert_eq!(
+        loaded.unknown,
+        Vec::new(),
+        "the table value is the key's own"
     );
+}
 
-    let again = load(&home, &spec());
-    assert_eq!(again.unknown, Vec::new());
-    assert_eq!(again.value, edited);
+#[test]
+fn a_write_sets_one_key_and_keeps_every_other_byte() {
+    let (_scratch, home) = home("files-round-trip");
+    let before = "# my dock\nversion = 1\n[dock]\nposition = \"right\"  # left handed\n\
+        puppy = true\nbounce = { kind = \"keys\", v = \"alt+left\" }\nsize_px = 999\n\
+        [mystery]\nx = 1\n";
+    write_file(&home, before);
+    save_key(&home, "dock.position", word("left")).expect("save");
+
+    let want = before.replace("\"right\"", "\"left\"");
+    assert_eq!(read_file(&home), want, "only the edited value changed");
     let dir = home.path_of(&spec().file);
     let leftovers = std::fs::read_dir(dir.parent().expect("parent"))
         .expect("dir")
@@ -168,19 +184,36 @@ fn a_write_round_trips_and_drops_what_no_schema_describes() {
 }
 
 #[test]
+fn a_write_to_a_missing_file_holds_only_that_key() {
+    let (_scratch, home) = home("files-missing-write");
+    save_key(&home, "dock.bounce", word("off")).expect("save");
+    assert_eq!(read_file(&home), "[dock]\nbounce = \"off\"\n");
+}
+
+#[test]
+fn a_write_into_a_table_the_file_lacks_makes_it() {
+    let (_scratch, home) = home("files-new-table");
+    write_file(&home, "[scroll]\nspeed = 1.5\n");
+    save_key(&home, "dock.size_px", Value::Integer(64)).expect("save");
+    let text = read_file(&home);
+    assert!(text.starts_with("[scroll]\nspeed = 1.5\n"), "{text}");
+    assert!(text.contains("[dock]\nsize_px = 64"), "{text}");
+}
+
+#[test]
 fn a_fractional_number_stays_a_float() {
     let (_scratch, home) = home("files-float");
-    let loaded = load(&home, &spec());
-    let edited = loaded
-        .value
-        .with(&KeyPath("scroll.speed".to_owned()), Value::Float(2.0));
-    save(&home, &spec(), &edited).expect("save");
+    save_key(&home, "scroll.speed", Value::Float(2.0)).expect("save");
     assert!(
         read_file(&home).contains("speed = 2.0"),
         "{}",
         read_file(&home)
     );
-    assert_eq!(load(&home, &spec()).value, edited);
+    let loaded = load(&home, &spec());
+    assert_eq!(
+        loaded.value.get(&KeyPath("scroll.speed".to_owned())),
+        Some(&Value::Float(2.0))
+    );
 }
 
 #[test]
@@ -193,7 +226,7 @@ fn a_file_that_is_not_toml_is_left_alone() {
         1,
         "the whole file is the one invalid key"
     );
-    let refused = save(&home, &spec(), &loaded.value);
+    let refused = save_key(&home, "dock.bounce", word("off"));
     assert!(
         matches!(refused, Err(FilesError::Garbled { .. })),
         "{refused:?}"
@@ -206,14 +239,13 @@ fn a_file_that_is_not_toml_is_left_alone() {
 }
 
 #[test]
-fn a_files_own_version_is_carried_through() {
+fn a_files_own_version_is_neither_reported_nor_touched() {
     let (_scratch, home) = home("files-version");
     write_file(&home, "version = 1\n[dock]\nposition = \"left\"\n");
-    let loaded = load(&home, &spec());
-    assert_eq!(loaded.unknown, Vec::new(), "version is the file's own key");
-    save(&home, &spec(), &loaded.value).expect("save");
+    assert_eq!(load(&home, &spec()).unknown, Vec::new());
+    save_key(&home, "dock.bounce", word("off")).expect("save");
     assert!(
-        read_file(&home).starts_with("version = 1"),
+        read_file(&home).starts_with("version = 1\n"),
         "{}",
         read_file(&home)
     );

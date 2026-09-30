@@ -25,9 +25,10 @@ key exists in any schema yet. Closes when quire has a colour well or a swatch th
 
 `ds_settings::Store::load` and `save` need a typed `SettingsDoc` with a `const FILE`, and the lenient
 reader (`lenient::read`) is crate-private. A schema-driven app knows no struct. `detent-files`
-therefore re-implements, small and tested, the two rules that matter: the lenient overlay (a bad
-value costs its own key, unknown keys reported by dotted path cut at the first unknown table) and the
-atomic temp-and-rename write (`.part` beside the file, as `Store::save` does). It returns
+therefore re-implements, small and tested, the two rules that matter: the lenient overlay (a value
+the control cannot hold is kept as written and shown read-only, unknown keys reported by dotted path
+cut at the first unknown table) and a save that sets one key in place with `toml_edit` through an
+atomic temp-and-rename (`.part` beside the file, as `Store::save` does). It returns
 `ds_settings::Loaded`, `UnknownKey` and `InvalidKey` so callers see quire's types. Closes when
 `ds-settings` offers a table-level `Store::load_table`/`save_table` (or a `RawDoc`) that takes the
 schema's keys.
@@ -74,8 +75,8 @@ of `gestures.toml`, so a save from detent drops nothing palmrest reads. Two thin
   are Basic; the rest is under Advanced.
 - A gesture's action is a `Menu` of the words that need no value (`back`, `forward`,
   `workspace_prev`, ...). An action with a value (`{ kind = "keys", v = "alt+left" }`, a command, a
-  shell request) is not one of the words, so detent reads it as invalid, shows the key's default
-  and writes that default on the next save. Closes when quire has a kind for a tagged value, or a
+  shell request) is not one of the words, so detent shows it read-only with "Edit in file" and every save keeps it
+  byte for byte. Closes when quire has a kind for a tagged value, or a
   shortcut field detent can use for `keys`.
 
 ## Not in v1
@@ -87,8 +88,9 @@ of `gestures.toml`, so a save from detent drops nothing palmrest reads. Two thin
   shows after a restart (only `quire/appearance.toml` is watched, by `use_environment`, so the window
   follows the theme live). `Store::watch` is typed, so a schema-driven watch needs the same
   untyped API as above.
-- **Unknown and invalid keys** are printed on stderr at load (`detent-ui/src/files.rs`) and never
-  written back. There is no in-window notice.
+- **Unknown and invalid keys** are printed on stderr at load (`detent-ui/src/files.rs`) and left in
+  the file untouched by every save (detent is not the owning program). A value a control cannot hold
+  is shown read-only with "Edit in file". There is no other in-window notice.
 - A search hit is highlighted and its disclosure opened, but the page is not scrolled to it.
 - The window's size and the sidebar's width are not remembered; there are no back and forward buttons.
 
