@@ -95,5 +95,6 @@ Closes when palmrest writes a schema (`ds_settings::schema::maybe_write_schema`)
 ## Manual checks
 
 - `detent` on a real session: opens, follows the desktop theme, a toggle on the Dock page changes
-  `~/.config/sill/settings.toml` and sill's dock reacts. Only the harness and one scratch-environment
-  launch have been run here.
+  `~/.config/sill/settings.toml` and sill's dock reacts. Only the harness has run the window: a
+  launch of the binary on scratch directories reached window creation and stopped with "no
+  adapter found" (the build sandbox had no Vulkan device), so the real window is unchecked.

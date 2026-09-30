@@ -19,14 +19,25 @@ pub fn config_home() -> Option<ConfigHome> {
     )
 }
 
+/// `dirs` without a directory already listed, in order: `$XDG_DATA_HOME` is often also in
+/// `$XDG_DATA_DIRS`, and its schemas would otherwise shadow themselves.
+fn unique(dirs: Vec<PathBuf>) -> Vec<PathBuf> {
+    dirs.into_iter().fold(Vec::new(), |mut kept, dir| {
+        if !kept.contains(&dir) {
+            kept.push(dir);
+        }
+        kept
+    })
+}
+
 /// `$XDG_DATA_HOME/quire/settings`, then each `$XDG_DATA_DIRS` entry's.
 pub fn schema_dirs() -> Vec<PathBuf> {
-    ds_settings::schema::data_dirs()
+    unique(ds_settings::schema::data_dirs())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::config_home_from;
+    use super::{config_home_from, unique};
     use std::ffi::OsString;
     use std::path::PathBuf;
 
@@ -45,5 +56,11 @@ mod tests {
                 "{xdg:?} {home:?}"
             );
         }
+    }
+
+    #[test]
+    fn a_directory_listed_twice_is_scanned_once() {
+        let dirs = ["/a", "/b", "/a", "/c", "/b"].map(PathBuf::from).to_vec();
+        assert_eq!(unique(dirs), ["/a", "/b", "/c"].map(PathBuf::from).to_vec());
     }
 }
