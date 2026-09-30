@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+GenericName=System Settings
+Comment=Change how the desktop looks and behaves
+Exec=detent
+Icon=preferences-system
+Terminal=false
+Categories=Settings;DesktopSettings;
+Keywords=settings;preferences;appearance;dock;mouse;
+StartupWMClass=detent

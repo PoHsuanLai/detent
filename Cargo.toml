@@ -1,9 +1,10 @@
 [workspace]
 resolver = "3"
 members = [
-  "crates/detent-testkit",
-  "crates/detent-model",
+  "crates/detent",
   "crates/detent-files",
+  "crates/detent-model",
+  "crates/detent-testkit",
   "crates/detent-ui",
 ]
 
