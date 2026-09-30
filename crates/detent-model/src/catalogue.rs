@@ -6,15 +6,13 @@ use crate::entry::KeyEntry;
 use crate::page::{PageSlug, sidebar_order};
 use ds_settings::schema::{Exposure, KeySpec, Page};
 
-/// The keys of one section: the ones shown, and the ones behind the section's disclosure.
+/// The keys of one section that share an exposure, in schema order.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SectionModel {
     /// The section's title; empty for keys the schema gave none.
     pub title: String,
-    /// Basic keys, in schema order.
-    pub basic: Vec<KeyEntry>,
-    /// Advanced keys, in schema order.
-    pub advanced: Vec<KeyEntry>,
+    /// Its keys.
+    pub keys: Vec<KeyEntry>,
 }
 
 /// One page and its sections.
@@ -24,9 +22,12 @@ pub struct PageModel {
     pub page: Page,
     /// Its sidebar key.
     pub slug: PageSlug,
-    /// Sections with a basic key first, then the sections that only hold advanced keys; each
-    /// group in the order the schemas first mention them.
+    /// The sections that hold a basic key, holding only those keys, in the order the schemas
+    /// first mention them. A section with no basic key is not here.
     pub sections: Vec<SectionModel>,
+    /// The advanced keys of the whole page, grouped by section in the order the schemas first
+    /// mention them: one disclosure at the end of the page draws them.
+    pub advanced: Vec<SectionModel>,
 }
 
 /// All the keys that live in one file, from every schema that names it.
@@ -79,7 +80,8 @@ impl Catalogue {
         self.pages.iter().flat_map(|page| {
             page.sections
                 .iter()
-                .flat_map(|s| s.basic.iter().chain(&s.advanced))
+                .chain(&page.advanced)
+                .flat_map(|section| section.keys.iter())
                 .map(move |entry| (page, entry))
         })
     }
@@ -110,36 +112,29 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
                     page: entry.spec.page.clone(),
                     slug,
                     sections: Vec::new(),
+                    advanced: Vec::new(),
                 });
                 pages.len() - 1
             }
         };
-        place_in_section(&mut pages[at].sections, entry);
+        let page = &mut pages[at];
+        match entry.spec.exposure {
+            Exposure::Basic => place_in_section(&mut page.sections, entry),
+            Exposure::Advanced => place_in_section(&mut page.advanced, entry),
+        }
         pages
     });
     pages.sort_by(|a, b| sidebar_order(&a.page, &b.page));
-    for page in &mut pages {
-        page.sections
-            .sort_by_key(|section| section.basic.is_empty());
-    }
     pages
 }
 
 fn place_in_section(sections: &mut Vec<SectionModel>, entry: &KeyEntry) {
     let title = &entry.spec.section.0;
-    let at = match sections.iter().position(|s| &s.title == title) {
-        Some(at) => at,
-        None => {
-            sections.push(SectionModel {
-                title: title.clone(),
-                basic: Vec::new(),
-                advanced: Vec::new(),
-            });
-            sections.len() - 1
-        }
-    };
-    match entry.spec.exposure {
-        Exposure::Basic => sections[at].basic.push(entry.clone()),
-        Exposure::Advanced => sections[at].advanced.push(entry.clone()),
+    match sections.iter_mut().find(|s| &s.title == title) {
+        Some(section) => section.keys.push(entry.clone()),
+        None => sections.push(SectionModel {
+            title: title.clone(),
+            keys: vec![entry.clone()],
+        }),
     }
 }

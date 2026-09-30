@@ -2,6 +2,7 @@
 //! right, drawn only with quire's components. Values are read and written through
 //! `detent-files`; the programs' own watches apply them.
 
+mod advanced_view;
 mod app;
 mod controls;
 mod env;
