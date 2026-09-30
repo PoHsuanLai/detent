@@ -1,0 +1,346 @@
+app = "quire"
+file = "quire/appearance.toml"
+version = 1
+
+[[key]]
+path = "appearance.theme"
+default = "system"
+label = "Theme"
+help = "Follow the desktop, or force light or dark mode."
+section = "Appearance"
+exposure = "basic"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["system", "light", "dark"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.accent"
+default = "blue"
+label = "Accent"
+help = "The card's accent colour."
+section = "Appearance"
+exposure = "basic"
+
+[key.kind]
+kind = "menu"
+
+[key.kind.v]
+variants = ["blue", "purple", "pink", "red", "orange", "yellow", "green", "graphite"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.motion_level"
+default = "standard"
+label = "Motion"
+help = "How much the window moves: Standard, or reduce motion to cross-fades."
+section = "Appearance"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["standard", "reduced"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.typeface"
+default = "system"
+label = "Typeface"
+help = "The desktop's face, Inter, or mail's editorial faces: Bricolage Grotesque, Karla and Space Mono."
+section = "Appearance"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["system", "editorial"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.material_tint_alpha"
+default = 80
+label = "Material tint"
+help = "The tint's alpha over the compositor's behind-surface blur."
+section = "Appearance"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.material_highlight_light"
+default = 30
+label = "Highlight (light)"
+help = "The top highlight's alpha on a light material."
+section = "Appearance"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.material_highlight_dark"
+default = 12
+label = "Highlight (dark)"
+help = "The top highlight's alpha on a dark material."
+section = "Appearance"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.material_hairline_light"
+default = 14
+label = "Hairline (light)"
+help = "The outer hairline's alpha on a light material."
+section = "Appearance"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.material_hairline_dark"
+default = 60
+label = "Hairline (dark)"
+help = "The outer hairline's alpha on a dark material."
+section = "Appearance"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.material_shadow_strength"
+default = 100
+label = "Shadow strength"
+help = "How strong a floating material's contact and ambient shadows are."
+section = "Appearance"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.material_vibrancy"
+default = 100
+label = "Vibrancy"
+help = "How much of the tint the vibrancy boost saturates."
+section = "Appearance"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "icons.style"
+default = "colour"
+label = "App icon style"
+help = "Colour draws each app icon as designed; Muted holds the colour down; Monochrome draws every icon in one hue."
+section = "Icons"
+exposure = "basic"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["colour", "muted", "monochrome"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "icons.monochrome_tint"
+default = "space"
+label = "Monochrome tint"
+help = "Where Monochrome icons take their hue: the Space, the accent, or none."
+section = "Icons"
+exposure = "basic"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["space", "accent", "neutral"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "icons.plate_inset_percent"
+default = 72
+label = "Plate inset"
+help = "How far a third-party icon sits inside its plate."
+section = "Icons"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "icons.symbolic_fallback_glyph_percent"
+default = 56
+label = "Symbolic fallback size"
+help = "The glyph's size when an app ships only a symbolic icon."
+section = "Icons"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "icons.squircle_detect_iou"
+default = 900
+label = "Squircle detection"
+help = "How closely an icon must already match a squircle to skip re-masking it (stored per-mille: 900 is 0.90)."
+section = "Icons"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "icons.symbolic_chroma_max"
+default = 40
+label = "Symbolic icon colour limit"
+help = "An icon with less colour than this is drawn as a symbolic mask in the ink colour (stored per-mille: 40 is 0.04)."
+section = "Icons"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 200
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "icons.plate_glyph_colour_policy"
+default = "auto"
+label = "Plate glyph colour"
+help = "Auto picks white or ink per family for contrast; the other two force one."
+section = "Icons"
+exposure = "advanced"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["auto", "force_white", "force_ink"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "icons.dark_mode_variant"
+default = "same_as_light"
+label = "Icon dark variant"
+help = "Whether a third-party icon adapts to the dark scheme or stays the same."
+section = "Icons"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["same_as_light", "adaptive"]
+
+[key.page]
+kind = "appearance"

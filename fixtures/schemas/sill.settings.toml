@@ -1,0 +1,3780 @@
+app = "sill"
+file = "sill/settings.toml"
+version = 1
+
+[[key]]
+path = "bar.height_px"
+default = 24
+label = "Bar height"
+help = "The top bar's height; windows are placed below it."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 20
+max = 64
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.title_hit_height_px"
+default = 24
+label = "Title hit height"
+help = "The clickable height of a bar title or status item."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 16
+max = 48
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.title_padding_px"
+default = 8
+label = "Title padding"
+help = "Horizontal padding inside a bar title."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 32
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.open_title_pill_height_px"
+default = 22
+label = "Open title highlight"
+help = "The height of the pill behind a title whose menu is open."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 16
+max = 48
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.status_icon_box_px"
+default = 22
+label = "Status item box"
+help = "The box a status item's glyph sits in."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 16
+max = 32
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.status_glyph_px"
+default = 16
+label = "Status glyph"
+help = "The size of a status item's glyph."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 12
+max = 32
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.status_gap_px"
+default = 0
+label = "Status gap"
+help = "Space between status items."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 16
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.glyph_size_policy"
+default = "status_icon16"
+label = "Status glyph size"
+help = "A 16 px glyph in its box, or a glyph that fills the 22 px box."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["status_icon16", "icon_size_bar22"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.item_font_px"
+default = 13
+label = "Item text size"
+help = "The size of a bar title's and the clock's text."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 9
+max = 24
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.item_font_weight"
+default = 500
+label = "Item text weight"
+help = "The weight of a bar title's and the clock's text; the app name is always bold."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 100
+max = 900
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.item_radius_px"
+default = 5
+label = "Item highlight radius"
+help = "The corner radius of the highlight behind a bar item."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 12
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "bar.battery_low_percent"
+default = 20
+label = "Low battery"
+help = "At or under this charge the battery glyph turns red and nudges once."
+section = "Bar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 5
+max = 50
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "dock.magnification"
+default = "on"
+label = "Magnification"
+help = "Icons grow as the pointer nears them."
+section = "Magnification"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.tile_size_px"
+default = 48
+label = "Size"
+help = "The size of a dock icon at rest."
+section = "Size"
+exposure = "basic"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 32
+max = 80
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.magnified_size_px"
+default = 96
+label = "Magnified size"
+help = "The size of the icon under the pointer."
+section = "Magnification"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 32
+max = 128
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.influence_radius_px"
+default = 96
+label = "Zoom reach"
+help = "How far from the pointer icons still grow."
+section = "Magnification"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 24
+max = 256
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.tile_gap_px"
+default = 8
+label = "Icon gap"
+help = "Space between dock icons."
+section = "Size"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 16
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.progress_style"
+default = "ring"
+label = "Progress style"
+help = "A ring on the icon, or a bar under it."
+section = "Indicators"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["ring", "bar"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.autohide"
+default = "off"
+label = "Automatically hide the dock"
+help = "Hide the dock until the pointer reaches the screen's bottom edge."
+section = "Hiding"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.autohide_delay_ms"
+default = 200
+label = "Show delay"
+help = "How long the pointer rests at the edge before the dock appears."
+section = "Hiding"
+exposure = "basic"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.autohide_slide_ms"
+default = 500
+label = "Slide duration"
+help = "How long the dock takes to slide in or out."
+section = "Hiding"
+exposure = "basic"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1500
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.autohide_trigger_strip_px"
+default = 4
+label = "Edge trigger"
+help = "The strip at the screen's edge that reveals a hidden dock."
+section = "Hiding"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 16
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.position"
+default = "bottom"
+label = "Position"
+help = "Which screen edge the dock sits on."
+section = "Position"
+exposure = "basic"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["bottom", "left", "right"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.indicators"
+default = "on"
+label = "Show indicators for open apps"
+help = "A dot under each app that has a window."
+section = "Indicators"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.bounce"
+default = "on"
+label = "Bounce for attention"
+help = "Apps that need you bounce their icon."
+section = "Animation"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.launch_animation"
+default = "on"
+label = "Animate opening apps"
+help = "An icon bounces while its app starts."
+section = "Animation"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.click_active_app"
+default = "cycle"
+label = "Clicking the active app"
+help = "Cycle through its windows, or do nothing."
+section = "Clicking"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["cycle", "nothing"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.trash"
+default = "on"
+label = "Show Trash"
+help = "A Trash tile at the end of the dock."
+section = "Items"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.pill_radius_px"
+default = 22
+label = "Pill radius"
+help = "The corner radius of the dock's background."
+section = "Size"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 48
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.edge_clamp_px"
+default = 8
+label = "Edge margin"
+help = "How close to the screen's sides the dock may come."
+section = "Size"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 64
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.running_dot_diameter_px"
+default = 4
+label = "Indicator dot"
+help = "The diameter of the open-app dot."
+section = "Indicators"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 2
+max = 12
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.badge_size_px"
+default = 18
+label = "Badge height"
+help = "The height of a count badge."
+section = "Indicators"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 12
+max = 32
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.badge_radius_px"
+default = 9
+label = "Badge radius"
+help = "The corner radius of a count badge."
+section = "Indicators"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 16
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.progress_ring_diameter_px"
+default = 20
+label = "Progress ring"
+help = "The diameter of a progress ring."
+section = "Indicators"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 12
+max = 48
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.progress_ring_stroke_px"
+default = 3
+label = "Progress ring stroke"
+help = "The width of a progress ring's arc."
+section = "Indicators"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 8
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.separator_height_px"
+default = 36
+label = "Separator height"
+help = "The height of the line before Trash."
+section = "Items"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 8
+max = 80
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.magnify_enter_ms"
+default = 120
+label = "Grow time"
+help = "How long icons take to grow when the pointer enters the dock."
+section = "Magnification"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.magnify_leave_ms"
+default = 200
+label = "Shrink time"
+help = "How long icons take to settle when the pointer leaves the dock."
+section = "Magnification"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.hover_label_warm_ms"
+default = 400
+label = "Label warm time"
+help = "How long after leaving the dock the next label shows at once."
+section = "Labels"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 2000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.bounce_period_ms"
+default = 500
+label = "Bounce period"
+help = "One bounce, up and down."
+section = "Animation"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 100
+max = 2000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.bounce_launch_cap_ms"
+default = 10000
+label = "Launch bounce limit"
+help = "The longest an opening app bounces."
+section = "Animation"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 60000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.hold_to_menu_ms"
+default = 600
+label = "Hold for menu"
+help = "How long a press must hold still to open an icon's menu."
+section = "Clicking"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 100
+max = 2000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.hold_to_menu_move_px"
+default = 8
+label = "Hold tolerance"
+help = "How far a held press may move and still open the menu."
+section = "Clicking"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 64
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.remove_threshold_px"
+default = 64
+label = "Remove distance"
+help = "How far an icon must be dragged out of the dock to remove it."
+section = "Items"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 16
+max = 256
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.spring_load_ms"
+default = 500
+label = "Spring-loading delay"
+help = "How long a dragged file rests on an app before the app opens."
+section = "Items"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 100
+max = 2000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.context_menu_order"
+default = "windows_first"
+label = "Menu order"
+help = "Windows first, or Apple's order."
+section = "Clicking"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["windows_first", "apple_order"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.modifier_clicks"
+default = "apple_mapping"
+label = "Modifier clicks"
+help = "Ctrl-click shows in Files, Alt-click switches and hides."
+section = "Clicking"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["apple_mapping", "off"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.pill_padding_px"
+default = 6
+label = "Dock padding"
+help = "The space between the icons and the dock's edge."
+section = "Size"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 24
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.running_dot_gap_px"
+default = 3
+label = "Indicator dot gap"
+help = "From an icon's bottom edge to the centre of its open-app dot."
+section = "Indicators"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 12
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "dock.floor"
+default = "off"
+label = "Floor"
+help = "A soft light band along the dock's floor, under the icons."
+section = "Size"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "launcher.top_bar_gap_px"
+default = 24
+label = "Gap below the bar"
+help = "The least space between the bar and the launcher."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 200
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.top_centre_bias_px"
+default = 230
+label = "Height bias"
+help = "Subtracted from the launcher's vertical position."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.top_vertical_fraction"
+default = 400
+label = "Vertical position"
+help = "Where the launcher sits, as a fraction of the screen's height (stored per-mille)."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.material"
+default = "sheet"
+label = "Panel material"
+help = "The launcher panel's material."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["sheet", "popover"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.field_font_px"
+default = 22
+label = "Search text size"
+help = "The size of the query in the search field."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 12
+max = 40
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.field_font_weight"
+default = 500
+label = "Search text weight"
+help = "The weight of the query in the search field."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 100
+max = 900
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.field_glyph_px"
+default = 20
+label = "Search glyph size"
+help = "The size of the magnifier beside the query."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 12
+max = 40
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.row_title_px"
+default = 14
+label = "Result title size"
+help = "The size of a result's title."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 9
+max = 24
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.row_detail_px"
+default = 12
+label = "Result detail size"
+help = "The size of a result's detail line."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 9
+max = 20
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.files_backend"
+default = "auto"
+label = "File search"
+help = "Where the launcher finds documents: `auto` asks Tracker, else searches your home folder with fd; or name one; `off` searches no files."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["auto", "tracker", "fd", "off"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.files_budget_ms"
+default = 150
+label = "File search time limit"
+help = "How long one file search may take before the launcher shows what it found so far."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 20
+max = 2000
+unit = "ms"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.clipboard_history"
+default = "memory"
+label = "Clipboard history"
+help = "Keep what you copy so the launcher can find it again. Kept in memory only and forgotten when sill stops; copies a password manager marks are never kept."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["memory", "off"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.clipboard_cap"
+default = 50
+label = "Clipboard history length"
+help = "How many copied items the history keeps; the oldest goes first."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 500
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.clipboard_image_max_mb"
+default = 8
+label = "Largest copied image kept"
+help = "Copied images larger than this are not kept; 0 keeps no images."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 64
+unit = "MB"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.emoji_skin_tone"
+default = "default"
+label = "Emoji skin tone"
+help = "The skin tone of emoji that have one."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "menu"
+
+[key.kind.v]
+variants = ["default", "light", "medium_light", "medium", "medium_dark", "dark"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.web_search"
+default = "on"
+label = "Search the web"
+help = "Offer a web search for what you type, as the launcher's last result."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.web_engine_url"
+default = "https://duckduckgo.com/?q={query}"
+label = "Web search address"
+help = "The search engine's address, with {query} where the words go. Only https and http addresses are opened."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "launcher.currency"
+default = "off"
+label = "Currency conversion"
+help = "Convert currencies in the launcher's calculator with the European Central Bank's daily rates, fetched once a day; `off` fetches nothing."
+section = "Launcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "ecb"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "scroll.natural"
+default = "natural"
+label = "Natural scrolling"
+help = "Content moves with your fingers."
+section = "Scrolling"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["natural", "traditional"]
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.momentum"
+default = "on"
+label = "Momentum"
+help = "A flick keeps scrolling after you lift."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.momentum_model"
+default = "mac_mouse_fix"
+label = "Momentum model"
+help = "Which deceleration curve a flick follows."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["mac_mouse_fix", "ios"]
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.momentum_a"
+default = 30.0
+label = "Drag constant"
+help = "Mac Mouse Fix's a."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.momentum_b"
+default = 0.699999988079071
+label = "Drag exponent"
+help = "Mac Mouse Fix's b."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 2
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.momentum_stop_px_s"
+default = 1.0
+label = "Stop speed"
+help = "Momentum ends below this speed."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "px/s"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.momentum_start_px_s"
+default = 100.0
+label = "Start speed"
+help = "A flick must exceed this speed to glide."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 2000
+unit = "px/s"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.momentum_cap_px_s"
+default = 12000.0
+label = "Top speed"
+help = "The fastest a flick can start."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1000
+max = 30000
+unit = "px/s"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.velocity_window_ms"
+default = 80
+label = "Velocity window"
+help = "How much of the gesture's end the release speed is measured over."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 10
+max = 500
+unit = "ms"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.velocity_held_still_ms"
+default = 50
+label = "Held-still time"
+help = "Fingers still for this long before lifting mean no flick."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 500
+unit = "ms"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.rubber_band"
+default = "bounded"
+label = "Rubber band"
+help = "How content stretches past its end."
+section = "Rubber band"
+exposure = "advanced"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["bounded", "linear", "off"]
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.rubber_band_c"
+default = 550
+label = "Stretch constant"
+help = "The bounded model's c (stored per-mille: 550 is 0.55)."
+section = "Rubber band"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.rubber_band_linear_divisor"
+default = 20.0
+label = "Linear divisor"
+help = "The linear model's divisor."
+section = "Rubber band"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 100
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.rubber_band_edge_min_px"
+default = 10
+label = "Stretch threshold"
+help = "Overscroll smaller than this does not stretch."
+section = "Rubber band"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.rubber_band_snap_rate"
+default = 12.5
+label = "Snap-back rate"
+help = "How fast stretched content returns."
+section = "Rubber band"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 100
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.rubber_band_snap_gain"
+default = 0.3100000023841858
+label = "Snap-back gain"
+help = "How much of the release speed carries into the snap-back."
+section = "Rubber band"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.wheel_detent_px"
+default = 60
+label = "Wheel step"
+help = "How far one wheel notch scrolls."
+section = "Wheel"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 20
+max = 200
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.wheel_burst_window_ms"
+default = 300
+label = "Wheel burst window"
+help = "Notches closer together than this keep one smooth target."
+section = "Wheel"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "ms"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.momentum_boost_threshold_px_s"
+default = 350.0
+label = "Momentum boost"
+help = "A same-direction flick faster than this during momentum adds to it."
+section = "Momentum"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 5000
+unit = "px/s"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.double_scroll_grace_ms"
+default = 150
+label = "Double-scroll grace"
+help = "How long after a gesture ends a second source is ignored."
+section = "Scrolling"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "ms"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scroll.scrollbars"
+default = "when_scrolling"
+label = "Show scroll bars"
+help = "Only while scrolling, or always."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["when_scrolling", "always"]
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.track_thickness_px"
+default = 12
+label = "Track width"
+help = "The track's width at rest."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 4
+max = 32
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.track_thickness_hover_px"
+default = 16
+label = "Track width on hover"
+help = "The track's width while the pointer is near."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 4
+max = 32
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.thumb_thickness_px"
+default = 8
+label = "Thumb width"
+help = "The thumb's width at rest."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 2
+max = 32
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.thumb_thickness_hover_px"
+default = 12
+label = "Thumb width on hover"
+help = "The thumb's width while the pointer is near."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 2
+max = 32
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.thumb_min_length_px"
+default = 18
+label = "Shortest thumb"
+help = "The thumb never gets shorter than this."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 8
+max = 64
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.hide_delay_ms"
+default = 500
+label = "Hide delay"
+help = "How long after scrolling stops the thumb starts to fade."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 5000
+unit = "ms"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.fade_duration_ms"
+default = 240
+label = "Fade time"
+help = "How long the thumb takes to fade."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "ms"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.expand_zone_px"
+default = 16
+label = "Expand zone"
+help = "How near the track edge the pointer widens it."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 64
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.expand_duration_ms"
+default = 240
+label = "Expand time"
+help = "How long the track takes to widen."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "ms"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.legacy_track_width_px"
+default = 15
+label = "Always-on track width"
+help = "The track's width when scroll bars always show."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 8
+max = 32
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.other_axis_offset_px"
+default = 12
+label = "Corner clearance"
+help = "How short the vertical track stops when a horizontal one shows."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 32
+unit = "px"
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "scrollbar.track_click_mode"
+default = "page_toward_click"
+label = "Clicking the track"
+help = "Page toward the click, or jump to it."
+section = "Scroll bars"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["page_toward_click", "jump_to_click"]
+
+[key.page]
+kind = "mouse_and_gestures"
+
+[[key]]
+path = "menus.submenu_delay_ms"
+default = 200
+label = "Submenu delay"
+help = "How long the pointer rests on an item before its submenu opens."
+section = "Menus"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "ms"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "menus.item_height_px"
+default = 22
+label = "Item height"
+help = "The height of one menu item."
+section = "Menus"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 18
+max = 40
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "menus.separator_margin_px"
+default = 5
+label = "Separator margin"
+help = "Space above and below a separator."
+section = "Menus"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 16
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "menus.submenu_triangle_timeout_ms"
+default = 300
+label = "Safe triangle timeout"
+help = "Resting inside the path to a submenu this long selects what is under the pointer."
+section = "Menus"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 2000
+unit = "ms"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "menus.first_mouse_window_ms"
+default = 100
+label = "First click window"
+help = "A click this soon after a window activates only activates it."
+section = "Windows"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+unit = "ms"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "menus.font_px"
+default = 13
+label = "Text size"
+help = "The size of a text menu's items."
+section = "Menus"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 9
+max = 24
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "menus.highlight_radius_px"
+default = 5
+label = "Highlight radius"
+help = "The corner radius of the selected item's highlight."
+section = "Menus"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 12
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "menus.tooltip_font_px"
+default = 12
+label = "Tooltip text size"
+help = "The size of a tooltip's label."
+section = "Menus"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 9
+max = 20
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "switcher.show_delay_ms"
+default = 150
+label = "Show delay"
+help = "How long the chord is held before the switcher appears."
+section = "App switcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 500
+unit = "ms"
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "switcher.icon_size_px"
+default = 96
+label = "Icon size"
+help = "The size of an app icon in the switcher."
+section = "App switcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 32
+max = 256
+unit = "px"
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "switcher.cell_size_px"
+default = 112
+label = "Cell size"
+help = "The size of one app's cell."
+section = "App switcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 48
+max = 256
+unit = "px"
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "switcher.cell_gap_px"
+default = 8
+label = "Cell gap"
+help = "Space between cells."
+section = "App switcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 32
+unit = "px"
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "switcher.overflow_min_icon_px"
+default = 48
+label = "Smallest icon"
+help = "How small icons may shrink with many apps open."
+section = "App switcher"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 16
+max = 128
+unit = "px"
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "notifications.dnd"
+default = "off"
+label = "Do Not Disturb"
+help = "No banners and no sounds, except critical ones."
+section = "Notifications"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.banner_style"
+default = "banner"
+label = "Notification style"
+help = "Banners leave by themselves; alerts stay until you act."
+section = "Notifications"
+exposure = "basic"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["banner", "alert", "none"]
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.position_right_px"
+default = 8
+label = "Right margin"
+help = "Space between banners and the screen's right edge."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 64
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.position_top_gap_px"
+default = 8
+label = "Top margin"
+help = "Space between the bar and the first banner."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 64
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.banner_width_px"
+default = 360
+label = "Banner width"
+help = "The width of a banner."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 200
+max = 600
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.banner_min_height_px"
+default = 64
+label = "Banner height"
+help = "The least height of a banner."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 32
+max = 200
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.banner_padding_px"
+default = 12
+label = "Banner padding"
+help = "Space inside a banner."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 32
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.icon_px"
+default = 32
+label = "Icon size"
+help = "The size of an app icon in a banner."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 16
+max = 64
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.banner_hold_ms"
+default = 5200
+label = "Banner time"
+help = "How long a banner stays."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1000
+max = 30000
+unit = "ms"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.banner_entry_direction"
+default = "from_right"
+label = "Banner entrance"
+help = "Which way banners slide in."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["from_right", "from_below"]
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.hover_min_remaining_ms"
+default = 1500
+label = "Time after hover"
+help = "The least time a banner stays after the pointer leaves it."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 10000
+unit = "ms"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.close_button_px"
+default = 18
+label = "Close button"
+help = "The size of a banner's close button."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 12
+max = 32
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.swipe_dismiss_px"
+default = 80
+label = "Swipe distance"
+help = "How far a banner must be swiped to dismiss it."
+section = "Swiping"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 16
+max = 400
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.swipe_dismiss_velocity_px_s"
+default = 600.0
+label = "Swipe speed"
+help = "A swipe faster than this dismisses at any distance."
+section = "Swiping"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 5000
+unit = "px/s"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.swipe_damping"
+default = 250
+label = "Leftward damping"
+help = "How much a leftward drag moves the banner (stored per-mille: 250 is 0.25)."
+section = "Swiping"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.stack_max"
+default = 3
+label = "Visible banners"
+help = "The most banners shown at once."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 10
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.stack_gap_px"
+default = 8
+label = "Banner gap"
+help = "Space between stacked banners."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 32
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.group_offset_px"
+default = 4
+label = "Group offset"
+help = "The offset of the layers under a grouped banner."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 16
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.banner_material"
+default = "toast"
+label = "Banner material"
+help = "The banner's toast material, or ink on paper."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["toast", "inverse"]
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.server"
+default = "own"
+label = "Serve notifications"
+help = "Show other apps' notifications. Off leaves them to another notification daemon."
+section = "Notifications"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["own", "passive"]
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.swipe"
+default = "keep_in_center"
+label = "Swiping a banner away"
+help = "Keep the notification in the notification center, as macOS does, or dismiss it entirely."
+section = "Notifications"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["keep_in_center", "dismiss"]
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.banner_position"
+default = "top_right"
+label = "Banner position"
+help = "The corner of the screen banners appear in."
+section = "Banners"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["top_right", "bottom_right"]
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.history_cap"
+default = 100
+label = "Notifications kept"
+help = "The most notifications the notification center keeps; the oldest go first."
+section = "Notification center"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 1000
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "notifications.center_width_px"
+default = 384
+label = "Notification center width"
+help = "The width of the notification center's column."
+section = "Notification center"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 280
+max = 600
+unit = "px"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "control_center.width_px"
+default = 320
+label = "Width"
+help = "The control center's width."
+section = "Control center"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 240
+max = 480
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.grid_columns"
+default = 2
+label = "Columns"
+help = "Module tiles per row."
+section = "Control center"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 4
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.grid_gap_px"
+default = 10
+label = "Tile gap"
+help = "Space between module tiles."
+section = "Control center"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 32
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.grid_padding_px"
+default = 10
+label = "Padding"
+help = "Space around the module grid."
+section = "Control center"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 32
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.bottom_margin_px"
+default = 16
+label = "Bottom margin"
+help = "The least space kept between the control center and the screen's bottom edge."
+section = "Control center"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 64
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.modules"
+default = ["wifi", "bluetooth", "focus", "display", "keyboard_brightness", "sound", "now_playing", "appearance", "battery"]
+label = "Modules"
+help = "Which modules show, in order."
+section = "Control center"
+exposure = "advanced"
+
+[key.kind]
+kind = "list"
+
+[key.kind.v]
+kind = "menu"
+
+[key.kind.v.v]
+variants = ["wifi", "bluetooth", "focus", "display", "keyboard_brightness", "sound", "now_playing", "appearance", "battery"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.material"
+default = "sheet"
+label = "Material"
+help = "The control center's material."
+section = "Control center"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["sheet", "popover"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.menu_bar_wifi"
+default = "show"
+label = "Wi-Fi in the menu bar"
+help = "Show Wi-Fi as its own item in the menu bar, beside the control center."
+section = "Menu bar items"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["show", "hide"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.menu_bar_bluetooth"
+default = "hide"
+label = "Bluetooth in the menu bar"
+help = "Show Bluetooth as its own item in the menu bar, beside the control center."
+section = "Menu bar items"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["show", "hide"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.menu_bar_sound"
+default = "show"
+label = "Sound in the menu bar"
+help = "Show Sound as its own item in the menu bar, beside the control center."
+section = "Menu bar items"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["show", "hide"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.menu_bar_display"
+default = "hide"
+label = "Display in the menu bar"
+help = "Show Display as its own item in the menu bar, beside the control center."
+section = "Menu bar items"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["show", "hide"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.menu_bar_battery"
+default = "show"
+label = "Battery in the menu bar"
+help = "Show Battery as its own item in the menu bar, beside the control center."
+section = "Menu bar items"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["show", "hide"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "control_center.menu_bar_now_playing"
+default = "hide"
+label = "Now Playing in the menu bar"
+help = "Show Now Playing as its own item in the menu bar, beside the control center."
+section = "Menu bar items"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["show", "hide"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "spaces.default_grain"
+default = 40
+label = "Default grain"
+help = "The grain of a Space that has no look of its own (presets 1 and 2 keep theirs)."
+section = "Defaults"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+
+[key.page]
+kind = "spaces"
+
+[[key]]
+path = "spaces.default_card_accent"
+default = "postmark"
+label = "Default accent"
+help = "Postmark blue, or the Space's own hue."
+section = "Defaults"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["postmark", "space_hue"]
+
+[key.page]
+kind = "spaces"
+
+[[key]]
+path = "spaces.wallpaper_drawer"
+default = "shell"
+label = "Wallpaper drawn by"
+help = "COSMIC's own background service, or the shell's wallpaper, which cross-fades with light and dark."
+section = "Desktop"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["cosmic", "shell"]
+
+[key.page]
+kind = "spaces"
+
+[[key]]
+path = "spaces.lookup_order"
+default = "by_id_then_index"
+label = "Look lookup"
+help = "Find a workspace's look by its id, then its position; or by position only."
+section = "Defaults"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["by_id_then_index", "by_index_only"]
+
+[key.page]
+kind = "spaces"
+
+[[key]]
+path = "display.scale"
+default = "auto"
+label = "Choose display scale automatically"
+help = "Auto: the first time a display is connected, sill sets the scale its size and resolution call for (about 109 points per inch), and never changes it again. Manual: sill never changes a scale."
+section = "Displays"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["auto", "manual"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "display.scale_overrides"
+default = ""
+label = "Scale per display"
+help = "`<display> = <scale>` pairs separated by semicolons, e.g. `BNQ-8074-1f2e3d4c5b6a7980 = 1.75`; the display names are in ~/.local/state/sill/displays.json. A pair is applied when it is added or changed, even under Manual."
+section = "Displays"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "display.density_target_ppi"
+default = 109
+label = "Target density"
+help = "The points per inch the automatic scale aims for. 109 is a 27-inch 2560 x 1440 display; lower makes everything larger."
+section = "Displays"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 72
+max = 220
+unit = "ppi"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "display.scale_rounding"
+default = "prefer_whole"
+label = "Scale rounding"
+help = "Round a sharp display up to a whole scale (crisper, like a Mac's default) or to the nearest step (more space)."
+section = "Displays"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["prefer_whole", "nearest"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "display.brightness_keys_target"
+default = "pointer_output"
+label = "Brightness keys adjust"
+help = "The display under the pointer (else the focused one), or every display at once."
+section = "Brightness"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["pointer_output", "all_outputs"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "display.hardware_volume"
+default = "when_monitor_is_output"
+label = "Monitor speakers follow the volume"
+help = "When sound plays through a monitor's HDMI or DisplayPort speakers and the monitor supports DDC/CI, volume changes also set the monitor's own volume and mute."
+section = "Sound"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "when_monitor_is_output"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "display.night_warmth"
+default = "off"
+label = "Night warmth"
+help = "Hardware: warm external monitors by lowering their own green and blue gains over DDC/CI. Their gains are put back when this is turned off."
+section = "Night warmth"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "hardware"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "display.night_warmth_strength"
+default = 50
+label = "Night warmth strength"
+help = "0 leaves white at 6500 K; 100 warms it to about 2700 K."
+section = "Night warmth"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 100
+unit = "%"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "display.font_rendering"
+default = "auto"
+label = "Font rendering for other apps"
+help = "Auto: greyscale antialiasing, and hinting only below 150 ppi, written to ~/.config/fontconfig/conf.d/50-sill-rendering.conf unless a file of your own already sets them. Off removes sill's file."
+section = "Text"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["auto", "off"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "osd.enabled"
+default = "on"
+label = "Show volume and brightness changes"
+help = "An indicator with the new level when the volume or brightness keys are pressed."
+section = "Indicator"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["on", "off"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "osd.hold_ms"
+default = 1500
+label = "Indicator stays for"
+help = "How long the indicator stays after the last change before it fades out."
+section = "Indicator"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 300
+max = 10000
+unit = "ms"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "osd.position"
+default = "top_right"
+label = "Indicator position"
+help = "The edge of the display the indicator sits on, centred along it."
+section = "Indicator"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["top_right", "bottom_centre"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "osd.margin_px"
+default = 24
+label = "Indicator distance from the edge"
+help = "The gap between the indicator and the bar (top right) or the dock (bottom centre); also its distance from the right edge at the top. The compositor already keeps it clear of the space they reserve."
+section = "Indicator"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 400
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "window.move_threshold_px"
+default = 4
+label = "Drag distance before a window moves"
+help = "How far a press on a titlebar must travel before the window starts to move."
+section = "Windows"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 32
+unit = "px"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "power_menu.default_action"
+default = "shut_down"
+label = "Focused button"
+help = "Which power menu button Return presses when the menu opens."
+section = "Power menu"
+exposure = "advanced"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["log_out", "restart", "shut_down", "suspend"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "power_menu.material"
+default = "sheet"
+label = "Material"
+help = "The power menu panel's material."
+section = "Power menu"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["sheet", "popover"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "session.lock_clock"
+default = "h24"
+label = "Lock screen clock"
+help = "How sill's own lock screen writes the time: 24-hour, or 12-hour without AM or PM."
+section = "Lock screen"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["h24", "h12"]
+
+[key.page]
+kind = "accounts"
+
+[[key]]
+path = "session.user_picture"
+default = "auto"
+label = "Your picture"
+help = "The picture on the lock screen: `auto` is your photo (`~/.face`) if you have one, else your initial; `letter`; `photo`; or `emoji:<name>` for one of the design system's reacting emoji."
+section = "Lock screen"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "accounts"
+
+[[key]]
+path = "session.lock_grace_s"
+default = 5
+label = "Require the password after the display turns off"
+help = "Seconds after sill turns the displays off for idleness (and locks) in which any input opens the lock screen without the password; 0 always asks. Never after a lock you asked for (the Lock shortcut, `loginctl lock-session`, the launcher, the power menu), a lid close, a sleep or a wake from sleep."
+section = "Lock screen"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 60
+unit = "s"
+
+[key.page]
+kind = "power"
+
+[[key]]
+path = "widgets.center"
+default = ["calendar", "up_next", "battery"]
+label = "Notification Center widgets"
+help = "Which widgets show under the notifications, in order."
+section = "Widgets"
+exposure = "advanced"
+
+[key.kind]
+kind = "list"
+
+[key.kind.v]
+kind = "segmented"
+
+[key.kind.v.v]
+variants = ["calendar", "up_next", "battery", "now_playing", "world_clock"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "widgets.desktop"
+default = "off"
+label = "Show widgets on the desktop"
+help = "Widgets on the desktop, under the windows (`sill widgets toggle-desktop`)."
+section = "Widgets"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "widgets.desktop_widgets"
+default = ["calendar", "battery"]
+label = "Desktop widgets"
+help = "Which widgets the desktop shows; they are placed on a grid and can be moved."
+section = "Widgets"
+exposure = "advanced"
+
+[key.kind]
+kind = "list"
+
+[key.kind.v]
+kind = "segmented"
+
+[key.kind.v.v]
+variants = ["calendar", "up_next", "battery", "now_playing", "world_clock"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "widgets.desktop_cell_px"
+default = 164
+label = "Desktop grid cell"
+help = "The side of one cell of the desktop's widget grid; a small widget is one cell."
+section = "Widgets"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 120
+max = 240
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "widgets.desktop_gap_px"
+default = 16
+label = "Desktop grid gap"
+help = "The space between cells of the desktop's widget grid and around it."
+section = "Widgets"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 48
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "widgets.world_clocks"
+default = ""
+label = "World clock cities"
+help = "Time zones for the World Clock widget, separated by `;`: `Europe/London; America/New_York`."
+section = "Widgets"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "calendar.sources"
+default = "auto"
+label = "Calendars"
+help = "`auto` reads `~/.calendars` (vdirsyncer and khal) and `~/.local/share/sill/calendars`; `off` reads none; or `.ics` files and folders separated by `;`."
+section = "Calendar"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "calendar.first_weekday"
+default = "monday"
+label = "First day of the week"
+help = "The first column of the month."
+section = "Calendar"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["monday", "sunday"]
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "calendar.week_numbers"
+default = "hide"
+label = "Week numbers"
+help = "A column of ISO week numbers beside the month."
+section = "Calendar"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["hide", "show"]
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "calendar.up_next_days"
+default = 7
+label = "Up Next looks ahead"
+help = "How many days ahead the Up Next widget looks for events."
+section = "Calendar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 31
+unit = "days"
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "calendar.up_next_max"
+default = 3
+label = "Up Next shows at most"
+help = "How many events the Up Next widget lists."
+section = "Calendar"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 10
+
+[key.page]
+kind = "notifications"
+
+[[key]]
+path = "screenshot.thumbnail"
+default = "show"
+label = "Show floating thumbnail"
+help = "After a screenshot, a thumbnail at the bottom right: click to open it, drag it into a document, swipe it away."
+section = "Screenshots"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["show", "hide"]
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "screenshot.thumbnail_hold_ms"
+default = 5200
+label = "Thumbnail stays for"
+help = "How long the thumbnail stays unless the pointer is on it."
+section = "Screenshots"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1000
+max = 30000
+unit = "ms"
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "screenshot.folders"
+default = "auto"
+label = "Screenshot folders"
+help = "Where new screenshots are noticed: `auto` is the Pictures folder and its Screenshots folder, `off` notices none, or folders separated by `;`."
+section = "Screenshots"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "screenshot.tool"
+default = "auto"
+label = "Screenshot program"
+help = "What `sill screenshot` runs: `auto` is COSMIC's (cosmic-screenshot), `off` runs nothing, or a command line run by `/bin/sh -c` with the kind (`area`, `window`, `screen`) as $1 and the folder as $2."
+section = "Screenshots"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "hot_corners.top_left"
+default = "none"
+label = "Top left"
+help = "What the top-left corner does."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "menu"
+
+[key.kind.v]
+variants = ["none", "launcher", "notification_center", "control_center", "show_desktop", "lock", "workspaces", "command"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.top_right"
+default = "none"
+label = "Top right"
+help = "What the top-right corner does."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "menu"
+
+[key.kind.v]
+variants = ["none", "launcher", "notification_center", "control_center", "show_desktop", "lock", "workspaces", "command"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.bottom_left"
+default = "none"
+label = "Bottom left"
+help = "What the bottom-left corner does."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "menu"
+
+[key.kind.v]
+variants = ["none", "launcher", "notification_center", "control_center", "show_desktop", "lock", "workspaces", "command"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.bottom_right"
+default = "none"
+label = "Bottom right"
+help = "What the bottom-right corner does."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "menu"
+
+[key.kind.v]
+variants = ["none", "launcher", "notification_center", "control_center", "show_desktop", "lock", "workspaces", "command"]
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.top_left_command"
+default = ""
+label = "Top-left command"
+help = "The command the top-left corner runs when it is set to Command."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.top_right_command"
+default = ""
+label = "Top-right command"
+help = "The command the top-right corner runs when it is set to Command."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.bottom_left_command"
+default = ""
+label = "Bottom-left command"
+help = "The command the bottom-left corner runs when it is set to Command."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.bottom_right_command"
+default = ""
+label = "Bottom-right command"
+help = "The command the bottom-right corner runs when it is set to Command."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.dwell_ms"
+default = 150
+label = "Corner delay"
+help = "How long the pointer rests in a corner before it acts."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 2000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.rearm_ms"
+default = 500
+label = "Corner re-arm time"
+help = "After acting, a corner acts again only once the pointer has left it and this long has passed."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 5000
+unit = "ms"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "hot_corners.size_px"
+default = 2
+label = "Corner size"
+help = "The side of the invisible square in each active corner."
+section = "Hot Corners"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 1
+max = 8
+unit = "px"
+
+[key.page]
+kind = "dock"
+
+[[key]]
+path = "idle.times"
+default = "cosmic"
+label = "Idle times from"
+help = "`cosmic` uses the times COSMIC Settings' Power page sets (one screen-off time, suspend on AC and on battery); `sill` uses the four times below instead."
+section = "Idle"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["cosmic", "sill"]
+
+[key.page]
+kind = "power"
+
+[[key]]
+path = "idle.screen_off_ac_min"
+default = 15
+label = "Turn the display off on power after"
+help = 'Minutes without input before the displays go off while on AC power; 0 never. Only with `idle.times = "sill"`.'
+section = "Idle"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 240
+unit = "min"
+
+[key.page]
+kind = "power"
+
+[[key]]
+path = "idle.screen_off_battery_min"
+default = 15
+label = "Turn the display off on battery after"
+help = 'Minutes without input before the displays go off on battery; 0 never. Only with `idle.times = "sill"`.'
+section = "Idle"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 240
+unit = "min"
+
+[key.page]
+kind = "power"
+
+[[key]]
+path = "idle.suspend_ac_min"
+default = 30
+label = "Sleep on power after"
+help = 'Minutes without input before the computer sleeps while on AC power; 0 never. Only with `idle.times = "sill"`.'
+section = "Idle"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 480
+unit = "min"
+
+[key.page]
+kind = "power"
+
+[[key]]
+path = "idle.suspend_battery_min"
+default = 15
+label = "Sleep on battery after"
+help = 'Minutes without input before the computer sleeps on battery; 0 never. Only with `idle.times = "sill"`.'
+section = "Idle"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 480
+unit = "min"
+
+[key.page]
+kind = "power"
+
+[[key]]
+path = "idle.dim_s"
+default = 5
+label = "Dim before the display turns off"
+help = "Seconds the displays spend dimmed before they turn off, a warning any input cancels; 0 turns them straight off."
+section = "Idle"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 60
+unit = "s"
+
+[key.page]
+kind = "power"
+
+[[key]]
+path = "idle.dim_level_pct"
+default = 50
+label = "Dimmed brightness"
+help = "How bright the displays stay while dimmed, as a share of their brightness."
+section = "Idle"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 10
+max = 90
+unit = "%"
+
+[key.page]
+kind = "power"
+
+[[key]]
+path = "idle.lock"
+default = "screen_off"
+label = "Lock when the display turns off"
+help = "`screen_off` locks as the displays go off for idleness (`session.lock_grace_s` still lets a quick wake in); `never` does not (a sleep still locks)."
+section = "Idle"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["screen_off", "never"]
+
+[key.page]
+kind = "power"
+
+[[key]]
+path = "idle.locked_screen_off_s"
+default = 60
+label = "Turn the display off on the lock screen after"
+help = "Seconds without input on the lock screen before the displays go off again; 0 uses the normal screen-off time."
+section = "Idle"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 600
+unit = "s"
+
+[key.page]
+kind = "power"

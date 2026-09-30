@@ -1,0 +1,12 @@
+[package]
+name = "detent-testkit"
+description = "Test support: scratch directories under the target directory and the committed schema fixtures. std only."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
