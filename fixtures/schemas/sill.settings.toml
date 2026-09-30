@@ -22,25 +22,6 @@ unit = "px"
 kind = "appearance"
 
 [[key]]
-path = "bar.title_hit_height_px"
-default = 24
-label = "Title hit height"
-help = "The clickable height of a bar title or status item."
-section = "Bar"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 16
-max = 48
-unit = "px"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
 path = "bar.title_padding_px"
 default = 8
 label = "Title padding"
@@ -212,7 +193,7 @@ kind = "appearance"
 path = "bar.battery_low_percent"
 default = 20
 label = "Low battery"
-help = "At or under this charge the battery glyph turns red and nudges once."
+help = "At or under this charge the battery glyph turns red."
 section = "Bar"
 exposure = "advanced"
 
@@ -321,23 +302,6 @@ unit = "px"
 kind = "dock"
 
 [[key]]
-path = "dock.progress_style"
-default = "ring"
-label = "Progress style"
-help = "A ring on the icon, or a bar under it."
-section = "Indicators"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["ring", "bar"]
-
-[key.page]
-kind = "dock"
-
-[[key]]
 path = "dock.autohide"
 default = "off"
 label = "Automatically hide the dock"
@@ -407,23 +371,6 @@ kind = "bounded"
 min = 1
 max = 16
 unit = "px"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "dock.position"
-default = "bottom"
-label = "Position"
-help = "Which screen edge the dock sits on."
-section = "Position"
-exposure = "basic"
-
-[key.kind]
-kind = "segmented"
-
-[key.kind.v]
-variants = ["bottom", "left", "right"]
 
 [key.page]
 kind = "dock"
@@ -565,82 +512,6 @@ kind = "bounded"
 [key.kind.v]
 min = 2
 max = 12
-unit = "px"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "dock.badge_size_px"
-default = 18
-label = "Badge height"
-help = "The height of a count badge."
-section = "Indicators"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 12
-max = 32
-unit = "px"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "dock.badge_radius_px"
-default = 9
-label = "Badge radius"
-help = "The corner radius of a count badge."
-section = "Indicators"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 16
-unit = "px"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "dock.progress_ring_diameter_px"
-default = 20
-label = "Progress ring"
-help = "The diameter of a progress ring."
-section = "Indicators"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 12
-max = 48
-unit = "px"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "dock.progress_ring_stroke_px"
-default = 3
-label = "Progress ring stroke"
-help = "The width of a progress ring's arc."
-section = "Indicators"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 1
-max = 8
 unit = "px"
 
 [key.page]
@@ -2271,23 +2142,6 @@ unit = "ms"
 kind = "notifications"
 
 [[key]]
-path = "notifications.banner_entry_direction"
-default = "from_right"
-label = "Banner entrance"
-help = "Which way banners slide in."
-section = "Banners"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["from_right", "from_below"]
-
-[key.page]
-kind = "notifications"
-
-[[key]]
 path = "notifications.hover_min_remaining_ms"
 default = 1500
 label = "Time after hover"
@@ -2657,23 +2511,6 @@ variants = ["wifi", "bluetooth", "focus", "display", "keyboard_brightness", "sou
 kind = "appearance"
 
 [[key]]
-path = "control_center.material"
-default = "sheet"
-label = "Material"
-help = "The control center's material."
-section = "Control center"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["sheet", "popover"]
-
-[key.page]
-kind = "appearance"
-
-[[key]]
 path = "control_center.menu_bar_wifi"
 default = "show"
 label = "Wi-Fi in the menu bar"
@@ -2776,28 +2613,10 @@ variants = ["show", "hide"]
 kind = "appearance"
 
 [[key]]
-path = "spaces.default_grain"
-default = 40
-label = "Default grain"
-help = "The grain of a Space that has no look of its own (presets 1 and 2 keep theirs)."
-section = "Defaults"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-
-[key.page]
-kind = "spaces"
-
-[[key]]
 path = "spaces.default_card_accent"
-default = "postmark"
+default = "chosen"
 label = "Default accent"
-help = "Postmark blue, or the Space's own hue."
+help = "The accent you picked, or the Space's own hue."
 section = "Defaults"
 exposure = "advanced"
 
@@ -2805,7 +2624,7 @@ exposure = "advanced"
 kind = "toggle"
 
 [key.kind.v]
-variants = ["postmark", "space_hue"]
+variants = ["chosen", "space_hue"]
 
 [key.page]
 kind = "spaces"
@@ -2823,23 +2642,6 @@ kind = "toggle"
 
 [key.kind.v]
 variants = ["cosmic", "shell"]
-
-[key.page]
-kind = "spaces"
-
-[[key]]
-path = "spaces.lookup_order"
-default = "by_id_then_index"
-label = "Look lookup"
-help = "Find a workspace's look by its id, then its position; or by position only."
-section = "Defaults"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["by_id_then_index", "by_index_only"]
 
 [key.page]
 kind = "spaces"
@@ -3136,20 +2938,6 @@ kind = "toggle"
 
 [key.kind.v]
 variants = ["h24", "h12"]
-
-[key.page]
-kind = "accounts"
-
-[[key]]
-path = "session.user_picture"
-default = "auto"
-label = "Your picture"
-help = "The picture on the lock screen: `auto` is your photo (`~/.face`) if you have one, else your initial; `letter`; `photo`; or `emoji:<name>` for one of the design system's reacting emoji."
-section = "Lock screen"
-exposure = "advanced"
-
-[key.kind]
-kind = "text"
 
 [key.page]
 kind = "accounts"

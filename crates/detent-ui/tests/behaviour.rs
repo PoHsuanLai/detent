@@ -246,3 +246,71 @@ fn a_write_that_fails_says_so_and_leaves_the_file_alone() {
         "what the person typed is kept"
     );
 }
+
+#[test]
+fn reduce_motion_is_a_switch_that_is_on_for_reduced() {
+    let sandbox = Sandbox::new("reduce-motion");
+    let mut harness = sandbox.harness(opening("appearance"));
+    let switch = ".section .ds-toggle";
+    assert_eq!(
+        harness.count(switch),
+        1,
+        "the only two-word key on the page shown that is on and off"
+    );
+    assert_eq!(
+        harness.attr(switch, "aria-checked").as_deref(),
+        Some("false"),
+        "Standard is off"
+    );
+    click(&mut harness, switch);
+    let text = sandbox
+        .read("quire/appearance.toml")
+        .expect("the file was written");
+    assert!(text.contains("motion_level = \"reduced\""), "{text}");
+    assert_eq!(
+        harness.attr(switch, "aria-checked").as_deref(),
+        Some("true")
+    );
+}
+
+#[test]
+fn a_two_word_choice_that_is_not_on_and_off_is_two_segments() {
+    let sandbox = Sandbox::new("two-segments");
+    let mut harness = sandbox.harness(opening("appearance"));
+    let typeface = ".ds-segmented[*|aria-label=Typeface]";
+    assert_eq!(
+        harness.count(&format!("{typeface} .ds-segmented-segment")),
+        2,
+        "System and Editorial"
+    );
+    click(
+        &mut harness,
+        &format!("{typeface} .ds-segmented-segment:nth-of-type(2)"),
+    );
+    let text = sandbox
+        .read("quire/appearance.toml")
+        .expect("the file was written");
+    assert!(text.contains("typeface = \"editorial\""), "{text}");
+}
+
+#[test]
+fn a_page_has_one_advanced_disclosure_at_its_end_grouped_by_section() {
+    let sandbox = Sandbox::new("one-advanced");
+    for page in ["appearance", "dock", "mouse_and_gestures"] {
+        let harness = sandbox.harness(opening(page));
+        assert_eq!(harness.count(".ds-disclosure"), 1, "{page}: one disclosure");
+        assert_eq!(
+            harness.count(".advanced .ds-field-group[*|aria-label]"),
+            harness.count(".advanced .ds-field-group"),
+            "{page}: each group inside it is titled by its section"
+        );
+        assert!(
+            harness.count(".advanced .ds-field-group") > 1,
+            "{page}: several sections share the one disclosure"
+        );
+        let html = harness.html();
+        let last_section = html.rfind("class=\"section\"").expect("a section");
+        let advanced = html.find("class=\"advanced\"").expect("the disclosure");
+        assert!(last_section < advanced, "{page}: the disclosure is last");
+    }
+}

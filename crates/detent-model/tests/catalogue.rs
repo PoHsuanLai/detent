@@ -1,7 +1,10 @@
 //! Grouping, ordering and search over the real schemas (`fixtures/schemas`).
 
-use detent_model::{Catalogue, PageSlug, Rank, Search, discover, landing, search, visible_pages};
+use detent_model::{
+    Catalogue, PageSlug, Rank, Search, SectionModel, discover, landing, search, visible_pages,
+};
 use detent_testkit::{Scratch, seed_schemas};
+use ds_settings::schema::Exposure;
 
 const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
@@ -40,50 +43,85 @@ fn pages_come_in_the_fixed_order_and_only_when_they_have_keys() {
 }
 
 #[test]
-fn sections_with_a_basic_key_come_first_and_keys_split_by_exposure() {
-    let catalogue = real("sections_with_a_basic_key_come_first_and_keys_split_by_exposure");
+fn a_page_lists_its_basic_sections_and_one_advanced_group_after_them() {
+    let catalogue = real("a_page_lists_its_basic_sections_and_one_advanced_group_after_them");
     let appearance = catalogue.page(&slug("appearance")).expect("appearance");
-    let titles: Vec<&str> = appearance
-        .sections
-        .iter()
-        .map(|s| s.title.as_str())
-        .collect();
+    let titles = |sections: &[SectionModel]| -> Vec<String> {
+        sections.iter().map(|s| s.title.clone()).collect()
+    };
     assert_eq!(
-        &titles[..2],
+        titles(&appearance.sections),
         ["Appearance", "Icons"],
-        "quire's basic sections lead"
+        "only sections with a basic key are headers of their own"
     );
-    let first_advanced_only = appearance
-        .sections
-        .iter()
-        .position(|s| s.basic.is_empty())
-        .expect("sill's bar sections are advanced only");
-    assert_eq!(first_advanced_only, 2);
+    let advanced = titles(&appearance.advanced);
+    assert!(advanced.contains(&"Bar".to_owned()), "{advanced:?}");
     assert!(
-        appearance.sections[first_advanced_only..]
+        appearance
+            .sections
             .iter()
-            .all(|s| s.basic.is_empty() && !s.advanced.is_empty()),
-        "advanced-only sections all follow the others"
+            .flat_map(|s| &s.keys)
+            .all(|e| e.spec.exposure == Exposure::Basic)
+    );
+    assert!(
+        appearance
+            .advanced
+            .iter()
+            .flat_map(|s| &s.keys)
+            .all(|e| e.spec.exposure == Exposure::Advanced)
     );
 
     let dock = catalogue.page(&slug("dock")).expect("dock");
-    let magnification = dock
+    let paths = |sections: &[SectionModel], title: &str| -> Vec<String> {
+        sections
+            .iter()
+            .find(|s| s.title == title)
+            .map(|s| s.keys.iter().map(|e| e.spec.path.0.clone()).collect())
+            .unwrap_or_default()
+    };
+    assert_eq!(
+        paths(&dock.sections, "Magnification"),
+        ["dock.magnification"]
+    );
+    let advanced = paths(&dock.advanced, "Magnification");
+    assert!(
+        advanced.contains(&"dock.magnified_size_px".to_owned()),
+        "{advanced:?}"
+    );
+}
+
+#[test]
+fn mouse_and_gestures_holds_palmrests_keys_with_its_advanced_ones_apart() {
+    let catalogue = real("mouse_and_gestures_holds_palmrests_keys");
+    let page = catalogue
+        .page(&slug("mouse_and_gestures"))
+        .expect("the page");
+    let basic: Vec<&str> = page
         .sections
         .iter()
-        .find(|s| s.title == "Magnification")
-        .expect("Magnification section");
-    let basic: Vec<&str> = magnification
-        .basic
-        .iter()
+        .flat_map(|s| &s.keys)
         .map(|e| e.spec.path.0.as_str())
         .collect();
-    let advanced: Vec<&str> = magnification
+    assert!(basic.contains(&"rejection"), "{basic:?}");
+    assert!(basic.contains(&"foreign_output"), "{basic:?}");
+    assert!(
+        basic.contains(&"scroll.natural"),
+        "sill's key sits beside palmrest's"
+    );
+    assert!(
+        !basic.contains(&"palm_rejection.click_guard_ms"),
+        "{basic:?}"
+    );
+    let advanced: Vec<&str> = page
         .advanced
         .iter()
+        .flat_map(|s| &s.keys)
         .map(|e| e.spec.path.0.as_str())
         .collect();
-    assert_eq!(basic, ["dock.magnification"]);
-    assert!(advanced.contains(&"dock.magnified_size_px"), "{advanced:?}");
+    assert!(
+        advanced.contains(&"palm_rejection.click_guard_ms"),
+        "{advanced:?}"
+    );
 }
 
 #[test]
@@ -98,7 +136,14 @@ fn every_key_of_every_schema_is_on_exactly_one_page() {
         .iter()
         .filter_map(|f| f.file.relative().to_str())
         .collect();
-    assert_eq!(files, ["quire/appearance.toml", "sill/settings.toml"]);
+    assert_eq!(
+        files,
+        [
+            "palmrest/gestures.toml",
+            "quire/appearance.toml",
+            "sill/settings.toml"
+        ]
+    );
 }
 
 #[test]
@@ -109,6 +154,8 @@ fn a_query_resolves_to_the_key_the_schemas_word_says() {
         ("magnification", "dock.magnification", "dock"),
         ("natural scrolling", "scroll.natural", "mouse_and_gestures"),
         ("do not disturb", "notifications.dnd", "notifications"),
+        ("palm rejection", "rejection", "mouse_and_gestures"),
+        ("reduce motion", "appearance.motion_level", "appearance"),
     ];
     let catalogue = real("a_query_resolves_to_the_key_the_schemas_word_says");
     for (query, path, page) in CASES {

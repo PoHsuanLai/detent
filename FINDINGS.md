@@ -21,15 +21,6 @@ Colour key and for any Menu or Segmented key whose words are all accent names
 (`appearance.accent`), and stores the accent's word. A free hex colour has no control. No Colour
 key exists in any schema yet. Closes when quire has a colour well or a swatch that takes a value.
 
-### Two-word enums that are not on and off
-
-design/22 section 9.1 makes every two-variant enum a `Toggle`. That reads well for `on`/`off`,
-`natural`/`traditional` and `show`/`hide`, and badly for `ring`/`bar`, `top_right`/`bottom_right`,
-`sheet`/`popover`, `cosmic`/`shell` (about a third of sill's toggles). detent follows the table
-and picks the on side with `TogglePair::of` (the first word, unless it is `off`, `hide`, `never`,
-`none` or `nothing`). `SegmentedControl` takes two segments, so the table could send a pair with
-no off-word to it. Closes when design/22 says so.
-
 ### Untyped settings I/O
 
 `ds_settings::Store::load` and `save` need a typed `SettingsDoc` with a `const FILE`, and the lenient
@@ -71,12 +62,21 @@ because a schema names no binary. Closes when `discover` returns the skipped fil
 - `Page` has no Spotlight page (design/22 section 5 lists one); sill's launcher keys are on
   Appearance. `Apps` is a page nothing fills.
 
-## palmrest has no schema
+## palmrest's schema
 
-palmrest ships no `--write-schema`, so `gestures.toml` has no keys in detent: Mouse & Gestures shows
-only sill's `scroll.*` and `scrollbar.*` (one Basic key, natural scrolling). design/22 section 5 also
-lists `swipe.*`, `tap.*`, `rejection`, `foreign_output` and the gesture remap table for this page.
-Closes when palmrest writes a schema (`ds_settings::schema::maybe_write_schema`).
+palmrest writes `palmrest.settings.toml` (`palmrest --write-schema <dir>`), one row for every key
+of `gestures.toml`, so a save from detent drops nothing palmrest reads. Two things to know:
+
+- The keys are palmrest's own, not design/22 section 3.9's names: lengths are micrometres
+  (`scroll.lock_threshold_x_um`), ellipses are x/y pairs, there is no `swipe.workspace_mode`, and
+  the taps are six advanced sliders, not one "double-tap sensitivity" control. Mouse & Gestures
+  shows what palmrest reads: palm rejection, scrolling in other apps and the six gesture actions
+  are Basic; the rest is under Advanced.
+- A gesture's action is a `Menu` of the words that need no value (`back`, `forward`,
+  `workspace_prev`, ...). An action with a value (`{ kind = "keys", v = "alt+left" }`, a command, a
+  shell request) is not one of the words, so detent reads it as invalid, shows the key's default
+  and writes that default on the next save. Closes when quire has a kind for a tagged value, or a
+  shortcut field detent can use for `keys`.
 
 ## Not in v1
 
