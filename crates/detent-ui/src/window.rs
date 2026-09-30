@@ -57,7 +57,7 @@ pub fn Window(
                     value: query(),
                     kind: FieldKind::Search,
                     placeholder: "Search",
-                    size: ControlSize::Small,
+                    size: ControlSize::Regular,
                     oninput: find,
                 }
             },
