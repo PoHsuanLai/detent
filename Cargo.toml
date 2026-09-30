@@ -3,6 +3,7 @@ resolver = "3"
 members = [
   "crates/detent-testkit",
   "crates/detent-model",
+  "crates/detent-files",
 ]
 
 [workspace.package]
