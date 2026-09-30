@@ -4,6 +4,7 @@ members = [
   "crates/detent-testkit",
   "crates/detent-model",
   "crates/detent-files",
+  "crates/detent-ui",
 ]
 
 [workspace.package]

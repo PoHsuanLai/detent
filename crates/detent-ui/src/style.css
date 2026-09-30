@@ -1,0 +1,53 @@
+/* Layout only: quire's tokens, no colour, duration, easing, radius, font-size or font-family. */
+
+.window {
+  position: absolute;
+  inset: 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+.scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-14);
+  padding: var(--s-14) var(--s-22) var(--s-22);
+}
+
+.key-hit {
+  background: var(--accent-soft);
+}
+
+.key-slider {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+}
+
+.key-slider-track {
+  width: 12em;
+}
+
+.key-file-only {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+.advanced {
+  padding: 0 var(--s-4);
+}

@@ -1,0 +1,28 @@
+[package]
+name = "detent-ui"
+description = "The Settings window: sidebar, pages and controls, drawn only with quire's components."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+detent-files = { workspace = true }
+detent-model = { workspace = true }
+dioxus = { workspace = true }
+ds = { workspace = true }
+ds-blitz = { workspace = true }
+ds-settings = { workspace = true, features = ["dioxus"] }
+toml = { workspace = true }
+
+[dev-dependencies]
+detent-testkit = { workspace = true }
+dioxus-ssr = { workspace = true }
+ds-harness = { workspace = true }
+ds-lint = { workspace = true }
+image = { workspace = true }
+
+[lints]
+workspace = true
