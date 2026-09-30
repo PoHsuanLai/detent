@@ -13,27 +13,44 @@ pub struct TogglePair {
     pub off: String,
 }
 
-/// Words that mean "not doing it": when a two-word enum has one of them, the other is on.
+/// Words that mean "not doing it": when a two-word enum has exactly one of them, the other is on.
 const OFF_WORDS: &[&str] = &["off", "hide", "never", "none", "nothing"];
 
+/// Pairs that are a setting and its absence without an off word, written `(on, off)`.
+/// `reduced`/`standard` is macOS's "Reduce motion": on means reduced.
+const ON_OFF_PAIRS: &[(&str, &str)] = &[
+    ("natural", "traditional"),
+    ("reduced", "standard"),
+    ("enabled", "disabled"),
+    ("yes", "no"),
+];
+
 impl TogglePair {
-    /// The pair of `variants`: the first word is on, unless it is an off word and the second is
-    /// not.
-    pub fn of(variants: &[String; 2]) -> TogglePair {
+    /// The pair `variants` make when they are on and off, else `None`: a choice between two
+    /// things (`ring`/`bar`, `bottom`/`left`) is not a switch. Two words are on and off when
+    /// exactly one is an off word (the other is on), or they are a row of [`ON_OFF_PAIRS`], in
+    /// either order.
+    pub fn of(variants: &[String; 2]) -> Option<TogglePair> {
         let [first, second] = variants;
-        let first_is_off = OFF_WORDS.contains(&first.as_str());
-        let second_is_off = OFF_WORDS.contains(&second.as_str());
-        if first_is_off && !second_is_off {
-            TogglePair {
-                on: second.clone(),
-                off: first.clone(),
-            }
-        } else {
-            TogglePair {
-                on: first.clone(),
-                off: second.clone(),
-            }
+        let is_off = |word: &String| OFF_WORDS.contains(&word.as_str());
+        let pair = |on: &String, off: &String| TogglePair {
+            on: on.clone(),
+            off: off.clone(),
+        };
+        match (is_off(first), is_off(second)) {
+            (false, true) => return Some(pair(first, second)),
+            (true, false) => return Some(pair(second, first)),
+            (true, true) => return None,
+            (false, false) => {}
         }
+        ON_OFF_PAIRS.iter().find_map(|(on, off)| {
+            let words = (first.as_str(), second.as_str());
+            match words {
+                (a, b) if (a, b) == (*on, *off) => Some(pair(first, second)),
+                (a, b) if (a, b) == (*off, *on) => Some(pair(second, first)),
+                _ => None,
+            }
+        })
     }
 }
 
@@ -51,9 +68,9 @@ pub enum FileOnly {
 pub enum Control {
     /// A one-word enum: read-only text.
     Readout(String),
-    /// A two-word enum: a switch.
+    /// A two-word enum that is on and off: a switch.
     Toggle(TogglePair),
-    /// Three to five words: a segmented control.
+    /// Three to five words, or two that are not on and off: a segmented control.
     Segmented(Vec<String>),
     /// More: a pop-up button.
     Menu(Vec<String>),
@@ -73,7 +90,8 @@ impl Control {
     pub fn of(spec: &KeySpec) -> Control {
         match &spec.kind {
             KeyKind::Fixed { variant } => Control::Readout(variant.clone()),
-            KeyKind::Toggle { variants } => Control::Toggle(TogglePair::of(variants)),
+            KeyKind::Toggle { variants } => TogglePair::of(variants)
+                .map_or_else(|| Control::Segmented(variants.to_vec()), Control::Toggle),
             KeyKind::Segmented { variants } => Control::Segmented(variants.clone()),
             KeyKind::Menu { variants } => Control::Menu(variants.clone()),
             KeyKind::Bounded { .. } => {
@@ -129,26 +147,91 @@ mod tests {
         list.iter().map(|w| (*w).to_owned()).collect()
     }
 
-    fn pair(a: &str, b: &str) -> TogglePair {
+    fn pair(a: &str, b: &str) -> Option<TogglePair> {
         TogglePair::of(&[a.to_owned(), b.to_owned()])
     }
 
+    fn switch(on: &str, off: &str) -> Option<TogglePair> {
+        Some(TogglePair {
+            on: on.to_owned(),
+            off: off.to_owned(),
+        })
+    }
+
     #[test]
-    fn a_toggle_is_on_at_the_word_that_is_not_off() {
-        let cases: &[(&str, &str, &str, &str)] = &[
-            ("on", "off", "on", "off"),
-            ("off", "on", "on", "off"),
-            ("natural", "traditional", "natural", "traditional"),
-            ("off", "hardware", "hardware", "off"),
-            ("memory", "off", "memory", "off"),
-            ("cycle", "nothing", "cycle", "nothing"),
-            ("screen_off", "never", "screen_off", "never"),
-            ("hide", "show", "show", "hide"),
+    fn two_words_are_a_switch_only_when_they_are_on_and_off() {
+        // (first word, second word, the switch they make: on then off; None is segments)
+        type Case = (
+            &'static str,
+            &'static str,
+            Option<(&'static str, &'static str)>,
+        );
+        let cases: &[Case] = &[
+            // an off word: the other is on, in either order
+            ("on", "off", Some(("on", "off"))),
+            ("off", "on", Some(("on", "off"))),
+            ("show", "hide", Some(("show", "hide"))),
+            ("hide", "show", Some(("show", "hide"))),
+            ("off", "hardware", Some(("hardware", "off"))),
+            ("off", "ecb", Some(("ecb", "off"))),
+            ("memory", "off", Some(("memory", "off"))),
+            ("auto", "off", Some(("auto", "off"))),
+            ("apple_mapping", "off", Some(("apple_mapping", "off"))),
+            ("cycle", "nothing", Some(("cycle", "nothing"))),
+            ("screen_off", "never", Some(("screen_off", "never"))),
+            (
+                "off",
+                "when_monitor_is_output",
+                Some(("when_monitor_is_output", "off")),
+            ),
+            // the table of pairs, in either order
+            ("natural", "traditional", Some(("natural", "traditional"))),
+            ("traditional", "natural", Some(("natural", "traditional"))),
+            ("standard", "reduced", Some(("reduced", "standard"))),
+            ("reduced", "standard", Some(("reduced", "standard"))),
+            ("disabled", "enabled", Some(("enabled", "disabled"))),
+            ("yes", "no", Some(("yes", "no"))),
+            // two off words are not a pair
+            ("none", "nothing", None),
+            // a choice between two things
+            ("ring", "bar", None),
+            ("bottom", "left", None),
+            ("top_right", "bottom_right", None),
+            ("sheet", "popover", None),
+            ("cosmic", "shell", None),
+            ("system", "editorial", None),
+            ("auto", "manual", None),
+            ("h24", "h12", None),
+            ("monday", "sunday", None),
+            ("when_scrolling", "always", None),
+            ("toast", "inverse", None),
+            ("after_cooldown", "once_per_gesture", None),
+            ("toolkit", "ours", None),
         ];
-        for (a, b, on, off) in cases {
-            let got = pair(a, b);
-            assert_eq!((got.on.as_str(), got.off.as_str()), (*on, *off), "{a}/{b}");
+        for (a, b, want) in cases {
+            let want = want.and_then(|(on, off)| switch(on, off));
+            assert_eq!(pair(a, b), want, "{a}/{b}");
         }
+    }
+
+    #[test]
+    fn a_two_word_key_is_drawn_as_the_rule_says() {
+        let two = |a: &str, b: &str| {
+            Control::of(&spec(
+                KeyKind::Toggle {
+                    variants: [a.to_owned(), b.to_owned()],
+                },
+                Value::String(a.to_owned()),
+            ))
+        };
+        assert_eq!(
+            two("on", "off"),
+            Control::Toggle(pair("on", "off").unwrap())
+        );
+        assert_eq!(
+            two("ring", "bar"),
+            Control::Segmented(words(&["ring", "bar"]))
+        );
     }
 
     #[test]
@@ -168,7 +251,7 @@ mod tests {
                     variants: ["on".to_owned(), "off".to_owned()],
                 },
                 Value::String("on".to_owned()),
-                Control::Toggle(pair("on", "off")),
+                Control::Toggle(pair("on", "off").unwrap()),
             ),
             (
                 "segmented",
@@ -229,7 +312,7 @@ mod tests {
 
     #[test]
     fn a_control_admits_only_its_own_values() {
-        let toggle = Control::Toggle(pair("on", "off"));
+        let toggle = Control::Toggle(pair("on", "off").unwrap());
         let text = |s: &str| Value::String(s.to_owned());
         assert_eq!(toggle.admit(&text("on")), Some(text("on")));
         assert_eq!(toggle.admit(&text("bounceyy")), None);
