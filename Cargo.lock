@@ -581,6 +581,7 @@ dependencies = [
 [[package]]
 name = "blitz-kit"
 version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/blitz-kit?rev=54b79083c6744b3767104c3e7646add2170b94b7#54b79083c6744b3767104c3e7646add2170b94b7"
 dependencies = [
  "blitz-dom",
  "blitz-traits",
@@ -1577,6 +1578,7 @@ version = "0.1.0"
 dependencies = [
  "dioxus",
  "ds-core",
+ "ds-intents",
  "ds-motion",
  "ds-style",
  "serde",
@@ -1609,6 +1611,7 @@ dependencies = [
  "tokio",
  "webbrowser",
  "wgpu",
+ "wgpu_context",
 ]
 
 [[package]]
@@ -1658,6 +1661,13 @@ dependencies = [
  "vello_hybrid",
  "wgpu",
  "wgpu_context",
+]
+
+[[package]]
+name = "ds-intents"
+version = "0.1.0"
+dependencies = [
+ "ds-core",
 ]
 
 [[package]]

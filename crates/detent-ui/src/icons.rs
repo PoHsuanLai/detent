@@ -15,6 +15,7 @@ pub fn icon_of(page: &Page) -> Icon {
         Page::Accounts => Icon::Key,
         Page::Power => Icon::Power,
         Page::Apps => Icon::Grid,
+        Page::Intelligence => Icon::Sparkles,
         Page::App(_) => Icon::Window,
     }
 }

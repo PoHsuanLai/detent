@@ -8,6 +8,7 @@ use crate::view::{Searching, View};
 use detent_model::{PageSlug, search};
 use dioxus::prelude::*;
 use ds::components::chrome::sidebar::Sidebar;
+use ds::components::chrome::sidebar_model::SidebarSection;
 use ds::components::chrome::split_view::model::{PaneSpec, SplitPane};
 use ds::components::chrome::split_view::view::SplitView;
 use ds::components::overlays::empty_state::EmptyForm;
@@ -49,7 +50,7 @@ pub fn Window(
             label: "Settings",
             size: SidebarSize::Medium,
             cursor: view.current.as_ref().map(|slug| slug.0.clone()),
-            items: sidebar_items(&env.catalogue, &view.listed, view.current.as_ref(), page),
+            sections: vec![SidebarSection::List(sidebar_items(&env.catalogue, &view.listed, view.current.as_ref(), page))],
             onselect: move |slug: String| page.set(PageSlug(slug)),
             header: rsx! {
                 TextField {
@@ -79,13 +80,13 @@ pub fn Window(
                             EmptyState {
                                 form: EmptyForm::NoResults,
                                 title: "No Results",
-                                description: Some("Nothing in Settings matches that search.".to_owned()),
+                                description: "Nothing in Settings matches that search.",
                             }
                         },
                         (None, Searching::No) => rsx! {
                             EmptyState {
                                 title: "No Settings",
-                                description: Some("No installed program ships a settings schema.".to_owned()),
+                                description: "No installed program ships a settings schema.",
                             }
                         },
                     }

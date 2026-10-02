@@ -21,6 +21,7 @@ impl PageSlug {
             Page::Accounts => "accounts".to_owned(),
             Page::Power => "power".to_owned(),
             Page::Apps => "apps".to_owned(),
+            Page::Intelligence => "intelligence".to_owned(),
             Page::App(id) => format!("app:{id}"),
         })
     }
@@ -39,7 +40,8 @@ fn place(page: &Page) -> (u8, &str) {
         Page::Accounts => (6, ""),
         Page::Power => (7, ""),
         Page::Apps => (8, ""),
-        Page::App(id) => (9, id),
+        Page::Intelligence => (9, ""),
+        Page::App(id) => (10, id),
     }
 }
 
@@ -57,6 +59,7 @@ mod tests {
     fn pages_sort_in_the_documented_order() {
         let mut pages = vec![
             Page::App("zed".to_owned()),
+            Page::Intelligence,
             Page::Apps,
             Page::Power,
             Page::App("acme".to_owned()),
@@ -82,6 +85,7 @@ mod tests {
                 "accounts",
                 "power",
                 "apps",
+                "intelligence",
                 "app:acme",
                 "app:zed"
             ]

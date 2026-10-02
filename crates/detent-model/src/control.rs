@@ -59,7 +59,7 @@ impl TogglePair {
 pub enum FileOnly {
     /// A captured key chord: quire has no shortcut-capture field.
     Shortcut,
-    /// A list of values: quire has no rows editor.
+    /// A list of values or of tables (rows): quire has no rows editor.
     List,
 }
 
@@ -100,7 +100,7 @@ impl Control {
             KeyKind::Text => Control::Text,
             KeyKind::Colour => Control::Colour,
             KeyKind::Shortcut => Control::FileOnly(FileOnly::Shortcut),
-            KeyKind::List(_) => Control::FileOnly(FileOnly::List),
+            KeyKind::List(_) | KeyKind::Rows { .. } => Control::FileOnly(FileOnly::List),
         }
     }
 
