@@ -21,6 +21,7 @@ fn key(path: &str, kind: KeyKind, default: Value) -> KeySpec {
         section: Section("S".to_owned()),
         exposure: Exposure::Basic,
         labels: Default::default(),
+        agent: Default::default(),
     }
 }
 

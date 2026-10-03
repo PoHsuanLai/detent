@@ -39,6 +39,7 @@ fn key_in(
         section: Section(section.to_owned()),
         exposure,
         labels: Default::default(),
+        agent: Default::default(),
     }
 }
 

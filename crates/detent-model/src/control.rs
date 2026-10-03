@@ -141,6 +141,7 @@ mod tests {
             section: Section(String::new()),
             exposure: Exposure::Basic,
             labels: Default::default(),
+            agent: Default::default(),
         }
     }
 
