@@ -598,7 +598,7 @@ dependencies = [
 [[package]]
 name = "blitz-kit"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/blitz-kit?rev=ed5411a541630e07dbb83d1111706c8d0089b3e6#ed5411a541630e07dbb83d1111706c8d0089b3e6"
+source = "git+https://github.com/PoHsuanLai/blitz-kit?rev=bd2bccc5926745a1143c60fd77aa82eaff61b424#bd2bccc5926745a1143c60fd77aa82eaff61b424"
 dependencies = [
  "blitz-dom",
  "blitz-traits",
@@ -1676,6 +1676,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-behaviour"
+version = "0.1.0"
+dependencies = [
+ "ds-core",
+]
+
+[[package]]
 name = "ds-blitz"
 version = "0.1.0"
 dependencies = [
@@ -1697,8 +1704,12 @@ dependencies = [
  "keyboard-types 0.7.0",
  "parley",
  "peniko",
+ "raw-window-handle",
  "thiserror 2.0.21",
  "tokio",
+ "wayland-backend",
+ "wayland-client",
+ "wayland-protocols",
  "webbrowser",
  "wgpu",
  "wgpu_context",
@@ -1783,6 +1794,7 @@ name = "ds-settings"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "ds-behaviour",
  "ds-core",
  "ds-settings-derive",
  "ds-style",
