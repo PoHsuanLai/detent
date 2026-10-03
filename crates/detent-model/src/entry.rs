@@ -1,5 +1,6 @@
 //! One key as the app shows it.
 
+use crate::agent::AgentSetting;
 use crate::config_file::ConfigFile;
 use crate::control::Control;
 use ds_settings::schema::KeySpec;
@@ -13,6 +14,8 @@ pub struct KeyEntry {
     pub file: ConfigFile,
     /// What draws it.
     pub control: Control,
+    /// Whether an agent may set it.
+    pub agent: AgentSetting,
 }
 
 impl KeyEntry {
@@ -23,6 +26,13 @@ impl KeyEntry {
             spec,
             file,
             control,
+            agent: AgentSetting::HandsOff,
         }
+    }
+
+    /// This entry with `agent` as its setting.
+    #[must_use]
+    pub fn with_agent(self, agent: AgentSetting) -> KeyEntry {
+        KeyEntry { agent, ..self }
     }
 }

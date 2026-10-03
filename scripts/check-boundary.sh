@@ -14,12 +14,14 @@ cd "$(dirname "$0")/.."
 # for its schema types and its lenient-read types, and ds-settings builds zbus for its portal
 # watch, so zbus cannot be in the forbidden list until ds-settings splits its schema module out
 # (FINDINGS.md "ds-settings drags zbus into a pure crate"). detent-testkit is std only.
+# detent-intents answers the desktop's intents with no window: it reaches no UI crate.
 PURE="dioxus dioxus-core tokio blitz-dom ds ds-blitz ds-harness ds-lint"
 RULES=(
   "detent-model: $PURE"
   "detent-files: $PURE"
   "detent-testkit: $PURE zbus ds-settings detent-model detent-files detent-ui detent"
-  "detent-ui: detent"
+  "detent-ui: detent detent-intents"
+  "detent-intents: dioxus dioxus-core blitz-dom ds ds-blitz ds-harness ds-lint detent-ui detent"
 )
 fail=0
 
@@ -54,8 +56,9 @@ EDGES=(
   "detent-testkit:"
   "detent-model: ds-settings"
   "detent-files: detent-model ds-settings"
+  "detent-intents: detent-files detent-model docket-client docket-core docket-dbus ds-settings porter-core prov"
   "detent-ui: detent-files detent-model ds ds-blitz ds-settings"
-  "detent: detent-files detent-model detent-ui ds-blitz ds-settings"
+  "detent: detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
 )
 for edge in "${EDGES[@]}"; do
   crate="${edge%%:*}"

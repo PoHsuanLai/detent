@@ -4,5 +4,5 @@
 mod fixtures;
 mod scratch;
 
-pub use fixtures::{fixture_dir, seed_schemas};
+pub use fixtures::{fixture_dir, seed_schemas, seed_schemas_settable};
 pub use scratch::Scratch;

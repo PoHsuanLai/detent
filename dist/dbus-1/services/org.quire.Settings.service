@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.quire.Settings
+Exec=/usr/bin/detent

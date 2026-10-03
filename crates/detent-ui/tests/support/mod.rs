@@ -7,10 +7,11 @@ pub mod drive;
 
 use detent_files::ConfigHome;
 use detent_testkit::{Scratch, seed_schemas};
-use detent_ui::{App, Env, Opening};
+use detent_ui::{App, Env, Opening, Outbox, inbox};
 use ds::prelude::{Scheme, SystemPrefs};
-use ds_harness::{Harness, HarnessConfig, Viewport};
+use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
 use ds_settings::SystemPrefsSource;
+use ds_settings::schema::Schema;
 
 pub const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
@@ -74,8 +75,32 @@ impl Sandbox {
         Harness::new(App, self.config(opening, scheme))
     }
 
-    /// The harness configuration that provides the app's environment.
+    /// Installs `schema` beside the real ones, as a program's package would.
+    pub fn install_schema(&self, schema: &Schema) {
+        schema
+            .write_to(&self.scratch.join("data/quire/settings"))
+            .expect("write the schema");
+    }
+
+    /// A harness running the app in this world, and the way to tell its window things.
+    pub fn harness_told(&self, opening: Opening) -> (Harness, Outbox) {
+        let (outbox, inbox) = inbox();
+        let env = Env {
+            inbox,
+            ..self.env(opening, Scheme::Light)
+        };
+        let config = HarnessConfig::new(VIEW)
+            .with_clock(Clock::Virtual)
+            .with_context(env);
+        (Harness::new(App, config), outbox)
+    }
+
+    /// The harness configuration that provides the app's environment. Timers run on the
+    /// harness's virtual clock, so what a test sees depends on what it did and never on how
+    /// loaded the host is.
     pub fn config(&self, opening: Opening, scheme: Scheme) -> HarnessConfig {
-        HarnessConfig::new(VIEW).with_context(self.env(opening, scheme))
+        HarnessConfig::new(VIEW)
+            .with_clock(Clock::Virtual)
+            .with_context(self.env(opening, scheme))
     }
 }

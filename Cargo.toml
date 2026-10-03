@@ -3,6 +3,7 @@ resolver = "3"
 members = [
   "crates/detent",
   "crates/detent-files",
+  "crates/detent-intents",
   "crates/detent-model",
   "crates/detent-testkit",
   "crates/detent-ui",
@@ -19,6 +20,7 @@ publish = false
 
 [workspace.dependencies]
 detent-files   = { path = "crates/detent-files" }
+detent-intents = { path = "crates/detent-intents" }
 detent-model   = { path = "crates/detent-model" }
 detent-testkit = { path = "crates/detent-testkit" }
 detent-ui      = { path = "crates/detent-ui" }
@@ -28,6 +30,14 @@ ds-blitz    = { path = "../quire/crates/ds-blitz" }
 ds-harness  = { path = "../quire/crates/ds-harness" }
 ds-lint     = { path = "../quire/crates/ds-lint" }
 ds-settings = { path = "../quire/crates/ds-settings" }  # detent-ui adds the `dioxus` feature for `use_environment`
+# docket (private repo, by path like quire): the app side of the intents wire. `docket-client`'s `dbus`
+# feature serves `org.quire.IntentProvider1`; `prov` and `porter-core` are the label and name types
+# its signatures use, taken from the same porter checkout docket takes.
+docket-client = { path = "../docket/crates/docket-client", features = ["dbus"] }
+docket-core   = { path = "../docket/crates/docket-core" }
+docket-dbus   = { path = "../docket/crates/docket-dbus" }
+porter-core   = { path = "../porter/crates/porter-core" }
+prov          = { path = "../porter/crates/prov" }
 
 # Editing a settings file in place, keeping every key, comment and spacing the edit does not touch.
 toml_edit = "0.25"

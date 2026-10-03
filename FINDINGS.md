@@ -79,12 +79,46 @@ of `gestures.toml`, so a save from detent drops nothing palmrest reads. Two thin
   byte for byte. Closes when quire has a kind for a tagged value, or a
   shortcut field detent can use for `keys`.
 
+## Intents (`org.quire.Settings`)
+
+`dist/intents/org.quire.Settings.toml` declares three actions (`settings.page.open`,
+`settings.key.read`, `settings.key.set`); `detent-intents` serves them while the window runs.
+Open items, each with its closing condition:
+
+- **A schema cannot mark a key agent-settable.** `ds_settings::schema::KeySpec` has no such field, so
+  detent reads `agent = "settable"` from each `[[key]]` table of the schema files itself
+  (`detent-model/src/agent.rs`; `KeySpec`'s deserialiser ignores the extra field), and a key without
+  the mark is hands-off. No installed schema carries the mark yet. Closes when quire adds
+  `KeySpec::agent` (and the derive's `#[settings(agent_settable)]`); then `agent.rs` is deleted and
+  `discover` reads the field.
+- **No headless activation.** The bus file starts `detent`, which opens its window; a read or a set
+  that arrives by D-Bus activation therefore shows Settings. A background provider needs
+  `ds_blitz::launch_idle` with an `AppHandle` that opens the window only for `settings.page.open`.
+- **No single instance, and the window is not raised.** A second `detent` loses the bus name and runs
+  without the service, so intents reach the first. `settings.page.open` switches the page of the
+  running window but does not focus it (quire has no window-raise request in `ds-blitz`).
+- **A key path two programs share names no key.** `Catalogue::entry` answers only an unambiguous
+  path; the entity key of `settings.key` is the dotted path alone. Closes if two shipped schemas ever
+  reuse a path (then the key becomes `<file>:<path>`).
+- **Undo needs the same process.** The journal is in memory (256 changes), so an undo after Settings
+  restarted is `Gone`. Undoing a key the file never held writes its default explicitly, since detent
+  never removes a key. A value changed since the set is `Conflict` and is left alone.
+- **Read results are labelled untrusted (a file's content).** A free-text key can hold anything, so
+  the manifest declares `third_party(file)` for `settings.key.read` and every value carries it.
+- **The Viewer page has no real schema to draw.** anyview has no `--write-schema` yet (its FINDINGS wait
+  for quire's `viewer.*` rows), so `tests/viewer_page.rs` installs a scratch schema of the keys
+  anyview's FINDINGS name. Closes when anyview ships `anyview.settings.toml`: replace the scratch schema
+  with a fixture from `scripts/gen-fixtures.sh`.
+- **No `org.quire.Settings.ui.toml`.** The menu and shortcut rule of cli.md section 6 has nothing to
+  check until ds menu items carry an action id (docket-eval says so as a note).
+
 ## Not in v1
 
 - **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): Wi-Fi, Bluetooth,
   sound, displays' live state, accounts. No page for them, no D-Bus client in detent. Accounts shows
   only `session.*` keys from the file. Closes when sill's services serve `Describe/Get/Set/Changed`.
-- **External edits**: values are read once at start. A change made by another program or an editor
+- **External edits**: values are read once at start, and again when the intents provider tells the
+  window it wrote a key (`Notice::Reload`). A change made by another program or an editor
   shows after a restart (only `quire/appearance.toml` is watched, by `use_environment`, so the window
   follows the theme live). `Store::watch` is typed, so a schema-driven watch needs the same
   untyped API as above.

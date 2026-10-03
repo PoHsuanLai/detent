@@ -25,3 +25,30 @@ pub fn seed_schemas(data_home: &Path) -> PathBuf {
     }
     target
 }
+
+/// [`seed_schemas`], with each of `paths` marked `agent = "settable"` in the schema that
+/// describes it, as a program's schema would mark a key an agent may set.
+///
+/// # Panics
+/// If a fixture cannot be copied, or no fixture describes one of `paths`.
+pub fn seed_schemas_settable(data_home: &Path, paths: &[&str]) -> PathBuf {
+    let target = seed_schemas(data_home);
+    for path in paths {
+        let line = format!("path = \"{path}\"");
+        let mut marked = false;
+        for entry in std::fs::read_dir(&target)
+            .unwrap_or_else(|e| panic!("{}: {e}", target.display()))
+            .filter_map(Result::ok)
+        {
+            let file = entry.path();
+            let text = std::fs::read_to_string(&file).unwrap_or_default();
+            if text.contains(&line) {
+                let with = text.replacen(&line, &format!("{line}\nagent = \"settable\""), 1);
+                std::fs::write(&file, with).unwrap_or_else(|e| panic!("{}: {e}", file.display()));
+                marked = true;
+            }
+        }
+        assert!(marked, "no fixture schema describes {path}");
+    }
+    target
+}

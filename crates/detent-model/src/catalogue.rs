@@ -1,10 +1,11 @@
 //! Every key of every schema, grouped by page then section (design/22 section 9.3 item 1).
 
+use crate::agent::AgentSetting;
 use crate::config_file::ConfigFile;
 use crate::discovery::ProgramSchema;
 use crate::entry::KeyEntry;
 use crate::page::{PageSlug, sidebar_order};
-use ds_settings::schema::{Exposure, KeySpec, Page};
+use ds_settings::schema::{Exposure, KeyPath, KeySpec, Page};
 
 /// The keys of one section that share an exposure, in schema order.
 #[derive(Debug, Clone, PartialEq)]
@@ -54,9 +55,14 @@ impl Catalogue {
         let entries: Vec<KeyEntry> = programs
             .iter()
             .flat_map(|p| {
-                p.keys
-                    .iter()
-                    .map(|k| KeyEntry::new(k.clone(), p.file.clone()))
+                p.keys.iter().map(|k| {
+                    let agent = if p.settable.contains(&k.path) {
+                        AgentSetting::Settable
+                    } else {
+                        AgentSetting::HandsOff
+                    };
+                    KeyEntry::new(k.clone(), p.file.clone()).with_agent(agent)
+                })
             })
             .collect();
         Catalogue {
@@ -73,6 +79,16 @@ impl Catalogue {
     /// The file's spec.
     pub fn file(&self, file: &ConfigFile) -> Option<&FileSpec> {
         self.files.iter().find(|spec| &spec.file == file)
+    }
+
+    /// The key at `path`, when exactly one key of any schema has that path (two programs that
+    /// name the same path make it ambiguous, and neither is returned).
+    pub fn entry(&self, path: &KeyPath) -> Option<&KeyEntry> {
+        let mut found = self.entries().filter(|(_, e)| &e.spec.path == path);
+        match (found.next(), found.next()) {
+            (Some((_, entry)), None) => Some(entry),
+            _ => None,
+        }
     }
 
     /// Every key on every page, page by page.

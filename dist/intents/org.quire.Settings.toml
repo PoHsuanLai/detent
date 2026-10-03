@@ -1,0 +1,104 @@
+# detent's intents manifest (docket actions.md section 3.3, cli.md): what an agent or a command
+# line may do in Settings. Installed as $XDG_DATA_DIRS/quire/intents/org.quire.Settings.toml
+# beside dbus-1/services/org.quire.Settings.service. Every field is written (porter's
+# provider-file rule). Names carry the app's prefix: `settings.`.
+#
+# An entity key is a page's slug (`dock`, `app:acme`) or a key's dotted path
+# (`dock.magnification`). A key can be read whenever a schema describes it; it can be set only
+# when its schema marks it `agent = "settable"`.
+vocab = 1
+app = "org.quire.Settings"
+
+[[entities]]
+kind = "settings.page"
+label = "Page"
+plural = "Pages"
+icon = "settings"
+class = "app_own"
+index = "not_indexed"
+titles = { kind = "app_authored" }
+props = []
+
+[[entities]]
+kind = "settings.key"
+label = "Setting"
+plural = "Settings"
+icon = "settings"
+class = "app_own"
+index = "not_indexed"
+titles = { kind = "app_authored" }
+props = []
+
+# Shows a page in the window, opening the window if it is not open.
+[[actions]]
+name = "settings.page.open"
+label = "Open page"
+on = { kind = "nothing" }
+effect = "read"
+classes = ["app_own"]
+undo = "not_undoable"
+reach = "offered"
+latency = "instant"
+result = { kind = "nothing" }
+keys = { kind = "none" }
+lasting = "no"
+dry_run = "none"
+
+[[actions.params]]
+name = "page"
+label = "Page"
+ty = { kind = "entity", v = "settings.page" }
+need = { kind = "required" }
+sink = "inert"
+
+# The value a key holds now, as the text the file stores (`off`, `75`).
+[[actions]]
+name = "settings.key.read"
+label = "Read setting"
+on = { kind = "nothing" }
+effect = "read"
+classes = ["app_own"]
+undo = "not_undoable"
+reach = "offered"
+latency = "instant"
+# A free-text key can hold anything, so no value is trusted more than a file's content.
+result = { kind = "value", v = { ty = { kind = "text", v = { max = 500, lines = "one" } }, trust = { kind = "third_party", v = { kind = "file" } } } }
+keys = { kind = "none" }
+lasting = "no"
+dry_run = "none"
+
+[[actions.params]]
+name = "key"
+label = "Setting"
+ty = { kind = "entity", v = "settings.key" }
+need = { kind = "required" }
+sink = "inert"
+
+# Sets one key the schema marks agent-settable. Undo puts the old value back.
+[[actions]]
+name = "settings.key.set"
+label = "Change setting"
+on = { kind = "nothing" }
+effect = "undoable_write"
+classes = ["app_own"]
+undo = "token"
+reach = "offered"
+latency = "instant"
+result = { kind = "nothing" }
+keys = { kind = "none" }
+lasting = "no"
+dry_run = "preview"
+
+[[actions.params]]
+name = "key"
+label = "Setting"
+ty = { kind = "entity", v = "settings.key" }
+need = { kind = "required" }
+sink = "inert"
+
+[[actions.params]]
+name = "value"
+label = "New value"
+ty = { kind = "text", v = { max = 500, lines = "one" } }
+need = { kind = "required" }
+sink = "inert"

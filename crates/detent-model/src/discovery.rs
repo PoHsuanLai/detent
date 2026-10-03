@@ -1,8 +1,10 @@
 //! Finding the schemas programs ship (design/22 section 9.2 and 9.3 item 1).
 
+use crate::agent::{Marks, read_marks};
 use crate::config_file::ConfigFile;
 use crate::warning::{StaleReason, Warning};
-use ds_settings::schema::{AppId, KeySpec, Schema};
+use ds_settings::schema::{AppId, KeyPath, KeySpec, Schema};
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 /// The schema `version` this app reads.
@@ -17,6 +19,8 @@ pub struct ProgramSchema {
     pub file: ConfigFile,
     /// Its keys, in declaration order.
     pub keys: Vec<KeySpec>,
+    /// The keys its schema marks `agent = "settable"` (see [`crate::AgentSetting`]).
+    pub settable: BTreeSet<KeyPath>,
 }
 
 /// What a scan found: the usable schemas and the ones left out.
@@ -33,12 +37,15 @@ pub struct Discovery {
 /// by `ds_settings`; one that parses but is stale (unknown version, a `file` outside the config
 /// home, an app an earlier directory already supplied) is skipped and returned as a warning.
 pub fn discover(dirs: &[PathBuf]) -> Discovery {
+    let marks = read_marks(dirs);
     ds_settings::schema::discover(dirs)
         .into_iter()
-        .fold(Discovery::default(), admit)
+        .fold(Discovery::default(), |found, schema| {
+            admit(found, schema, &marks)
+        })
 }
 
-fn admit(mut found: Discovery, schema: Schema) -> Discovery {
+fn admit(mut found: Discovery, schema: Schema, marks: &Marks) -> Discovery {
     let stale = |reason| Warning {
         app: schema.app.clone(),
         reason,
@@ -53,6 +60,7 @@ fn admit(mut found: Discovery, schema: Schema) -> Discovery {
     };
     match checked {
         Ok(file) => found.programs.push(ProgramSchema {
+            settable: marks.get(&schema.app).cloned().unwrap_or_default(),
             app: schema.app,
             file,
             keys: schema.key,

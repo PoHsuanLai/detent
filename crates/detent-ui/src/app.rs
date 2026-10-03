@@ -2,6 +2,7 @@
 
 use crate::env::Env;
 use crate::files::load_all;
+use crate::inbox::Notice;
 use crate::view::View;
 use crate::window::Window;
 use dioxus::prelude::*;
@@ -22,6 +23,27 @@ pub fn App() -> Element {
     let files = use_signal({
         let env = env.clone();
         move || load_all(&env)
+    });
+
+    let told = env.clone();
+    use_future(move || {
+        let (told, catalogue) = (told.clone(), told.catalogue.clone());
+        let (mut page, mut query, mut files) = (page, query, files);
+        async move {
+            let Some(mut notices) = told.inbox.take() else {
+                return;
+            };
+            while let Some(notice) = notices.recv().await {
+                match notice {
+                    Notice::OpenPage(slug) if catalogue.page(&slug).is_some() => {
+                        query.set(String::new());
+                        page.set(slug);
+                    }
+                    Notice::OpenPage(_) => {}
+                    Notice::Reload => files.set(load_all(&told)),
+                }
+            }
+        }
     });
 
     let appearance = use_environment(

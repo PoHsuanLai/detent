@@ -2,6 +2,7 @@
 //! open. Provided as a context by whoever launches the app (`ds_blitz::AppConfig::with_context`),
 //! so a test starts it on scratch directories.
 
+use crate::inbox::Inbox;
 use detent_files::ConfigHome;
 use detent_model::{Catalogue, PageSlug, Warning, discover};
 use ds_settings::SystemPrefsSource;
@@ -30,6 +31,8 @@ pub struct Env {
     pub system: SystemPrefsSource,
     /// Where the window opens.
     pub opening: Opening,
+    /// What the window is told while it runs; empty until the launcher gives it one.
+    pub inbox: Inbox,
 }
 
 impl Env {
@@ -47,6 +50,7 @@ impl Env {
             config_home,
             system,
             opening,
+            inbox: Inbox::default(),
         }
     }
 }

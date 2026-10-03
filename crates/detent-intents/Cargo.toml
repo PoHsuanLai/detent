@@ -1,0 +1,30 @@
+[package]
+name = "detent-intents"
+description = "What an agent or a command line may do in Settings: detent's intents manifest and its IntentProvider1 provider."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+detent-files = { workspace = true }
+detent-model = { workspace = true }
+docket-client = { workspace = true }
+docket-core = { workspace = true }
+docket-dbus = { workspace = true }
+ds-settings = { workspace = true }
+porter-core = { workspace = true }
+prov = { workspace = true }
+thiserror = { workspace = true }
+toml = { workspace = true }
+zbus = { workspace = true }
+
+[dev-dependencies]
+detent-testkit = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+
+[lints]
+workspace = true
