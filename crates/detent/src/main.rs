@@ -7,7 +7,7 @@ mod link;
 use clap::Parser;
 use detent_intents::{SettingsProvider, serve_session};
 use detent_ui::{App, Env, inbox};
-use ds_blitz::{AppConfig, AppId, Decorations, enter_runtime, launch};
+use ds_blitz::{AppConfig, AppId, Decorations, WindowSize, enter_runtime, launch};
 use ds_settings::SystemPrefsSource;
 use link::WindowLink;
 use std::process::ExitCode;
@@ -48,7 +48,7 @@ fn main() -> ExitCode {
         }
         Err(fault) => eprintln!("detent: no intents service: {fault}"),
     }
-    let config = AppConfig::new("Settings", WIDTH, HEIGHT)
+    let config = AppConfig::new("Settings", WindowSize::new(WIDTH, HEIGHT))
         .with_app_id(AppId("detent".to_owned()))
         .with_decorations(Decorations::Client)
         .with_context(env);
