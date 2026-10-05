@@ -5,7 +5,7 @@
 //! table, which `KeySpec`'s deserialiser ignores. This file reads that mark from the schema
 //! files themselves. A key without it is hands-off: an agent may read it, never set it.
 
-use ds_settings::schema::{AppId, KeyPath};
+use ds_settings::schema::{AppId, KeyPath, is_never_settable};
 use std::collections::{BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 
@@ -71,6 +71,7 @@ fn keys_marked(text: &str) -> Option<(AppId, BTreeSet<KeyPath>)> {
         .filter_map(toml::Value::as_table)
         .filter(|key| key.get("agent").and_then(toml::Value::as_str) == Some("settable"))
         .filter_map(|key| key.get("path")?.as_str())
+        .filter(|path| !is_never_settable(path))
         .map(|path| KeyPath(path.to_owned()))
         .collect();
     Some((app, keys))
@@ -106,7 +107,13 @@ agent = "settable"
         let (app, keys) = keys_marked(SCHEMA).expect("a schema");
         assert_eq!(app.0, "sill");
         let paths: Vec<&str> = keys.iter().map(|k| k.0.as_str()).collect();
-        assert_eq!(paths, ["dock.magnification", "idle.timeout"]);
+        assert_eq!(paths, ["dock.magnification"]);
+    }
+
+    #[test]
+    fn a_never_settable_key_stays_hands_off_however_it_is_marked() {
+        let (_, keys) = keys_marked(SCHEMA).expect("a schema");
+        assert!(keys.iter().all(|k| k.0 != "idle.timeout"));
     }
 
     #[test]
