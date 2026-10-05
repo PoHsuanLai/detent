@@ -61,6 +61,9 @@ pub enum FileOnly {
     Shortcut,
     /// A list of values or of tables (rows): quire has no rows editor.
     List,
+    /// An action the owning program runs through its live settings module (a button): detent
+    /// has no live client yet, so the row is read-only until the Accounts pane's lane wires one.
+    Action,
 }
 
 /// What draws a key.
@@ -101,6 +104,7 @@ impl Control {
             KeyKind::Colour => Control::Colour,
             KeyKind::Shortcut => Control::FileOnly(FileOnly::Shortcut),
             KeyKind::List(_) | KeyKind::Rows { .. } => Control::FileOnly(FileOnly::List),
+            KeyKind::Live { .. } => Control::FileOnly(FileOnly::Action),
         }
     }
 
@@ -127,7 +131,10 @@ impl Control {
 #[cfg(test)]
 mod tests {
     use super::{Control, FileOnly, TogglePair};
-    use ds_settings::schema::{Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page, Section};
+    use ds_settings::schema::{
+        ActionLabel, ActionWeight, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, LiveAction,
+        Page, Section,
+    };
     use toml::Value;
 
     fn spec(kind: KeyKind, default: Value) -> KeySpec {
@@ -294,6 +301,17 @@ mod tests {
                 KeyKind::List(Box::new(KeyKind::Text)),
                 Value::Array(Vec::new()),
                 Control::FileOnly(FileOnly::List),
+            ),
+            (
+                "live action",
+                KeyKind::Live {
+                    action: LiveAction {
+                        label: ActionLabel("Remove".to_owned()),
+                        weight: ActionWeight::Destructive,
+                    },
+                },
+                Value::String(String::new()),
+                Control::FileOnly(FileOnly::Action),
             ),
         ];
         for (name, kind, default, want) in cases {
