@@ -1,0 +1,393 @@
+use super::*;
+use crate::picker::{Absence, Described};
+use ds_settings::schema::{
+    ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
+    LiveAction, Page, Section,
+};
+use std::collections::BTreeMap;
+
+fn path(text: &str) -> KeyPath {
+    KeyPath(text.to_owned())
+}
+
+fn spec(key: &str, label: &str, kind: KeyKind) -> KeySpec {
+    KeySpec {
+        path: path(key),
+        kind,
+        default: toml::Value::Boolean(false),
+        label: Label(label.to_owned()),
+        help: Help(String::new()),
+        page: Page::Accounts,
+        section: Section("Nextcloud".to_owned()),
+        exposure: Exposure::Basic,
+        labels: Default::default(),
+        unavailable: Default::default(),
+        groups: Default::default(),
+        agent: AgentSetting::HandsOff,
+    }
+}
+
+fn fixed(key: &str, label: &str, variant: &str) -> KeySpec {
+    spec(
+        key,
+        label,
+        KeyKind::Fixed {
+            variant: variant.to_owned(),
+        },
+    )
+}
+
+fn toggle(key: &str, kind: &str) -> KeySpec {
+    spec(
+        key,
+        kind,
+        KeyKind::Toggle {
+            variants: ["on".to_owned(), "off".to_owned()],
+        },
+    )
+}
+
+/// A grant row: labelled with the sentence, its action named `Revoke`.
+fn grant() -> KeySpec {
+    KeySpec {
+        kind: KeyKind::Live {
+            action: LiveAction {
+                label: ActionLabel("Revoke".to_owned()),
+                weight: ActionWeight::Plain,
+            },
+        },
+        ..spec(
+            "accounts.home.grant.g1",
+            "Photos allowed: storage",
+            KeyKind::Text,
+        )
+    }
+}
+
+fn action(key: &str, label: &str, weight: ActionWeight) -> KeySpec {
+    spec(
+        key,
+        label,
+        KeyKind::Live {
+            action: LiveAction {
+                label: ActionLabel(label.to_owned()),
+                weight,
+            },
+        },
+    )
+}
+
+/// Two accounts, one with a dotted id, as accountd would describe them.
+fn described() -> Described {
+    let keys = vec![
+        fixed("accounts.home.label", "Account", "Home cloud"),
+        fixed("accounts.home.state", "Status", "ok"),
+        toggle("accounts.home.service.storage", "storage"),
+        toggle("accounts.home.service.calendar", "calendar"),
+        grant(),
+        action("accounts.home.reauth", "Sign in again", ActionWeight::Plain),
+        action(
+            "accounts.home.remove",
+            "Remove account",
+            ActionWeight::Destructive,
+        ),
+        fixed("accounts.work.example.label", "Account", "Work mail"),
+        fixed("accounts.work.example.state", "Status", "needs_reauth"),
+        toggle("accounts.work.example.service.mail", "mail"),
+        action(
+            "accounts.work.example.remove",
+            "Remove account",
+            ActionWeight::Destructive,
+        ),
+        spec(
+            "accounts.clients.microsoft",
+            "microsoft client id",
+            KeyKind::Text,
+        ),
+    ];
+    let values: BTreeMap<KeyPath, String> = [
+        ("accounts.home.service.storage", "on"),
+        ("accounts.home.service.calendar", "off"),
+        ("accounts.work.example.service.mail", "on"),
+        ("accounts.clients.microsoft", "abc"),
+    ]
+    .into_iter()
+    .map(|(key, word)| (path(key), word.to_owned()))
+    .collect();
+    Described { keys, values }
+}
+
+fn ready() -> AccountsState {
+    accounts_step(
+        AccountsState::Probing,
+        AccountsInput::Found(Ok(described())),
+    )
+    .0
+}
+
+fn state_of(state: AccountsState) -> AccountsReady {
+    match state {
+        AccountsState::Ready(ready) => ready,
+        other => panic!("not ready: {other:?}"),
+    }
+}
+
+fn apply(
+    state: AccountsState,
+    inputs: impl IntoIterator<Item = AccountsInput>,
+) -> (AccountsState, Vec<AccountsEffect>) {
+    inputs
+        .into_iter()
+        .fold((state, Vec::new()), |(state, mut effects), input| {
+            let (next, more) = accounts_step(state, input);
+            effects.extend(more);
+            (next, effects)
+        })
+}
+
+#[test]
+fn rows_are_read_as_accounts_with_dotted_ids_kept_whole() {
+    let pane = AccountsPane::of(&described());
+    let labels: Vec<&str> = pane.accounts.iter().map(|a| a.label.as_str()).collect();
+    assert_eq!(labels, ["Home cloud", "Work mail"]);
+    let work = &pane.accounts[1];
+    assert_eq!(work.key, AccountKey("work.example".to_owned()));
+    assert_eq!(work.status, AccountStatus::NeedsReauth);
+    assert_eq!(work.status.label(), "Needs sign-in");
+    assert_eq!(work.services.len(), 1);
+    assert!(work.reauth.is_none());
+    assert!(work.remove.is_some());
+}
+
+#[test]
+fn an_account_lists_its_services_permissions_and_actions() {
+    let pane = AccountsPane::of(&described());
+    let home = &pane.accounts[0];
+    let services: Vec<(String, bool)> = home.services.iter().map(|s| (s.label(), s.on)).collect();
+    assert_eq!(
+        services,
+        [("Storage".to_owned(), true), ("Calendar".to_owned(), false)]
+    );
+    assert_eq!(home.permissions.len(), 1);
+    assert_eq!(home.permissions[0].label, "Photos allowed: storage");
+    assert_eq!(home.permissions[0].action, "Revoke");
+}
+
+#[test]
+fn the_sign_in_client_ids_are_text_rows_held_apart_from_the_accounts() {
+    let pane = AccountsPane::of(&described());
+    assert_eq!(pane.accounts.len(), 2);
+    assert_eq!(pane.clients.len(), 1);
+    assert_eq!(pane.clients[0].value, "abc");
+}
+
+#[test]
+fn the_pane_opens_on_the_list_and_an_account_opens_and_closes() {
+    let (state, effects) = apply(
+        ready(),
+        [AccountsInput::Open(AccountKey("home".to_owned()))],
+    );
+    assert!(effects.is_empty());
+    let up = state_of(state.clone());
+    assert_eq!(up.open().map(|a| a.label.as_str()), Some("Home cloud"));
+    let back = state_of(apply(state, [AccountsInput::Back]).0);
+    assert_eq!(back.screen, AccountsScreen::List);
+}
+
+#[test]
+fn an_account_nobody_listed_does_not_open() {
+    let (state, _) = apply(
+        ready(),
+        [AccountsInput::Open(AccountKey("nobody".to_owned()))],
+    );
+    assert_eq!(state_of(state).screen, AccountsScreen::List);
+}
+
+#[test]
+fn a_switch_sets_the_word_at_once_and_waits_for_the_answer() {
+    let storage = path("accounts.home.service.storage");
+    let (state, effects) = apply(
+        ready(),
+        [AccountsInput::Switched {
+            path: storage.clone(),
+            on: false,
+        }],
+    );
+    assert_eq!(
+        effects,
+        [AccountsEffect::Set {
+            path: storage.clone(),
+            value: toml::Value::String("off".to_owned()),
+        }]
+    );
+    let up = state_of(state.clone());
+    assert!(!up.pane.accounts[0].services[0].on);
+    assert_eq!(up.pending, Some(storage.clone()));
+    // a second change waits for the first
+    let (_, again) = apply(
+        state.clone(),
+        [AccountsInput::Switched {
+            path: path("accounts.home.service.calendar"),
+            on: true,
+        }],
+    );
+    assert!(again.is_empty());
+    // the answer frees the pane and the rows are read again
+    let (state, effects) = apply(state, [AccountsInput::Done(storage)]);
+    assert_eq!(effects, [AccountsEffect::Reload]);
+    assert_eq!(state_of(state).pending, None);
+}
+
+#[test]
+fn a_refused_set_says_why_and_reads_the_module_again() {
+    let storage = path("accounts.home.service.storage");
+    let (state, effects) = apply(
+        ready(),
+        [
+            AccountsInput::Switched {
+                path: storage.clone(),
+                on: false,
+            },
+            AccountsInput::Failed {
+                path: storage,
+                why: "refused".to_owned(),
+            },
+        ],
+    );
+    assert_eq!(effects.last(), Some(&AccountsEffect::Reload), "{effects:?}");
+    assert!(effects.contains(&AccountsEffect::Tell("refused".to_owned())));
+    assert_eq!(state_of(state).pending, None);
+}
+
+#[test]
+fn revoke_and_sign_in_again_run_on_one_press() {
+    for key in ["accounts.home.grant.g1", "accounts.home.reauth"] {
+        let (state, effects) = apply(ready(), [AccountsInput::Ran(path(key))]);
+        assert_eq!(effects, [AccountsEffect::Invoke(path(key))], "{key}");
+        assert_eq!(state_of(state).pending, Some(path(key)));
+    }
+}
+
+#[test]
+fn removing_an_account_is_never_run_without_the_question_answered() {
+    let remove = path("accounts.home.remove");
+    let (state, effects) = apply(ready(), [AccountsInput::Ran(remove.clone())]);
+    assert!(effects.is_empty(), "a press of Remove alone does nothing");
+    assert_eq!(state_of(state).pending, None);
+
+    let (asked, effects) = apply(ready(), [AccountsInput::AskRemove(remove.clone())]);
+    assert!(effects.is_empty());
+    assert_eq!(
+        state_of(asked.clone()).confirming,
+        Some(RemovalQuestion {
+            path: remove.clone(),
+            account: "Home cloud".to_owned()
+        })
+    );
+
+    let (kept, effects) = apply(asked.clone(), [AccountsInput::Keep]);
+    assert!(effects.is_empty());
+    assert_eq!(state_of(kept).confirming, None);
+
+    let (removing, effects) = apply(asked, [AccountsInput::Remove]);
+    assert_eq!(effects, [AccountsEffect::Invoke(remove.clone())]);
+    assert_eq!(state_of(removing).pending, Some(remove));
+}
+
+#[test]
+fn an_answer_with_no_question_removes_nothing() {
+    let (_, effects) = apply(ready(), [AccountsInput::Remove]);
+    assert!(effects.is_empty());
+}
+
+#[test]
+fn only_a_removal_row_is_asked_about() {
+    let (state, _) = apply(
+        ready(),
+        [AccountsInput::AskRemove(path("accounts.home.reauth"))],
+    );
+    assert_eq!(state_of(state).confirming, None);
+}
+
+#[test]
+fn a_removed_account_takes_the_pane_back_to_the_list() {
+    let remove = path("accounts.home.remove");
+    let (state, _) = apply(
+        ready(),
+        [
+            AccountsInput::Open(AccountKey("home".to_owned())),
+            AccountsInput::AskRemove(remove.clone()),
+            AccountsInput::Remove,
+            AccountsInput::Done(remove),
+        ],
+    );
+    let mut rest = described();
+    rest.keys
+        .retain(|spec| !spec.path.0.starts_with("accounts.home."));
+    let (state, _) = apply(state, [AccountsInput::Found(Ok(rest))]);
+    let up = state_of(state);
+    assert_eq!(up.screen, AccountsScreen::List);
+    assert_eq!(up.pane.accounts.len(), 1);
+}
+
+#[test]
+fn a_reading_keeps_the_screen_when_its_account_is_still_there() {
+    let (state, _) = apply(
+        ready(),
+        [
+            AccountsInput::Open(AccountKey("work.example".to_owned())),
+            AccountsInput::Found(Ok(described())),
+        ],
+    );
+    assert_eq!(
+        state_of(state).screen,
+        AccountsScreen::Detail(AccountKey("work.example".to_owned()))
+    );
+}
+
+#[test]
+fn a_client_id_is_set_trimmed_and_only_when_it_changed() {
+    let microsoft = path("accounts.clients.microsoft");
+    let (_, same) = apply(
+        ready(),
+        [AccountsInput::ClientEdited {
+            path: microsoft.clone(),
+            text: " abc ".to_owned(),
+        }],
+    );
+    assert!(same.is_empty());
+    let (_, changed) = apply(
+        ready(),
+        [AccountsInput::ClientEdited {
+            path: microsoft.clone(),
+            text: " xyz ".to_owned(),
+        }],
+    );
+    assert_eq!(
+        changed,
+        [AccountsEffect::Set {
+            path: microsoft,
+            value: toml::Value::String("xyz".to_owned())
+        }]
+    );
+}
+
+#[test]
+fn a_change_the_module_announces_reads_it_again() {
+    let (_, effects) = apply(ready(), [AccountsInput::Changed]);
+    assert_eq!(effects, [AccountsEffect::Reload]);
+}
+
+#[test]
+fn a_module_that_is_not_there_is_unavailable_and_asks_for_nothing() {
+    let (state, effects) = apply(
+        AccountsState::Probing,
+        [
+            AccountsInput::Found(Err(Absence::NotRunning)),
+            AccountsInput::Open(AccountKey("home".to_owned())),
+            AccountsInput::Changed,
+        ],
+    );
+    assert_eq!(state, AccountsState::Unavailable(Absence::NotRunning));
+    assert!(effects.is_empty());
+}

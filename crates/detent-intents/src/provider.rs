@@ -1,5 +1,6 @@
 //! The `IntentProvider1` of Settings: three actions over the catalogue and the settings files.
 
+use crate::accounts::AccountsSource;
 use crate::answer::{key_ref, not_found, outcome, own, own_label, page_ref, refusal};
 use crate::ask::{Ask, ask};
 use crate::journal::{Change, Journal};
@@ -29,6 +30,7 @@ pub struct SettingsProvider {
     catalogue: Arc<Catalogue>,
     home: ConfigHome,
     window: Arc<dyn Window>,
+    accounts: Arc<dyn AccountsSource>,
     journal: Mutex<Journal>,
 }
 
@@ -42,11 +44,12 @@ impl std::fmt::Debug for SettingsProvider {
 
 impl SettingsProvider {
     /// The provider of `catalogue`, whose files are under `home`; `window` is told what it must
-    /// show or read again.
+    /// show or read again, and `accounts` says which accounts there are.
     pub fn new(
         catalogue: Arc<Catalogue>,
         home: ConfigHome,
         window: Arc<dyn Window>,
+        accounts: Arc<dyn AccountsSource>,
     ) -> Result<SettingsProvider, ManifestFault> {
         let manifest = manifest()?;
         Ok(SettingsProvider {
@@ -55,6 +58,7 @@ impl SettingsProvider {
             catalogue,
             home,
             window,
+            accounts,
             journal: Mutex::new(Journal::default()),
         })
     }
@@ -126,6 +130,22 @@ impl SettingsProvider {
         Ok(outcome(&said, Undoable::No))
     }
 
+    /// The accounts, a line each: labels, kinds and state, nothing that names or reaches one.
+    async fn list_accounts(&self, space: prov::SpaceId) -> Result<Outcome, AppRefusal> {
+        let pane = self
+            .accounts
+            .read()
+            .await
+            .map_err(|absence| refusal(format!("the accounts cannot be listed: {absence}")))?;
+        let lines: Vec<String> = pane.accounts.iter().map(|account| account.line()).collect();
+        let mut out = outcome("", Undoable::No);
+        out.value = Some(Labelled::new(
+            Value::Text(lines.join("\n")),
+            Label::untrusted(Source::Web, DataClass::AppOwn, space),
+        ));
+        Ok(out)
+    }
+
     fn read_key(&self, path: &KeyPath, space: prov::SpaceId) -> Result<Outcome, AppRefusal> {
         let entry = self.key(path)?;
         let text = show_value(&self.current(entry)?);
@@ -178,6 +198,8 @@ impl IntentProvider for SettingsProvider {
             Ask::OpenPage(slug) => self.open_page(slug),
             Ask::ReadKey(path) => self.read_key(&path, inv.space),
             Ask::SetKey { key, text } => self.set_key(&key, &text),
+            Ask::ListAccounts => self.list_accounts(inv.space).await,
+            Ask::OpenAccounts => self.open_page(PageSlug("accounts".to_owned())),
         }
     }
 

@@ -1,9 +1,11 @@
 //! `detent`: the desktop's Settings app, one window on Blitz.
 
+mod accounts;
 mod cli;
 mod dirs;
 mod link;
 
+use accounts::LiveAccounts;
 use clap::Parser;
 use detent_intents::{SettingsProvider, serve_session};
 use detent_ui::{App, BusSource, Env, inbox};
@@ -43,6 +45,7 @@ fn main() -> ExitCode {
         env.catalogue.clone(),
         config_home,
         Arc::new(WindowLink(outbox)),
+        Arc::new(LiveAccounts(BusSource::Session)),
     ) {
         Ok(provider) => {
             tokio::spawn(serve_intents(provider));
@@ -57,7 +60,7 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-/// Answers the desktop's intents (open a page, read and set a key) on the session bus while the
+/// Answers the desktop's intents (open a page, read and set a key, list the accounts) on the session bus while the
 /// window runs. Without a bus, or with another Settings already on it, the window runs without.
 async fn serve_intents(provider: SettingsProvider) {
     match serve_session(provider).await {

@@ -5,8 +5,8 @@
 mod bus;
 
 use detent_files::ConfigHome;
-use detent_intents::{SettingsProvider, Window, WindowGone, serve};
-use detent_model::{Catalogue, PageSlug, discover};
+use detent_intents::{AccountsRead, AccountsSource, SettingsProvider, Window, WindowGone, serve};
+use detent_model::{Absence, AccountsPane, Catalogue, PageSlug, discover};
 use detent_testkit::{Scratch, seed_schemas_settable};
 use docket_core::{
     AppRefusal, Args, CallId, EntityRef, Hit, Invocation, Origin, Outcome, ParamName, Preview,
@@ -46,6 +46,15 @@ impl Window for WrittenDown {
     fn files_changed(&self) -> Result<(), WindowGone> {
         self.0.lock().expect("lock").push(Told::Files);
         Ok(())
+    }
+}
+
+/// accountd's answer, whatever it is asked: a list of accounts, or why there is none.
+pub struct Listed(pub Result<AccountsPane, Absence>);
+
+impl AccountsSource for Listed {
+    fn read(&self) -> AccountsRead<'_> {
+        Box::pin(std::future::ready(self.0.clone()))
     }
 }
 
@@ -112,6 +121,11 @@ impl World {
     /// Settings serving the fixture schemas, with `settable` marked agent-settable, over a
     /// scratch config home.
     pub async fn start(test: &str, settable: &[&str]) -> World {
+        World::start_listing(test, settable, Listed(Ok(AccountsPane::default()))).await
+    }
+
+    /// The same, with accountd answering `accounts`.
+    pub async fn start_listing(test: &str, settable: &[&str], accounts: Listed) -> World {
         let scratch = Scratch::under(TMP, test);
         let schemas = seed_schemas_settable(&scratch.join("data"), settable);
         let catalogue = Arc::new(Catalogue::build(&discover(&[schemas]).programs));
@@ -120,6 +134,7 @@ impl World {
             catalogue,
             ConfigHome(scratch.join("config")),
             window.clone(),
+            Arc::new(accounts),
         )
         .expect("a provider");
 

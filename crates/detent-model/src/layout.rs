@@ -11,6 +11,9 @@ pub enum Block {
     /// inferd's live model picker (design/22 section 9.4): the Intelligence page's rows that are
     /// not in any file.
     ModelPicker,
+    /// accountd's live Accounts pane (PLAN section 2.5): the Accounts page's rows that are not in
+    /// any file.
+    AccountsPane,
 }
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
@@ -30,11 +33,18 @@ fn rank(title: &str) -> usize {
 
 /// The blocks of `page`. Every page lists its sections as the schemas gave them, except
 /// Intelligence: its sections follow design/22's order and the model picker sits right after
-/// Models, or where Models would be when no schema has that section.
+/// Models, or where Models would be when no schema has that section; and Accounts, whose live
+/// pane comes first.
 pub fn blocks(page: &PageModel) -> Vec<Block> {
     let sections = page.sections.iter().cloned().map(Block::Section);
-    if page.page != Page::Intelligence {
-        return sections.collect();
+    match page.page {
+        Page::Accounts => {
+            return std::iter::once(Block::AccountsPane)
+                .chain(sections)
+                .collect();
+        }
+        Page::Intelligence => {}
+        _ => return sections.collect(),
     }
     // Two slots per rank: the section at the even one, the picker at the odd one after Models.
     let mut slotted: Vec<(usize, Block)> = page
@@ -75,6 +85,7 @@ mod tests {
             .map(|block| match block {
                 Block::Section(section) => section.title.as_str(),
                 Block::ModelPicker => "<picker>",
+                Block::AccountsPane => "<accounts>",
             })
             .collect()
     }
@@ -105,6 +116,12 @@ mod tests {
             Page::Intelligence,
             &["Zed", "Privacy", "Alpha", "Models"],
             &["Models", "<picker>", "Privacy", "Zed", "Alpha"],
+        ),
+        (
+            "the accounts pane comes before any section of the page",
+            Page::Accounts,
+            &["Sign-in clients"],
+            &["<accounts>", "Sign-in clients"],
         ),
         (
             "another page keeps the schema order and has no picker",

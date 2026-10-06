@@ -20,10 +20,10 @@ rules every repo shares; this file is detent's map and rules, and wins where the
 | # | Crate | What it is | May depend on |
 | --- | --- | --- | --- |
 | 0 | `detent-testkit` | Dev only: `Scratch` directories under the target directory, the committed schema fixtures | std only |
-| 1 | `detent-model` | Pure: `discover` (stale schemas skipped with a `Warning`), `Catalogue` (page then section grouping, fixed page order), `blocks` (what a page draws in order: the Intelligence sections in design/22's order, the model picker after Models), `PickerState` and `step` (inferd's live model picker as a pure machine), `Reason` (the footer's sentences over `Why` and `Declined`), `Control` per `KeyKind` (a two-word enum is a switch only when it is on and off; a `Rows` key is `Columns`, whose cells are checked against each column), `Range`, `search`, `visible_pages`/`landing` | `ds-settings` (no features), `porter-core`, `porter-infer`; `regex` (a rows column's pattern) |
+| 1 | `detent-model` | Pure: `discover` (stale schemas skipped with a `Warning`), `Catalogue` (page then section grouping, fixed page order), `blocks` (what a page draws in order: the Intelligence sections in design/22's order, the model picker after Models, the Accounts pane before the Accounts page's file sections), `PickerState` and `step` (inferd's live model picker as a pure machine), `AccountsState` and `accounts_step` (accountd's Accounts pane: the live rows read as accounts, one screen at a time, a removal asked about before it is run), `Reason` (the footer's sentences over `Why` and `Declined`), `Control` per `KeyKind` (a two-word enum is a switch only when it is on and off; a `Rows` key is `Columns`, whose cells are checked against each column), `Range`, `search`, `visible_pages`/`landing` | `ds-settings` (no features), `porter-core`, `porter-infer`; `regex` (a rows column's pattern) |
 | 2 | `detent-files` | Effects on the settings files: `load` (lenient, unknown keys reported, unrepresentable values kept as written), `save` (one key set in place, atomic temp and rename) | `detent-model`, `ds-settings` (no features) |
 | 3 | `detent-intents` | What an agent or a command line may do in Settings: the manifest `org.quire.Settings` (read from `dist/intents/`), `SettingsProvider` (the `IntentProvider1` for `settings.page.show`, `settings.key.read`, `settings.key.set`), the undo journal, `serve` and `serve_session`. A `Window` trait is how it tells the window; no UI crate | `detent-model`, `detent-files`, docket and porter (above), `ds-settings` (no features) |
-| 3 | `detent-ui` | The window: `App`, `Env`, sidebar, pages, sections, one control component per `Control`, the model picker | `detent-model`, `detent-files`, `ds`, `ds-settings` (dioxus, live, tokio), `ds-blitz`, `porter-dbus`, `porter-infer`; tokio, zbus; dev: `ds-harness`, `ds-lint` |
+| 3 | `detent-ui` | The window: `App`, `Env`, sidebar, pages, sections, one control component per `Control`, the model picker, the Accounts pane, `live/` (the look-for-a-daemon loop both share) | `detent-model`, `detent-files`, `ds`, `ds-settings` (dioxus, live, tokio), `ds-blitz`, `porter-dbus`, `porter-infer`; tokio, zbus; dev: `ds-harness`, `ds-lint` |
 | 4 | `detent` | The binary: flags, the environment read once, the intents service on the process-wide runtime, `ds_blitz::launch`; `WindowLink` turns the provider's `Window` calls into `detent-ui` notices | `detent-ui`, `detent-intents`, `detent-model`, `detent-files`, `ds-blitz`, `ds-settings`; clap, tokio |
 
 `scripts/check-boundary.sh` keeps this table exact (`EDGES`) and checks that `detent-model` and
@@ -47,6 +47,10 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 | What an Intelligence page draws and in what order | `detent-model::blocks` |
 | The model picker's state and transitions | `detent-model::{PickerState, step}`; the bus calls in `detent-ui/src/inference/io.rs` and the watch for inferd's name in `follow.rs`, the card in `inference/picker_view.rs` |
 | The words of the reason footer | `detent-model::Reason` |
+| The Accounts pane's state and transitions; which row is an account's service, permission or action | `detent-model::{AccountsState, accounts_step, AccountsPane::of}`; the bus calls in `detent-ui/src/accounts/drive.rs`, the screens in `list_view.rs`, `detail_view.rs`, `pane_view.rs` |
+| Which pieces of the pane quire's R2a changes | `detent-ui/src/accounts/adapter.rs` (nothing else names them) |
+| Looking for a daemon's live module, following its name and its changes | `detent-ui/src/live/` (`Daemon`, `follow`, `read_once`); `inference/` and `accounts/` only say which rows they read the values of |
+| The accounts an agent may list | `settings.accounts.list` and `detent-intents::AccountsSource` (the binary reads them with `detent-ui::read_accounts`) |
 | Which bus inferd is looked for on, and where the footer's events come from | `detent-ui::Env` (`bus: BusSource`, `reasons: ReasonFeed`) |
 | The layout stylesheet | `detent-ui/src/style.css` (tokens only, linted) |
 
@@ -85,6 +89,10 @@ a `params` list even when empty), add its arm in `detent-intents/src/ask.rs` and
   ship (sections, Advanced, writes, the apps rows editor), `support/inferd.rs` is a
   fake `org.quire.SettingsModule1` on a private `dbus-daemon` (`support/bus.rs`), and
   `Sandbox::on_bus` points the app at it. Without it the app gets `BusSource::Absent`.
+- `detent-ui/tests/accounts.rs` drives the Accounts page over `support/accountd.rs`, a fake
+  accountd on the same kind of private bus (the list, a service switch, Revoke, Sign in again, the
+  removal question, a dotted account id, a client id, no accountd, a refusal); it also writes
+  pictures of the list, an account and the question to `$DETENT_SHOTS`.
 - No test reads the real config, the session bus or the portal.
 
 ## 5. Repo rules

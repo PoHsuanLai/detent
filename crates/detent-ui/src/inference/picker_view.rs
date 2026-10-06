@@ -1,10 +1,10 @@
 //! The model picker on the Intelligence page: a card per kind of work, a row per tier, and the
 //! footer that says why the last answer came from the model it did.
 
-use super::follow::{Followed, follow};
-use super::io::set;
+use super::io::{is_menu, set};
 use crate::env::Env;
 use crate::files::{Files, value_of};
+use crate::live::{Daemon, Followed, follow};
 use detent_model::{
     Absence, KindRows, ModelRow, PickerEffect, PickerInput, PickerState, Reason, loading_text, step,
 };
@@ -58,19 +58,32 @@ pub fn ModelPicker(reasons: Shown) -> Element {
     use_future(move || {
         let bus = look.bus.clone();
         async move {
-            follow(&bus, |followed| match followed {
-                Followed::Opened(opened, described) => {
-                    send(&mut state, PickerInput::Found(Ok(described)));
-                    client.set(Some(opened));
-                }
-                Followed::Gone(absence) => {
-                    send(&mut state, PickerInput::Found(Err(absence)));
-                    client.set(None);
-                }
-                Followed::Changed(path, word) => {
-                    send(&mut state, PickerInput::Changed { path, word });
-                }
-            })
+            follow(
+                &bus,
+                &Daemon::inferd(),
+                is_menu,
+                |followed| match followed {
+                    Followed::Opened(opened, described) => {
+                        send(&mut state, PickerInput::Found(Ok(described)));
+                        client.set(Some(opened));
+                    }
+                    Followed::Gone(absence) => {
+                        send(&mut state, PickerInput::Found(Err(absence)));
+                        client.set(None);
+                    }
+                    Followed::Changed(path, value) => {
+                        if let Some(word) = value.as_str() {
+                            send(
+                                &mut state,
+                                PickerInput::Changed {
+                                    path,
+                                    word: word.to_owned(),
+                                },
+                            );
+                        }
+                    }
+                },
+            )
             .await;
         }
     });

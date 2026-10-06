@@ -109,8 +109,9 @@ of `gestures.toml`, so a save from detent drops nothing palmrest reads. Two thin
 
 ## Intents (`org.quire.Settings`)
 
-`dist/intents/org.quire.Settings.toml` declares three actions (`settings.page.show`,
-`settings.key.read`, `settings.key.set`); `detent-intents` serves them while the window runs.
+`dist/intents/org.quire.Settings.toml` declares five actions (`settings.page.show`,
+`settings.key.read`, `settings.key.set`, `settings.accounts.list`, `settings.accounts.open`);
+`detent-intents` serves them while the window runs.
 Open items, each with its closing condition:
 
 - **A schema cannot mark a key agent-settable.** `ds_settings::schema::KeySpec` has no such field, so
@@ -140,13 +141,37 @@ Open items, each with its closing condition:
 - **No `org.quire.Settings.ui.toml`.** The menu and shortcut rule of cli.md section 6 has nothing to
   check until ds menu items carry an action id (docket-eval says so as a note).
 
+## Accounts pane (`detent-ui/src/accounts/`)
+
+- **The module does not say when an account's state changes.** accountd emits `Changed` only for a
+  `Set` it served, so a sign-in that finishes later (`Sign in again` runs in the background and ends
+  by publishing the account's new state) shows when something else makes the pane read again: a
+  later `Set`, accountd's name changing hands, or opening the page. Closes when accountd's settings
+  module emits `Changed("accounts.<id>.state", ...)` where it publishes the registry (porter ask:
+  `crates/accountd/src/core.rs` `publish`).
+- **The module's path is built here.** `porter-dbus` names `ACCOUNTS_BUS` and `ACCOUNTS_PATH` but not
+  the settings module's path; detent writes `{ACCOUNTS_PATH}/settings` (`live/daemon.rs`). Closes
+  when `porter-dbus` exports `ACCOUNTS_SETTINGS_PATH` beside `INFERENCE_SETTINGS_PATH`.
+- **The pane's quire seam is `accounts/adapter.rs`.** It holds the button roles, the alert, and the
+  client-id `TextField` that keeps its own draft (and is made anew when the stored value changes,
+  because quire's `TextField` is not controlled). Closes when quire's R2a lands: the adapter takes
+  the controlled field, and the account rows become a selectable list.
+- **Search does not reach the live rows.** The sidebar's search reads the file schemas, so no account
+  or service is a hit; the Accounts page is listed only while the search box is empty or matches a
+  file key of that page. Closes when a live module's rows can be searched (needs the pane to hand
+  its rows to `search`).
+- **The manifest declares no mutation at all**, rather than declaring them `reach = "hidden"`: an
+  action that is not declared cannot be offered, called or confused with one that is. The list gives
+  label, kinds and state per account and nothing that names or reaches one (no id, no grant);
+  `detent-intents/tests/accounts.rs` holds that.
+
 ## Not in v1
 
 - **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): only inferd's
-  model picker is drawn (Intelligence page, `detent-ui/src/inference/`). Wi-Fi, Bluetooth, sound,
-  displays' live state and accounts have no page, and detent's D-Bus client is that one module's.
-  Accounts shows only `session.*` keys from the file. Closes when sill's services serve
-  `Describe/Get/Set/Changed` and a page asks for them.
+  model picker (Intelligence page, `detent-ui/src/inference/`) and accountd's Accounts pane
+  (`detent-ui/src/accounts/`) are drawn, both over the one look-for-it-and-follow-it loop in
+  `detent-ui/src/live/`. Wi-Fi, Bluetooth, sound and displays' live state have no page. Closes
+  when sill's services serve `Describe/Get/Set/Changed` and a page asks for them.
 - **External edits**: values are read once at start, and again when the intents provider tells the
   window it wrote a key (`Notice::Reload`). A change made by another program or an editor
   shows after a restart (only `quire/appearance.toml` is watched, by `use_environment`, so the window

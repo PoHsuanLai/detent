@@ -3,6 +3,7 @@
 //! config, the session bus or the portal.
 #![allow(dead_code)]
 
+pub mod accountd;
 pub mod bus;
 pub mod drive;
 pub mod inferd;

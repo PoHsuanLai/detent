@@ -28,7 +28,7 @@ mod tests {
     use super::manifest;
 
     #[test]
-    fn the_shipped_manifest_validates_and_names_the_three_actions() {
+    fn the_shipped_manifest_validates_and_names_its_actions() {
         let manifest = manifest().expect("a valid manifest");
         let m = manifest.manifest();
         assert_eq!(m.app.as_str(), "org.quire.Settings");
@@ -38,7 +38,9 @@ mod tests {
             [
                 "settings.page.show",
                 "settings.key.read",
-                "settings.key.set"
+                "settings.key.set",
+                "settings.accounts.list",
+                "settings.accounts.open"
             ]
         );
     }

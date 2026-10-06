@@ -1,5 +1,6 @@
 //! One page: its sections, each a card of rows, and one "Advanced" disclosure at the end.
 
+use crate::accounts::AccountsPane;
 use crate::advanced_view::AdvancedView;
 use crate::env::Env;
 use crate::files::{Edit, Files};
@@ -28,6 +29,7 @@ pub fn PageView(
                     Block::Section(section) => rsx! {
                         SectionView { key: "{section.title}", section, hits: hits.clone(), files, onedit }
                     },
+                    Block::AccountsPane => rsx! { AccountsPane {} },
                     Block::ModelPicker => rsx! {
                         ModelPicker { reasons: show_reason(&env, &files()) }
                     },

@@ -43,7 +43,8 @@ pub struct FileSpec {
 /// The whole app: pages in sidebar order, and the files behind them.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Catalogue {
-    /// Pages that have at least one key, in sidebar order.
+    /// Pages that have at least one key, in sidebar order, and the Accounts page, which is accountd's
+    /// live pane and needs none.
     pub pages: Vec<PageModel>,
     /// Every settings file the keys read and write.
     pub files: Vec<FileSpec>,
@@ -140,6 +141,15 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
         }
         pages
     });
+    // Accounts is accountd's live pane (no file names it), so the page is always there.
+    if !pages.iter().any(|page| page.page == Page::Accounts) {
+        pages.push(PageModel {
+            page: Page::Accounts,
+            slug: PageSlug::of(&Page::Accounts),
+            sections: Vec::new(),
+            advanced: Vec::new(),
+        });
+    }
     pages.sort_by(|a, b| sidebar_order(&a.page, &b.page));
     pages
 }

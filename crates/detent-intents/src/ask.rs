@@ -16,6 +16,10 @@ pub(crate) enum Ask {
     ReadKey(KeyPath),
     /// Set a key to the stored form `text`.
     SetKey { key: KeyPath, text: String },
+    /// Tell the accounts, one line each.
+    ListAccounts,
+    /// Show the Accounts page.
+    OpenAccounts,
 }
 
 fn param(name: &str) -> Result<ParamName, AppRefusal> {
@@ -72,6 +76,8 @@ pub(crate) fn ask(inv: &Invocation, app: &AppName) -> Result<Ask, AppRefusal> {
             key: KeyPath(entity_arg(inv, app, "key", "settings.key")?),
             text: text_arg(inv, "value")?,
         }),
+        "settings.accounts.list" => Ok(Ask::ListAccounts),
+        "settings.accounts.open" => Ok(Ask::OpenAccounts),
         _ => Err(AppRefusal::Unsupported),
     }
 }

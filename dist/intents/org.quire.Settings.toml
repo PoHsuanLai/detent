@@ -103,3 +103,39 @@ label = "New value"
 ty = { kind = "text", v = { max = 500, lines = "one" } }
 need = { kind = "required" }
 sink = "inert"
+
+# The accounts, read only: each one's label, the kinds of service it offers and how it stands, a
+# line apiece. No id, no grant, no credential. Accounts are never changed by an agent, so no
+# action here adds, removes, signs in again, switches a service or revokes a permission; those
+# are the person's, in the Accounts page.
+[[actions]]
+name = "settings.accounts.list"
+label = "List accounts"
+on = { kind = "nothing" }
+effect = "read"
+classes = ["app_own"]
+undo = "not_undoable"
+reach = "offered"
+latency = "quick"
+# An account's label is whatever the service calls it, so no more is trusted than a web page.
+result = { kind = "value", v = { ty = { kind = "text", v = { max = 2000, lines = "many" } }, trust = { kind = "third_party", v = { kind = "web" } } } }
+keys = { kind = "none" }
+lasting = "no"
+dry_run = "none"
+params = []
+
+# Shows the Accounts page, opening the window if it is not open. Navigation only.
+[[actions]]
+name = "settings.accounts.open"
+label = "Open accounts"
+on = { kind = "nothing" }
+effect = "read"
+classes = ["app_own"]
+undo = "not_undoable"
+reach = "offered"
+latency = "instant"
+result = { kind = "nothing" }
+keys = { kind = "none" }
+lasting = "no"
+dry_run = "none"
+params = []

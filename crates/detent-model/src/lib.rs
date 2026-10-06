@@ -2,6 +2,7 @@
 //! control draws each key, and what a search finds. No I/O beyond the directory scan in
 //! [`discover`], no renderer, no runtime.
 
+mod accounts;
 mod agent;
 mod catalogue;
 mod config_file;
@@ -20,6 +21,11 @@ mod text_form;
 mod warning;
 mod words;
 
+pub use accounts::{
+    Account, AccountKey, AccountPermission, AccountService, AccountStatus, AccountsEffect,
+    AccountsInput, AccountsPane, AccountsReady, AccountsScreen, AccountsState, RemovalQuestion,
+    SignInClient, accounts_step,
+};
 pub use agent::AgentSetting;
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use config_file::ConfigFile;

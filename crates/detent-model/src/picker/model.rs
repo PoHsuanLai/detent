@@ -13,17 +13,28 @@ const PREFIX: &str = "ai.model.";
 /// What separates the area from the slot in a row's section: `Models / Text`.
 const SECTION_SPLIT: &str = " / ";
 
-/// Why the picker is not there.
+/// Why a live pane (the model picker, the Accounts pane) is not there.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Absence {
     /// The window was started without a bus to look on.
     NoBus,
-    /// Nothing serves the module: inferd is not running.
+    /// Nothing serves the module: the daemon is not running.
     NotRunning,
-    /// inferd refused this caller: it does not list Settings in its callers.
+    /// The daemon refused this caller: it does not list Settings in its callers.
     NotPermitted,
     /// Anything else the module or the bus said.
     Failed(String),
+}
+
+impl std::fmt::Display for Absence {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Absence::NoBus => f.write_str("there is no bus to look on"),
+            Absence::NotRunning => f.write_str("the daemon is not running"),
+            Absence::NotPermitted => f.write_str("the daemon does not list Settings as a caller"),
+            Absence::Failed(why) => write!(f, "the daemon could not be asked: {why}"),
+        }
+    }
 }
 
 /// One run of a row's choices: the ungrouped ones, or one group's.

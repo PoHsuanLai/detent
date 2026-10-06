@@ -3,7 +3,8 @@
 //! so a test starts it on scratch directories.
 
 use crate::inbox::Inbox;
-use crate::inference::{BusSource, ReasonFeed};
+use crate::inference::ReasonFeed;
+use crate::live::BusSource;
 use detent_files::ConfigHome;
 use detent_model::{Catalogue, PageSlug, Warning, discover};
 use ds_settings::SystemPrefsSource;
