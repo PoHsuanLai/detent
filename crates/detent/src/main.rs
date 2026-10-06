@@ -49,7 +49,7 @@ fn main() -> ExitCode {
         Err(fault) => eprintln!("detent: no intents service: {fault}"),
     }
     let config = AppConfig::new("Settings", WindowSize::new(WIDTH, HEIGHT))
-        .with_app_id(AppId("detent".to_owned()))
+        .with_app_id(AppId("org.quire.Settings".to_owned()))
         .with_decorations(Decorations::Client)
         .with_context(env);
     launch(App, config);

@@ -1,0 +1,5 @@
+# The Settings row of inferd's caller table. Merge it into the [callers] table of
+# $XDG_CONFIG_HOME/quire/inferd.toml: Settings is the only caller of inferd's settings module
+# (org.quire.SettingsModule1 at /org/quire/Inference1/settings, the model picker).
+[callers]
+settings = ["org.quire.Settings"]

@@ -15,7 +15,7 @@ bin=${DETENT_BIN:-$repo/target/release/detent}
 share=$dest$prefix/share
 
 install -Dm755 "$bin" "$dest$prefix/bin/detent"
-install -Dm644 "$repo/dist/detent.desktop" "$share/applications/detent.desktop"
+install -Dm644 "$repo/dist/org.quire.Settings.desktop" "$share/applications/org.quire.Settings.desktop"
 # `$XDG_DATA_DIRS/quire/intents/<AppName>.toml`: what intentd reads (docket actions.md section 3.3).
 install -Dm644 "$repo/dist/intents/org.quire.Settings.toml" "$share/quire/intents/org.quire.Settings.toml"
 # `dbus-1/services/<AppName>.service` beside it, with the binary's installed path.

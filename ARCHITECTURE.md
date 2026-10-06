@@ -89,3 +89,14 @@ a `params` list even when empty), add its arm in `detent-intents/src/ask.rs` and
 - detent never removes anything: a save sets only the key the person changed, and every other key,
   known or not, keeps its text (only the owning program may drop what it does not read). A value a
   key's control cannot hold is shown read-only with "Edit in file". A schema whose `file` is not `<app>/<name>.toml` is stale and skipped.
+
+## 6. App id and porter callers
+
+detent's app id is `org.quire.Settings` (porter refuses a name that is not reverse-DNS), and
+`dist/org.quire.Settings.desktop` is named after it, with `StartupWMClass` the same, so the window's
+class matches its launcher entry. Two caller rows let it reach the porter daemons' settings modules;
+they are samples to merge into the installed porter config, not installed files:
+
+- `dist/porter/inferd.callers.toml`: `settings = ["org.quire.Settings"]` under `[callers]` in
+  `$XDG_CONFIG_HOME/quire/inferd.toml`.
+- `dist/porter/callers.toml`: the `role = "settings"` row of accountd's `/etc/porter/callers.toml`.

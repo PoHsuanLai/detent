@@ -57,5 +57,5 @@ fn the_service_file_names_the_app_and_the_installed_binary() {
     assert!(service.contains("Name=org.quire.Settings\n"), "{service}");
     assert!(service.contains("Exec=/usr/bin/detent\n"), "{service}");
     assert!(usr.join("bin/detent").is_file());
-    assert!(usr.join("share/applications/detent.desktop").is_file());
+    assert!(usr.join("share/applications/org.quire.Settings.desktop").is_file());
 }
