@@ -3,6 +3,7 @@
 //! so a test starts it on scratch directories.
 
 use crate::inbox::Inbox;
+use crate::inference::{BusSource, ReasonFeed};
 use detent_files::ConfigHome;
 use detent_model::{Catalogue, PageSlug, Warning, discover};
 use ds_settings::SystemPrefsSource;
@@ -33,6 +34,10 @@ pub struct Env {
     pub opening: Opening,
     /// What the window is told while it runs; empty until the launcher gives it one.
     pub inbox: Inbox,
+    /// Where inferd is looked for.
+    pub bus: BusSource,
+    /// Where the model picker's reason footer reads inferd's `Why` and `Declined` from.
+    pub reasons: ReasonFeed,
 }
 
 impl Env {
@@ -42,6 +47,7 @@ impl Env {
         config_home: ConfigHome,
         system: SystemPrefsSource,
         opening: Opening,
+        bus: BusSource,
     ) -> Env {
         let found = discover(schema_dirs);
         Env {
@@ -51,6 +57,13 @@ impl Env {
             system,
             opening,
             inbox: Inbox::default(),
+            bus,
+            reasons: ReasonFeed::default(),
         }
+    }
+
+    /// This environment with the picker's reason footer reading `reasons`.
+    pub fn with_reasons(self, reasons: ReasonFeed) -> Env {
+        Env { reasons, ..self }
     }
 }

@@ -3,8 +3,9 @@
 use crate::advanced_view::AdvancedView;
 use crate::env::Env;
 use crate::files::{Edit, Files};
+use crate::inference::{ModelPicker, show_reason};
 use crate::section_view::SectionView;
-use detent_model::PageSlug;
+use detent_model::{Block, PageSlug, blocks};
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
 
@@ -22,8 +23,15 @@ pub fn PageView(
     };
     rsx! {
         div { class: "scroll", "data-page": "{slug.0}",
-            for section in page.sections.iter().cloned() {
-                SectionView { key: "{section.title}", section, hits: hits.clone(), files, onedit }
+            for block in blocks(page) {
+                match block {
+                    Block::Section(section) => rsx! {
+                        SectionView { key: "{section.title}", section, hits: hits.clone(), files, onedit }
+                    },
+                    Block::ModelPicker => rsx! {
+                        ModelPicker { reasons: show_reason(&env, &files()) }
+                    },
+                }
             }
             if !page.advanced.is_empty() {
                 AdvancedView { slug: slug.clone(), groups: page.advanced.clone(), hits: hits.clone(), files, onedit }

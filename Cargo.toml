@@ -39,6 +39,10 @@ docket-dbus   = { path = "../docket/crates/docket-dbus" }
 porter-core   = { path = "../porter/crates/porter-core" }
 prov          = { path = "../porter/crates/prov" }
 
+# porter: the model picker's vocabulary (tiers, the Why and Declined facts) and inferd's bus names.
+porter-dbus  = { path = "../porter/crates/porter-dbus" }
+porter-infer = { path = "../porter/crates/porter-infer" }
+
 # Editing a settings file in place, keeping every key, comment and spacing the edit does not touch.
 toml_edit = "0.25"
 

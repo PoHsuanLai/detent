@@ -9,6 +9,7 @@ mod env;
 mod files;
 mod icons;
 mod inbox;
+mod inference;
 mod key_row;
 mod page_view;
 mod section_view;
@@ -19,6 +20,7 @@ mod window;
 pub use app::App;
 pub use env::{Env, Opening};
 pub use inbox::{Inbox, Notice, Outbox, inbox};
+pub use inference::{BusSource, ReasonFeed};
 
 /// The app's own layout stylesheet: tokens only.
 pub const STYLE: &str = include_str!("style.css");

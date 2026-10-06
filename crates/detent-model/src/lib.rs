@@ -8,9 +8,12 @@ mod config_file;
 mod control;
 mod discovery;
 mod entry;
+mod layout;
 mod navigation;
 mod page;
+mod picker;
 mod range;
+mod reason;
 mod search;
 mod text_form;
 mod warning;
@@ -22,9 +25,15 @@ pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
 pub use discovery::{Discovery, ProgramSchema, discover};
 pub use entry::KeyEntry;
+pub use layout::{Block, blocks};
 pub use navigation::{landing, visible_pages};
 pub use page::PageSlug;
+pub use picker::{
+    Absence, Applying, Described, KindRows, ModelRow, PickerEffect, PickerInput, PickerState,
+    Ready, loading_text, step,
+};
 pub use range::{Number, Range};
+pub use reason::Reason;
 pub use search::{Hit, Rank, Search, search};
 pub use text_form::{TextFault, show_value};
 pub use warning::{StaleReason, Warning};

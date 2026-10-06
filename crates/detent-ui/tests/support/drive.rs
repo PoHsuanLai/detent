@@ -1,7 +1,7 @@
 //! Driving the window the way a person does.
 #![allow(dead_code)]
 
-use ds::prelude::ShortcutKey;
+use ds::prelude::{Point, Px, ShortcutKey};
 use ds_harness::{Driver, Harness, Input, Query};
 use std::time::Duration;
 
@@ -42,4 +42,28 @@ pub fn title_of(harness: &Harness) -> Option<String> {
 /// The sidebar row `n` (from 1).
 pub fn sidebar_row(n: usize) -> String {
     format!(".ds-list-item:nth-child({n}) .ds-row")
+}
+
+/// Scrolls the page with the wheel until the element matching `selector` is inside the window.
+///
+/// # Panics
+/// If the element is missing, or still below the window after the page has been scrolled as far
+/// as it goes.
+pub fn scroll_into_view(harness: &mut Harness, selector: &str) {
+    let content = Point {
+        x: Px(600.0),
+        y: Px(300.0),
+    };
+    let window = f64::from(super::VIEW.height);
+    for _ in 0..40 {
+        let rect = harness
+            .rect(selector)
+            .unwrap_or_else(|| panic!("{selector} is not on the page:\n{}", harness.html()));
+        if f64::from(rect.origin.y.0 + rect.size.height.0) < window - 8.0 {
+            return;
+        }
+        harness.send(Input::wheel(content, Px(0.0), Px(-200.0)));
+        harness.advance(Duration::from_millis(100));
+    }
+    panic!("{selector} never came into view");
 }

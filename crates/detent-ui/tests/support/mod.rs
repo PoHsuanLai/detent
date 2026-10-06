@@ -3,11 +3,13 @@
 //! config, the session bus or the portal.
 #![allow(dead_code)]
 
+pub mod bus;
 pub mod drive;
+pub mod inferd;
 
 use detent_files::ConfigHome;
 use detent_testkit::{Scratch, seed_schemas};
-use detent_ui::{App, Env, Opening, Outbox, inbox};
+use detent_ui::{App, BusSource, Env, Opening, Outbox, ReasonFeed, inbox};
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
 use ds_settings::SystemPrefsSource;
@@ -25,6 +27,8 @@ pub const VIEW: Viewport = Viewport {
 /// One test's scratch world.
 pub struct Sandbox {
     scratch: Scratch,
+    bus: BusSource,
+    reasons: ReasonFeed,
 }
 
 impl Sandbox {
@@ -32,7 +36,33 @@ impl Sandbox {
     pub fn new(name: &str) -> Sandbox {
         let scratch = Scratch::under(TMP, name);
         seed_schemas(&scratch.join("data"));
-        Sandbox { scratch }
+        Sandbox {
+            scratch,
+            bus: BusSource::Absent,
+            reasons: ReasonFeed::default(),
+        }
+    }
+
+    /// This world with inferd looked for on the bus at `address`.
+    pub fn on_bus(self, address: &str) -> Sandbox {
+        Sandbox {
+            bus: BusSource::Address(address.to_owned()),
+            ..self
+        }
+    }
+
+    /// This world with the reason footer reading `reasons`.
+    pub fn with_reasons(self, reasons: ReasonFeed) -> Sandbox {
+        Sandbox { reasons, ..self }
+    }
+
+    /// Installs one more program's schema as text, as a program would under `$XDG_DATA_DIRS`.
+    pub fn add_schema(&self, name: &str, text: &str) {
+        let path = self
+            .scratch
+            .join("data/quire/settings")
+            .join(format!("{name}.settings.toml"));
+        std::fs::write(path, text).expect("schema");
     }
 
     /// The scratch `$XDG_CONFIG_HOME`.
@@ -62,7 +92,9 @@ impl Sandbox {
                 ..SystemPrefs::default()
             }),
             opening,
+            self.bus.clone(),
         )
+        .with_reasons(self.reasons.clone())
     }
 
     /// A harness running the app in this world, light.

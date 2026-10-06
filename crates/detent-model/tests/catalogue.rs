@@ -36,9 +36,10 @@ fn pages_come_in_the_fixed_order_and_only_when_they_have_keys() {
             "notifications",
             "spaces",
             "accounts",
-            "power"
+            "power",
+            "intelligence"
         ],
-        "no schema names the Apps page, so it is not listed"
+        "no schema names the Apps page, so it is not listed; inferd's and docket's name Intelligence"
     );
 }
 
@@ -139,6 +140,8 @@ fn every_key_of_every_schema_is_on_exactly_one_page() {
     assert_eq!(
         files,
         [
+            "docket/settings.toml",
+            "quire/inferd.toml",
             "palmrest/gestures.toml",
             "quire/appearance.toml",
             "sill/settings.toml"

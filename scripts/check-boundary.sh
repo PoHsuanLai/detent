@@ -54,10 +54,10 @@ done
 # stays exact. Dev dependencies are outside it (a test may reach further than the crate does).
 EDGES=(
   "detent-testkit:"
-  "detent-model: ds-settings"
+  "detent-model: ds-settings porter-core porter-infer"
   "detent-files: detent-model ds-settings"
   "detent-intents: detent-files detent-model docket-client docket-core docket-dbus ds-settings porter-core prov"
-  "detent-ui: detent-files detent-model ds ds-blitz ds-settings"
+  "detent-ui: detent-files detent-model ds ds-blitz ds-settings porter-dbus porter-infer"
   "detent: detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
 )
 for edge in "${EDGES[@]}"; do

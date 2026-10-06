@@ -63,6 +63,23 @@ because a schema names no binary. Closes when `discover` returns the skipped fil
 - `Page` has no Spotlight page (design/22 section 5 lists one); sill's launcher keys are on
   Appearance. `Apps` is a page nothing fills.
 
+## The Intelligence page
+
+- **Schemas read:** inferd's (`fixtures/schemas/inferd.settings.toml`, 21 rows, hands-off) and
+  docket's (`docket.settings.toml`, `agent.mcp.expose` only). Not shipped anywhere yet: almanac's
+  `memory.*`, cua's `cua.*`, sill's `companion.*` and the rest of docket's `agent.*` (design/22
+  sections 3.27 to 3.30). Their sections appear when a schema names them; the layout test uses
+  stand-ins. Closes when each program ships its schema.
+- **The reason footer has no producer.** `Reason` reads `InferEvent::Why` and `Declined` from the
+  `ReasonFeed` in `Env`, but `Why` is an event of an inferd session, which only that session's caller
+  sees. The binary starts with a silent feed, so the footer shows its resting line. Closes when
+  inferd (or the companion, which holds the session) offers the last pick to Settings.
+- **The picker is read once.** Its rows follow the module's `Changed` signals, but an inferd that
+  starts after detent opened is not noticed until the window is reopened.
+- A footer under a `FieldGroup` is drawn by hand (a `Label` in `.picker-reason`): quire's
+  `FieldGroup` has no footer slot.
+- A "Choose Model..." button beside a declined model is not drawn: the picker is on the same page.
+
 ## palmrest's schema
 
 palmrest writes `palmrest.settings.toml` (`palmrest --write-schema <dir>`), one row for every key
@@ -114,9 +131,11 @@ Open items, each with its closing condition:
 
 ## Not in v1
 
-- **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): Wi-Fi, Bluetooth,
-  sound, displays' live state, accounts. No page for them, no D-Bus client in detent. Accounts shows
-  only `session.*` keys from the file. Closes when sill's services serve `Describe/Get/Set/Changed`.
+- **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): only inferd's
+  model picker is drawn (Intelligence page, `detent-ui/src/inference/`). Wi-Fi, Bluetooth, sound,
+  displays' live state and accounts have no page, and detent's D-Bus client is that one module's.
+  Accounts shows only `session.*` keys from the file. Closes when sill's services serve
+  `Describe/Get/Set/Changed` and a page asks for them.
 - **External edits**: values are read once at start, and again when the intents provider tells the
   window it wrote a key (`Notice::Reload`). A change made by another program or an editor
   shows after a restart (only `quire/appearance.toml` is watched, by `use_environment`, so the window

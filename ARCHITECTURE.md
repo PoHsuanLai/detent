@@ -12,6 +12,7 @@ rules every repo shares; this file is detent's map and rules, and wins where the
 | --- | --- |
 | quire (`../quire`, path deps) | `ds` (components, `Ds`, `ds::prelude`), `ds-settings` (schema types, `discover`, `Loaded`, `use_environment`), `ds-blitz` (`launch`), `ds-lint` and `ds-harness` (dev only) |
 | docket (`../docket`, path deps; a private repo, which detent may name) | `docket-client` with its `dbus` feature (`IntentProvider`, `serve_on`), `docket-core` (manifest and call types), `docket-dbus` (the bus connection type); `prov` and `porter-core` from `../porter`, the label and name types those signatures use. Used by `detent-intents` only. Its `scripts/check-intents.sh` is run on this repo |
+| porter (`../porter`, path deps) | `porter-core` (`Tier`), `porter-infer` (`tier_label`, `Why`, `Declined`, `InferEvent`: the picker's vocabulary and the reason footer's facts), `porter-dbus` (`INFERENCE_BUS`, `INFERENCE_SETTINGS_PATH`). `detent-intents` also takes `prov` from here |
 | sill, palmrest | nothing at build time. Their `--write-schema` output is the test fixture (`scripts/gen-fixtures.sh`); so is quire's own schema, from `ds-settings`' `write_schema` example |
 
 ## 1. Crate map and layers
@@ -19,10 +20,10 @@ rules every repo shares; this file is detent's map and rules, and wins where the
 | # | Crate | What it is | May depend on |
 | --- | --- | --- | --- |
 | 0 | `detent-testkit` | Dev only: `Scratch` directories under the target directory, the committed schema fixtures | std only |
-| 1 | `detent-model` | Pure: `discover` (stale schemas skipped with a `Warning`), `Catalogue` (page then section grouping, fixed page order), `Control` per `KeyKind` (a two-word enum is a switch only when it is on and off), `Range`, `search`, `visible_pages`/`landing` | `ds-settings` (no features) |
+| 1 | `detent-model` | Pure: `discover` (stale schemas skipped with a `Warning`), `Catalogue` (page then section grouping, fixed page order), `blocks` (what a page draws in order: the Intelligence sections in design/22's order, the model picker after Models), `PickerState` and `step` (inferd's live model picker as a pure machine), `Reason` (the footer's sentences over `Why` and `Declined`), `Control` per `KeyKind` (a two-word enum is a switch only when it is on and off), `Range`, `search`, `visible_pages`/`landing` | `ds-settings` (no features), `porter-core`, `porter-infer` |
 | 2 | `detent-files` | Effects on the settings files: `load` (lenient, unknown keys reported, unrepresentable values kept as written), `save` (one key set in place, atomic temp and rename) | `detent-model`, `ds-settings` (no features) |
 | 3 | `detent-intents` | What an agent or a command line may do in Settings: the manifest `org.quire.Settings` (read from `dist/intents/`), `SettingsProvider` (the `IntentProvider1` for `settings.page.open`, `settings.key.read`, `settings.key.set`), the undo journal, `serve` and `serve_session`. A `Window` trait is how it tells the window; no UI crate | `detent-model`, `detent-files`, docket and porter (above), `ds-settings` (no features) |
-| 3 | `detent-ui` | The window: `App`, `Env`, sidebar, pages, sections, one control component per `Control` | `detent-model`, `detent-files`, `ds`, `ds-settings` (dioxus), `ds-blitz`; dev: `ds-harness`, `ds-lint` |
+| 3 | `detent-ui` | The window: `App`, `Env`, sidebar, pages, sections, one control component per `Control`, the model picker | `detent-model`, `detent-files`, `ds`, `ds-settings` (dioxus, live, tokio), `ds-blitz`, `porter-dbus`, `porter-infer`; tokio, zbus; dev: `ds-harness`, `ds-lint` |
 | 4 | `detent` | The binary: flags, the environment read once, the intents service on the process-wide runtime, `ds_blitz::launch`; `WindowLink` turns the provider's `Window` calls into `detent-ui` notices | `detent-ui`, `detent-intents`, `detent-model`, `detent-files`, `ds-blitz`, `ds-settings`; clap, tokio |
 
 `scripts/check-boundary.sh` keeps this table exact (`EDGES`) and checks that `detent-model` and
@@ -43,6 +44,10 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 | What the desktop's intents may do here | `dist/intents/org.quire.Settings.toml` (the one declaration) and `detent-intents::SettingsProvider` |
 | What the window is told while it runs | `detent-ui::{Notice, inbox}` (a page to open, files to read again) |
 | Where the window opens, where files live | `detent-ui::Env` (a context; the binary fills it, a test fills it with scratch paths) |
+| What an Intelligence page draws and in what order | `detent-model::blocks` |
+| The model picker's state and transitions | `detent-model::{PickerState, step}`; the bus calls in `detent-ui/src/inference/io.rs`, the card in `inference/picker_view.rs` |
+| The words of the reason footer | `detent-model::Reason` |
+| Which bus inferd is looked for on, and where the footer's events come from | `detent-ui::Env` (`bus: BusSource`, `reasons: ReasonFeed`) |
 | The layout stylesheet | `detent-ui/src/style.css` (tokens only, linted) |
 
 ## 3. Recipes
@@ -75,6 +80,10 @@ a `params` list even when empty), add its arm in `detent-intents/src/ask.rs` and
 - `detent-intents/tests`: the provider served on a private `dbus-daemon` (`PrivateBus`), called from
   a connection that owns `org.quire.Intents1` (a provider answers nobody else), the way intentd calls
   an app. `detent/tests/install.rs` runs `scripts/install.sh` into a scratch `DESTDIR`.
+- `detent-ui/tests/intelligence.rs` drives the Intelligence page: stand-in schemas for the programs
+  with none yet (memory, computer use, companion) test the section order, `support/inferd.rs` is a
+  fake `org.quire.SettingsModule1` on a private `dbus-daemon` (`support/bus.rs`), and
+  `Sandbox::on_bus` points the app at it. Without it the app gets `BusSource::Absent`.
 - No test reads the real config, the session bus or the portal.
 
 ## 5. Repo rules
@@ -100,3 +109,8 @@ they are samples to merge into the installed porter config, not installed files:
 - `dist/porter/inferd.callers.toml`: `settings = ["org.quire.Settings"]` under `[callers]` in
   `$XDG_CONFIG_HOME/quire/inferd.toml`.
 - `dist/porter/callers.toml`: the `role = "settings"` row of accountd's `/etc/porter/callers.toml`.
+
+`dist/skills/settings/` is the companion's skill for this app (docket's skills format). Its `uses`
+are `settings.key.read` and `settings.key.set` of the intents manifest, and its body lists the
+agent-settable keys of design/22 section 9.7. Check it with
+`docket-eval --check-skills <detent> <docket>`; the installer copies it to `share/quire/skills/settings/`.

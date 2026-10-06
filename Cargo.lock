@@ -1253,6 +1253,8 @@ version = "0.1.0"
 dependencies = [
  "detent-testkit",
  "ds-settings",
+ "porter-core",
+ "porter-infer",
  "toml",
 ]
 
@@ -1275,8 +1277,12 @@ dependencies = [
  "ds-lint",
  "ds-settings",
  "image",
+ "porter-core",
+ "porter-dbus",
+ "porter-infer",
  "tokio",
  "toml",
+ "zbus",
 ]
 
 [[package]]
@@ -3958,6 +3964,18 @@ dependencies = [
  "serde",
  "serde_json",
  "zbus",
+]
+
+[[package]]
+name = "porter-infer"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "cua-action",
+ "porter-core",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

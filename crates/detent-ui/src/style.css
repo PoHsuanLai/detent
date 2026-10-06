@@ -51,3 +51,24 @@
 .advanced {
   padding: 0 var(--s-4);
 }
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-14);
+}
+
+.picker-kind {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+.picker-loading {
+  margin-right: var(--s-8);
+}
+
+.picker-auto,
+.picker-reason {
+  padding: 0 var(--s-14);
+}

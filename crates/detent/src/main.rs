@@ -6,7 +6,7 @@ mod link;
 
 use clap::Parser;
 use detent_intents::{SettingsProvider, serve_session};
-use detent_ui::{App, Env, inbox};
+use detent_ui::{App, BusSource, Env, inbox};
 use ds_blitz::{AppConfig, AppId, Decorations, WindowSize, enter_runtime, launch};
 use ds_settings::SystemPrefsSource;
 use link::WindowLink;
@@ -31,6 +31,7 @@ fn main() -> ExitCode {
             config_home.clone(),
             SystemPrefsSource::Portal,
             opening,
+            BusSource::Session,
         )
     };
     for warning in &env.warnings {
