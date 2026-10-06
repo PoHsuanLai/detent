@@ -4,7 +4,9 @@
 mod support;
 
 use detent_intents::manifest;
-use detent_model::{Absence, Account, AccountKey, AccountService, AccountStatus, AccountsPane};
+use detent_model::{
+    Absence, Account, AccountKey, AccountService, AccountStatus, AccountsPane, Place,
+};
 use docket_core::{AppRefusal, Value};
 use ds_settings::schema::KeyPath;
 use prov::Effect;
@@ -16,6 +18,7 @@ fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Acco
         key: AccountKey(id.to_owned()),
         label: label.to_owned(),
         status,
+        place: Place::Elsewhere,
         services: kinds
             .iter()
             .map(|kind| AccountService {

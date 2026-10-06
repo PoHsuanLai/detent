@@ -1,6 +1,6 @@
 //! Where the schemas and the settings are, read from the environment once, here at the edge.
 
-use detent_files::ConfigHome;
+use detent_files::{ConfigHome, StateHome};
 use std::ffi::OsString;
 use std::path::PathBuf;
 
@@ -17,6 +17,18 @@ pub fn config_home() -> Option<ConfigHome> {
         std::env::var_os("XDG_CONFIG_HOME"),
         std::env::var_os("HOME"),
     )
+}
+
+/// `$XDG_STATE_HOME`, else `$HOME/.local/state`.
+fn state_home_from(xdg: Option<OsString>, home: Option<OsString>) -> Option<StateHome> {
+    xdg.map(PathBuf::from)
+        .or_else(|| home.map(|home| PathBuf::from(home).join(".local/state")))
+        .map(StateHome)
+}
+
+/// The person's state home, `None` when neither variable is set.
+pub fn state_home() -> Option<StateHome> {
+    state_home_from(std::env::var_os("XDG_STATE_HOME"), std::env::var_os("HOME"))
 }
 
 /// `dirs` without a directory already listed, in order: `$XDG_DATA_HOME` is often also in
@@ -37,7 +49,7 @@ pub fn schema_dirs() -> Vec<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::{config_home_from, unique};
+    use super::{config_home_from, state_home_from, unique};
     use std::ffi::OsString;
     use std::path::PathBuf;
 
@@ -50,6 +62,23 @@ mod tests {
         ];
         for (xdg, home, want) in cases {
             let got = config_home_from(xdg.map(OsString::from), home.map(OsString::from));
+            assert_eq!(
+                got.map(|h| h.0),
+                want.map(PathBuf::from),
+                "{xdg:?} {home:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn xdg_state_home_wins_over_home() {
+        let cases: &[(Option<&str>, Option<&str>, Option<&str>)] = &[
+            (Some("/xdg"), Some("/home/ada"), Some("/xdg")),
+            (None, Some("/home/ada"), Some("/home/ada/.local/state")),
+            (None, None, None),
+        ];
+        for (xdg, home, want) in cases {
+            let got = state_home_from(xdg.map(OsString::from), home.map(OsString::from));
             assert_eq!(
                 got.map(|h| h.0),
                 want.map(PathBuf::from),

@@ -4,7 +4,7 @@ use ds_settings::live::LiveClient;
 use ds_settings::schema::{KeyKind, KeyPath};
 
 /// The rows whose value the picker reads: its menus.
-pub(super) fn is_menu(kind: &KeyKind) -> bool {
+pub(crate) fn is_menu(kind: &KeyKind) -> bool {
     matches!(kind, KeyKind::Menu { .. })
 }
 

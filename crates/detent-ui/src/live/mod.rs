@@ -9,4 +9,4 @@ mod io;
 
 pub use bus::BusSource;
 pub(crate) use daemon::Daemon;
-pub(crate) use follow::{Followed, follow, read_once, reread};
+pub(crate) use follow::{Followed, follow, open_once, read_once, reread};

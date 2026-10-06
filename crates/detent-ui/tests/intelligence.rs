@@ -472,8 +472,10 @@ fn an_old_key_module_still_renders() {
     );
     open_first_menu(&mut harness);
     let html = harness.html();
-    assert!(
-        !html.contains("On this computer"),
+    // The one "On this computer" is the runtimes' own title; a picker group would be a second.
+    assert_eq!(
+        html.matches(">On this computer<").count(),
+        1,
         "a module with no groups has no headers:\n{html}"
     );
 }

@@ -1,5 +1,6 @@
 //! The root: the environment, the frame with the page's title, and the window inside it.
 
+use crate::accounts::AccountLink;
 use crate::env::Env;
 use crate::files::load_all;
 use crate::inbox::Notice;
@@ -20,6 +21,7 @@ pub fn App() -> Element {
     let opening = env.opening.clone();
     let page = use_signal(|| opening.page.clone().or(first).unwrap_or_default());
     let query = use_signal(|| opening.query.clone());
+    AccountLink::provide(page, query);
     let files = use_signal({
         let env = env.clone();
         move || load_all(&env)

@@ -200,6 +200,7 @@ impl IntentProvider for SettingsProvider {
             Ask::SetKey { key, text } => self.set_key(&key, &text),
             Ask::ListAccounts => self.list_accounts(inv.space).await,
             Ask::OpenAccounts => self.open_page(PageSlug("accounts".to_owned())),
+            Ask::OpenIntelligence => self.open_page(PageSlug("intelligence".to_owned())),
         }
     }
 

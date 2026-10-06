@@ -139,3 +139,21 @@ keys = { kind = "none" }
 lasting = "no"
 dry_run = "none"
 params = []
+
+# Shows the Intelligence page (the model choices, the local runtimes, the data-class floors),
+# opening the window if it is not open. Navigation only: every ai.* row is the person's alone, so
+# no action here sets one.
+[[actions]]
+name = "settings.intelligence.open"
+label = "Open intelligence settings"
+on = { kind = "nothing" }
+effect = "read"
+classes = ["app_own"]
+undo = "not_undoable"
+reach = "offered"
+latency = "instant"
+result = { kind = "nothing" }
+keys = { kind = "none" }
+lasting = "no"
+dry_run = "none"
+params = []

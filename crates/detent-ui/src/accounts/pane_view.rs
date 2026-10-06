@@ -3,6 +3,7 @@
 use super::adapter::RemoveAlert;
 use super::detail_view::{AccountDetail, Handlers};
 use super::drive::{drive, is_valued};
+use super::link::AccountLink;
 use super::list_view::{AccountList, ClientIds};
 use crate::env::Env;
 use crate::live::{Daemon, Followed, follow};
@@ -59,6 +60,15 @@ pub fn AccountsPane() -> Element {
 
     let send = EventHandler::new(move |input: AccountsInput| {
         spawn(drive(state, client, toasts, input));
+    });
+
+    // A link from another page asked for an account: open it once the list is there.
+    let link = use_context::<AccountLink>();
+    use_effect(move || {
+        if let (AccountsState::Ready(_), Some(key)) = (state(), link.wanted()) {
+            send.call(AccountsInput::Open(key));
+            link.clear();
+        }
     });
 
     match state() {

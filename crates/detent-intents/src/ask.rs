@@ -20,6 +20,8 @@ pub(crate) enum Ask {
     ListAccounts,
     /// Show the Accounts page.
     OpenAccounts,
+    /// Show the Intelligence page.
+    OpenIntelligence,
 }
 
 fn param(name: &str) -> Result<ParamName, AppRefusal> {
@@ -78,6 +80,7 @@ pub(crate) fn ask(inv: &Invocation, app: &AppName) -> Result<Ask, AppRefusal> {
         }),
         "settings.accounts.list" => Ok(Ask::ListAccounts),
         "settings.accounts.open" => Ok(Ask::OpenAccounts),
+        "settings.intelligence.open" => Ok(Ask::OpenIntelligence),
         _ => Err(AppRefusal::Unsupported),
     }
 }

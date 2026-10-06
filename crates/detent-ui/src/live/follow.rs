@@ -30,6 +30,17 @@ async fn attach(
     Ok((client, described))
 }
 
+/// `daemon`'s module and its rows once, when the daemon is already on the bus: for a caller that
+/// asks a question, maybe sets a row, and follows nothing.
+pub(crate) async fn open_once(
+    bus: &BusSource,
+    daemon: &Daemon,
+    valued: fn(&KeyKind) -> bool,
+) -> Result<(LiveClient, Described), Absence> {
+    let connection = connect(bus).await?;
+    attach(&connection, daemon, valued).await
+}
+
 /// The rows of `daemon`'s module once, when the daemon is already on the bus: for a caller that
 /// asks one question and follows nothing.
 pub(crate) async fn read_once(
@@ -37,9 +48,9 @@ pub(crate) async fn read_once(
     daemon: &Daemon,
     valued: fn(&KeyKind) -> bool,
 ) -> Result<Described, Absence> {
-    let connection = connect(bus).await?;
-    let (_, described) = attach(&connection, daemon, valued).await?;
-    Ok(described)
+    open_once(bus, daemon, valued)
+        .await
+        .map(|(_, described)| described)
 }
 
 /// The rows of `client` as they stand now, a value for each row `valued` picks out.

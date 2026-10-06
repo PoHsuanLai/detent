@@ -8,9 +8,9 @@ pub mod bus;
 pub mod drive;
 pub mod inferd;
 
-use detent_files::ConfigHome;
+use detent_files::{ConfigHome, StateHome};
 use detent_testkit::{Scratch, seed_schemas};
-use detent_ui::{App, BusSource, Env, Opening, Outbox, ReasonFeed, inbox};
+use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, Outbox, ReasonFeed, inbox};
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
 use ds_settings::SystemPrefsSource;
@@ -71,6 +71,11 @@ impl Sandbox {
         ConfigHome(self.scratch.join("config"))
     }
 
+    /// The scratch `$XDG_STATE_HOME`.
+    pub fn state_home(&self) -> StateHome {
+        StateHome(self.scratch.join("state"))
+    }
+
     /// The text of a settings file under the config home, if it was written.
     pub fn read(&self, relative: &str) -> Option<String> {
         std::fs::read_to_string(self.config_home().0.join(relative)).ok()
@@ -88,6 +93,7 @@ impl Sandbox {
         Env::discover(
             &[self.scratch.join("data/quire/settings")],
             self.config_home(),
+            &self.state_home(),
             SystemPrefsSource::Fixed(SystemPrefs {
                 scheme,
                 ..SystemPrefs::default()
@@ -106,6 +112,25 @@ impl Sandbox {
     /// A harness running the app in this world.
     pub fn harness_in(&self, opening: Opening, scheme: Scheme) -> Harness {
         Harness::new(App, self.config(opening, scheme))
+    }
+
+    /// A harness running the first-run window in this world.
+    pub fn first_run_harness(&self) -> Harness {
+        self.first_run_harness_in(Scheme::Light)
+    }
+
+    /// The same, the desktop reporting `scheme`.
+    pub fn first_run_harness_in(&self, scheme: Scheme) -> Harness {
+        Harness::new(FirstRunApp, self.config(Opening::default(), scheme))
+    }
+
+    /// Takes a program's installed schema away, as if its package were not installed.
+    pub fn remove_schema(&self, name: &str) {
+        let path = self
+            .scratch
+            .join("data/quire/settings")
+            .join(format!("{name}.settings.toml"));
+        std::fs::remove_file(path).expect("an installed schema");
     }
 
     /// Installs `schema` beside the real ones, as a program's package would.

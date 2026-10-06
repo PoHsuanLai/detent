@@ -11,6 +11,9 @@ pub enum Block {
     /// inferd's live model picker (design/22 section 9.4): the Intelligence page's rows that are
     /// not in any file.
     ModelPicker,
+    /// "On this computer": the local runtimes accountd lists (Ollama, llama.cpp, LM Studio), each
+    /// linked to its account. Not in any file.
+    LocalRuntimes,
     /// accountd's live Accounts pane (PLAN section 2.5): the Accounts page's rows that are not in
     /// any file.
     AccountsPane,
@@ -21,7 +24,7 @@ pub enum Block {
 const INTELLIGENCE_SECTIONS: &[&str] =
     &["Companion", "Models", "Memory", "Computer use", "Privacy"];
 
-/// The section the model picker follows.
+/// The section the local runtimes and the model picker follow.
 const PICKER_AFTER: &str = "Models";
 
 fn rank(title: &str) -> usize {
@@ -33,8 +36,8 @@ fn rank(title: &str) -> usize {
 
 /// The blocks of `page`. Every page lists its sections as the schemas gave them, except
 /// Intelligence: its sections follow design/22's order and the model picker sits right after
-/// Models, or where Models would be when no schema has that section; and Accounts, whose live
-/// pane comes first.
+/// Models (the runtimes first, then the picker), or where Models would be when no schema has that
+/// section; and Accounts, whose live pane comes first.
 pub fn blocks(page: &PageModel) -> Vec<Block> {
     let sections = page.sections.iter().cloned().map(Block::Section);
     match page.page {
@@ -46,13 +49,16 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
         Page::Intelligence => {}
         _ => return sections.collect(),
     }
-    // Two slots per rank: the section at the even one, the picker at the odd one after Models.
+    // Two slots per rank: the section at the even one, the live blocks at the odd one after
+    // Models (the sort is stable, so they keep this order).
     let mut slotted: Vec<(usize, Block)> = page
         .sections
         .iter()
         .map(|section| (rank(&section.title) * 2, Block::Section(section.clone())))
         .collect();
-    slotted.push((rank(PICKER_AFTER) * 2 + 1, Block::ModelPicker));
+    let live = rank(PICKER_AFTER) * 2 + 1;
+    slotted.push((live, Block::LocalRuntimes));
+    slotted.push((live, Block::ModelPicker));
     slotted.sort_by_key(|(slot, _)| *slot);
     slotted.into_iter().map(|(_, block)| block).collect()
 }
@@ -84,6 +90,7 @@ mod tests {
             .iter()
             .map(|block| match block {
                 Block::Section(section) => section.title.as_str(),
+                Block::LocalRuntimes => "<runtimes>",
                 Block::ModelPicker => "<picker>",
                 Block::AccountsPane => "<accounts>",
             })
@@ -99,6 +106,7 @@ mod tests {
             &[
                 "Companion",
                 "Models",
+                "<runtimes>",
                 "<picker>",
                 "Memory",
                 "Computer use",
@@ -109,13 +117,20 @@ mod tests {
             "the picker takes the place of Models when no schema has it",
             Page::Intelligence,
             &["Privacy", "Companion"],
-            &["Companion", "<picker>", "Privacy"],
+            &["Companion", "<runtimes>", "<picker>", "Privacy"],
         ),
         (
             "a section nobody listed follows the listed ones in schema order",
             Page::Intelligence,
             &["Zed", "Privacy", "Alpha", "Models"],
-            &["Models", "<picker>", "Privacy", "Zed", "Alpha"],
+            &[
+                "Models",
+                "<runtimes>",
+                "<picker>",
+                "Privacy",
+                "Zed",
+                "Alpha",
+            ],
         ),
         (
             "the accounts pane comes before any section of the page",

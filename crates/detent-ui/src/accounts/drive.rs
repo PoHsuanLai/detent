@@ -11,7 +11,7 @@ use ds_settings::schema::KeyKind;
 use std::collections::VecDeque;
 
 /// The rows whose value is read with the rows: the services (on or off) and the client ids.
-pub(super) fn is_valued(kind: &KeyKind) -> bool {
+pub(crate) fn is_valued(kind: &KeyKind) -> bool {
     matches!(kind, KeyKind::Toggle { .. } | KeyKind::Text)
 }
 

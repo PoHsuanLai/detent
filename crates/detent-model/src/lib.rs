@@ -9,6 +9,7 @@ mod config_file;
 mod control;
 mod discovery;
 mod entry;
+mod first_run;
 mod layout;
 mod navigation;
 mod page;
@@ -23,8 +24,8 @@ mod words;
 
 pub use accounts::{
     Account, AccountKey, AccountPermission, AccountService, AccountStatus, AccountsEffect,
-    AccountsInput, AccountsPane, AccountsReady, AccountsScreen, AccountsState, RemovalQuestion,
-    SignInClient, accounts_step,
+    AccountsInput, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Place,
+    RemovalQuestion, SignInClient, accounts_step,
 };
 pub use agent::AgentSetting;
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
@@ -32,6 +33,10 @@ pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
 pub use discovery::{Discovery, ProgramSchema, discover};
 pub use entry::KeyEntry;
+pub use first_run::{
+    FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
+    runtime_choice,
+};
 pub use layout::{Block, blocks};
 pub use navigation::{landing, visible_pages};
 pub use page::PageSlug;

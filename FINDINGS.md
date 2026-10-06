@@ -109,8 +109,9 @@ of `gestures.toml`, so a save from detent drops nothing palmrest reads. Two thin
 
 ## Intents (`org.quire.Settings`)
 
-`dist/intents/org.quire.Settings.toml` declares five actions (`settings.page.show`,
-`settings.key.read`, `settings.key.set`, `settings.accounts.list`, `settings.accounts.open`);
+`dist/intents/org.quire.Settings.toml` declares six actions (`settings.page.show`,
+`settings.key.read`, `settings.key.set`, `settings.accounts.list`, `settings.accounts.open`,
+`settings.intelligence.open`);
 `detent-intents` serves them while the window runs.
 Open items, each with its closing condition:
 
@@ -143,15 +144,6 @@ Open items, each with its closing condition:
 
 ## Accounts pane (`detent-ui/src/accounts/`)
 
-- **The module does not say when an account's state changes.** accountd emits `Changed` only for a
-  `Set` it served, so a sign-in that finishes later (`Sign in again` runs in the background and ends
-  by publishing the account's new state) shows when something else makes the pane read again: a
-  later `Set`, accountd's name changing hands, or opening the page. Closes when accountd's settings
-  module emits `Changed("accounts.<id>.state", ...)` where it publishes the registry (porter ask:
-  `crates/accountd/src/core.rs` `publish`).
-- **The module's path is built here.** `porter-dbus` names `ACCOUNTS_BUS` and `ACCOUNTS_PATH` but not
-  the settings module's path; detent writes `{ACCOUNTS_PATH}/settings` (`live/daemon.rs`). Closes
-  when `porter-dbus` exports `ACCOUNTS_SETTINGS_PATH` beside `INFERENCE_SETTINGS_PATH`.
 - **The pane's quire seam is `accounts/adapter.rs`.** It holds the button roles, the alert, and the
   client-id `TextField` that keeps its own draft (and is made anew when the stored value changes,
   because quire's `TextField` is not controlled). Closes when quire's R2a lands: the adapter takes
@@ -164,6 +156,43 @@ Open items, each with its closing condition:
   action that is not declared cannot be offered, called or confused with one that is. The list gives
   label, kinds and state per account and nothing that names or reaches one (no id, no grant);
   `detent-intents/tests/accounts.rs` holds that.
+
+## Local runtimes and first run (`detent-ui/src/inference/runtimes_view.rs`, `first_run/`)
+
+- **Where the runtimes list comes from.** The Intelligence page's "On this computer" lists accountd's
+  accounts whose `accounts.<id>.place` row says `this_computer` and that serve `llm`
+  (`AccountsPane::local_runtimes`); inferd reports each probed runtime to accountd (`Peer.ReportLocal`),
+  so a stopped one stays as an `Offline` account and is drawn greyed (a muted mark, "Offline") with its
+  link. accountd serves no `place` row yet, so the list says "No local runtime is running" against
+  today's accountd. Closes when porter takes the ask `~/rs-wt/accounts/ai1b-porter-place-row.diff`
+  (the row, and one service switch per kind instead of one per model claim, which duplicated the
+  `accounts.<id>.service.llm` row of a runtime with several models; detent keeps the first of a
+  repeated path meanwhile).
+- **A runtime going offline reaches the row through `Changed`.** accountd announces
+  `Changed("accounts.<id>.state", ...)` where it publishes the registry; the list reads the rows
+  again on every announcement and when accountd's name changes hands. A daemon that stopped
+  announcing would leave the row as it was until the page is opened again.
+- **First run remembers itself in a state file, not a settings row.** `$XDG_STATE_HOME/detent/first-run`
+  (else `~/.local/state`), one line `done`, written when Done has written everything; a settings row
+  would need a schema that owns it, and the first run is not a preference. `detent --first-run` exits
+  at once, before reading anything, when the file exists. A window closed without Done leaves no
+  file, so it asks again at the next login. sill launches it once per session
+  (`~/rs-wt/accounts/ai1b-sill-first-run.diff`, an ask against `dist/sill-session`); until then it is
+  run by hand.
+- **Choosing a runtime writes one row.** The runtime menu sets the text slot's Balanced tier
+  (`ai.model.text.balanced`, or `ai.model.llm.balanced` of an older inferd) to the first model of that
+  runtime the picker lists that can be picked; Fast and Best stay at the catalogue's choice and
+  Automatic still routes by privacy and load. A runtime that lists no model yet, or an inferd that
+  is not running, keeps the window open with the reason; `ai.local_only` is written first and again
+  on the next Done. A stopped runtime is greyed in the menu and cannot be picked.
+- **The window's size is fixed by the binary** (440 by 520) and the hero mark is quire's violet plate
+  with the sparkles glyph; there is no round hero mark in quire to use instead (`Avatar` holds a
+  letter, `ProviderMark` is a square letter chip), so the runtimes' marks are `Avatar` discs in the
+  person-hue of the runtime's name, and a stopped one is `Muting::Muted`. Closes when quire has a
+  mark for a local runtime.
+- **`settings.intelligence.open`** only shows the page. Every `ai.*` row is hands-off
+  (`detent-intents/tests/intelligence.rs`), and the manifest has no other `settings.intelligence.*`
+  action.
 
 ## Not in v1
 

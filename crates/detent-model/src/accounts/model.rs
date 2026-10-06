@@ -17,6 +17,12 @@ const SERVICE: &str = ".service.";
 /// Between an account's id and a grant's id in a row's path.
 const GRANT: &str = ".grant.";
 
+/// The `place` row's word for an account that is a program on this computer.
+const THIS_COMPUTER: &str = "this_computer";
+
+/// The kind of service a language model is, in a service toggle's path.
+const LLM: &str = "llm";
+
 /// The words of a service toggle.
 const ON: &str = "on";
 const OFF: &str = "off";
@@ -64,6 +70,26 @@ impl AccountStatus {
     }
 }
 
+/// Where an account lives, as the module's `place` row says.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Place {
+    /// A program on this computer (a local runtime such as Ollama): no sign-in, found by a probe.
+    ThisComputer,
+    /// Anywhere else, and every account whose module says nothing of where it is.
+    #[default]
+    Elsewhere,
+}
+
+impl Place {
+    /// The place the module's word names.
+    fn of(word: &str) -> Place {
+        match word {
+            THIS_COMPUTER => Place::ThisComputer,
+            _ => Place::Elsewhere,
+        }
+    }
+}
+
 /// One service of an account, a switch.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccountService {
@@ -102,6 +128,8 @@ pub struct Account {
     pub label: String,
     /// How it stands.
     pub status: AccountStatus,
+    /// Where it lives.
+    pub place: Place,
     /// Its services, in the module's order.
     pub services: Vec<AccountService>,
     /// The apps' permissions for it.
@@ -113,6 +141,11 @@ pub struct Account {
 }
 
 impl Account {
+    /// Whether this is a language-model runtime on this computer.
+    pub fn is_local_runtime(&self) -> bool {
+        self.place == Place::ThisComputer && self.services.iter().any(|s| s.kind == LLM)
+    }
+
     /// The account as one line for a reader that is not the window: its label, the kinds of
     /// service it offers and how it stands. No id and no permission is in it.
     pub fn line(&self) -> String {
@@ -152,6 +185,7 @@ pub struct AccountsPane {
 enum Row<'a> {
     Label(&'a str),
     State(&'a str),
+    Place(&'a str),
     AccountService(&'a str, bool),
     Grant,
     Reauth,
@@ -176,6 +210,7 @@ fn classify<'a>(spec: &'a KeySpec, described: &Described) -> Option<(AccountKey,
             let row = match leaf {
                 "label" => Row::Label(variant),
                 "state" => Row::State(variant),
+                "place" => Row::Place(variant),
                 _ => return None,
             };
             Some((AccountKey(id.to_owned()), row))
@@ -205,6 +240,7 @@ fn account_of<'a>(accounts: &'a mut Vec<Account>, key: &AccountKey) -> &'a mut A
                 key: key.clone(),
                 label: key.0.clone(),
                 status: AccountStatus::Ok,
+                place: Place::default(),
                 services: Vec::new(),
                 permissions: Vec::new(),
                 reauth: None,
@@ -250,6 +286,11 @@ impl AccountsPane {
             match row {
                 Row::Label(label) => account.label = label.to_owned(),
                 Row::State(word) => account.status = AccountStatus::of(word),
+                Row::Place(word) => account.place = Place::of(word),
+                // An account with several models sends one service row per model claim: the
+                // same path again is the same switch.
+                Row::AccountService(..) if account.services.iter().any(|s| s.path == spec.path) => {
+                }
                 Row::AccountService(kind, on) => account.services.push(AccountService {
                     path: spec.path.clone(),
                     kind: kind.to_owned(),
@@ -265,6 +306,11 @@ impl AccountsPane {
             }
         }
         pane
+    }
+
+    /// The language-model runtimes on this computer, in the module's order: running or not.
+    pub fn local_runtimes(&self) -> impl Iterator<Item = &Account> {
+        self.accounts.iter().filter(|a| a.is_local_runtime())
     }
 
     /// The account with `key`.

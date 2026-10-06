@@ -7,7 +7,7 @@ mod step;
 
 pub use model::{
     Account, AccountKey, AccountPermission, AccountService, AccountStatus, AccountsPane,
-    AccountsReady, AccountsScreen, AccountsState, RemovalQuestion, SignInClient,
+    AccountsReady, AccountsScreen, AccountsState, Place, RemovalQuestion, SignInClient,
 };
 pub use step::{AccountsEffect, AccountsInput, accounts_step};
 

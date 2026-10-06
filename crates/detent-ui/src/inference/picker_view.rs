@@ -1,7 +1,7 @@
 //! The model picker on the Intelligence page: a card per kind of work, a row per tier, and the
 //! footer that says why the last answer came from the model it did.
 
-use super::io::{is_menu, set};
+use super::{is_menu, set};
 use crate::env::Env;
 use crate::files::{Files, value_of};
 use crate::live::{Daemon, Followed, follow};

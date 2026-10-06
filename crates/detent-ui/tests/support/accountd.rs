@@ -4,12 +4,14 @@
 #![allow(dead_code)]
 
 use super::bus::PrivateBus;
-use ds_settings::live::{Access, Caller, LiveError, LiveModule, LiveSchema, Verdict, serve};
+use ds_settings::live::{
+    Access, Caller, LiveError, LiveModule, LiveSchema, Served, Verdict, serve,
+};
 use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Page, Section,
 };
-use porter_dbus::{ACCOUNTS_BUS, ACCOUNTS_PATH};
+use porter_dbus::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
 use std::sync::{Arc, Mutex};
 
 /// What the fake does with a caller.
@@ -29,6 +31,8 @@ pub struct Held {
     pub state: String,
     pub services: Vec<(String, bool)>,
     pub grants: Vec<(String, String)>,
+    /// Whether the account is a runtime on this computer: the `place` row says so.
+    pub on_this_computer: bool,
 }
 
 impl Held {
@@ -39,6 +43,15 @@ impl Held {
             state: state.to_owned(),
             services: services.iter().map(|s| ((*s).to_owned(), true)).collect(),
             grants: Vec::new(),
+            on_this_computer: false,
+        }
+    }
+
+    /// A language-model runtime on this computer: probed, no sign-in.
+    pub fn runtime(id: &str, label: &str, state: &str) -> Held {
+        Held {
+            on_this_computer: true,
+            ..Held::new(id, label, state, &["llm"])
         }
     }
 
@@ -71,16 +84,26 @@ impl Accountd {
 
     /// Serves the module on `bus`, owning accountd's bus name; the connection must be kept alive.
     pub async fn serve_on(&self, bus: &PrivateBus) -> zbus::Connection {
+        self.serve_announcing(bus).await.0
+    }
+
+    /// The same, with the means to announce a change the module did not get through `Set`.
+    pub async fn serve_announcing(&self, bus: &PrivateBus) -> (zbus::Connection, Served) {
         let connection = bus.connect().await;
-        serve(
-            &connection,
-            &format!("{ACCOUNTS_PATH}/settings"),
-            self.clone(),
-        )
-        .await
-        .expect("serves");
+        let served = serve(&connection, ACCOUNTS_SETTINGS_PATH, self.clone())
+            .await
+            .expect("serves");
         connection.request_name(ACCOUNTS_BUS).await.expect("name");
-        connection
+        (connection, served)
+    }
+
+    /// The account `id` is now in `state`; nobody is told until the daemon announces it.
+    pub fn stop(&self, id: &str, state: &str) {
+        for held in self.accounts.lock().expect("accounts").iter_mut() {
+            if held.id == id {
+                held.state = state.to_owned();
+            }
+        }
     }
 
     pub fn sets(&self) -> Vec<(String, toml::Value)> {
@@ -132,6 +155,9 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
         fixed("label", "Account", &held.label),
         fixed("state", "Status", &held.state),
     ];
+    if held.on_this_computer {
+        rows.push(fixed("place", "Where", "this_computer"));
+    }
     for (kind, _) in &held.services {
         rows.push(spec(
             format!("accounts.{id}.service.{kind}"),

@@ -1,6 +1,6 @@
 //! Which daemon a live module belongs to.
 
-use porter_dbus::{ACCOUNTS_BUS, ACCOUNTS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
+use porter_dbus::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
 
 /// A daemon that serves a live settings module: its bus name and the module's object path.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,7 +24,7 @@ impl Daemon {
     pub fn accountd() -> Daemon {
         Daemon {
             name: ACCOUNTS_BUS,
-            path: format!("{ACCOUNTS_PATH}/settings"),
+            path: ACCOUNTS_SETTINGS_PATH.to_owned(),
         }
     }
 }

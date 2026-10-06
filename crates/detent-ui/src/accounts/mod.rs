@@ -6,8 +6,12 @@
 mod adapter;
 mod detail_view;
 mod drive;
+mod link;
 mod list_view;
 mod pane_view;
 
+pub(crate) use adapter::OpenButton;
+pub(crate) use drive::is_valued;
 pub use drive::read_accounts;
+pub(crate) use link::AccountLink;
 pub(crate) use pane_view::AccountsPane;

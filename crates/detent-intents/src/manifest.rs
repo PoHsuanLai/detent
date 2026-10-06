@@ -40,7 +40,8 @@ mod tests {
                 "settings.key.read",
                 "settings.key.set",
                 "settings.accounts.list",
-                "settings.accounts.open"
+                "settings.accounts.open",
+                "settings.intelligence.open"
             ]
         );
     }

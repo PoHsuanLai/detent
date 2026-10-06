@@ -391,3 +391,54 @@ fn a_module_that_is_not_there_is_unavailable_and_asks_for_nothing() {
     assert_eq!(state, AccountsState::Unavailable(Absence::NotRunning));
     assert!(effects.is_empty());
 }
+
+/// Two runtimes on this computer (one stopped, one sending a service row per model), a cloud
+/// account that also serves a language model, and a local account that serves none.
+fn with_runtimes() -> Described {
+    let mut described = described();
+    described.keys.extend([
+        fixed("accounts.ollama.label", "Account", "Ollama"),
+        fixed("accounts.ollama.state", "Status", "ok"),
+        fixed("accounts.ollama.place", "Where", "this_computer"),
+        toggle("accounts.ollama.service.llm", "llm"),
+        toggle("accounts.ollama.service.llm", "llm"),
+        fixed("accounts.lm-studio.label", "Account", "LM Studio"),
+        fixed("accounts.lm-studio.state", "Status", "offline"),
+        fixed("accounts.lm-studio.place", "Where", "this_computer"),
+        toggle("accounts.lm-studio.service.llm", "llm"),
+        fixed("accounts.anthropic.label", "Account", "Anthropic"),
+        fixed("accounts.anthropic.place", "Where", "elsewhere"),
+        toggle("accounts.anthropic.service.llm", "llm"),
+        fixed("accounts.photos.label", "Account", "Photos"),
+        fixed("accounts.photos.place", "Where", "this_computer"),
+        toggle("accounts.photos.service.storage", "storage"),
+    ]);
+    described
+}
+
+#[test]
+fn local_runtimes_are_the_llm_accounts_whose_place_is_this_computer_running_or_not() {
+    let pane = AccountsPane::of(&with_runtimes());
+    let runtimes: Vec<(&str, &AccountStatus)> = pane
+        .local_runtimes()
+        .map(|a| (a.key.0.as_str(), &a.status))
+        .collect();
+    assert_eq!(
+        runtimes,
+        [
+            ("ollama", &AccountStatus::Ok),
+            ("lm-studio", &AccountStatus::Offline)
+        ]
+    );
+    let none = AccountsPane::of(&described());
+    assert_eq!(none.local_runtimes().count(), 0, "no place row, no runtime");
+}
+
+#[test]
+fn a_service_sent_once_per_model_is_one_switch() {
+    let pane = AccountsPane::of(&with_runtimes());
+    let ollama = pane
+        .account(&AccountKey("ollama".to_owned()))
+        .expect("ollama");
+    assert_eq!(ollama.services.len(), 1);
+}

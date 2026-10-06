@@ -41,7 +41,7 @@ pub(super) fn ActionButton(
 
 /// The quiet button on an account's row that opens the account.
 #[component]
-pub(super) fn OpenButton(label: String, onpress: EventHandler<()>) -> Element {
+pub(crate) fn OpenButton(label: String, onpress: EventHandler<()>) -> Element {
     rsx! {
         Button {
             label,

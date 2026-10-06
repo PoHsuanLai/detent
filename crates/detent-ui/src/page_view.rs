@@ -4,7 +4,7 @@ use crate::accounts::AccountsPane;
 use crate::advanced_view::AdvancedView;
 use crate::env::Env;
 use crate::files::{Edit, Files};
-use crate::inference::{ModelPicker, show_reason};
+use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
 use crate::section_view::SectionView;
 use detent_model::{Block, PageSlug, blocks};
 use dioxus::prelude::*;
@@ -30,6 +30,7 @@ pub fn PageView(
                         SectionView { key: "{section.title}", section, hits: hits.clone(), files, onedit }
                     },
                     Block::AccountsPane => rsx! { AccountsPane {} },
+                    Block::LocalRuntimes => rsx! { LocalRuntimes {} },
                     Block::ModelPicker => rsx! {
                         ModelPicker { reasons: show_reason(&env, &files()) }
                     },

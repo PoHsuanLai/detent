@@ -104,3 +104,23 @@
 .accounts-note {
   padding: 0 var(--s-4);
 }
+
+.runtimes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-14);
+}
+
+.first-run {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-14);
+  padding: var(--s-22);
+  text-align: center;
+}
+
+.first-run-card {
+  align-self: stretch;
+  text-align: start;
+}
