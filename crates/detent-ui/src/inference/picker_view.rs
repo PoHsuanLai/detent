@@ -202,7 +202,7 @@ fn TierRow(
     let items: Vec<MenuItem<String>> = row
         .words
         .iter()
-        .map(|word| MenuItem::new(word.clone(), row.label_of(word)))
+        .flat_map(|word| choice_items(&row, word))
         .collect();
     let path = row.path.clone();
     rsx! {
@@ -221,6 +221,22 @@ fn TierRow(
                 onpick: move |word| onchoose.call((path.clone(), word)),
             }
         }
+    }
+}
+
+/// The menu lines for `word`: the choice, and when it cannot be picked, the choice greyed with
+/// its reason in a status line right under it.
+fn choice_items(row: &ModelRow, word: &str) -> Vec<MenuItem<String>> {
+    let item = MenuItem::new(word.to_owned(), row.label_of(word));
+    match row.unavailable_reason(word) {
+        None => vec![item],
+        Some(reason) => vec![
+            item.with_availability(Availability::Disabled),
+            MenuItem::Info {
+                title: reason.to_owned(),
+                detail: None,
+            },
+        ],
     }
 }
 

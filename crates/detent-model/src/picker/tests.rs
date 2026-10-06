@@ -33,6 +33,7 @@ fn menu(key: &str, label: &str) -> KeySpec {
             .into(),
         ),
         agent: AgentSetting::HandsOff,
+        unavailable: Default::default(),
     }
 }
 
@@ -86,7 +87,7 @@ fn rows_group_by_kind_in_the_modules_order_with_the_documented_tier_names() {
         groups,
         [
             (
-                "llm".to_owned(),
+                "text".to_owned(),
                 "Language".to_owned(),
                 vec!["Fast", "Balanced", "Demanding"]
             ),
@@ -231,4 +232,145 @@ fn a_row_says_loading_for_a_model_and_applying_for_the_words_that_name_none() {
     ] {
         assert_eq!(loading_text(row, word), want, "{word:?}");
     }
+}
+
+fn slot_key(slot: &str, tier: &str) -> String {
+    format!("ai.model.{slot}.{tier}")
+}
+
+#[test]
+fn slot_rows_render_in_the_slot_order_with_porter_infers_labels() {
+    let keys = [
+        "rerank",
+        "voice_out",
+        "embeddings",
+        "computer_use",
+        "text",
+        "voice_in",
+        "image_in",
+    ]
+    .map(|slot| menu(&slot_key(slot, "fast"), "x: Fast"))
+    .to_vec();
+    let PickerState::Ready(ready) = step(
+        PickerState::Probing,
+        PickerInput::Found(Ok(Described {
+            keys,
+            values: BTreeMap::new(),
+        })),
+    )
+    .0
+    else {
+        panic!("ready");
+    };
+    let groups: Vec<(&str, &str)> = ready
+        .kinds
+        .iter()
+        .map(|kind| (kind.kind.as_str(), kind.label.as_str()))
+        .collect();
+    assert_eq!(
+        groups,
+        [
+            ("text", "Language"),
+            ("voice_in", "Speech to text"),
+            ("voice_out", "Text to speech"),
+            ("image_in", "Reading images"),
+            ("computer_use", "Computer use"),
+            ("embeddings", "Embeddings"),
+            ("rerank", "Reranking"),
+        ]
+    );
+}
+
+#[test]
+fn an_old_kind_module_still_renders_under_its_slot_and_a_new_row_shadows_its_old_twin() {
+    let old = Described {
+        keys: vec![
+            menu("ai.model.speech_in.fast", "Speech in: Fast"),
+            menu("ai.model.llm.fast", "Language: Fast"),
+        ],
+        values: BTreeMap::new(),
+    };
+    let PickerState::Ready(ready) = step(PickerState::Probing, PickerInput::Found(Ok(old))).0
+    else {
+        panic!("ready");
+    };
+    let rows: Vec<(&str, &str)> = ready
+        .kinds
+        .iter()
+        .flat_map(|kind| {
+            kind.rows
+                .iter()
+                .map(|row| (kind.kind.as_str(), row.path.0.as_str()))
+        })
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            ("text", "ai.model.llm.fast"),
+            ("voice_in", "ai.model.speech_in.fast")
+        ],
+        "an old key is shown, and sets under its own path"
+    );
+
+    let both = Described {
+        keys: vec![
+            menu("ai.model.llm.fast", "Language: Fast"),
+            menu("ai.model.text.fast", "Language: Fast"),
+        ],
+        values: BTreeMap::new(),
+    };
+    let PickerState::Ready(ready) = step(PickerState::Probing, PickerInput::Found(Ok(both))).0
+    else {
+        panic!("ready");
+    };
+    let paths: Vec<&str> = ready.kinds[0]
+        .rows
+        .iter()
+        .map(|row| row.path.0.as_str())
+        .collect();
+    assert_eq!(paths, ["ai.model.text.fast"]);
+}
+
+#[test]
+fn an_unavailable_choice_carries_its_reason_and_choosing_it_sets_nothing() {
+    use ds_settings::schema::{ChoiceWord, UnavailableReason};
+    let mut gated = menu("ai.model.text.fast", "Language: Fast");
+    gated.unavailable.insert(
+        ChoiceWord("local/holo".to_owned()),
+        UnavailableReason("Add an account to use".to_owned()),
+    );
+    let (state, _) = step(
+        PickerState::Probing,
+        PickerInput::Found(Ok(Described {
+            keys: vec![gated],
+            values: BTreeMap::new(),
+        })),
+    );
+    let PickerState::Ready(ready) = &state else {
+        panic!("ready");
+    };
+    assert_eq!(
+        ready.kinds[0].rows[0].unavailable_reason("local/holo"),
+        Some("Add an account to use")
+    );
+    assert_eq!(
+        ready.kinds[0].rows[0].unavailable_reason("local/qwen"),
+        None
+    );
+
+    let (after, effects) = step(
+        state.clone(),
+        PickerInput::Chose {
+            path: path("ai.model.text.fast"),
+            word: "local/holo".to_owned(),
+        },
+    );
+    assert_eq!(
+        effects,
+        [PickerEffect::Tell("Add an account to use".to_owned())]
+    );
+    assert_eq!(
+        after, state,
+        "nothing is applying and the value is unchanged"
+    );
 }

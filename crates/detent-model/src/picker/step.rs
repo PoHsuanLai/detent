@@ -63,7 +63,12 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerE
     let mut effects = Vec::new();
     match input {
         PickerInput::Chose { path, word } if ready.applying.is_none() => {
-            if ready.row_mut(&path).is_some_and(|row| row.value != word) {
+            let refusal = ready
+                .row_mut(&path)
+                .and_then(|row| row.unavailable_reason(&word).map(str::to_owned));
+            if let Some(reason) = refusal {
+                effects.push(PickerEffect::Tell(reason));
+            } else if ready.row_mut(&path).is_some_and(|row| row.value != word) {
                 effects.push(PickerEffect::Set {
                     path: path.clone(),
                     word: word.clone(),

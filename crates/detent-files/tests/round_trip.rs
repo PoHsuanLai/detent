@@ -22,6 +22,7 @@ fn key(path: &str, kind: KeyKind, default: Value) -> KeySpec {
         exposure: Exposure::Basic,
         labels: Default::default(),
         agent: Default::default(),
+        unavailable: Default::default(),
     }
 }
 

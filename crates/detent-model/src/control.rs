@@ -154,6 +154,7 @@ mod tests {
             exposure: Exposure::Basic,
             labels: Default::default(),
             agent: Default::default(),
+            unavailable: Default::default(),
         }
     }
 

@@ -385,3 +385,90 @@ fn watching_for_inferd_never_starts_it() {
         "nothing owns inferd's name: the page only looked"
     );
 }
+
+/// Opens the picker's first fast row's menu.
+fn open_first_menu(harness: &mut Harness) -> String {
+    let button = ".picker-kind:nth-child(1) .ds-field-row:nth-child(1) .ds-popup .ds-button";
+    scroll_into_view(harness, button);
+    click(harness, button);
+    assert_eq!(
+        harness.attr(button, "aria-expanded").as_deref(),
+        Some("true"),
+        "the click opened the menu"
+    );
+    button.to_owned()
+}
+
+#[test]
+fn slot_rows_render_with_porter_infers_labels() {
+    let sandbox = Sandbox::new("intelligence-slots");
+    let rt = runtime();
+    let bus = PrivateBus::start("slots");
+    let fake = Inferd::new(Policy::Allow).on_slots();
+    let _daemon = rt.block_on(fake.serve_on(&bus));
+    let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
+    settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 3);
+    assert_eq!(harness.count(".picker-kind .ds-field-row"), 4);
+    in_order(
+        &harness.html(),
+        &[
+            "Language",
+            "Fast",
+            "Balanced",
+            "Speech to text",
+            "Fast",
+            "Computer use",
+        ],
+    );
+}
+
+#[test]
+fn an_old_key_module_still_renders() {
+    let sandbox = Sandbox::new("intelligence-old-keys");
+    let rt = runtime();
+    let bus = PrivateBus::start("old-keys");
+    let fake = Inferd::new(Policy::Allow);
+    let _daemon = rt.block_on(fake.serve_on(&bus));
+    let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
+    settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 2);
+    in_order(&harness.html(), &["Language", "Fast", "Computer use"]);
+}
+
+#[test]
+fn an_unavailable_choice_is_greyed_with_its_reason_and_cannot_be_set() {
+    let sandbox = Sandbox::new("intelligence-unavailable");
+    let rt = runtime();
+    let bus = PrivateBus::start("unavailable");
+    let fake = Inferd::new(Policy::Allow).on_slots();
+    fake.gated
+        .lock()
+        .expect("gated")
+        .insert("local/holo".to_owned(), "Add an account to use".to_owned());
+    let _daemon = rt.block_on(fake.serve_on(&bus));
+    let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
+    settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 3);
+    open_first_menu(&mut harness);
+
+    let html = harness.html();
+    assert!(
+        html.contains("Add an account to use"),
+        "the reason is under the choice:\n{html}"
+    );
+    // Items: "", auto, qwen, holo (disabled), then its reason.
+    let holo = ".ds-menu-item:nth-child(4)";
+    assert_eq!(
+        harness.attr(holo, "aria-disabled").as_deref(),
+        Some("true"),
+        "holo is greyed"
+    );
+    if let Some(centre) = harness.centre(&format!("{holo} .ds-menu-label")) {
+        harness.send(Input::pointer_move(centre));
+        click(&mut harness, &format!("{holo} .ds-menu-label"));
+    }
+    harness.advance(Duration::from_millis(300));
+    assert_eq!(
+        *fake.sets.lock().expect("sets"),
+        Vec::<(String, String)>::new(),
+        "a greyed choice sends no Set"
+    );
+}

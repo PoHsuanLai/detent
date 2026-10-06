@@ -5,7 +5,8 @@
 use super::bus::PrivateBus;
 use ds_settings::live::{Access, Caller, LiveError, LiveModule, LiveSchema, Verdict, serve};
 use ds_settings::schema::{
-    AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page, Section, WordLabels,
+    AgentSetting, ChoiceWord, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page, Section,
+    UnavailableReason, WordLabels,
 };
 use porter_dbus::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
 use std::collections::BTreeMap;
@@ -19,6 +20,23 @@ const ROWS: &[(&str, &str, &str)] = &[
     ("llm", "Language", "best"),
     ("computer_use", "Computer use", "balanced"),
 ];
+
+/// The rows of an inferd that has moved to slots (`ai.model.<slot>.<tier>`).
+const SLOT_ROWS: &[(&str, &str, &str)] = &[
+    ("text", "Language", "fast"),
+    ("text", "Language", "balanced"),
+    ("voice_in", "Speech to text", "fast"),
+    ("computer_use", "Computer use", "balanced"),
+];
+
+/// Which keys the fake serves.
+#[derive(Clone, Copy)]
+pub enum Layout {
+    /// The old kind segments (`llm`, `computer_use`).
+    Kinds,
+    /// The slot segments.
+    Slots,
+}
 
 /// What the fake does with a caller.
 #[derive(Clone, Copy)]
@@ -38,7 +56,10 @@ pub struct Inferd {
     /// A `Set` waits here before it answers, when `held` is set.
     pub release: Arc<Notify>,
     pub held: Arc<Mutex<bool>>,
+    /// Words no row can be set to, each with the reason: `unavailable` on every row.
+    pub gated: Arc<Mutex<BTreeMap<String, String>>>,
     policy: Policy,
+    layout: Layout,
 }
 
 impl Inferd {
@@ -48,8 +69,16 @@ impl Inferd {
             sets: Arc::default(),
             release: Arc::default(),
             held: Arc::default(),
+            gated: Arc::default(),
             policy,
+            layout: Layout::Kinds,
         }
+    }
+
+    /// The same fake serving slot keys.
+    pub fn on_slots(mut self) -> Inferd {
+        self.layout = Layout::Slots;
+        self
     }
 
     /// Serves the module on `bus`, owning inferd's bus name; the connection must be kept alive.
@@ -63,7 +92,7 @@ impl Inferd {
         connection
     }
 
-    fn spec(kind: &str, label: &str, tier: &str) -> KeySpec {
+    fn spec(&self, kind: &str, label: &str, tier: &str) -> KeySpec {
         let words = ["", "auto", "local/qwen", "local/holo"];
         KeySpec {
             path: KeyPath(format!("ai.model.{kind}.{tier}")),
@@ -87,6 +116,13 @@ impl Inferd {
                 .into(),
             ),
             agent: AgentSetting::HandsOff,
+            unavailable: self
+                .gated
+                .lock()
+                .expect("gated")
+                .iter()
+                .map(|(word, why)| (ChoiceWord(word.clone()), UnavailableReason(why.clone())))
+                .collect(),
         }
     }
 }
@@ -102,10 +138,13 @@ impl LiveModule for Inferd {
     async fn describe(&self) -> LiveSchema {
         LiveSchema {
             version: 1,
-            key: ROWS
-                .iter()
-                .map(|(kind, label, tier)| Inferd::spec(kind, label, tier))
-                .collect(),
+            key: match self.layout {
+                Layout::Kinds => ROWS,
+                Layout::Slots => SLOT_ROWS,
+            }
+            .iter()
+            .map(|(kind, label, tier)| self.spec(kind, label, tier))
+            .collect(),
         }
     }
 

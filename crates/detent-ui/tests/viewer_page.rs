@@ -40,6 +40,7 @@ fn key_in(
         exposure,
         labels: Default::default(),
         agent: Default::default(),
+        unavailable: Default::default(),
     }
 }
 
