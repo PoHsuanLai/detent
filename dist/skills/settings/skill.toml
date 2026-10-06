@@ -1,0 +1,13 @@
+vocab = 1
+id = "settings"
+owner = "org.quire.Settings"
+version = "0.1.0"
+uses = [
+  "org.quire.Settings:settings.key.read",
+  "org.quire.Settings:settings.key.set",
+]
+
+[when]
+focused_app = ["org.quire.Settings"]
+kinds = []
+always = "no"
