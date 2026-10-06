@@ -5,8 +5,8 @@
 use super::bus::PrivateBus;
 use ds_settings::live::{Access, Caller, LiveError, LiveModule, LiveSchema, Verdict, serve};
 use ds_settings::schema::{
-    AgentSetting, ChoiceWord, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page, Section,
-    UnavailableReason, WordLabels,
+    AgentSetting, ChoiceGroup, ChoiceWord, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page,
+    Section, UnavailableReason, WordLabels,
 };
 use porter_dbus::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
 use std::collections::BTreeMap;
@@ -21,12 +21,33 @@ const ROWS: &[(&str, &str, &str)] = &[
     ("computer_use", "Computer use", "balanced"),
 ];
 
-/// The rows of an inferd that has moved to slots (`ai.model.<slot>.<tier>`).
+/// The rows of an inferd that has moved to slots (`ai.model.<slot>.<tier>`): the slot's key
+/// segment and the display name its section carries (`Models / Text`).
 const SLOT_ROWS: &[(&str, &str, &str)] = &[
-    ("text", "Language", "fast"),
-    ("text", "Language", "balanced"),
+    ("text", "Text", "fast"),
+    ("text", "Text", "balanced"),
+    ("text", "Text", "best"),
     ("voice_in", "Speech to text", "fast"),
     ("computer_use", "Computer use", "balanced"),
+];
+
+/// The display word of a tier's key segment.
+fn tier_word(tier: &str) -> &'static str {
+    match tier {
+        "fast" => "Fast",
+        "balanced" => "Balanced",
+        _ => "Demanding",
+    }
+}
+
+/// The words a slot's rows list, and the group each model sits in (slots layout only).
+const WORDS: [(&str, &str, Option<&str>); 6] = [
+    ("", "Catalogue default", None),
+    ("auto", "Automatic", None),
+    ("local/qwen", "qwen", Some("On this computer")),
+    ("anthropic/claude", "claude", Some("Anthropic")),
+    ("google/gemini", "gemini", Some("Google")),
+    ("local/holo", "holo", Some("On this computer")),
 ];
 
 /// Which keys the fake serves.
@@ -92,28 +113,42 @@ impl Inferd {
         connection
     }
 
-    fn spec(&self, kind: &str, label: &str, tier: &str) -> KeySpec {
-        let words = ["", "auto", "local/qwen", "local/holo"];
+    /// One row. The old layout sends section `Models`, label `Language: Fast` and no groups;
+    /// the slots layout sends section `Models / Text`, label `Fast` and the groups.
+    fn spec(&self, kind: &str, slot: &str, tier: &str) -> KeySpec {
+        let slots = matches!(self.layout, Layout::Slots);
+        let words = match slots {
+            true => WORDS.to_vec(),
+            false => WORDS[..2]
+                .iter()
+                .chain(&WORDS[2..3])
+                .chain(&WORDS[5..])
+                .copied()
+                .collect(),
+        };
+        let (label, section) = match slots {
+            true => (tier_word(tier).to_owned(), format!("Models / {slot}")),
+            false => (format!("{slot}: {}", tier_word(tier)), "Models".to_owned()),
+        };
         KeySpec {
             path: KeyPath(format!("ai.model.{kind}.{tier}")),
             kind: KeyKind::Menu {
-                variants: words.map(str::to_owned).to_vec(),
+                variants: words
+                    .iter()
+                    .map(|(word, _, _)| (*word).to_owned())
+                    .collect(),
             },
             default: toml::Value::String(String::new()),
-            label: Label(format!("{label}: {tier}")),
-            help: Help(String::new()),
+            label: Label(label),
+            help: Help(format!("The {slot} model at this tier.")),
             page: Page::Intelligence,
-            section: Section("Models".to_owned()),
+            section: Section(section),
             exposure: Exposure::Basic,
             labels: WordLabels(
-                [
-                    ("", "Catalogue default"),
-                    ("auto", "Automatic"),
-                    ("local/qwen", "qwen"),
-                    ("local/holo", "holo"),
-                ]
-                .map(|(word, text)| (word.to_owned(), text.to_owned()))
-                .into(),
+                words
+                    .iter()
+                    .map(|(word, text, _)| ((*word).to_owned(), (*text).to_owned()))
+                    .collect(),
             ),
             agent: AgentSetting::HandsOff,
             unavailable: self
@@ -123,6 +158,20 @@ impl Inferd {
                 .iter()
                 .map(|(word, why)| (ChoiceWord(word.clone()), UnavailableReason(why.clone())))
                 .collect(),
+            groups: match slots {
+                true => words
+                    .iter()
+                    .filter_map(|(word, _, group)| {
+                        group.map(|group| {
+                            (
+                                ChoiceWord((*word).to_owned()),
+                                ChoiceGroup(group.to_owned()),
+                            )
+                        })
+                    })
+                    .collect(),
+                false => BTreeMap::new(),
+            },
         }
     }
 }

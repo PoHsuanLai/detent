@@ -5,7 +5,8 @@ mod model;
 mod step;
 
 pub use model::{
-    Absence, Applying, Described, KindRows, ModelRow, PickerState, Ready, loading_text,
+    Absence, Applying, ChoiceSection, Described, KindRows, ModelRow, PickerState, Ready,
+    loading_text,
 };
 pub use step::{PickerEffect, PickerInput, step};
 

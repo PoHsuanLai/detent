@@ -23,6 +23,7 @@ fn key(path: &str, kind: KeyKind, default: Value) -> KeySpec {
         labels: Default::default(),
         agent: Default::default(),
         unavailable: Default::default(),
+        groups: Default::default(),
     }
 }
 

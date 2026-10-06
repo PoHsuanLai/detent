@@ -1,9 +1,7 @@
 //! What the picker shows: one group per kind, one row per tier.
 
-use crate::words::{humanize, word_label};
+use crate::words::word_label;
 use ds_settings::schema::{ChoiceWord, KeyKind, KeyPath, KeySpec, UnavailableReason, WordLabels};
-use porter_core::Tier;
-use porter_infer::tier_label;
 use std::collections::BTreeMap;
 
 /// The word that is Automatic, in the module's rows.
@@ -12,42 +10,8 @@ pub(crate) const AUTO: &str = "auto";
 /// The prefix of every picker row's path: `ai.model.<slot>.<tier>`.
 const PREFIX: &str = "ai.model.";
 
-/// The slots the picker lists, in its order, each with what a person reads. These are
-/// porter-infer's `Slot` slugs and labels (inferd's `slot_label`); detent keeps its own copy so it
-/// builds against a porter that has no `Slot` yet.
-const SLOTS: [(&str, &str); 8] = [
-    ("text", "Language"),
-    ("voice_in", "Speech to text"),
-    ("voice_out", "Text to speech"),
-    ("image_in", "Reading images"),
-    ("computer_use", "Computer use"),
-    ("embeddings", "Embeddings"),
-    ("image_gen", "Images"),
-    ("rerank", "Reranking"),
-];
-
-/// The old kind segments of an inferd that has not moved to slots, and the slot each became.
-const LEGACY: [(&str, &str); 3] = [
-    ("llm", "text"),
-    ("speech_in", "voice_in"),
-    ("speech_out", "voice_out"),
-];
-
-/// The slot slug a path segment names: itself, or the slot an old kind segment became.
-fn slot_of(segment: &str) -> &str {
-    LEGACY
-        .iter()
-        .find(|(old, _)| *old == segment)
-        .map_or(segment, |(_, slot)| slot)
-}
-
-/// Where a slot sits in the picker; a segment that is no slot goes after every slot.
-fn slot_rank(slot: &str) -> usize {
-    SLOTS
-        .iter()
-        .position(|(slug, _)| *slug == slot)
-        .unwrap_or(SLOTS.len())
-}
+/// What separates the area from the slot in a row's section: `Models / Text`.
+const SECTION_SPLIT: &str = " / ";
 
 /// Why the picker is not there.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -62,15 +26,26 @@ pub enum Absence {
     Failed(String),
 }
 
+/// One run of a row's choices: the ungrouped ones, or one group's.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChoiceSection {
+    /// The group's display name; `None` for the ungrouped choices at the top.
+    pub group: Option<String>,
+    /// The stored words, in the module's order.
+    pub words: Vec<String>,
+}
+
 /// One tier of one slot: a menu of "" (the catalogue's choice), Automatic and each model.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ModelRow {
     /// The module's key, `ai.model.<slot>.<tier>`.
     pub path: KeyPath,
-    /// The tier's name as a person reads it ("Demanding" for the Best slot).
-    pub tier: &'static str,
-    /// The words the menu holds, in the module's order.
-    pub words: Vec<String>,
+    /// What the module calls the row ("Fast", "Demanding").
+    pub label: String,
+    /// The module's help text for the row; empty when it gave none.
+    pub help: String,
+    /// The choices, ungrouped first, then one section per group in first-appearance order.
+    pub sections: Vec<ChoiceSection>,
     /// What the module calls each word.
     pub labels: WordLabels,
     /// The words that cannot be picked now, each with the reason shown under it.
@@ -79,12 +54,13 @@ pub struct ModelRow {
     pub value: String,
 }
 
-/// The rows of one kind of work.
+/// The rows of one slot, as the schema's section and labels name them.
 #[derive(Debug, Clone, PartialEq)]
 pub struct KindRows {
-    /// The slot's slug, `text` (an old module's `llm` is read as `text`).
-    pub kind: String,
-    /// What a person reads, "Language".
+    /// The area the slot sits in, "Models": the section's part before ` / `. `None` when the
+    /// section names no area.
+    pub area: Option<String>,
+    /// What a person reads for the slot, "Text": the section's part after ` / `.
     pub label: String,
     /// One row per tier the module lists, in its order.
     pub rows: Vec<ModelRow>,
@@ -111,7 +87,7 @@ pub struct Applying {
 /// A picker that is there.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ready {
-    /// The kinds, in the order the module lists them.
+    /// The slots, in the order their rows first appear in `Describe`.
     pub kinds: Vec<KindRows>,
     /// The set in flight, if any: one at a time.
     pub applying: Option<Applying>,
@@ -129,30 +105,55 @@ pub enum PickerState {
     Ready(Ready),
 }
 
-/// `ai.model.<slot>.<tier>` as its slot (or old kind) segment and tier.
-fn parse_path(path: &KeyPath) -> Option<(&str, Tier)> {
-    let (kind, tier) = path.0.strip_prefix(PREFIX)?.split_once('.')?;
-    let tier = toml::Value::String(tier.to_owned()).try_into().ok()?;
-    Some((kind, tier))
+/// Whether `path` is `ai.model.<slot>.<tier>`.
+fn is_model_row(path: &KeyPath) -> bool {
+    path.0
+        .strip_prefix(PREFIX)
+        .and_then(|rest| rest.split_once('.'))
+        .is_some_and(|(slot, tier)| !slot.is_empty() && !tier.is_empty())
+}
+
+/// Where a row sits and what it is called, from the schema alone: section `Models / Text` with
+/// label `Fast` is area `Models`, slot `Text`, row `Fast`. An older module sends section `Models`
+/// and label `Text: Fast`: the area is the section, the slot the label's part before `: `.
+fn place(spec: &KeySpec) -> (Option<String>, String, String) {
+    let label = spec.label.0.as_str();
+    match spec.section.0.split_once(SECTION_SPLIT) {
+        Some((area, slot)) => (Some(area.to_owned()), slot.to_owned(), label.to_owned()),
+        None => match label.split_once(": ") {
+            Some((slot, tier)) => (
+                Some(spec.section.0.clone()),
+                slot.to_owned(),
+                tier.to_owned(),
+            ),
+            None => (None, spec.section.0.clone(), label.to_owned()),
+        },
+    }
 }
 
 impl ModelRow {
     /// The row `spec` describes, with `value` chosen; `None` when it is not an
     /// `ai.model.<slot>.<tier>` menu.
-    fn of(spec: &KeySpec, value: String) -> Option<(String, ModelRow)> {
-        let (kind, tier) = parse_path(&spec.path)?;
-        let KeyKind::Menu { variants } = &spec.kind else {
+    fn of(spec: &KeySpec, label: String, value: String) -> Option<ModelRow> {
+        if !is_model_row(&spec.path) || !matches!(spec.kind, KeyKind::Menu { .. }) {
             return None;
-        };
-        let row = ModelRow {
+        }
+        Some(ModelRow {
             path: spec.path.clone(),
-            tier: tier_label(tier),
-            words: variants.clone(),
+            label,
+            help: spec.help.0.clone(),
+            sections: spec
+                .grouped_choices()
+                .into_iter()
+                .map(|section| ChoiceSection {
+                    group: section.group.map(|group| group.0.clone()),
+                    words: section.choices.into_iter().map(str::to_owned).collect(),
+                })
+                .collect(),
             labels: spec.labels.clone(),
             unavailable: unavailable_of(&spec.unavailable),
             value,
-        };
-        Some((kind.to_owned(), row))
+        })
     }
 
     /// The reason `word` cannot be picked, if it cannot.
@@ -167,10 +168,8 @@ impl ModelRow {
 }
 
 impl Ready {
-    /// The picker `described` makes: its menu rows grouped by slot, in the picker's slot order
-    /// (rows of a slot the picker does not know follow, in the module's order). A row under an
-    /// old kind segment is shown when the module serves no row for the same slot and tier under
-    /// the slot's own name, so the page works against an old and a new inferd.
+    /// The picker `described` makes: its menu rows grouped by slot, slots and rows in the order
+    /// they appear in `Describe`. Nothing here knows a slot by name.
     pub fn of(described: &Described) -> Ready {
         let mut kinds: Vec<KindRows> = Vec::new();
         for spec in &described.keys {
@@ -179,24 +178,22 @@ impl Ready {
                 .get(&spec.path)
                 .cloned()
                 .unwrap_or_default();
-            let Some((segment, row)) = ModelRow::of(spec, value) else {
+            let (area, slot, label) = place(spec);
+            let Some(row) = ModelRow::of(spec, label, value) else {
                 continue;
             };
-            let slot = slot_of(&segment).to_owned();
-            if segment != slot && shadowed(described, &slot, &spec.path) {
-                continue;
-            }
-            match kinds.iter_mut().find(|rows| rows.kind == slot) {
+            match kinds
+                .iter_mut()
+                .find(|rows| rows.area == area && rows.label == slot)
+            {
                 Some(rows) => rows.rows.push(row),
                 None => kinds.push(KindRows {
-                    label: slot_label(&slot)
-                        .map_or_else(|| kind_label(&spec.label.0, &slot), str::to_owned),
-                    kind: slot,
+                    area,
+                    label: slot,
                     rows: vec![row],
                 }),
             }
         }
-        kinds.sort_by_key(|rows| slot_rank(&rows.kind));
         Ready {
             kinds,
             applying: None,
@@ -212,27 +209,6 @@ impl Ready {
     }
 }
 
-/// What a person reads for a slot the picker knows.
-fn slot_label(slot: &str) -> Option<&'static str> {
-    SLOTS
-        .iter()
-        .find(|(slug, _)| *slug == slot)
-        .map(|(_, label)| *label)
-}
-
-/// Whether the module also serves the row for `legacy`'s tier under the slot's own name.
-fn shadowed(described: &Described, slot: &str, legacy: &KeyPath) -> bool {
-    let Some((_, tier)) = legacy
-        .0
-        .strip_prefix(PREFIX)
-        .and_then(|rest| rest.split_once('.'))
-    else {
-        return false;
-    };
-    let own = format!("{PREFIX}{slot}.{tier}");
-    described.keys.iter().any(|spec| spec.path.0 == own)
-}
-
 /// The module's unavailable choices as plain words and reasons.
 fn unavailable_of(
     unavailable: &BTreeMap<ChoiceWord, UnavailableReason>,
@@ -241,14 +217,6 @@ fn unavailable_of(
         .iter()
         .map(|(word, reason)| (word.0.clone(), reason.0.clone()))
         .collect()
-}
-
-/// The kind as a person reads it: the part of the row's label before the tier ("Language: Fast"),
-/// else the slug humanized.
-fn kind_label(label: &str, kind: &str) -> String {
-    label
-        .split_once(": ")
-        .map_or_else(|| humanize(kind), |(name, _)| name.to_owned())
 }
 
 /// What a row shows while `word` is being set: "Loading <model>…" for a model, "Applying" for

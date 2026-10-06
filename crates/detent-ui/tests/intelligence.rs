@@ -205,7 +205,7 @@ fn the_picker_lists_a_group_per_kind_and_a_row_per_tier_in_design_words() {
     );
     assert_eq!(
         harness
-            .text_of(".picker-kind:nth-child(1) .ds-field-row:nth-child(2) .ds-button-label")
+            .text_of(".picker-kind .ds-field-row:nth-child(2) .ds-button-label")
             .as_deref()
             .map(str::trim),
         Some("qwen"),
@@ -224,7 +224,7 @@ fn choosing_a_model_shows_loading_it_until_inferd_answers_then_sets_it() {
     let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 2);
 
-    let fast = ".picker-kind:nth-child(1) .ds-field-row:nth-child(1)";
+    let fast = ".picker-kind .ds-field-row:nth-child(1)";
     let button = format!("{fast} .ds-popup .ds-button");
     scroll_into_view(&mut harness, &button);
     click(&mut harness, &button);
@@ -388,7 +388,7 @@ fn watching_for_inferd_never_starts_it() {
 
 /// Opens the picker's first fast row's menu.
 fn open_first_menu(harness: &mut Harness) -> String {
-    let button = ".picker-kind:nth-child(1) .ds-field-row:nth-child(1) .ds-popup .ds-button";
+    let button = ".picker-kind .ds-field-row:nth-child(1) .ds-popup .ds-button";
     scroll_into_view(harness, button);
     click(harness, button);
     assert_eq!(
@@ -400,7 +400,7 @@ fn open_first_menu(harness: &mut Harness) -> String {
 }
 
 #[test]
-fn slot_rows_render_with_porter_infers_labels() {
+fn rows_render_from_the_schemas_sections_and_labels_with_no_local_table() {
     let sandbox = Sandbox::new("intelligence-slots");
     let rt = runtime();
     let bus = PrivateBus::start("slots");
@@ -408,16 +408,50 @@ fn slot_rows_render_with_porter_infers_labels() {
     let _daemon = rt.block_on(fake.serve_on(&bus));
     let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 3);
-    assert_eq!(harness.count(".picker-kind .ds-field-row"), 4);
+    assert_eq!(harness.count(".picker-kind .ds-field-row"), 5);
+    assert_eq!(
+        harness.count(".picker-area"),
+        1,
+        "one Models title over every slot"
+    );
     in_order(
         &harness.html(),
         &[
-            "Language",
+            "Models",
+            "Text",
             "Fast",
             "Balanced",
+            "Demanding",
             "Speech to text",
             "Fast",
             "Computer use",
+            "Balanced",
+        ],
+    );
+}
+
+#[test]
+fn grouped_choices_render_under_headers_ungrouped_first_in_first_appearance_order() {
+    let sandbox = Sandbox::new("intelligence-groups");
+    let rt = runtime();
+    let bus = PrivateBus::start("groups");
+    let fake = Inferd::new(Policy::Allow).on_slots();
+    let _daemon = rt.block_on(fake.serve_on(&bus));
+    let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
+    settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 3);
+    open_first_menu(&mut harness);
+    in_order(
+        &harness.html(),
+        &[
+            "Catalogue default",
+            "Automatic",
+            "On this computer",
+            "qwen",
+            "holo",
+            "Anthropic",
+            "claude",
+            "Google",
+            "gemini",
         ],
     );
 }
@@ -431,7 +465,17 @@ fn an_old_key_module_still_renders() {
     let _daemon = rt.block_on(fake.serve_on(&bus));
     let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 2);
-    in_order(&harness.html(), &["Language", "Fast", "Computer use"]);
+    assert_eq!(harness.count(".picker-area"), 1, "the section is the area");
+    in_order(
+        &harness.html(),
+        &["Models", "Language", "Fast", "Computer use"],
+    );
+    open_first_menu(&mut harness);
+    let html = harness.html();
+    assert!(
+        !html.contains("On this computer"),
+        "a module with no groups has no headers:\n{html}"
+    );
 }
 
 #[test]
@@ -454,8 +498,8 @@ fn an_unavailable_choice_is_greyed_with_its_reason_and_cannot_be_set() {
         html.contains("Add an account to use"),
         "the reason is under the choice:\n{html}"
     );
-    // Items: "", auto, qwen, holo (disabled), then its reason.
-    let holo = ".ds-menu-item:nth-child(4)";
+    // Items: "", auto, header, qwen, holo (disabled), its reason, then the other groups.
+    let holo = ".ds-menu-item:nth-child(5)";
     assert_eq!(
         harness.attr(holo, "aria-disabled").as_deref(),
         Some("true"),

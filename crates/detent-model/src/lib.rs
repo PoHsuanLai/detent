@@ -30,8 +30,8 @@ pub use layout::{Block, blocks};
 pub use navigation::{landing, visible_pages};
 pub use page::PageSlug;
 pub use picker::{
-    Absence, Applying, Described, KindRows, ModelRow, PickerEffect, PickerInput, PickerState,
-    Ready, loading_text, step,
+    Absence, Applying, ChoiceSection, Described, KindRows, ModelRow, PickerEffect, PickerInput,
+    PickerState, Ready, loading_text, step,
 };
 pub use range::{Number, Range};
 pub use reason::Reason;

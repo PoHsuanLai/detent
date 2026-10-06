@@ -47,6 +47,7 @@ fn why_line(why: &Why) -> String {
         Why::Evicted { model } => {
             format!("Loading it, and unloading {} to make room.", model.model)
         }
+        Why::Reached { .. } => "Reached through an online account.".to_owned(),
     }
 }
 

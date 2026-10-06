@@ -120,8 +120,14 @@ pub fn ModelPicker(reasons: Shown) -> Element {
             let applying = ready.applying.clone();
             rsx! {
                 div { class: "picker", "data-picker": "ready",
-                    for kind in ready.kinds.iter().cloned() {
-                        KindCard { key: "{kind.kind}", kind, applying: applying.clone(), onchoose: choose }
+                    for (at, kind) in ready.kinds.iter().cloned().enumerate() {
+                        KindCard {
+                            key: "{kind.area:?}/{kind.label}",
+                            titled: at == 0 || ready.kinds[at - 1].area != kind.area,
+                            kind,
+                            applying: applying.clone(),
+                            onchoose: choose,
+                        }
                     }
                     div { class: "picker-auto",
                         Label { text: AUTOMATIC, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
@@ -166,14 +172,29 @@ fn Unavailable(absence: Absence) -> Element {
     }
 }
 
-/// One kind of work: a card of its tiers.
+/// The title over the slots of one area ("Models").
+#[component]
+fn AreaTitle(title: String) -> Element {
+    rsx! {
+        div { class: "picker-area", "data-area": "{title}",
+            Label { text: title.clone(), role: LabelRole::Primary }
+        }
+    }
+}
+
+/// One slot: a card of its tiers.
 #[component]
 fn KindCard(
     kind: KindRows,
+    titled: bool,
     applying: Option<detent_model::Applying>,
     onchoose: EventHandler<(KeyPath, String)>,
 ) -> Element {
+    let area = kind.area.clone().filter(|_| titled);
     rsx! {
+        if let Some(title) = area {
+            AreaTitle { title }
+        }
         div { class: "picker-kind",
             FieldGroup { title: Some(kind.label.clone()),
                 for row in kind.rows.iter().cloned() {
@@ -199,15 +220,12 @@ fn TierRow(
     };
     let loading = here.map(|set| loading_text(&row, &set.word));
     let shown = here.map_or_else(|| row.value.clone(), |set| set.word.clone());
-    let items: Vec<MenuItem<String>> = row
-        .words
-        .iter()
-        .flat_map(|word| choice_items(&row, word))
-        .collect();
+    let items = menu_items(&row);
     let path = row.path.clone();
     rsx! {
         FieldRow {
-            label: TextLine::from(row.tier),
+            label: TextLine::from(row.label.clone()),
+            help: if row.help.is_empty() { None } else { Some(TextLine::from(row.help.clone())) },
             availability,
             common: Common { id: None, ..Common::default() },
             if let Some(text) = loading {
@@ -222,6 +240,21 @@ fn TierRow(
             }
         }
     }
+}
+
+/// The row's menu: the ungrouped choices first, then a header per group over its choices.
+fn menu_items(row: &ModelRow) -> Vec<MenuItem<String>> {
+    row.sections
+        .iter()
+        .flat_map(|section| {
+            let header = section.group.clone().map(MenuItem::Header);
+            let items = section
+                .words
+                .iter()
+                .flat_map(|word| choice_items(row, word));
+            header.into_iter().chain(items)
+        })
+        .collect()
 }
 
 /// The menu lines for `word`: the choice, and when it cannot be picked, the choice greyed with

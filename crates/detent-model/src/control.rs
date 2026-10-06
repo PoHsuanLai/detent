@@ -155,6 +155,7 @@ mod tests {
             labels: Default::default(),
             agent: Default::default(),
             unavailable: Default::default(),
+            groups: Default::default(),
         }
     }
 

@@ -34,6 +34,7 @@ fn menu(key: &str, label: &str) -> KeySpec {
         ),
         agent: AgentSetting::HandsOff,
         unavailable: Default::default(),
+        groups: Default::default(),
     }
 }
 
@@ -45,7 +46,6 @@ fn described() -> Described {
             menu("ai.model.llm.best", "Language: Demanding"),
             menu("ai.model.computer_use.balanced", "Computer use: Balanced"),
             menu("ai.local_only", "not a picker row"),
-            menu("ai.model.llm.huge", "Language: Huge"),
         ],
         values: BTreeMap::from([(path("ai.model.llm.balanced"), "local/qwen".to_owned())]),
     }
@@ -72,14 +72,14 @@ fn rows_group_by_kind_in_the_modules_order_with_the_documented_tier_names() {
     let PickerState::Ready(ready) = ready() else {
         panic!("the module answered");
     };
-    let groups: Vec<(String, String, Vec<&str>)> = ready
+    let groups: Vec<(Option<&str>, &str, Vec<&str>)> = ready
         .kinds
         .iter()
         .map(|kind| {
             (
-                kind.kind.clone(),
-                kind.label.clone(),
-                kind.rows.iter().map(|row| row.tier).collect(),
+                kind.area.as_deref(),
+                kind.label.as_str(),
+                kind.rows.iter().map(|row| row.label.as_str()).collect(),
             )
         })
         .collect();
@@ -87,17 +87,14 @@ fn rows_group_by_kind_in_the_modules_order_with_the_documented_tier_names() {
         groups,
         [
             (
-                "text".to_owned(),
-                "Language".to_owned(),
+                Some("Models"),
+                "Language",
                 vec!["Fast", "Balanced", "Demanding"]
             ),
-            (
-                "computer_use".to_owned(),
-                "Computer use".to_owned(),
-                vec!["Balanced"]
-            ),
+            (Some("Models"), "Computer use", vec!["Balanced"]),
         ],
-        "a key that is not ai.model.<kind>.<tier> with a known tier is not a row"
+        "an older module's section is the area and its label's prefix the slot; a key that is \
+         not ai.model.<slot>.<tier> is not a row"
     );
 }
 
@@ -234,101 +231,169 @@ fn a_row_says_loading_for_a_model_and_applying_for_the_words_that_name_none() {
     }
 }
 
-fn slot_key(slot: &str, tier: &str) -> String {
-    format!("ai.model.{slot}.{tier}")
+fn in_section(mut spec: KeySpec, section: &str, label: &str) -> KeySpec {
+    spec.section = Section(section.to_owned());
+    spec.label = Label(label.to_owned());
+    spec
 }
 
-#[test]
-fn slot_rows_render_in_the_slot_order_with_porter_infers_labels() {
-    let keys = [
-        "rerank",
-        "voice_out",
-        "embeddings",
-        "computer_use",
-        "text",
-        "voice_in",
-        "image_in",
-    ]
-    .map(|slot| menu(&slot_key(slot, "fast"), "x: Fast"))
-    .to_vec();
-    let PickerState::Ready(ready) = step(
-        PickerState::Probing,
-        PickerInput::Found(Ok(Described {
-            keys,
-            values: BTreeMap::new(),
-        })),
-    )
-    .0
+fn ready_of(keys: Vec<KeySpec>) -> Ready {
+    let described = Described {
+        keys,
+        values: BTreeMap::new(),
+    };
+    let PickerState::Ready(ready) = step(PickerState::Probing, PickerInput::Found(Ok(described))).0
     else {
         panic!("ready");
     };
-    let groups: Vec<(&str, &str)> = ready
+    ready
+}
+
+#[test]
+fn rows_come_from_the_schema_in_describe_order_with_no_slot_table() {
+    // Slots a table would never list, in an order no table would use.
+    let keys = [
+        ("zebra", "Zebra stripes", "fast", "Fast"),
+        ("zebra", "Zebra stripes", "balanced", "Balanced"),
+        ("alpha", "Alpha", "best", "Demanding"),
+    ]
+    .map(|(slot, name, tier, label)| {
+        in_section(
+            menu(&format!("ai.model.{slot}.{tier}"), "x"),
+            &format!("Models / {name}"),
+            label,
+        )
+    })
+    .to_vec();
+    let ready = ready_of(keys);
+    let shown: Vec<(Option<&str>, &str, Vec<&str>)> = ready
         .kinds
         .iter()
-        .map(|kind| (kind.kind.as_str(), kind.label.as_str()))
+        .map(|kind| {
+            (
+                kind.area.as_deref(),
+                kind.label.as_str(),
+                kind.rows.iter().map(|row| row.label.as_str()).collect(),
+            )
+        })
         .collect();
     assert_eq!(
-        groups,
+        shown,
         [
-            ("text", "Language"),
-            ("voice_in", "Speech to text"),
-            ("voice_out", "Text to speech"),
-            ("image_in", "Reading images"),
-            ("computer_use", "Computer use"),
-            ("embeddings", "Embeddings"),
-            ("rerank", "Reranking"),
+            (Some("Models"), "Zebra stripes", vec!["Fast", "Balanced"]),
+            (Some("Models"), "Alpha", vec!["Demanding"]),
         ]
     );
 }
 
 #[test]
-fn an_old_kind_module_still_renders_under_its_slot_and_a_new_row_shadows_its_old_twin() {
-    let old = Described {
-        keys: vec![
-            menu("ai.model.speech_in.fast", "Speech in: Fast"),
-            menu("ai.model.llm.fast", "Language: Fast"),
-        ],
-        values: BTreeMap::new(),
-    };
-    let PickerState::Ready(ready) = step(PickerState::Probing, PickerInput::Found(Ok(old))).0
-    else {
-        panic!("ready");
-    };
-    let rows: Vec<(&str, &str)> = ready
+fn a_section_with_no_separator_and_a_label_with_no_slot_still_render() {
+    let ready = ready_of(vec![
+        in_section(menu("ai.model.text.fast", "x"), "Models", "Text: Fast"),
+        in_section(menu("ai.model.old.fast", "x"), "Everything", "Fast"),
+    ]);
+    let shown: Vec<(Option<&str>, &str, &str)> = ready
         .kinds
         .iter()
-        .flat_map(|kind| {
-            kind.rows
-                .iter()
-                .map(|row| (kind.kind.as_str(), row.path.0.as_str()))
+        .map(|kind| {
+            (
+                kind.area.as_deref(),
+                kind.label.as_str(),
+                kind.rows[0].label.as_str(),
+            )
         })
         .collect();
     assert_eq!(
-        rows,
+        shown,
         [
-            ("text", "ai.model.llm.fast"),
-            ("voice_in", "ai.model.speech_in.fast")
-        ],
-        "an old key is shown, and sets under its own path"
+            (Some("Models"), "Text", "Fast"),
+            (None, "Everything", "Fast")
+        ]
     );
+}
 
-    let both = Described {
-        keys: vec![
-            menu("ai.model.llm.fast", "Language: Fast"),
-            menu("ai.model.text.fast", "Language: Fast"),
-        ],
-        values: BTreeMap::new(),
+fn grouped_menu() -> KeySpec {
+    use ds_settings::schema::{ChoiceGroup, ChoiceWord};
+    let mut spec = menu("ai.model.text.fast", "Fast");
+    spec.kind = KeyKind::Menu {
+        variants: [
+            "",
+            "auto",
+            "local/qwen",
+            "anthropic/claude",
+            "google/gemini",
+            "local/holo",
+        ]
+        .map(str::to_owned)
+        .to_vec(),
     };
-    let PickerState::Ready(ready) = step(PickerState::Probing, PickerInput::Found(Ok(both))).0
-    else {
-        panic!("ready");
+    spec.groups = [
+        ("local/qwen", "On this computer"),
+        ("anthropic/claude", "Anthropic"),
+        ("google/gemini", "Google"),
+        ("local/holo", "On this computer"),
+    ]
+    .map(|(word, group)| (ChoiceWord(word.to_owned()), ChoiceGroup(group.to_owned())))
+    .into();
+    spec
+}
+
+#[test]
+fn grouped_choices_are_ungrouped_first_then_groups_in_first_appearance_order() {
+    let ready = ready_of(vec![
+        grouped_menu(),
+        menu("ai.model.text.balanced", "Balanced"),
+    ]);
+    let sections = |row: &ModelRow| -> Vec<(Option<String>, Vec<String>)> {
+        row.sections
+            .iter()
+            .map(|section| (section.group.clone(), section.words.clone()))
+            .collect()
     };
-    let paths: Vec<&str> = ready.kinds[0]
-        .rows
+    let words = |list: &[&str]| {
+        list.iter()
+            .map(|word| (*word).to_owned())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        sections(&ready.kinds[0].rows[0]),
+        [
+            (None, words(&["", "auto"])),
+            (
+                Some("On this computer".to_owned()),
+                words(&["local/qwen", "local/holo"])
+            ),
+            (Some("Anthropic".to_owned()), words(&["anthropic/claude"])),
+            (Some("Google".to_owned()), words(&["google/gemini"])),
+        ]
+    );
+    assert_eq!(
+        sections(&ready.kinds[0].rows[1]),
+        [(None, words(&["", "auto", "local/qwen", "local/holo"]))],
+        "a module with no groups lists every choice ungrouped"
+    );
+}
+
+#[test]
+fn an_unavailable_choice_inside_a_group_keeps_its_reason() {
+    use ds_settings::schema::{ChoiceWord, UnavailableReason};
+    let mut spec = grouped_menu();
+    spec.unavailable.insert(
+        ChoiceWord("anthropic/claude".to_owned()),
+        UnavailableReason("Add an account to use".to_owned()),
+    );
+    let ready = ready_of(vec![spec]);
+    let row = &ready.kinds[0].rows[0];
+    let anthropic = row
+        .sections
         .iter()
-        .map(|row| row.path.0.as_str())
-        .collect();
-    assert_eq!(paths, ["ai.model.text.fast"]);
+        .find(|section| section.group.as_deref() == Some("Anthropic"))
+        .expect("its group");
+    assert_eq!(anthropic.words, ["anthropic/claude"]);
+    assert_eq!(
+        row.unavailable_reason("anthropic/claude"),
+        Some("Add an account to use")
+    );
 }
 
 #[test]
