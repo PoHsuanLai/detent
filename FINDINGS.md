@@ -8,11 +8,15 @@ Open items and standing facts. An entry names the condition that closes it.
 
 `ds_settings::schema::KeyKind` has nine kinds; seven have a component (Fixed: `Label`, Toggle:
 `Toggle`, Segmented: `SegmentedControl`, Menu: `PopUpButton`, Bounded: `Slider`, Text: `TextField`,
-Colour: `RadioGroup` with `Arrangement::Swatches`). Two have none and render read-only with an
+Colour: `RadioGroup` with `Arrangement::Swatches`). Two have none (and a third, Rows, is composed below) and render read-only with an
 "Edit in file" note (`detent-ui/src/controls/file_only.rs`):
 
 - **Shortcut** (a captured key chord): quire has no key-capture field. Closes when quire adds one.
-- **List** (`List(Box<KeyKind>)`, a rows editor): quire has no rows editor. Today three sill keys
+- **Rows** (`Rows { columns }`, cua's `cua.apps`) is edited in `detent-ui/src/controls/rows.rs`, composed of quire's
+  `TextField`, `PopUpButton` and `Button`: quire has no rows-editor component of its own, so a
+  component there would replace it. Rows the editor cannot hold (an unknown cell, a word outside
+  a column) are shown read-only and kept byte for byte.
+- **List** (`List(Box<KeyKind>)`): quire has no list editor. Today three sill keys
   are lists (`control_center.modules`, `widgets.center`, `widgets.desktop_widgets`).
 
 Colour is drawn with what quire has and it fits badly: a `Choice` swatch names a CSS custom property
@@ -65,17 +69,24 @@ because a schema names no binary. Closes when `discover` returns the skipped fil
 
 ## The Intelligence page
 
-- **Schemas read:** inferd's (`fixtures/schemas/inferd.settings.toml`, 21 rows, hands-off) and
-  docket's (`docket.settings.toml`, `agent.mcp.expose` only). Not shipped anywhere yet: almanac's
-  `memory.*`, cua's `cua.*`, sill's `companion.*` and the rest of docket's `agent.*` (design/22
-  sections 3.27 to 3.30). Their sections appear when a schema names them; the layout test uses
-  stand-ins. Closes when each program ships its schema.
+- **Schemas read:** inferd's (`fixtures/schemas/inferd.settings.toml`, 21 rows, hands-off), docket's
+  (18 rows: Privacy basic; Review time, Session budgets and Task approvals Advanced), almanac's
+  (8 rows: Memory basic, Retention Advanced) and cua's (14 rows: Computer use basic; Run limits,
+  Timing and Window detail Advanced). Each is installed to `$XDG_DATA_DIRS/quire/settings/` and
+  writes its own `$XDG_CONFIG_HOME/<program>/settings.toml`. Not shipped anywhere yet: sill's
+  `companion.*` (sill's `dist/` has no companion schema); the Companion section appears when a
+  schema names it, and the layout test uses a stand-in. Closes when sill ships its schema.
+- **cua's apps are rows, but "never `always` for a browser" is not enforced here.** The rows editor
+  checks each cell against its column (the whole value matches the pattern, a choice is one of its
+  words); which apps are browsers is cua's to decide when it reads the file.
 - **The reason footer has no producer.** `Reason` reads `InferEvent::Why` and `Declined` from the
   `ReasonFeed` in `Env`, but `Why` is an event of an inferd session, which only that session's caller
   sees. The binary starts with a silent feed, so the footer shows its resting line. Closes when
   inferd (or the companion, which holds the session) offers the last pick to Settings.
-- **The picker is read once.** Its rows follow the module's `Changed` signals, but an inferd that
-  starts after detent opened is not noticed until the window is reopened.
+- **The picker follows inferd.** It subscribes to `NameOwnerChanged` for inferd's bus name before
+  asking, re-reads the module when the name appears and shows the "unavailable" card when it
+  vanishes. It never starts inferd (`NameHasOwner` first). A daemon that takes its name before it
+  serves the module is read once and shown as failed until its name changes hands again.
 - A footer under a `FieldGroup` is drawn by hand (a `Label` in `.picker-reason`): quire's
   `FieldGroup` has no footer slot.
 - A "Choose Model..." button beside a declined model is not drawn: the picker is on the same page.

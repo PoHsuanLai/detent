@@ -26,7 +26,12 @@ fn the_real_schemas_are_found_in_file_name_order() {
     let dir = seed_schemas(scratch.path());
     let found = discover(&[dir]);
     let apps: Vec<&str> = found.programs.iter().map(|p| p.app.0.as_str()).collect();
-    assert_eq!(apps, ["docket", "inferd", "palmrest", "quire", "sill"]);
+    assert_eq!(
+        apps,
+        [
+            "almanac", "cua", "docket", "inferd", "palmrest", "quire", "sill"
+        ]
+    );
     assert_eq!(found.warnings, Vec::new());
 }
 

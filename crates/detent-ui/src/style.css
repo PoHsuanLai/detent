@@ -72,3 +72,17 @@
 .picker-reason {
   padding: 0 var(--s-14);
 }
+
+.key-rows {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s-6);
+}
+
+.key-rows-row,
+.key-rows-new {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+}

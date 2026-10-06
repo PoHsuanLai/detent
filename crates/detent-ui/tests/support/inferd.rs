@@ -55,10 +55,11 @@ impl Inferd {
     /// Serves the module on `bus`, owning inferd's bus name; the connection must be kept alive.
     pub async fn serve_on(&self, bus: &PrivateBus) -> zbus::Connection {
         let connection = bus.connect().await;
-        connection.request_name(INFERENCE_BUS).await.expect("name");
+        // The module first, the name after: a client told the name is taken finds the module.
         serve(&connection, INFERENCE_SETTINGS_PATH, self.clone())
             .await
             .expect("serves");
+        connection.request_name(INFERENCE_BUS).await.expect("name");
         connection
     }
 

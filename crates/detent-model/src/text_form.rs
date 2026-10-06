@@ -43,7 +43,7 @@ impl Control {
                     .ok_or(TextFault::OutOfRange(range.min, range.max))
             }
             Control::Text | Control::Colour => Ok(toml::Value::String(text.to_owned())),
-            Control::FileOnly(_) => Err(TextFault::FileOnly),
+            Control::Rows(_) | Control::FileOnly(_) => Err(TextFault::FileOnly),
         }
     }
 }

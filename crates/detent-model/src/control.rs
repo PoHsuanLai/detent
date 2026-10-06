@@ -2,6 +2,7 @@
 //! accepts.
 
 use crate::range::Range;
+use crate::rows::Columns;
 use ds_settings::schema::{KeyKind, KeySpec};
 
 /// The two words of an on/off enum, which one is on.
@@ -59,7 +60,7 @@ impl TogglePair {
 pub enum FileOnly {
     /// A captured key chord: quire has no shortcut-capture field.
     Shortcut,
-    /// A list of values or of tables (rows): quire has no rows editor.
+    /// A list of values: quire has no list editor.
     List,
     /// An action the owning program runs through its live settings module (a button): detent
     /// has no live client yet, so the row is read-only until the Accounts pane's lane wires one.
@@ -83,6 +84,8 @@ pub enum Control {
     Text,
     /// A colour: the swatch row.
     Colour,
+    /// A list of tables: the rows editor, one cell per column.
+    Rows(Columns),
     /// No component: read-only, edited in the file.
     FileOnly(FileOnly),
 }
@@ -103,7 +106,8 @@ impl Control {
             KeyKind::Text => Control::Text,
             KeyKind::Colour => Control::Colour,
             KeyKind::Shortcut => Control::FileOnly(FileOnly::Shortcut),
-            KeyKind::List(_) | KeyKind::Rows { .. } => Control::FileOnly(FileOnly::List),
+            KeyKind::Rows { columns } => Control::Rows(Columns(columns.clone())),
+            KeyKind::List(_) => Control::FileOnly(FileOnly::List),
             KeyKind::Live { .. } => Control::FileOnly(FileOnly::Action),
         }
     }
@@ -123,6 +127,7 @@ impl Control {
             Control::Segmented(words) | Control::Menu(words) => word_of(words),
             Control::Slider(range) => range.admit(value),
             Control::Text | Control::Colour => value.is_str().then(|| value.clone()),
+            Control::Rows(columns) => columns.cells(value).map(|_| value.clone()),
             Control::FileOnly(_) => Some(value.clone()),
         }
     }

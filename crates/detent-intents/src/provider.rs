@@ -276,7 +276,7 @@ impl SettingsProvider {
             return Preview::None;
         };
         let held = match entry.control {
-            Control::Text | Control::Colour | Control::FileOnly(_) => None,
+            Control::Text | Control::Colour | Control::Rows(_) | Control::FileOnly(_) => None,
             _ => self.current(entry).ok().map(|value| show_value(&value)),
         };
         let line = |label: &str, text: String| {

@@ -20,7 +20,7 @@ rules every repo shares; this file is detent's map and rules, and wins where the
 | # | Crate | What it is | May depend on |
 | --- | --- | --- | --- |
 | 0 | `detent-testkit` | Dev only: `Scratch` directories under the target directory, the committed schema fixtures | std only |
-| 1 | `detent-model` | Pure: `discover` (stale schemas skipped with a `Warning`), `Catalogue` (page then section grouping, fixed page order), `blocks` (what a page draws in order: the Intelligence sections in design/22's order, the model picker after Models), `PickerState` and `step` (inferd's live model picker as a pure machine), `Reason` (the footer's sentences over `Why` and `Declined`), `Control` per `KeyKind` (a two-word enum is a switch only when it is on and off), `Range`, `search`, `visible_pages`/`landing` | `ds-settings` (no features), `porter-core`, `porter-infer` |
+| 1 | `detent-model` | Pure: `discover` (stale schemas skipped with a `Warning`), `Catalogue` (page then section grouping, fixed page order), `blocks` (what a page draws in order: the Intelligence sections in design/22's order, the model picker after Models), `PickerState` and `step` (inferd's live model picker as a pure machine), `Reason` (the footer's sentences over `Why` and `Declined`), `Control` per `KeyKind` (a two-word enum is a switch only when it is on and off; a `Rows` key is `Columns`, whose cells are checked against each column), `Range`, `search`, `visible_pages`/`landing` | `ds-settings` (no features), `porter-core`, `porter-infer`; `regex` (a rows column's pattern) |
 | 2 | `detent-files` | Effects on the settings files: `load` (lenient, unknown keys reported, unrepresentable values kept as written), `save` (one key set in place, atomic temp and rename) | `detent-model`, `ds-settings` (no features) |
 | 3 | `detent-intents` | What an agent or a command line may do in Settings: the manifest `org.quire.Settings` (read from `dist/intents/`), `SettingsProvider` (the `IntentProvider1` for `settings.page.show`, `settings.key.read`, `settings.key.set`), the undo journal, `serve` and `serve_session`. A `Window` trait is how it tells the window; no UI crate | `detent-model`, `detent-files`, docket and porter (above), `ds-settings` (no features) |
 | 3 | `detent-ui` | The window: `App`, `Env`, sidebar, pages, sections, one control component per `Control`, the model picker | `detent-model`, `detent-files`, `ds`, `ds-settings` (dioxus, live, tokio), `ds-blitz`, `porter-dbus`, `porter-infer`; tokio, zbus; dev: `ds-harness`, `ds-lint` |
@@ -45,7 +45,7 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 | What the window is told while it runs | `detent-ui::{Notice, inbox}` (a page to open, files to read again) |
 | Where the window opens, where files live | `detent-ui::Env` (a context; the binary fills it, a test fills it with scratch paths) |
 | What an Intelligence page draws and in what order | `detent-model::blocks` |
-| The model picker's state and transitions | `detent-model::{PickerState, step}`; the bus calls in `detent-ui/src/inference/io.rs`, the card in `inference/picker_view.rs` |
+| The model picker's state and transitions | `detent-model::{PickerState, step}`; the bus calls in `detent-ui/src/inference/io.rs` and the watch for inferd's name in `follow.rs`, the card in `inference/picker_view.rs` |
 | The words of the reason footer | `detent-model::Reason` |
 | Which bus inferd is looked for on, and where the footer's events come from | `detent-ui::Env` (`bus: BusSource`, `reasons: ReasonFeed`) |
 | The layout stylesheet | `detent-ui/src/style.css` (tokens only, linted) |
@@ -80,8 +80,9 @@ a `params` list even when empty), add its arm in `detent-intents/src/ask.rs` and
 - `detent-intents/tests`: the provider served on a private `dbus-daemon` (`PrivateBus`), called from
   a connection that owns `org.quire.Intents1` (a provider answers nobody else), the way intentd calls
   an app. `detent/tests/install.rs` runs `scripts/install.sh` into a scratch `DESTDIR`.
-- `detent-ui/tests/intelligence.rs` drives the Intelligence page: stand-in schemas for the programs
-  with none yet (memory, computer use, companion) test the section order, `support/inferd.rs` is a
+- `detent-ui/tests/intelligence.rs` drives the Intelligence page: a stand-in schema for the companion
+  (sill has none yet) tests the section order, `intelligence_programs.rs` the rows docket, almanac and cua
+  ship (sections, Advanced, writes, the apps rows editor), `support/inferd.rs` is a
   fake `org.quire.SettingsModule1` on a private `dbus-daemon` (`support/bus.rs`), and
   `Sandbox::on_bus` points the app at it. Without it the app gets `BusSource::Absent`.
 - No test reads the real config, the session bus or the portal.

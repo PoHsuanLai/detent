@@ -1,7 +1,8 @@
 //! The model picker on the Intelligence page: a card per kind of work, a row per tier, and the
 //! footer that says why the last answer came from the model it did.
 
-use super::io::{next_change, open, read, set};
+use super::follow::{Followed, follow};
+use super::io::set;
 use crate::env::Env;
 use crate::files::{Files, value_of};
 use detent_model::{
@@ -57,24 +58,20 @@ pub fn ModelPicker(reasons: Shown) -> Element {
     use_future(move || {
         let bus = look.bus.clone();
         async move {
-            let found = match open(&bus).await {
-                Ok(opened) => read(&opened).await.map(|described| (opened, described)),
-                Err(absence) => Err(absence),
-            };
-            match found {
-                Ok((opened, described)) => {
+            follow(&bus, |followed| match followed {
+                Followed::Opened(opened, described) => {
                     send(&mut state, PickerInput::Found(Ok(described)));
-                    client.set(Some(opened.clone()));
-                    if let Ok(mut changes) = opened.changes().await {
-                        while let Some((path, word)) = next_change(&mut changes).await {
-                            send(&mut state, PickerInput::Changed { path, word });
-                        }
-                    }
+                    client.set(Some(opened));
                 }
-                Err(absence) => {
+                Followed::Gone(absence) => {
                     send(&mut state, PickerInput::Found(Err(absence)));
+                    client.set(None);
                 }
-            }
+                Followed::Changed(path, word) => {
+                    send(&mut state, PickerInput::Changed { path, word });
+                }
+            })
+            .await;
         }
     });
 

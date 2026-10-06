@@ -2,6 +2,7 @@
 //! (design/22 section 9.4) and the reasons it gives for a pick.
 
 mod bus;
+mod follow;
 mod io;
 mod picker_view;
 mod reasons;

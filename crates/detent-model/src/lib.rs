@@ -14,6 +14,7 @@ mod page;
 mod picker;
 mod range;
 mod reason;
+mod rows;
 mod search;
 mod text_form;
 mod warning;
@@ -34,6 +35,7 @@ pub use picker::{
 };
 pub use range::{Number, Range};
 pub use reason::Reason;
+pub use rows::{Columns, cell_fits};
 pub use search::{Hit, Rank, Search, search};
 pub use text_form::{TextFault, show_value};
 pub use warning::{StaleReason, Warning};

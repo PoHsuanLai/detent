@@ -7,6 +7,8 @@
 #   quire       ds-settings' `write_schema` example (quire has no app binary)
 #   inferd      ../porter/dist/inferd.settings.toml (written by hand, no --write-schema yet)
 #   docket      ../docket/dist/settings/docket.settings.toml
+#   almanac     ../almanac/dist/settings/almanac.settings.toml
+#   cua         ../cua/dist/settings/cua.settings.toml
 #
 # Usage: scripts/gen-fixtures.sh
 set -euo pipefail
@@ -28,5 +30,7 @@ private "$(cargo metadata --format-version 1 --no-deps --manifest-path ../quire/
 
 mkdir -p fixtures/schemas
 cp "$scratch"/out/*.settings.toml fixtures/schemas/
-cp ../porter/dist/inferd.settings.toml ../docket/dist/settings/docket.settings.toml fixtures/schemas/
+cp ../porter/dist/inferd.settings.toml fixtures/schemas/
+cp ../docket/dist/settings/docket.settings.toml ../almanac/dist/settings/almanac.settings.toml \
+  ../cua/dist/settings/cua.settings.toml fixtures/schemas/
 ls -l fixtures/schemas

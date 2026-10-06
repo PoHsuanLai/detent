@@ -7,7 +7,7 @@ use ds_settings::schema::{KeyKind, KeyPath};
 use porter_dbus::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
 use std::collections::BTreeMap;
 use zbus::Connection;
-use zbus::fdo::DBusProxy;
+use zbus::fdo::{DBusProxy, NameOwnerChangedStream};
 use zbus::names::BusName;
 
 fn failed(why: impl ToString) -> Absence {
@@ -21,7 +21,7 @@ fn absence_of(error: LiveError) -> Absence {
     }
 }
 
-async fn connect(bus: &BusSource) -> Result<Connection, Absence> {
+pub(crate) async fn connect(bus: &BusSource) -> Result<Connection, Absence> {
     match bus {
         BusSource::Absent => Err(Absence::NoBus),
         BusSource::Session => Connection::session().await.map_err(failed),
@@ -33,12 +33,32 @@ async fn connect(bus: &BusSource) -> Result<Connection, Absence> {
     }
 }
 
+/// The signals that say inferd's bus name changed hands, subscribed before anyone asks whether it
+/// is there, so no change falls between the question and the listening.
+pub(crate) async fn owner_changes(
+    connection: &Connection,
+) -> Result<NameOwnerChangedStream, Absence> {
+    DBusProxy::new(connection)
+        .await
+        .map_err(failed)?
+        .receive_name_owner_changed_with_args(&[(0, INFERENCE_BUS)])
+        .await
+        .map_err(failed)
+}
+
+/// The next time inferd's name changes hands; `None` when the bus is gone.
+pub(crate) async fn next_owner(owners: &mut NameOwnerChangedStream) -> Option<()> {
+    use zbus::export::futures_core::Stream;
+    std::future::poll_fn(|cx| std::pin::Pin::new(&mut *owners).poll_next(cx))
+        .await
+        .map(|_| ())
+}
+
 /// A client of inferd's picker, only when inferd is already on the bus: asking for the module
 /// of a daemon that is not running would start it, and opening Settings must not.
-pub(crate) async fn open(bus: &BusSource) -> Result<LiveClient, Absence> {
-    let connection = connect(bus).await?;
+pub(crate) async fn open(connection: &Connection) -> Result<LiveClient, Absence> {
     let name = BusName::try_from(INFERENCE_BUS).map_err(failed)?;
-    let running = DBusProxy::new(&connection)
+    let running = DBusProxy::new(connection)
         .await
         .map_err(failed)?
         .name_has_owner(name)
@@ -47,7 +67,7 @@ pub(crate) async fn open(bus: &BusSource) -> Result<LiveClient, Absence> {
     if !running {
         return Err(Absence::NotRunning);
     }
-    LiveClient::new(&connection, INFERENCE_BUS, INFERENCE_SETTINGS_PATH)
+    LiveClient::new(connection, INFERENCE_BUS, INFERENCE_SETTINGS_PATH)
         .await
         .map_err(absence_of)
 }

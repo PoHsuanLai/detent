@@ -3,6 +3,7 @@
 
 mod file_only;
 mod menu;
+mod rows;
 mod segmented;
 mod slider;
 mod swatches;
@@ -15,6 +16,7 @@ use ds::components::content::label::LabelRole;
 use ds::prelude::*;
 pub(crate) use file_only::FileOnlyControl;
 use menu::MenuControl;
+use rows::RowsControl;
 use segmented::SegmentedKey;
 use slider::SliderControl;
 use swatches::{SwatchControl, swatch_words};
@@ -44,6 +46,7 @@ pub fn Control(
         Kind::Readout(word) => {
             rsx! { Label { text: detent_model::word_label(&labels, &word), role: LabelRole::Secondary } }
         }
+        Kind::Rows(columns) => rsx! { RowsControl { columns, value, onchange } },
         Kind::FileOnly(_) => rsx! { FileOnlyControl { value } },
     }
 }

@@ -140,6 +140,8 @@ fn every_key_of_every_schema_is_on_exactly_one_page() {
     assert_eq!(
         files,
         [
+            "almanac/settings.toml",
+            "cua/settings.toml",
             "docket/settings.toml",
             "quire/inferd.toml",
             "palmrest/gestures.toml",

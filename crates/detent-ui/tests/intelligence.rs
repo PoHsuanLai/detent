@@ -77,21 +77,8 @@ fn model(name: &str) -> ModelRef {
 #[test]
 fn the_sections_follow_design_order_whatever_order_the_programs_were_read_in() {
     let sandbox = Sandbox::new("intelligence-order");
-    // Read in file-name order, so almanac's Memory is met before docket's Privacy and inferd's
-    // Models; design/22 section 5 puts them the other way round.
-    sandbox.add_schema(
-        "almanac",
-        &stand_in(
-            "almanac",
-            "almanac/settings.toml",
-            "memory.files.at_rest",
-            "Memory",
-        ),
-    );
-    sandbox.add_schema(
-        "cua",
-        &stand_in("cua", "cua/settings.toml", "cua.enabled", "Computer use"),
-    );
+    // Memory and Computer use come from almanac's and cua's own schemas, Privacy from docket's;
+    // only sill's Companion section has no schema yet, so a stand-in names it.
     sandbox.add_schema(
         "sill-companion",
         &stand_in(
@@ -339,4 +326,62 @@ fn the_footer_says_why_when_it_is_on_and_is_gone_when_it_is_off() {
             assert!(!harness.html().contains("Already running."));
         }
     }
+}
+
+#[test]
+fn an_inferd_that_starts_after_the_page_opened_is_found_and_one_that_stops_is_missed() {
+    let sandbox = Sandbox::new("intelligence-live");
+    let rt = runtime();
+    let bus = PrivateBus::start("live");
+    let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
+    settle(&mut harness, "the card", |h| {
+        h.attr(".picker", "data-picker").as_deref() == Some("unavailable")
+    });
+    assert!(harness.html().contains("inferd is not running"));
+    assert_eq!(harness.count(".picker-kind"), 0);
+
+    let fake = Inferd::new(Policy::Allow);
+    let daemon = rt.block_on(fake.serve_on(&bus));
+    settle(&mut harness, "the picker to appear", |h| {
+        h.count(".picker-kind") == 2
+    });
+    assert_eq!(harness.count(".picker-kind .ds-field-row"), 4);
+
+    drop(daemon);
+    settle(&mut harness, "the card to return", |h| {
+        h.attr(".picker", "data-picker").as_deref() == Some("unavailable")
+    });
+    assert!(harness.html().contains("inferd is not running"));
+    assert_eq!(harness.count(".picker-kind"), 0);
+
+    let _again = rt.block_on(fake.serve_on(&bus));
+    settle(&mut harness, "the picker to come back", |h| {
+        h.count(".picker-kind") == 2
+    });
+}
+
+#[test]
+fn watching_for_inferd_never_starts_it() {
+    let sandbox = Sandbox::new("intelligence-never-activates");
+    let rt = runtime();
+    let bus = PrivateBus::start("never-activates");
+    let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
+    settle(&mut harness, "the card", |h| {
+        h.attr(".picker", "data-picker").as_deref() == Some("unavailable")
+    });
+    let names = rt.block_on(async {
+        let connection = bus.connect().await;
+        zbus::fdo::DBusProxy::new(&connection)
+            .await
+            .expect("proxy")
+            .list_names()
+            .await
+            .expect("names")
+    });
+    assert!(
+        !names
+            .iter()
+            .any(|n| n.as_str() == porter_dbus::INFERENCE_BUS),
+        "nothing owns inferd's name: the page only looked"
+    );
 }
