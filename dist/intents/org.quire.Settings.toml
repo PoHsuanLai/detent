@@ -29,9 +29,10 @@ index = "not_indexed"
 titles = { kind = "app_authored" }
 props = []
 
-# Shows a page in the window, opening the window if it is not open.
+# Shows a page in the window, opening the window if it is not open. Not `settings.page.open`:
+# docket reserves `<kind>.open` for one read of one thing of the kind with nothing required.
 [[actions]]
-name = "settings.page.open"
+name = "settings.page.show"
 label = "Open page"
 on = { kind = "nothing" }
 effect = "read"

@@ -36,7 +36,7 @@ mod tests {
         assert_eq!(
             names,
             [
-                "settings.page.open",
+                "settings.page.show",
                 "settings.key.read",
                 "settings.key.set"
             ]

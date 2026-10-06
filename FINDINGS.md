@@ -98,7 +98,7 @@ of `gestures.toml`, so a save from detent drops nothing palmrest reads. Two thin
 
 ## Intents (`org.quire.Settings`)
 
-`dist/intents/org.quire.Settings.toml` declares three actions (`settings.page.open`,
+`dist/intents/org.quire.Settings.toml` declares three actions (`settings.page.show`,
 `settings.key.read`, `settings.key.set`); `detent-intents` serves them while the window runs.
 Open items, each with its closing condition:
 
@@ -110,9 +110,9 @@ Open items, each with its closing condition:
   `discover` reads the field.
 - **No headless activation.** The bus file starts `detent`, which opens its window; a read or a set
   that arrives by D-Bus activation therefore shows Settings. A background provider needs
-  `ds_blitz::launch_idle` with an `AppHandle` that opens the window only for `settings.page.open`.
+  `ds_blitz::launch_idle` with an `AppHandle` that opens the window only for `settings.page.show`.
 - **No single instance, and the window is not raised.** A second `detent` loses the bus name and runs
-  without the service, so intents reach the first. `settings.page.open` switches the page of the
+  without the service, so intents reach the first. `settings.page.show` switches the page of the
   running window but does not focus it (quire has no window-raise request in `ds-blitz`).
 - **A key path two programs share names no key.** `Catalogue::entry` answers only an unambiguous
   path; the entity key of `settings.key` is the dotted path alone. Closes if two shipped schemas ever

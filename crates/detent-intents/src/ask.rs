@@ -62,7 +62,7 @@ fn text_arg(inv: &Invocation, name: &str) -> Result<String, AppRefusal> {
 /// What `inv` asks, or why it cannot be asked.
 pub(crate) fn ask(inv: &Invocation, app: &AppName) -> Result<Ask, AppRefusal> {
     match inv.action.as_str() {
-        "settings.page.open" => {
+        "settings.page.show" => {
             entity_arg(inv, app, "page", "settings.page").map(|slug| Ask::OpenPage(PageSlug(slug)))
         }
         "settings.key.read" => {

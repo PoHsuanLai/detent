@@ -244,7 +244,7 @@ impl IntentProvider for SettingsProvider {
             label.to_lowercase().contains(&typed) || path.to_lowercase().contains(&typed)
         };
         match (ask.action.name.as_str(), ask.param.as_str()) {
-            ("settings.page.open", "page") => self
+            ("settings.page.show", "page") => self
                 .catalogue
                 .pages
                 .iter()

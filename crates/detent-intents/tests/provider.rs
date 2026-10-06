@@ -30,7 +30,7 @@ fn page(slug: &str) -> Value {
 async fn opening_a_page_tells_the_window() {
     let world = world("open-a-page").await;
     let out = world
-        .perform("settings.page.open", &[("page", page("dock"))])
+        .perform("settings.page.show", &[("page", page("dock"))])
         .await
         .expect("opened");
     assert_eq!(out.undo, Undoable::No);
@@ -41,7 +41,7 @@ async fn opening_a_page_tells_the_window() {
 async fn a_page_no_schema_makes_is_not_found() {
     let world = world("open-a-missing-page").await;
     let refusal = world
-        .perform("settings.page.open", &[("page", page("nowhere"))])
+        .perform("settings.page.show", &[("page", page("nowhere"))])
         .await
         .expect_err("refused");
     assert_eq!(
@@ -322,7 +322,7 @@ async fn suggestions_offer_pages_every_key_and_only_the_settable_ones_to_set() {
             .map(|t| t.id.key.as_str().to_owned())
             .collect()
     };
-    let pages = keys(world.suggest("settings.page.open", "page", "dock").await);
+    let pages = keys(world.suggest("settings.page.show", "page", "dock").await);
     assert_eq!(pages, ["dock"]);
     let settable = keys(world.suggest("settings.key.set", "key", "dock.").await);
     assert_eq!(settable, [MAGNIFICATION, TILE_SIZE]);
