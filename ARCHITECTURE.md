@@ -103,12 +103,10 @@ a `params` list even when empty), add its arm in `detent-intents/src/ask.rs` and
 
 detent's app id is `org.quire.Settings` (porter refuses a name that is not reverse-DNS), and
 `dist/org.quire.Settings.desktop` is named after it, with `StartupWMClass` the same, so the window's
-class matches its launcher entry. Two caller rows let it reach the porter daemons' settings modules;
-they are samples to merge into the installed porter config, not installed files:
-
-- `dist/porter/inferd.callers.toml`: `settings = ["org.quire.Settings"]` under `[callers]` in
-  `$XDG_CONFIG_HOME/quire/inferd.toml`.
-- `dist/porter/callers.toml`: the `role = "settings"` row of accountd's `/etc/porter/callers.toml`.
+class matches its launcher entry. The porter daemons admit it as the Settings caller through
+porter's own config, which detent does not copy: porter's `dist/callers.toml` (installed to
+`/etc/porter/callers.toml`, read by accountd and syncd) has the `org.quire.Settings` → `settings`
+row, and porter's `dist/inferd.toml` has `[callers] settings = ["org.quire.Settings"]`.
 
 `dist/skills/settings/` is the companion's skill for this app (docket's skills format). Its `uses`
 are `settings.key.read` and `settings.key.set` of the intents manifest, and its body lists the

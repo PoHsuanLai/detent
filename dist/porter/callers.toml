@@ -1,6 +1,0 @@
-# accountd's caller table: /etc/porter/callers.toml (or $XDG_CONFIG_HOME/porter/callers.toml, whose
-# rows win). Settings is the one caller of accountd's settings module (org.quire.SettingsModule1
-# at /org/quire/Accounts1/settings). The app name is detent's app id, found by its app scope.
-[[caller]]
-app = "org.quire.Settings"
-role = "settings"
