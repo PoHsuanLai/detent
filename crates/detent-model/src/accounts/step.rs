@@ -124,14 +124,18 @@ fn ready_step(
             ready.confirming = None;
         }
         AccountsInput::Switched { path, on } if idle => {
-            let service = ready
+            // A service and a sync switch are both a path and a state: the same Set.
+            let switch = ready
                 .pane
                 .accounts
                 .iter_mut()
-                .flat_map(|account| account.services.iter_mut())
-                .find(|service| service.path == path && service.on != on);
-            if let Some(service) = service {
-                service.on = on;
+                .flat_map(|account| {
+                    let services = account.services.iter_mut().map(|s| (&s.path, &mut s.on));
+                    services.chain(account.sync.iter_mut().map(|s| (&s.path, &mut s.on)))
+                })
+                .find(|(row, held)| **row == path && **held != on);
+            if let Some((_, held)) = switch {
+                *held = on;
                 effects.push(AccountsEffect::Set {
                     path: path.clone(),
                     value: toml::Value::String(toggle_word(on).to_owned()),

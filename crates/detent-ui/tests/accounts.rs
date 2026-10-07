@@ -16,6 +16,8 @@ use support::drive::click;
 
 const HOME: &str = "[aria-label=\"Home cloud\"] .ds-button";
 const STORAGE: &str = "[aria-label=\"Storage\"] .ds-toggle";
+const KEEP_FILES: &str = "[aria-label=\"Keep this account's files on this computer\"] .ds-toggle";
+const BACK_UP_PHOTOS: &str = "[aria-label=\"Back up photos\"] .ds-toggle";
 const REVOKE: &str = "[aria-label=\"Photos allowed: storage\"] .ds-button";
 const SIGN_IN: &str = "[aria-label=\"Sign in again\"] .ds-button";
 const REMOVE: &str = "[aria-label=\"Remove account\"] .ds-button";
@@ -50,6 +52,7 @@ fn runtime() -> tokio::runtime::Runtime {
 fn held() -> Vec<Held> {
     vec![
         Held::new("home", "Home cloud", "ok", &["storage", "calendar"])
+            .syncing()
             .granting("g1", "Photos allowed: storage"),
         Held::new("work.example", "Work mail", "needs_reauth", &["mail"]),
     ]
@@ -145,6 +148,54 @@ fn a_switch_sets_the_service_and_the_answer_stays_on_screen() {
     settle(&mut w.harness, "the switch to read off", |h| {
         h.attr(STORAGE, "aria-checked").as_deref() == Some("false")
     });
+}
+
+#[test]
+fn the_sync_switches_sit_under_the_services_and_set_on_and_off() {
+    let mut w = world("accounts-sync");
+    detail(&mut w);
+    let html = w.harness.html();
+    let services = html.find("Services").expect("services");
+    let sync = html
+        .find("Keep this account's files on this computer")
+        .expect("sync");
+    assert!(services < sync, "the sync switches come after the services");
+    assert!(html.contains("Back up photos"));
+    assert_eq!(
+        w.harness.attr(KEEP_FILES, "aria-checked").as_deref(),
+        Some("false")
+    );
+    click(&mut w.harness, KEEP_FILES);
+    settle(&mut w.harness, "the switch on", |h| {
+        h.attr(KEEP_FILES, "aria-checked").as_deref() == Some("true")
+    });
+    settle(&mut w.harness, "the pane to be free", |h| {
+        h.attr(BACK_UP_PHOTOS, "data-availability").as_deref() != Some("disabled")
+    });
+    click(&mut w.harness, KEEP_FILES);
+    settle(&mut w.harness, "the second set", |_| {
+        w.fake.sets().len() == 2
+    });
+    let sets: Vec<(String, toml::Value)> = w.fake.sets();
+    let want = |word: &str| {
+        (
+            "accounts.home.sync.files".to_owned(),
+            toml::Value::String(word.to_owned()),
+        )
+    };
+    assert_eq!(sets, [want("on"), want("off")]);
+}
+
+#[test]
+fn an_account_without_the_toggles_shows_no_sync_rows() {
+    let mut w = world("accounts-no-sync");
+    click(&mut w.harness, "[aria-label=\"Work mail\"] .ds-button");
+    settle(&mut w.harness, "the account", |h| {
+        h.count(".accounts-detail") == 1
+    });
+    let html = w.harness.html();
+    assert!(!html.contains("Back up photos"));
+    assert!(!html.contains("on this computer"));
 }
 
 #[test]

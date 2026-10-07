@@ -1,8 +1,8 @@
-//! One account: how it stands, its services, the apps' permissions, Sign in again and Remove.
+//! One account: how it stands, its services, its sync switches, the apps' permissions, Sign in again and Remove.
 
 use super::adapter::{ActionButton, BackButton};
 use super::list_view::Note;
-use detent_model::{Account, AccountService};
+use detent_model::{Account, AccountService, AccountSync};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -65,6 +65,13 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                 }
                 Note { text: "Whether apps may use each service of the account." }
             }
+            if !account.sync.is_empty() {
+                FieldGroup { title: Some("Sync".to_owned()),
+                    for sync in account.sync.iter().cloned() {
+                        SyncRow { key: "{sync.path.0}", sync, availability, on }
+                    }
+                }
+            }
             if !account.permissions.is_empty() {
                 FieldGroup { title: Some("Apps".to_owned()),
                     for permission in account.permissions.iter().cloned() {
@@ -112,6 +119,22 @@ fn ServiceRow(service: AccountService, availability: Availability, on: Handlers)
             Toggle {
                 label,
                 value: if service.on { Check::On } else { Check::Off },
+                availability,
+                onchange: move |next| on.switched.call((path.clone(), next == Check::On)),
+            }
+        }
+    }
+}
+
+/// A sync switch, in the module's own words.
+#[component]
+fn SyncRow(sync: AccountSync, availability: Availability, on: Handlers) -> Element {
+    let path = sync.path.clone();
+    rsx! {
+        FieldRow { label: TextLine::from(sync.label.clone()), availability,
+            Toggle {
+                label: sync.label.clone(),
+                value: if sync.on { Check::On } else { Check::Off },
                 availability,
                 onchange: move |next| on.switched.call((path.clone(), next == Check::On)),
             }

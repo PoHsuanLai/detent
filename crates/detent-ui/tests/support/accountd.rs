@@ -1,5 +1,5 @@
 //! A fake accountd: `org.quire.SettingsModule1` at accountd's path on a private bus, with the
-//! rows the real module describes (`accounts.<id>.service.<kind>`, `.grant.<grant>`, `.reauth`,
+//! rows the real module describes (`accounts.<id>.service.<kind>`, `.grant.<grant>`, `.sync.<leaf>`, `.reauth`,
 //! `.remove`, `accounts.clients.<issuer>`). A removed account and a revoked grant leave the rows.
 #![allow(dead_code)]
 
@@ -31,6 +31,8 @@ pub struct Held {
     pub state: String,
     pub services: Vec<(String, bool)>,
     pub grants: Vec<(String, String)>,
+    /// The sync toggles (`files`, `photos`) with their state: only for an account syncd mirrors.
+    pub sync: Vec<(String, bool)>,
     /// Whether the account is a runtime on this computer: the `place` row says so.
     pub on_this_computer: bool,
 }
@@ -43,6 +45,7 @@ impl Held {
             state: state.to_owned(),
             services: services.iter().map(|s| ((*s).to_owned(), true)).collect(),
             grants: Vec::new(),
+            sync: Vec::new(),
             on_this_computer: false,
         }
     }
@@ -53,6 +56,12 @@ impl Held {
             on_this_computer: true,
             ..Held::new(id, label, state, &["llm"])
         }
+    }
+
+    /// An account syncd can mirror: both sync toggles, off.
+    pub fn syncing(mut self) -> Held {
+        self.sync = vec![("files".to_owned(), false), ("photos".to_owned(), false)];
+        self
     }
 
     pub fn granting(mut self, grant: &str, what: &str) -> Held {
@@ -169,6 +178,21 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
             toml::Value::String("on".to_owned()),
         ));
     }
+    for (leaf, _) in &held.sync {
+        let label = match leaf.as_str() {
+            "files" => "Keep this account's files on this computer",
+            _ => "Back up photos",
+        };
+        rows.push(spec(
+            format!("accounts.{id}.sync.{leaf}"),
+            section,
+            label,
+            KeyKind::Toggle {
+                variants: ["on".to_owned(), "off".to_owned()],
+            },
+            toml::Value::String("off".to_owned()),
+        ));
+    }
     for (grant, what) in &held.grants {
         rows.push(spec(
             format!("accounts.{id}.grant.{grant}"),
@@ -232,8 +256,13 @@ impl LiveModule for Accountd {
         }
         let accounts = self.accounts.lock().expect("accounts");
         let on = accounts.iter().find_map(|held| {
-            held.services.iter().find_map(|(kind, on)| {
-                (path == format!("accounts.{}.service.{kind}", held.id)).then_some(*on)
+            let services = held
+                .services
+                .iter()
+                .map(|(k, on)| (format!("service.{k}"), on));
+            let sync = held.sync.iter().map(|(k, on)| (format!("sync.{k}"), on));
+            services.chain(sync).find_map(|(row, on)| {
+                (path == format!("accounts.{}.{row}", held.id)).then_some(*on)
             })
         });
         match on {
@@ -258,6 +287,11 @@ impl LiveModule for Accountd {
         for held in accounts.iter_mut() {
             for (kind, on) in &mut held.services {
                 if path == format!("accounts.{}.service.{kind}", held.id) {
+                    *on = value.as_str() == Some("on");
+                }
+            }
+            for (leaf, on) in &mut held.sync {
+                if path == format!("accounts.{}.sync.{leaf}", held.id) {
                     *on = value.as_str() == Some("on");
                 }
             }

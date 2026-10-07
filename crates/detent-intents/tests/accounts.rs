@@ -27,6 +27,7 @@ fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Acco
                 on: true,
             })
             .collect(),
+        sync: Vec::new(),
         permissions: Vec::new(),
         reauth: Some((
             KeyPath(format!("accounts.{id}.reauth")),

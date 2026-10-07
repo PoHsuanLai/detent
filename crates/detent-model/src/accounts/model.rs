@@ -14,6 +14,12 @@ const CLIENTS: &str = "clients.";
 /// Between an account's id and a service's kind in a row's path.
 const SERVICE: &str = ".service.";
 
+/// After an account's id, in the path of a sync switch: `accounts.<id>.sync.files`, `.sync.photos`.
+const SYNC: &str = ".sync.";
+
+/// The leaves a sync switch ends in.
+const SYNC_LEAVES: [&str; 2] = ["files", "photos"];
+
 /// Between an account's id and a grant's id in a row's path.
 const GRANT: &str = ".grant.";
 
@@ -108,6 +114,17 @@ impl AccountService {
     }
 }
 
+/// One sync switch of an account: whether this computer keeps its files, or backs up its photos.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AccountSync {
+    /// The row, `accounts.<id>.sync.<files|photos>`.
+    pub path: KeyPath,
+    /// The module's own words for it.
+    pub label: String,
+    /// Whether it is turned on.
+    pub on: bool,
+}
+
 /// One permission an app holds for the account: a sentence and the action that takes it back.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccountPermission {
@@ -132,6 +149,8 @@ pub struct Account {
     pub place: Place,
     /// Its services, in the module's order.
     pub services: Vec<AccountService>,
+    /// Its sync switches, in the module's order; none when syncd cannot mirror it.
+    pub sync: Vec<AccountSync>,
     /// The apps' permissions for it.
     pub permissions: Vec<AccountPermission>,
     /// The row that signs in again, with its action's name.
@@ -182,11 +201,12 @@ pub struct AccountsPane {
 }
 
 /// What a row of an account is, by its kind and where its path puts it.
-enum Row<'a> {
+pub(super) enum Row<'a> {
     Label(&'a str),
     State(&'a str),
     Place(&'a str),
     AccountService(&'a str, bool),
+    Sync(bool),
     Grant,
     Reauth,
     Remove,
@@ -194,16 +214,24 @@ enum Row<'a> {
 
 /// The account a row belongs to and what the row is. An id may hold dots, so the row's kind
 /// and the words between the id and the rest decide, not a count of segments.
-fn classify<'a>(spec: &'a KeySpec, described: &Described) -> Option<(AccountKey, Row<'a>)> {
+pub(super) fn classify<'a>(
+    spec: &'a KeySpec,
+    described: &Described,
+) -> Option<(AccountKey, Row<'a>)> {
     let rest = spec.path.0.strip_prefix(PREFIX)?;
     let held = |path: &KeyPath| described.values.get(path).is_some_and(|word| word == ON);
     match &spec.kind {
         KeyKind::Toggle { .. } => {
-            let (id, kind) = rest.rsplit_once(SERVICE)?;
-            Some((
-                AccountKey(id.to_owned()),
-                Row::AccountService(kind, held(&spec.path)),
-            ))
+            if let Some((id, kind)) = rest.rsplit_once(SERVICE) {
+                return Some((
+                    AccountKey(id.to_owned()),
+                    Row::AccountService(kind, held(&spec.path)),
+                ));
+            }
+            let (id, leaf) = rest.rsplit_once(SYNC)?;
+            SYNC_LEAVES
+                .contains(&leaf)
+                .then(|| (AccountKey(id.to_owned()), Row::Sync(held(&spec.path))))
         }
         KeyKind::Fixed { variant } => {
             let (id, leaf) = rest.rsplit_once('.')?;
@@ -242,6 +270,7 @@ fn account_of<'a>(accounts: &'a mut Vec<Account>, key: &AccountKey) -> &'a mut A
                 status: AccountStatus::Ok,
                 place: Place::default(),
                 services: Vec::new(),
+                sync: Vec::new(),
                 permissions: Vec::new(),
                 reauth: None,
                 remove: None,
@@ -296,6 +325,11 @@ impl AccountsPane {
                     kind: kind.to_owned(),
                     on,
                 }),
+                Row::Sync(on) => account.sync.push(AccountSync {
+                    path: spec.path.clone(),
+                    label: spec.label.0.clone(),
+                    on,
+                }),
                 Row::Grant => account.permissions.push(AccountPermission {
                     path: spec.path.clone(),
                     label: spec.label.0.clone(),
@@ -322,6 +356,7 @@ impl AccountsPane {
     pub(crate) fn owner(&self, path: &KeyPath) -> Option<&Account> {
         self.accounts.iter().find(|account| {
             account.services.iter().any(|s| &s.path == path)
+                || account.sync.iter().any(|s| &s.path == path)
                 || account.permissions.iter().any(|p| &p.path == path)
                 || account.reauth.as_ref().is_some_and(|(p, _)| p == path)
                 || account.remove.as_ref().is_some_and(|(p, _)| p == path)

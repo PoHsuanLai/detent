@@ -1,3 +1,4 @@
+use super::model::{Row, classify};
 use super::*;
 use crate::picker::{Absence, Described};
 use ds_settings::schema::{
@@ -84,6 +85,12 @@ fn described() -> Described {
         fixed("accounts.home.state", "Status", "ok"),
         toggle("accounts.home.service.storage", "storage"),
         toggle("accounts.home.service.calendar", "calendar"),
+        toggle(
+            "accounts.home.sync.files",
+            "Keep this account's files on this computer",
+        ),
+        toggle("accounts.home.sync.photos", "Back up photos"),
+        toggle("accounts.home.sync.other", "other"),
         grant(),
         action("accounts.home.reauth", "Sign in again", ActionWeight::Plain),
         action(
@@ -108,6 +115,7 @@ fn described() -> Described {
     let values: BTreeMap<KeyPath, String> = [
         ("accounts.home.service.storage", "on"),
         ("accounts.home.service.calendar", "off"),
+        ("accounts.home.sync.photos", "on"),
         ("accounts.work.example.service.mail", "on"),
         ("accounts.clients.microsoft", "abc"),
     ]
@@ -441,4 +449,66 @@ fn a_service_sent_once_per_model_is_one_switch() {
         .account(&AccountKey("ollama".to_owned()))
         .expect("ollama");
     assert_eq!(ollama.services.len(), 1);
+}
+
+/// Which row a toggle at `key` is, as a word: the table's left side is the path's shape.
+fn row_word(key: &str) -> Option<&'static str> {
+    let spec = toggle(key, "x");
+    match classify(&spec, &described())? {
+        (_, Row::AccountService(..)) => Some("service"),
+        (_, Row::Sync(_)) => Some("sync"),
+        _ => Some("other"),
+    }
+}
+
+#[test]
+fn classify_tells_a_service_from_a_sync_switch_and_drops_an_unknown_leaf() {
+    let table = [
+        ("accounts.home.service.storage", Some("service")),
+        ("accounts.home.sync.files", Some("sync")),
+        ("accounts.work.example.sync.photos", Some("sync")),
+        ("accounts.home.sync.other", None),
+        ("accounts.home.mystery", None),
+    ];
+    for (key, want) in table {
+        assert_eq!(row_word(key), want, "{key}");
+    }
+}
+
+#[test]
+fn an_account_carries_the_modules_label_for_each_sync_switch() {
+    let pane = AccountsPane::of(&described());
+    let sync: Vec<(&str, bool)> = pane.accounts[0]
+        .sync
+        .iter()
+        .map(|s| (s.label.as_str(), s.on))
+        .collect();
+    assert_eq!(
+        sync,
+        [
+            ("Keep this account's files on this computer", false),
+            ("Back up photos", true)
+        ]
+    );
+    assert!(pane.accounts[1].sync.is_empty());
+}
+
+#[test]
+fn a_sync_switch_sets_its_word_like_a_service() {
+    let files = path("accounts.home.sync.files");
+    let (state, effects) = apply(
+        ready(),
+        [AccountsInput::Switched {
+            path: files.clone(),
+            on: true,
+        }],
+    );
+    assert_eq!(
+        effects,
+        [AccountsEffect::Set {
+            path: files.clone(),
+            value: toml::Value::String("on".to_owned()),
+        }]
+    );
+    assert!(state_of(state).pane.accounts[0].sync[0].on);
 }
