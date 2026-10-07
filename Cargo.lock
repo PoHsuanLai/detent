@@ -598,10 +598,11 @@ dependencies = [
 [[package]]
 name = "blitz-kit"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/blitz-kit?rev=6ca8b48985265b3be97d0b8279153ea09439fcef#6ca8b48985265b3be97d0b8279153ea09439fcef"
+source = "git+https://github.com/PoHsuanLai/blitz-kit?rev=f181d2a571022aa76c34ca6b19ec8df1af42b22f#f181d2a571022aa76c34ca6b19ec8df1af42b22f"
 dependencies = [
  "blitz-dom",
  "blitz-traits",
+ "keyboard-types 0.7.0",
  "parley",
  "serde",
  "tokio",
