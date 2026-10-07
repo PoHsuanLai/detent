@@ -44,6 +44,8 @@ pub enum AccountStatus {
     Ok,
     /// The sign-in has to be done again.
     NeedsReauth,
+    /// A coding agent that has to be signed in, inside the agent itself.
+    NeedsLogin,
     /// The service cannot be reached.
     Offline,
     /// Working, with less than was asked for.
@@ -58,6 +60,7 @@ impl AccountStatus {
         match word {
             "ok" => AccountStatus::Ok,
             "needs_reauth" => AccountStatus::NeedsReauth,
+            "needs_login" => AccountStatus::NeedsLogin,
             "offline" => AccountStatus::Offline,
             "limited" => AccountStatus::Limited,
             other => AccountStatus::Other(other.to_owned()),
@@ -68,7 +71,7 @@ impl AccountStatus {
     pub fn label(&self) -> String {
         match self {
             AccountStatus::Ok => "Signed in".to_owned(),
-            AccountStatus::NeedsReauth => "Needs sign-in".to_owned(),
+            AccountStatus::NeedsReauth | AccountStatus::NeedsLogin => "Needs sign-in".to_owned(),
             AccountStatus::Offline => "Offline".to_owned(),
             AccountStatus::Limited => "Limited".to_owned(),
             AccountStatus::Other(word) => humanize(word),
@@ -155,6 +158,8 @@ pub struct Account {
     pub permissions: Vec<AccountPermission>,
     /// The row that signs in again, with its action's name.
     pub reauth: Option<(KeyPath, String)>,
+    /// The row that signs a coding agent's account out, with its action's name.
+    pub sign_out: Option<(KeyPath, String)>,
     /// The row that removes the account, with its action's name.
     pub remove: Option<(KeyPath, String)>,
 }
@@ -209,6 +214,7 @@ pub(super) enum Row<'a> {
     Sync(bool),
     Grant,
     Reauth,
+    SignOut,
     Remove,
 }
 
@@ -250,6 +256,7 @@ pub(super) fn classify<'a>(
             let (id, leaf) = rest.rsplit_once('.')?;
             let row = match leaf {
                 "reauth" => Row::Reauth,
+                "sign_out" => Row::SignOut,
                 "remove" => Row::Remove,
                 _ => return None,
             };
@@ -273,6 +280,7 @@ fn account_of<'a>(accounts: &'a mut Vec<Account>, key: &AccountKey) -> &'a mut A
                 sync: Vec::new(),
                 permissions: Vec::new(),
                 reauth: None,
+                sign_out: None,
                 remove: None,
             });
             accounts.len() - 1
@@ -336,6 +344,7 @@ impl AccountsPane {
                     action: action_name(spec),
                 }),
                 Row::Reauth => account.reauth = Some((spec.path.clone(), action_name(spec))),
+                Row::SignOut => account.sign_out = Some((spec.path.clone(), action_name(spec))),
                 Row::Remove => account.remove = Some((spec.path.clone(), action_name(spec))),
             }
         }
@@ -359,6 +368,7 @@ impl AccountsPane {
                 || account.sync.iter().any(|s| &s.path == path)
                 || account.permissions.iter().any(|p| &p.path == path)
                 || account.reauth.as_ref().is_some_and(|(p, _)| p == path)
+                || account.sign_out.as_ref().is_some_and(|(p, _)| p == path)
                 || account.remove.as_ref().is_some_and(|(p, _)| p == path)
         })
     }

@@ -207,5 +207,9 @@ fn runs_without_asking(pane: &AccountsPane, path: &KeyPath) -> bool {
     pane.accounts.iter().any(|account| {
         account.permissions.iter().any(|p| &p.path == path)
             || account.reauth.as_ref().is_some_and(|(row, _)| row == path)
+            || account
+                .sign_out
+                .as_ref()
+                .is_some_and(|(row, _)| row == path)
     })
 }

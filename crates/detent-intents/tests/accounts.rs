@@ -33,6 +33,7 @@ fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Acco
             KeyPath(format!("accounts.{id}.reauth")),
             "Sign in again".to_owned(),
         )),
+        sign_out: None,
         remove: Some((
             KeyPath(format!("accounts.{id}.remove")),
             "Remove account".to_owned(),

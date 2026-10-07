@@ -512,3 +512,43 @@ fn a_sync_switch_sets_its_word_like_a_service() {
     );
     assert!(state_of(state).pane.accounts[0].sync[0].on);
 }
+
+/// A coding-agent account as accountd describes it: signed in inside the agent, so its only
+/// action is Sign out.
+fn agent_described() -> Described {
+    Described {
+        keys: vec![
+            fixed("accounts.agent.label", "Account", "Claude Code"),
+            fixed("accounts.agent.state", "Status", "needs_login"),
+            action("accounts.agent.sign_out", "Sign out", ActionWeight::Plain),
+            action(
+                "accounts.agent.remove",
+                "Remove account",
+                ActionWeight::Destructive,
+            ),
+        ],
+        values: BTreeMap::new(),
+    }
+}
+
+#[test]
+fn an_agent_account_shows_its_sign_out_row_and_runs_it_on_one_press() {
+    let pane = AccountsPane::of(&agent_described());
+    let agent = &pane.accounts[0];
+    assert_eq!(agent.status, AccountStatus::NeedsLogin);
+    assert_eq!(agent.status.label(), "Needs sign-in");
+    assert_eq!(
+        agent.sign_out,
+        Some((path("accounts.agent.sign_out"), "Sign out".to_owned()))
+    );
+    assert!(agent.reauth.is_none());
+
+    let (state, _) = accounts_step(
+        AccountsState::Probing,
+        AccountsInput::Found(Ok(agent_described())),
+    );
+    let sign_out = path("accounts.agent.sign_out");
+    let (state, effects) = apply(state, [AccountsInput::Ran(sign_out.clone())]);
+    assert_eq!(effects, [AccountsEffect::Invoke(sign_out.clone())]);
+    assert_eq!(state_of(state).pending, Some(sign_out));
+}

@@ -56,6 +56,17 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                         }
                     }
                 }
+                if let Some((path, name)) = account.sign_out.clone() {
+                    FieldRow {
+                        label: TextLine::from(name.clone()),
+                        ActionButton {
+                            label: name,
+                            weight: ActionWeight::Plain,
+                            availability,
+                            onpress: move |()| on.ran.call(path.clone()),
+                        }
+                    }
+                }
             }
             if !account.services.is_empty() {
                 FieldGroup { title: Some("Services".to_owned()),
