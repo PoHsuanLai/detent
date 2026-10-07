@@ -5,7 +5,7 @@ use crate::config_file::ConfigFile;
 use crate::discovery::ProgramSchema;
 use crate::entry::KeyEntry;
 use crate::page::{PageSlug, sidebar_order};
-use ds_settings::schema::{Exposure, KeyPath, KeySpec, Page};
+use ds_settings::schema::{Exposure, ForeignTables, KeyPath, KeySpec, Page};
 
 /// The keys of one section that share an exposure, in schema order.
 #[derive(Debug, Clone, PartialEq)]
@@ -38,6 +38,9 @@ pub struct FileSpec {
     pub file: ConfigFile,
     /// Its keys, in schema order.
     pub keys: Vec<KeySpec>,
+    /// Tables of the file that belong to the programs, not to settings: never reported as
+    /// unknown. The union over every program that shares the file.
+    pub foreign: ForeignTables,
 }
 
 /// The whole app: pages in sidebar order, and the files behind them.
@@ -109,10 +112,14 @@ fn group_files(programs: &[ProgramSchema]) -> Vec<FileSpec> {
         .iter()
         .fold(Vec::new(), |mut files: Vec<FileSpec>, p| {
             match files.iter_mut().find(|f| f.file == p.file) {
-                Some(existing) => existing.keys.extend(p.keys.iter().cloned()),
+                Some(existing) => {
+                    existing.keys.extend(p.keys.iter().cloned());
+                    existing.foreign = union(&existing.foreign, &p.foreign);
+                }
                 None => files.push(FileSpec {
                     file: p.file.clone(),
                     keys: p.keys.clone(),
+                    foreign: p.foreign.clone(),
                 }),
             }
             files
@@ -163,4 +170,11 @@ fn place_in_section(sections: &mut Vec<SectionModel>, entry: &KeyEntry) {
             keys: vec![entry.clone()],
         }),
     }
+}
+
+/// `a` then the tables of `b` it does not already hold.
+fn union(a: &ForeignTables, b: &ForeignTables) -> ForeignTables {
+    let mut tables = a.0.clone();
+    tables.extend(b.0.iter().filter(|t| !a.0.contains(t)).cloned());
+    ForeignTables(tables)
 }

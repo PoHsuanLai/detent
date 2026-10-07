@@ -35,6 +35,7 @@ fn spec() -> FileSpec {
     let file = ConfigFile::parse(&FilePath("acme/settings.toml".to_owned())).expect("file");
     FileSpec {
         file,
+        foreign: Default::default(),
         keys: vec![
             key(
                 "dock.bounce",

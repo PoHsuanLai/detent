@@ -1,8 +1,8 @@
 //! Finding schemas: the real ones, and the stale ones that are skipped.
 
-use detent_model::{StaleReason, discover};
+use detent_model::{Catalogue, StaleReason, discover};
 use detent_testkit::{Scratch, seed_schemas};
-use ds_settings::schema::{AppId, FilePath, Schema};
+use ds_settings::schema::{AppId, FilePath, ForeignTables, Schema};
 
 const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
@@ -11,6 +11,7 @@ fn schema(app: &str, file: &str, version: u16) -> Schema {
         app: AppId(app.to_owned()),
         file: FilePath(file.to_owned()),
         version,
+        foreign: Default::default(),
         key: Vec::new(),
     }
 }
@@ -85,4 +86,33 @@ fn an_earlier_directory_shadows_a_later_one() {
     );
     assert_eq!(found.warnings.len(), 1);
     assert_eq!(found.warnings[0].reason, StaleReason::Shadowed);
+}
+
+#[test]
+fn foreign_tables_reach_the_file_spec_as_a_union_over_programs_sharing_it() {
+    let scratch = Scratch::under(TMP, "discovery-foreign");
+    let dir = scratch.join("quire/settings");
+    let owned = |tables: &[&str]| ForeignTables(tables.iter().map(|t| (*t).to_owned()).collect());
+    let mut first = schema("first", "shared/settings.toml", 1);
+    first.foreign = owned(&["engines", "probe"]);
+    let mut second = schema("second", "shared/settings.toml", 1);
+    second.foreign = owned(&["probe", "callers"]);
+    let alone = schema("alone", "alone/settings.toml", 1);
+    write(&dir, "first", &first);
+    write(&dir, "second", &second);
+    write(&dir, "alone", &alone);
+    let found = discover(&[dir]);
+    let catalogue = Catalogue::build(&found.programs);
+    let foreign_of = |file: &str| {
+        catalogue
+            .files
+            .iter()
+            .find(|f| f.file.relative().ends_with(file))
+            .map(|f| f.foreign.clone())
+    };
+    assert_eq!(
+        foreign_of("shared/settings.toml"),
+        Some(owned(&["engines", "probe", "callers"]))
+    );
+    assert_eq!(foreign_of("alone/settings.toml"), Some(owned(&[])));
 }

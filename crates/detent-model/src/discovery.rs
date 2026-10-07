@@ -3,7 +3,7 @@
 use crate::agent::{Marks, read_marks};
 use crate::config_file::ConfigFile;
 use crate::warning::{StaleReason, Warning};
-use ds_settings::schema::{AppId, KeyPath, KeySpec, Schema};
+use ds_settings::schema::{AppId, ForeignTables, KeyPath, KeySpec, Schema};
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
@@ -19,6 +19,8 @@ pub struct ProgramSchema {
     pub file: ConfigFile,
     /// Its keys, in declaration order.
     pub keys: Vec<KeySpec>,
+    /// The file's tables that are the program's own data, not settings.
+    pub foreign: ForeignTables,
     /// The keys its schema marks `agent = "settable"` (see [`crate::AgentSetting`]).
     pub settable: BTreeSet<KeyPath>,
 }
@@ -64,6 +66,7 @@ fn admit(mut found: Discovery, schema: Schema, marks: &Marks) -> Discovery {
             app: schema.app,
             file,
             keys: schema.key,
+            foreign: schema.foreign,
         }),
         Err(reason) => found.warnings.push(stale(reason)),
     }

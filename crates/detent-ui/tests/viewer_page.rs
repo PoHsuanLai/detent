@@ -58,6 +58,7 @@ fn anyview() -> Schema {
     Schema {
         app: AppId("anyview".to_owned()),
         file: FilePath(FILE.to_owned()),
+        foreign: Default::default(),
         version: 1,
         key: vec![
             key(

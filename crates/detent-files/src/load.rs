@@ -67,7 +67,7 @@ fn overlay(spec: &FileSpec, table: &toml::Table) -> Loaded<FileValues> {
         .collect();
     Loaded {
         value: FileValues::from_parts(values, as_written),
-        unknown: unknown_keys(table, &spec.keys),
+        unknown: unknown_keys(table, &spec.keys, &spec.foreign),
         invalid,
     }
 }
