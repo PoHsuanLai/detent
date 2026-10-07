@@ -383,10 +383,21 @@ pub enum AccountsScreen {
     Detail(AccountKey),
 }
 
-/// A removal waiting for the person's answer.
+/// What an action waiting for the person's answer does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Ask {
+    /// Remove the account.
+    Remove,
+    /// Sign a coding agent's account out.
+    SignOut,
+}
+
+/// A removal or sign-out waiting for the person's answer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RemovalQuestion {
-    /// The row that removes the account.
+    /// What is asked.
+    pub ask: Ask,
+    /// The row that runs the action.
     pub path: KeyPath,
     /// The account's label, for the question.
     pub account: String,

@@ -20,6 +20,8 @@ pub(super) struct Handlers {
     pub ran: EventHandler<KeyPath>,
     /// Remove was pressed.
     pub remove: EventHandler<KeyPath>,
+    /// Sign out was pressed.
+    pub sign_out: EventHandler<KeyPath>,
 }
 
 fn availability_of(busy: bool) -> Availability {
@@ -63,7 +65,7 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                             label: name,
                             weight: ActionWeight::Plain,
                             availability,
-                            onpress: move |()| on.ran.call(path.clone()),
+                            onpress: move |()| on.sign_out.call(path.clone()),
                         }
                     }
                 }

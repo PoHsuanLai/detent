@@ -288,6 +288,7 @@ fn removing_an_account_is_never_run_without_the_question_answered() {
     assert_eq!(
         state_of(asked.clone()).confirming,
         Some(RemovalQuestion {
+            ask: Ask::Remove,
             path: remove.clone(),
             account: "Home cloud".to_owned()
         })
@@ -532,7 +533,7 @@ fn agent_described() -> Described {
 }
 
 #[test]
-fn an_agent_account_shows_its_sign_out_row_and_runs_it_on_one_press() {
+fn an_agent_account_shows_its_sign_out_row_and_signs_out_only_when_confirmed() {
     let pane = AccountsPane::of(&agent_described());
     let agent = &pane.accounts[0];
     assert_eq!(agent.status, AccountStatus::NeedsLogin);
@@ -548,7 +549,29 @@ fn an_agent_account_shows_its_sign_out_row_and_runs_it_on_one_press() {
         AccountsInput::Found(Ok(agent_described())),
     );
     let sign_out = path("accounts.agent.sign_out");
+    // A bare press of the row runs nothing.
     let (state, effects) = apply(state, [AccountsInput::Ran(sign_out.clone())]);
+    assert!(effects.is_empty());
+    // Asking shows the question and runs nothing.
+    let (asked, effects) = apply(state, [AccountsInput::AskSignOut(sign_out.clone())]);
+    assert!(effects.is_empty());
+    assert_eq!(
+        state_of(asked.clone()).confirming,
+        Some(RemovalQuestion {
+            ask: Ask::SignOut,
+            path: sign_out.clone(),
+            account: "Claude Code".to_owned()
+        })
+    );
+    // Cancel: still nothing.
+    let (kept, effects) = apply(asked.clone(), [AccountsInput::Keep]);
+    assert!(effects.is_empty());
+    assert_eq!(state_of(kept.clone()).confirming, None);
+    // Ask again, then confirm: it runs once.
+    let (asked, _) = apply(kept, [AccountsInput::AskSignOut(sign_out.clone())]);
+    let (done, effects) = apply(asked, [AccountsInput::Remove]);
     assert_eq!(effects, [AccountsEffect::Invoke(sign_out.clone())]);
-    assert_eq!(state_of(state).pending, Some(sign_out));
+    let done = state_of(done);
+    assert_eq!(done.confirming, None);
+    assert_eq!(done.pending, Some(sign_out));
 }

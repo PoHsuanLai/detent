@@ -88,11 +88,9 @@ fn Ready(ready: AccountsReady, send: EventHandler<AccountsInput>) -> Element {
         }),
         ran: EventHandler::new(move |path| send.call(AccountsInput::Ran(path))),
         remove: EventHandler::new(move |path| send.call(AccountsInput::AskRemove(path))),
+        sign_out: EventHandler::new(move |path| send.call(AccountsInput::AskSignOut(path))),
     };
-    let removal = ready
-        .confirming
-        .clone()
-        .zip(ready.open().and_then(|account| account.remove.clone()));
+    let asked = ready.confirming.clone();
     rsx! {
         div { class: "accounts", "data-accounts": "ready",
             if let Some(account) = ready.open().cloned() {
@@ -107,10 +105,14 @@ fn Ready(ready: AccountsReady, send: EventHandler<AccountsInput>) -> Element {
                     onedit: move |(path, text)| send.call(AccountsInput::ClientEdited { path, text }),
                 }
             }
-            if let Some((question, (_, name))) = removal {
+            if let Some(question) = asked {
                 RemoveAlert {
                     question,
-                    action: name,
+                    remove_name: ready
+                        .open()
+                        .and_then(|account| account.remove.clone())
+                        .map(|(_, name)| name)
+                        .unwrap_or_default(),
                     onanswer: move |yes| {
                         send.call(if yes { AccountsInput::Remove } else { AccountsInput::Keep });
                     },

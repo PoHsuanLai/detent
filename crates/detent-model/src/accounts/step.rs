@@ -1,7 +1,7 @@
 //! The pane's one transition: `(state, input) -> (state, effects)`.
 
 use super::model::{
-    AccountKey, AccountsPane, AccountsReady, AccountsScreen, AccountsState, RemovalQuestion,
+    AccountKey, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, RemovalQuestion,
     toggle_word,
 };
 use crate::picker::{Absence, Described};
@@ -27,9 +27,11 @@ pub enum AccountsInput {
     Ran(KeyPath),
     /// The person asked to remove an account.
     AskRemove(KeyPath),
-    /// The person answered the removal: no.
+    /// The person asked to sign a coding agent's account out.
+    AskSignOut(KeyPath),
+    /// The person answered the question: no.
     Keep,
-    /// The person answered the removal: yes.
+    /// The person answered the question: yes.
     Remove,
     /// The person finished a sign-in client id.
     ClientEdited {
@@ -154,6 +156,20 @@ fn ready_step(
                     .as_ref()
                     .filter(|(row, _)| *row == path)
                     .map(|_| RemovalQuestion {
+                        ask: Ask::Remove,
+                        path,
+                        account: account.label.clone(),
+                    })
+            });
+        }
+        AccountsInput::AskSignOut(path) if idle => {
+            ready.confirming = ready.pane.owner(&path).and_then(|account| {
+                account
+                    .sign_out
+                    .as_ref()
+                    .filter(|(row, _)| *row == path)
+                    .map(|_| RemovalQuestion {
+                        ask: Ask::SignOut,
                         path,
                         account: account.label.clone(),
                     })
@@ -202,14 +218,10 @@ fn ready_step(
 }
 
 /// Whether `path` is an action that may run on one press: a permission's or Sign in again.
-/// Removing an account is asked about first, so it is not one.
+/// Removing an account and signing an agent out are asked about first, so it is not one.
 fn runs_without_asking(pane: &AccountsPane, path: &KeyPath) -> bool {
     pane.accounts.iter().any(|account| {
         account.permissions.iter().any(|p| &p.path == path)
             || account.reauth.as_ref().is_some_and(|(row, _)| row == path)
-            || account
-                .sign_out
-                .as_ref()
-                .is_some_and(|(row, _)| row == path)
     })
 }

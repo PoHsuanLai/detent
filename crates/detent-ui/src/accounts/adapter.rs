@@ -2,7 +2,7 @@
 //! plain text field, initial focus on an alert). Every use of them in the pane goes through here,
 //! so the switch to R2a is these few lines and nothing else.
 
-use detent_model::RemovalQuestion;
+use detent_model::{Ask, RemovalQuestion};
 use dioxus::prelude::*;
 use ds::components::controls::button::Button;
 use ds::components::controls::button_model::{Bezel, ButtonRole};
@@ -66,25 +66,37 @@ pub(super) fn BackButton(label: String, onpress: EventHandler<()>) -> Element {
     }
 }
 
-/// The question before an account is removed: a critical alert whose destructive button is never
-/// the default, so Return keeps the account.
+/// The question before an account is removed or a coding agent signed out: a critical alert whose
+/// destructive button is never the default, so Return keeps the account signed in.
 #[component]
 pub(super) fn RemoveAlert(
     question: RemovalQuestion,
-    action: String,
+    remove_name: String,
     onanswer: EventHandler<bool>,
 ) -> Element {
+    let (title, message, keep, action) = match question.ask {
+        Ask::Remove => (
+            format!("{remove_name} {}?", question.account),
+            "Its stored credentials and every permission given for it are deleted. \
+             It cannot be undone.",
+            "Keep",
+            remove_name.clone(),
+        ),
+        Ask::SignOut => (
+            format!("Sign out of {}?", question.account),
+            "You'll need to sign in again to use it.",
+            "Cancel",
+            "Sign Out".to_owned(),
+        ),
+    };
     rsx! {
         Alert {
-            title: format!("{action} {}?", question.account),
-            message: Some(TextLine::from(
-                "Its stored credentials and every permission given for it are deleted. \
-                 It cannot be undone.",
-            )),
+            title,
+            message: Some(TextLine::from(message)),
             style: AlertStyle::Critical,
             buttons: vec![
-                AlertButton::new("Keep", AlertRole::Cancel, EventHandler::new(move |()| onanswer.call(false))),
-                AlertButton::new(action.clone(), AlertRole::Destructive, EventHandler::new(move |()| onanswer.call(true))),
+                AlertButton::new(keep, AlertRole::Cancel, EventHandler::new(move |()| onanswer.call(false))),
+                AlertButton::new(action, AlertRole::Destructive, EventHandler::new(move |()| onanswer.call(true))),
             ],
         }
     }
