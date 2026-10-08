@@ -3,7 +3,7 @@
 //! and the transition a person's choices make.
 
 mod model;
-mod sign_in_way;
+mod sign_in_help;
 mod sign_out;
 mod step;
 
@@ -12,7 +12,7 @@ pub use model::{
     AccountSync, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, Place,
     RemovalQuestion, SignInClient,
 };
-pub use sign_in_way::SignInWay;
+pub use sign_in_help::reauth_help;
 pub use sign_out::SignOutEnd;
 pub use step::{AccountsEffect, AccountsInput, accounts_step};
 

@@ -1,9 +1,11 @@
 //! What the Accounts pane shows: the accounts, each with its services, permissions and actions,
 //! read from the module's rows alone. Nothing here knows an account or a service by name.
 
+use super::sign_in_help::sign_in_of;
 use crate::picker::{Absence, Described};
 use crate::words::humanize;
 use ds_settings::schema::{KeyKind, KeyPath, KeySpec};
+use porter_core::SignInWay;
 
 /// The prefix of every row's path.
 const PREFIX: &str = "accounts.";
@@ -164,6 +166,8 @@ pub struct Account {
     pub place: Place,
     /// When its sign-in ends, for an account whose sign-in expires.
     pub expires: Option<AccountExpiry>,
+    /// How it signs in again, from the module's `sign_in` row; none when the row is missing.
+    pub sign_in: Option<SignInWay>,
     /// Its services, in the module's order.
     pub services: Vec<AccountService>,
     /// Its sync switches, in the module's order; none when syncd cannot mirror it.
@@ -225,6 +229,7 @@ pub(super) enum Row<'a> {
     State(&'a str),
     Place(&'a str),
     Expires(&'a str),
+    SignIn(&'a str),
     AccountService(&'a str, bool),
     Sync(bool),
     Grant,
@@ -261,6 +266,7 @@ pub(super) fn classify<'a>(
                 "state" => Row::State(variant),
                 "place" => Row::Place(variant),
                 "expires" => Row::Expires(variant),
+                "sign_in" => Row::SignIn(variant),
                 _ => return None,
             };
             Some((AccountKey(id.to_owned()), row))
@@ -293,6 +299,7 @@ fn account_of<'a>(accounts: &'a mut Vec<Account>, key: &AccountKey) -> &'a mut A
                 status: AccountStatus::Ok,
                 place: Place::default(),
                 expires: None,
+                sign_in: None,
                 services: Vec::new(),
                 sync: Vec::new(),
                 permissions: Vec::new(),
@@ -341,6 +348,7 @@ impl AccountsPane {
                 Row::Label(label) => account.label = label.to_owned(),
                 Row::State(word) => account.status = AccountStatus::of(word),
                 Row::Place(word) => account.place = Place::of(word),
+                Row::SignIn(word) => account.sign_in = sign_in_of(word),
                 Row::Expires(text) => {
                     account.expires = Some(AccountExpiry {
                         label: spec.label.0.clone(),

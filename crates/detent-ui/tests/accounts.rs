@@ -56,7 +56,8 @@ fn held() -> Vec<Held> {
             .syncing()
             .granting("g1", "Photos allowed: storage"),
         Held::new("work.example", "Work mail", "needs_reauth", &["mail"])
-            .expiring("Signed out by Google on 2026-10-14"),
+            .expiring("Signed out by Google on 2026-10-14")
+            .signing_in("browser"),
     ]
 }
 
@@ -550,7 +551,7 @@ fn every_button_says_which_account_or_app_it_is_for() {
 }
 
 #[test]
-fn sign_in_again_says_a_browser_only_for_an_account_a_browser_signs_in() {
+fn sign_in_again_says_a_browser_only_for_an_account_whose_row_says_browser() {
     let mut w = world("accounts-sign-in-words");
     detail(&mut w);
     let plain = w.harness.html();

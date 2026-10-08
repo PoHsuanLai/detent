@@ -37,6 +37,8 @@ pub struct Held {
     pub on_this_computer: bool,
     /// The words of the read-only `expires` row, for a sign-in that expires.
     pub expires: Option<String>,
+    /// The slug of the read-only `sign_in` row, when the module publishes one.
+    pub sign_in: Option<String>,
 }
 
 impl Held {
@@ -50,6 +52,7 @@ impl Held {
             sync: Vec::new(),
             on_this_computer: false,
             expires: None,
+            sign_in: None,
         }
     }
 
@@ -70,6 +73,12 @@ impl Held {
     /// A sign-in that expires: the `expires` row says `words`.
     pub fn expiring(mut self, words: &str) -> Held {
         self.expires = Some(words.to_owned());
+        self
+    }
+
+    /// How the account signs in again: the `sign_in` row says `slug`.
+    pub fn signing_in(mut self, slug: &str) -> Held {
+        self.sign_in = Some(slug.to_owned());
         self
     }
 
@@ -180,6 +189,9 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
                 .to_owned(),
         );
         rows.push(row);
+    }
+    if let Some(slug) = &held.sign_in {
+        rows.push(fixed("sign_in", "How", slug));
     }
     if held.on_this_computer {
         rows.push(fixed("place", "Where", "this_computer"));

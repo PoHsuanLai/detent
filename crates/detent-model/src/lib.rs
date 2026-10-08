@@ -25,7 +25,8 @@ mod words;
 pub use accounts::{
     Account, AccountExpiry, AccountKey, AccountPermission, AccountService, AccountStatus,
     AccountSync, AccountsEffect, AccountsInput, AccountsPane, AccountsReady, AccountsScreen,
-    AccountsState, Ask, Place, RemovalQuestion, SignInClient, SignInWay, SignOutEnd, accounts_step,
+    AccountsState, Ask, Place, RemovalQuestion, SignInClient, SignOutEnd, accounts_step,
+    reauth_help,
 };
 pub use agent::AgentSetting;
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};

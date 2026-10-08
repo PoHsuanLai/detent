@@ -2,7 +2,7 @@
 
 use super::adapter::{ActionButton, BackButton};
 use super::list_view::Note;
-use detent_model::{Account, AccountService, AccountSync, SignInWay};
+use detent_model::{Account, AccountService, AccountSync, reauth_help};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -56,7 +56,7 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                 if let Some((path, name)) = account.reauth.clone() {
                     FieldRow {
                         label: TextLine::from(name.clone()),
-                        help: Some(TextLine::from(SignInWay::of(&account).help())),
+                        help: Some(TextLine::from(reauth_help(account.sign_in))),
                         ActionButton {
                             label: name,
                             subject: account.label.clone(),

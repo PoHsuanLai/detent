@@ -5,6 +5,7 @@ use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Page, Section,
 };
+use porter_core::SignInWay;
 use std::collections::BTreeMap;
 
 fn path(text: &str) -> KeyPath {
@@ -672,10 +673,54 @@ fn a_change_that_is_no_sign_out_word_just_reads_again() {
     assert_eq!(AccountsInput::heard(row, &unknown), AccountsInput::Changed);
 }
 
+fn pane_with_sign_in(word: Option<&str>) -> Account {
+    let mut keys = described().keys;
+    keys.extend(word.map(|w| fixed("accounts.home.sign_in", "How", w)));
+    let described = Described {
+        keys,
+        ..described()
+    };
+    AccountsPane::of(&described).accounts.remove(0)
+}
+
 #[test]
-fn only_a_browser_sign_in_is_told_to_use_the_browser() {
-    assert!(SignInWay::Browser.help().contains("browser"));
-    assert!(!SignInWay::Password.help().contains("browser"));
-    assert!(SignInWay::Password.help().contains("password"));
-    assert!(!SignInWay::Unstated.help().contains("browser"));
+fn the_sign_in_row_is_read_and_each_slug_words_the_reauth_line() {
+    let lines = [
+        (
+            "browser",
+            SignInWay::Browser,
+            "Sign in to the account again in your browser.",
+        ),
+        ("password", SignInWay::Password, "Enter the password again."),
+        ("key", SignInWay::Key, "Enter the key again."),
+        ("agent", SignInWay::Agent, "Sign in to the account again."),
+        (
+            "outside",
+            SignInWay::Outside,
+            "Sign in to the account again.",
+        ),
+        (
+            "nothing",
+            SignInWay::Nothing,
+            "Sign in to the account again.",
+        ),
+    ];
+    for (slug, way, line) in lines {
+        assert_eq!(way.slug(), slug);
+        let account = pane_with_sign_in(Some(slug));
+        assert_eq!(account.sign_in, Some(way), "{slug}");
+        assert_eq!(reauth_help(account.sign_in), line, "{slug}");
+    }
+}
+
+#[test]
+fn a_missing_or_unknown_sign_in_row_gets_the_plain_line_and_the_expiry_row_decides_nothing() {
+    for word in [None, Some("shrugged")] {
+        let account = pane_with_sign_in(word);
+        assert_eq!(account.sign_in, None);
+        assert_eq!(
+            reauth_help(account.sign_in),
+            "Sign in to the account again."
+        );
+    }
 }
