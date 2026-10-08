@@ -57,7 +57,7 @@ EDGES=(
   "detent-model: ds-settings porter-core porter-infer"
   "detent-files: detent-model ds-settings"
   "detent-intents: detent-files detent-model docket-client docket-core docket-dbus ds-settings porter-core prov"
-  "detent-ui: detent-files detent-model ds ds-blitz ds-settings porter-dbus porter-infer"
+  "detent-ui: detent-files detent-model ds ds-blitz ds-settings porter-client porter-core porter-dbus porter-infer porter-provider"
   "detent: detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
 )
 for edge in "${EDGES[@]}"; do
