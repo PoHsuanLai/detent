@@ -54,6 +54,20 @@ mod tests {
     }
 
     #[test]
+    fn an_account_and_a_raise_reach_the_window() {
+        let (outbox, inbox) = inbox();
+        let link = WindowLink(outbox);
+        link.open_account(AccountTarget::List).expect("sent");
+        link.raise(Some("t".to_owned())).expect("sent");
+        let mut notices = inbox.take().expect("the receiver");
+        assert_eq!(
+            notices.try_recv(),
+            Ok(Notice::OpenAccount(AccountTarget::List))
+        );
+        assert_eq!(notices.try_recv(), Ok(Notice::Raise(Some("t".to_owned()))));
+    }
+
+    #[test]
     fn a_window_that_has_gone_cannot_be_told() {
         let (outbox, inbox) = inbox();
         drop(inbox);
