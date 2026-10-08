@@ -4,6 +4,7 @@ use super::model::{
     AccountKey, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, RemovalQuestion,
     toggle_word,
 };
+use super::sign_out::SignOutEnd;
 use crate::picker::{Absence, Described};
 use ds_settings::schema::KeyPath;
 
@@ -51,6 +52,13 @@ pub enum AccountsInput {
     },
     /// The module says something changed.
     Changed,
+    /// The module says how a coding agent's sign-out at `path` ended.
+    SignedOut {
+        /// The account's sign-out row.
+        path: KeyPath,
+        /// How it ended.
+        end: SignOutEnd,
+    },
 }
 
 /// What the caller must do.
@@ -212,6 +220,16 @@ fn ready_step(
             effects.push(AccountsEffect::Reload);
         }
         AccountsInput::Changed => effects.push(AccountsEffect::Reload),
+        AccountsInput::SignedOut { path, end } => {
+            let label = ready
+                .pane
+                .owner(&path)
+                .map_or("this account", |account| account.label.as_str());
+            effects.push(AccountsEffect::Tell(end.line(label)));
+            if end.settles() {
+                effects.push(AccountsEffect::Reload);
+            }
+        }
         _ => {}
     }
     (ready, effects)

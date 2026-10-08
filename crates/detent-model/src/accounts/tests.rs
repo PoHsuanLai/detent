@@ -575,3 +575,55 @@ fn an_agent_account_shows_its_sign_out_row_and_signs_out_only_when_confirmed() {
     assert_eq!(done.confirming, None);
     assert_eq!(done.pending, Some(sign_out));
 }
+
+#[test]
+fn a_sign_out_end_is_told_in_words_and_settled_ends_read_again() {
+    let (state, _) = accounts_step(
+        AccountsState::Probing,
+        AccountsInput::Found(Ok(agent_described())),
+    );
+    let sign_out = path("accounts.agent.sign_out");
+    let told = |word: &str| {
+        let heard = AccountsInput::heard(sign_out.clone(), &toml::Value::String(word.to_owned()));
+        accounts_step(state.clone(), heard).1
+    };
+    let tell = |text: &str| AccountsEffect::Tell(text.to_owned());
+    let cases = [
+        ("asked", "Asking Claude Code to sign out\u{2026}", false),
+        (
+            "login_untouched",
+            "Claude Code is still signed in on its own; open it to sign out there.",
+            true,
+        ),
+        ("done", "Signed out of Claude Code.", true),
+        ("failed", "Couldn't sign out of Claude Code.", true),
+        (
+            "cancelled",
+            "Signing out of Claude Code was cancelled.",
+            true,
+        ),
+        ("expired", "Claude Code didn't answer in time.", true),
+        (
+            "launcher_gone",
+            "The app that runs Claude Code quit before signing out.",
+            true,
+        ),
+    ];
+    for (word, line, reloads) in cases {
+        let mut want = vec![tell(line)];
+        if reloads {
+            want.push(AccountsEffect::Reload);
+        }
+        assert_eq!(told(word), want, "{word}");
+    }
+}
+
+#[test]
+fn a_change_that_is_no_sign_out_word_just_reads_again() {
+    let on = toml::Value::String("on".to_owned());
+    let other = path("accounts.agent.files");
+    assert_eq!(AccountsInput::heard(other, &on), AccountsInput::Changed);
+    let unknown = toml::Value::String("shrugged".to_owned());
+    let row = path("accounts.agent.sign_out");
+    assert_eq!(AccountsInput::heard(row, &unknown), AccountsInput::Changed);
+}

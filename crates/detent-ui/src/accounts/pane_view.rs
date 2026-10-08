@@ -49,8 +49,9 @@ pub fn AccountsPane() -> Element {
                             AccountsInput::Found(Err(absence)),
                         ));
                     }
-                    Followed::Changed(..) => {
-                        spawn(drive(state, client, toasts, AccountsInput::Changed));
+                    Followed::Changed(path, value) => {
+                        let heard = AccountsInput::heard(path, &value);
+                        spawn(drive(state, client, toasts, heard));
                     }
                 },
             )
