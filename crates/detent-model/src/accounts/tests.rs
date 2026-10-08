@@ -89,7 +89,10 @@ fn described() -> Described {
             "accounts.home.sync.files",
             "Keep this account's files on this computer",
         ),
-        toggle("accounts.home.sync.photos", "Back up photos"),
+        toggle(
+            "accounts.home.sync.photos",
+            "Upload new photos from a folder on this computer to Google Photos",
+        ),
         toggle("accounts.home.sync.other", "other"),
         grant(),
         action("accounts.home.reauth", "Sign in again", ActionWeight::Plain),
@@ -488,7 +491,10 @@ fn an_account_carries_the_modules_label_for_each_sync_switch() {
         sync,
         [
             ("Keep this account's files on this computer", false),
-            ("Back up photos", true)
+            (
+                "Upload new photos from a folder on this computer to Google Photos",
+                true
+            )
         ]
     );
     assert!(pane.accounts[1].sync.is_empty());
@@ -615,6 +621,44 @@ fn a_sign_out_end_is_told_in_words_and_settled_ends_read_again() {
             want.push(AccountsEffect::Reload);
         }
         assert_eq!(told(word), want, "{word}");
+    }
+}
+
+#[test]
+fn the_expiry_row_is_read_with_the_modules_label_help_and_words() {
+    let mut expires = fixed(
+        "accounts.home.expires",
+        "Sign-in",
+        "Google signs this account out on 2026-10-14",
+    );
+    expires.help = Help("Google ends the sign-ins of an app that is not verified yet.".to_owned());
+    let mut keys = described().keys;
+    keys.push(expires);
+    let pane = AccountsPane::of(&Described {
+        keys,
+        ..described()
+    });
+    let home = pane.account(&AccountKey("home".to_owned())).expect("home");
+    assert_eq!(
+        home.expires,
+        Some(AccountExpiry {
+            label: "Sign-in".to_owned(),
+            help: "Google ends the sign-ins of an app that is not verified yet.".to_owned(),
+            text: "Google signs this account out on 2026-10-14".to_owned(),
+        })
+    );
+    assert_eq!(pane.accounts[1].expires, None);
+}
+
+#[test]
+fn a_session_grant_announced_or_gone_reads_the_module_again() {
+    let row = path("accounts.home.grant.s1");
+    for word in ["added", "removed"] {
+        let said = toml::Value::String(word.to_owned());
+        assert_eq!(
+            AccountsInput::heard(row.clone(), &said),
+            AccountsInput::Changed
+        );
     }
 }
 

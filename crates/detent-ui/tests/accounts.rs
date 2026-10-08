@@ -17,7 +17,8 @@ use support::drive::click;
 const HOME: &str = "[aria-label=\"Home cloud\"] .ds-button";
 const STORAGE: &str = "[aria-label=\"Storage\"] .ds-toggle";
 const KEEP_FILES: &str = "[aria-label=\"Keep this account's files on this computer\"] .ds-toggle";
-const BACK_UP_PHOTOS: &str = "[aria-label=\"Back up photos\"] .ds-toggle";
+const UPLOAD_PHOTOS: &str =
+    "[aria-label=\"Upload new photos from a folder on this computer to Google Photos\"] .ds-toggle";
 const REVOKE: &str = "[aria-label=\"Photos allowed: storage\"] .ds-button";
 const SIGN_IN: &str = "[aria-label=\"Sign in again\"] .ds-button";
 const REMOVE: &str = "[aria-label=\"Remove account\"] .ds-button";
@@ -54,7 +55,8 @@ fn held() -> Vec<Held> {
         Held::new("home", "Home cloud", "ok", &["storage", "calendar"])
             .syncing()
             .granting("g1", "Photos allowed: storage"),
-        Held::new("work.example", "Work mail", "needs_reauth", &["mail"]),
+        Held::new("work.example", "Work mail", "needs_reauth", &["mail"])
+            .expiring("Signed out by Google on 2026-10-14"),
     ]
 }
 
@@ -65,6 +67,7 @@ struct World {
     _rt: tokio::runtime::Runtime,
     _bus: PrivateBus,
     _daemon: zbus::Connection,
+    served: ds_settings::live::Served,
 }
 
 fn world(name: &str) -> World {
@@ -75,7 +78,7 @@ fn world_in(name: &str, scheme: Scheme) -> World {
     let rt = runtime();
     let bus = PrivateBus::start(name);
     let fake = Accountd::new(Policy::Allow, held());
-    let daemon = rt.block_on(fake.serve_on(&bus));
+    let (daemon, served) = rt.block_on(fake.serve_announcing(&bus));
     let sandbox = Sandbox::new(name).on_bus(&bus.address);
     let mut harness = sandbox.harness_in(accounts(), scheme);
     settle(&mut harness, "the list", |h| h.count(".accounts-list") == 1);
@@ -85,6 +88,7 @@ fn world_in(name: &str, scheme: Scheme) -> World {
         _rt: rt,
         _bus: bus,
         _daemon: daemon,
+        served,
     }
 }
 
@@ -160,7 +164,7 @@ fn the_sync_switches_sit_under_the_services_and_set_on_and_off() {
         .find("Keep this account's files on this computer")
         .expect("sync");
     assert!(services < sync, "the sync switches come after the services");
-    assert!(html.contains("Back up photos"));
+    assert!(html.contains("Upload new photos from a folder on this computer to Google Photos"));
     assert_eq!(
         w.harness.attr(KEEP_FILES, "aria-checked").as_deref(),
         Some("false")
@@ -170,7 +174,7 @@ fn the_sync_switches_sit_under_the_services_and_set_on_and_off() {
         h.attr(KEEP_FILES, "aria-checked").as_deref() == Some("true")
     });
     settle(&mut w.harness, "the pane to be free", |h| {
-        h.attr(BACK_UP_PHOTOS, "data-availability").as_deref() != Some("disabled")
+        h.attr(UPLOAD_PHOTOS, "data-availability").as_deref() != Some("disabled")
     });
     click(&mut w.harness, KEEP_FILES);
     settle(&mut w.harness, "the second set", |_| {
@@ -187,6 +191,68 @@ fn the_sync_switches_sit_under_the_services_and_set_on_and_off() {
 }
 
 #[test]
+fn the_expiry_is_a_read_only_line_in_the_modules_words() {
+    let mut w = world("accounts-expires");
+    click(&mut w.harness, "[aria-label=\"Work mail\"] .ds-button");
+    settle(&mut w.harness, "the account", |h| {
+        h.count(".accounts-detail") == 1
+    });
+    let row = "[aria-label=\"Sign-in\"]";
+    assert_eq!(w.harness.count(row), 1, "{}", w.harness.html());
+    let html = w.harness.html();
+    assert!(html.contains("Signed out by Google on 2026-10-14"));
+    assert!(html.contains("starts another 7"));
+    for control in [".ds-toggle", ".ds-button"] {
+        assert_eq!(
+            w.harness.count(&format!("{row} {control}")),
+            0,
+            "the expiry row has no {control}"
+        );
+    }
+    // An account whose sign-in does not expire has no such row.
+    click(&mut w.harness, BACK);
+    detail(&mut w);
+    assert_eq!(w.harness.count(row), 0);
+}
+
+#[test]
+fn a_session_grant_row_comes_and_goes_with_the_announcement() {
+    let mut w = world("accounts-session-grant");
+    detail(&mut w);
+    let sentence = "Claude Code can use Llm (this session)";
+    let (grant, path) = ("s1", "accounts.home.grant.s1");
+    w.fake
+        .accounts
+        .lock()
+        .expect("accounts")
+        .iter_mut()
+        .filter(|held| held.id == "home")
+        .for_each(|held| held.grants.push((grant.to_owned(), sentence.to_owned())));
+    let announce = |w: &World, word: &str| {
+        w._rt
+            .block_on(w.served.changed(
+                &ds_settings::schema::KeyPath(path.to_owned()),
+                &toml::Value::String(word.to_owned()),
+            ))
+            .expect("announced");
+    };
+    announce(&w, "added");
+    settle(&mut w.harness, "the session row", |h| {
+        h.html().contains(sentence)
+    });
+    w.fake
+        .accounts
+        .lock()
+        .expect("accounts")
+        .iter_mut()
+        .for_each(|held| held.grants.retain(|(g, _)| g != grant));
+    announce(&w, "removed");
+    settle(&mut w.harness, "the session row to go", |h| {
+        !h.html().contains(sentence)
+    });
+}
+
+#[test]
 fn an_account_without_the_toggles_shows_no_sync_rows() {
     let mut w = world("accounts-no-sync");
     click(&mut w.harness, "[aria-label=\"Work mail\"] .ds-button");
@@ -194,7 +260,7 @@ fn an_account_without_the_toggles_shows_no_sync_rows() {
         h.count(".accounts-detail") == 1
     });
     let html = w.harness.html();
-    assert!(!html.contains("Back up photos"));
+    assert!(!html.contains("Upload new photos from a folder on this computer to Google Photos"));
     assert!(!html.contains("on this computer"));
 }
 

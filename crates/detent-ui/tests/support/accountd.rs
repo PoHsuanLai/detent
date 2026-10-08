@@ -35,6 +35,8 @@ pub struct Held {
     pub sync: Vec<(String, bool)>,
     /// Whether the account is a runtime on this computer: the `place` row says so.
     pub on_this_computer: bool,
+    /// The words of the read-only `expires` row, for a sign-in that expires.
+    pub expires: Option<String>,
 }
 
 impl Held {
@@ -47,6 +49,7 @@ impl Held {
             grants: Vec::new(),
             sync: Vec::new(),
             on_this_computer: false,
+            expires: None,
         }
     }
 
@@ -61,6 +64,12 @@ impl Held {
     /// An account syncd can mirror: both sync toggles, off.
     pub fn syncing(mut self) -> Held {
         self.sync = vec![("files".to_owned(), false), ("photos".to_owned(), false)];
+        self
+    }
+
+    /// A sign-in that expires: the `expires` row says `words`.
+    pub fn expiring(mut self, words: &str) -> Held {
+        self.expires = Some(words.to_owned());
         self
     }
 
@@ -164,6 +173,14 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
         fixed("label", "Account", &held.label),
         fixed("state", "Status", &held.state),
     ];
+    if let Some(words) = &held.expires {
+        let mut row = fixed("expires", "Sign-in", words);
+        row.help = Help(
+            "Google ends the sign-ins of an app that is not verified yet after 7 days; signing in again starts another 7."
+                .to_owned(),
+        );
+        rows.push(row);
+    }
     if held.on_this_computer {
         rows.push(fixed("place", "Where", "this_computer"));
     }
@@ -181,7 +198,7 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
     for (leaf, _) in &held.sync {
         let label = match leaf.as_str() {
             "files" => "Keep this account's files on this computer",
-            _ => "Back up photos",
+            _ => "Upload new photos from a folder on this computer to Google Photos",
         };
         rows.push(spec(
             format!("accounts.{id}.sync.{leaf}"),

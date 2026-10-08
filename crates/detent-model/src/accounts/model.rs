@@ -139,6 +139,18 @@ pub struct AccountPermission {
     pub action: String,
 }
 
+/// When a sign-in that expires ends, or that it did: a read-only line the module words, such as
+/// "Google signs this account out on 2026-10-14".
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AccountExpiry {
+    /// The module's name for the row.
+    pub label: String,
+    /// What the module says about it.
+    pub help: String,
+    /// The module's words for the date.
+    pub text: String,
+}
+
 /// One account.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Account {
@@ -150,6 +162,8 @@ pub struct Account {
     pub status: AccountStatus,
     /// Where it lives.
     pub place: Place,
+    /// When its sign-in ends, for an account whose sign-in expires.
+    pub expires: Option<AccountExpiry>,
     /// Its services, in the module's order.
     pub services: Vec<AccountService>,
     /// Its sync switches, in the module's order; none when syncd cannot mirror it.
@@ -210,6 +224,7 @@ pub(super) enum Row<'a> {
     Label(&'a str),
     State(&'a str),
     Place(&'a str),
+    Expires(&'a str),
     AccountService(&'a str, bool),
     Sync(bool),
     Grant,
@@ -245,6 +260,7 @@ pub(super) fn classify<'a>(
                 "label" => Row::Label(variant),
                 "state" => Row::State(variant),
                 "place" => Row::Place(variant),
+                "expires" => Row::Expires(variant),
                 _ => return None,
             };
             Some((AccountKey(id.to_owned()), row))
@@ -276,6 +292,7 @@ fn account_of<'a>(accounts: &'a mut Vec<Account>, key: &AccountKey) -> &'a mut A
                 label: key.0.clone(),
                 status: AccountStatus::Ok,
                 place: Place::default(),
+                expires: None,
                 services: Vec::new(),
                 sync: Vec::new(),
                 permissions: Vec::new(),
@@ -324,6 +341,13 @@ impl AccountsPane {
                 Row::Label(label) => account.label = label.to_owned(),
                 Row::State(word) => account.status = AccountStatus::of(word),
                 Row::Place(word) => account.place = Place::of(word),
+                Row::Expires(text) => {
+                    account.expires = Some(AccountExpiry {
+                        label: spec.label.0.clone(),
+                        help: spec.help.0.clone(),
+                        text: text.to_owned(),
+                    });
+                }
                 // An account with several models sends one service row per model claim: the
                 // same path again is the same switch.
                 Row::AccountService(..) if account.services.iter().any(|s| s.path == spec.path) => {

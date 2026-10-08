@@ -23,9 +23,9 @@ mod warning;
 mod words;
 
 pub use accounts::{
-    Account, AccountKey, AccountPermission, AccountService, AccountStatus, AccountSync,
-    AccountsEffect, AccountsInput, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask,
-    Place, RemovalQuestion, SignInClient, SignOutEnd, accounts_step,
+    Account, AccountExpiry, AccountKey, AccountPermission, AccountService, AccountStatus,
+    AccountSync, AccountsEffect, AccountsInput, AccountsPane, AccountsReady, AccountsScreen,
+    AccountsState, Ask, Place, RemovalQuestion, SignInClient, SignOutEnd, accounts_step,
 };
 pub use agent::AgentSetting;
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};

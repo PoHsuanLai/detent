@@ -46,6 +46,13 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                     label: TextLine::from("Status"),
                     Label { text: account.status.label(), role: LabelRole::Secondary }
                 }
+                if let Some(expiry) = account.expires.clone() {
+                    FieldRow {
+                        label: TextLine::from(expiry.label),
+                        help: Some(TextLine::from(expiry.help)),
+                        Label { text: expiry.text, role: LabelRole::Secondary }
+                    }
+                }
                 if let Some((path, name)) = account.reauth.clone() {
                     FieldRow {
                         label: TextLine::from(name.clone()),
