@@ -39,8 +39,8 @@ pub fn Window(
 
     let search_env = env.clone();
     let find = move |next: String| {
-        if let Some(hit) = search(&search_env.catalogue, &next).first() {
-            page.set(hit.page.clone());
+        if let Some(shown) = search(&search_env.catalogue, &next).first_page() {
+            page.set(shown.clone());
         }
         query.set(next);
     };

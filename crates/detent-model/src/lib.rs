@@ -47,7 +47,7 @@ pub use picker::{
 pub use range::{Number, Range};
 pub use reason::Reason;
 pub use rows::{Columns, cell_fits};
-pub use search::{Hit, Rank, Search, search};
+pub use search::{Found, Hit, Rank, Search, search};
 pub use text_form::{TextFault, show_value};
 pub use warning::{StaleReason, Warning};
 pub use words::{humanize, word_label};

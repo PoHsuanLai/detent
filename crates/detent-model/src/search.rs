@@ -31,25 +31,48 @@ pub struct Hit {
 pub enum Search {
     /// The box is empty.
     Idle,
-    /// The keys found, best first; empty when nothing matches.
-    Results(Vec<Hit>),
+    /// What was found; empty when nothing matches.
+    Results(Found),
+}
+
+/// What a query found: keys, and pages named by it.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct Found {
+    /// The keys found, best first.
+    pub hits: Vec<Hit>,
+    /// The pages whose name the query starts to spell (every word of the query begins a word of
+    /// the name), in sidebar order: a page with live rows of its own has no keys to find, and a
+    /// person typing its name still means it.
+    pub pages: Vec<PageSlug>,
 }
 
 impl Search {
     /// The best hit, if any.
     pub fn first(&self) -> Option<&Hit> {
-        match self {
-            Search::Idle => None,
-            Search::Results(hits) => hits.first(),
-        }
+        self.hits().first()
     }
 
     /// The hits, none while idle.
     pub fn hits(&self) -> &[Hit] {
         match self {
             Search::Idle => &[],
-            Search::Results(hits) => hits,
+            Search::Results(found) => &found.hits,
         }
+    }
+
+    /// The pages the query names, none while idle.
+    pub fn named_pages(&self) -> &[PageSlug] {
+        match self {
+            Search::Idle => &[],
+            Search::Results(found) => &found.pages,
+        }
+    }
+
+    /// The page to show for the query: the first page it names, else the best hit's.
+    pub fn first_page(&self) -> Option<&PageSlug> {
+        self.named_pages()
+            .first()
+            .or_else(|| self.first().map(|hit| &hit.page))
     }
 }
 
@@ -70,6 +93,14 @@ fn rank_of(phrase: &str, words: &[&str], label: &str, help: &str, section: &str)
         .iter()
         .all(|word| everywhere.contains(word))
         .then_some(Rank::Words)
+}
+
+/// Whether every word of `words` begins a word of `name`.
+fn spells(name: &str, words: &[&str]) -> bool {
+    let name = name.to_lowercase();
+    words
+        .iter()
+        .all(|word| name.split_whitespace().any(|part| part.starts_with(word)))
 }
 
 /// The keys of `catalogue` that `query` finds, best rank first, then in page and schema order.
@@ -98,5 +129,11 @@ pub fn search(catalogue: &Catalogue, query: &str) -> Search {
         })
         .collect();
     hits.sort_by_key(|hit| hit.rank);
-    Search::Results(hits)
+    let pages = catalogue
+        .pages
+        .iter()
+        .filter(|page| spells(page.page.label(), &words))
+        .map(|page| page.slug.clone())
+        .collect();
+    Search::Results(Found { hits, pages })
 }

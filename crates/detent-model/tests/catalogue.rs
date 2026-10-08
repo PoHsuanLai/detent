@@ -1,7 +1,8 @@
 //! Grouping, ordering and search over the real schemas (`fixtures/schemas`).
 
 use detent_model::{
-    Catalogue, PageSlug, Rank, Search, SectionModel, discover, landing, search, visible_pages,
+    Catalogue, Found, PageSlug, Rank, Search, SectionModel, discover, landing, search,
+    visible_pages,
 };
 use detent_testkit::{Scratch, seed_schemas};
 use ds_settings::schema::Exposure;
@@ -185,7 +186,10 @@ fn a_query_resolves_to_the_key_the_schemas_word_says() {
 fn an_empty_query_is_idle_and_a_stranger_finds_nothing() {
     let catalogue = real("an_empty_query_is_idle_and_a_stranger_finds_nothing");
     assert_eq!(search(&catalogue, "   "), Search::Idle);
-    assert_eq!(search(&catalogue, "zzzzqqqq"), Search::Results(Vec::new()));
+    assert_eq!(
+        search(&catalogue, "zzzzqqqq"),
+        Search::Results(Found::default())
+    );
 }
 
 #[test]
@@ -241,4 +245,33 @@ fn a_search_narrows_the_sidebar_and_picks_the_page_to_show() {
         slug("appearance"),
         "an unknown page falls back to the first"
     );
+}
+
+#[test]
+fn a_page_is_found_by_the_start_of_its_name_or_of_a_word_of_it() {
+    let catalogue = real("a_page_is_found_by_the_start_of_its_name_or_of_a_word_of_it");
+    let listed = |query: &str| -> Vec<String> {
+        visible_pages(&catalogue, &search(&catalogue, query))
+            .iter()
+            .map(|page| page.slug.0.clone())
+            .collect()
+    };
+    // Accounts is accountd's live pane: no key of it says "acc", the page's name does.
+    for query in ["acc", "Account", "accounts", "  ACC "] {
+        assert!(
+            listed(query).contains(&"accounts".to_owned()),
+            "{query:?} drops the Accounts page"
+        );
+    }
+    assert_eq!(listed("mouse gest"), ["mouse_and_gestures"]);
+    assert!(listed("gest").contains(&"mouse_and_gestures".to_owned()));
+    // Only the start of a word counts, and every word of the query must.
+    assert!(!listed("ccount").contains(&"accounts".to_owned()));
+    assert!(!listed("acc zzzz").contains(&"accounts".to_owned()));
+    // Typing the page's name shows that page.
+    let found = search(&catalogue, "acc");
+    let visible = visible_pages(&catalogue, &found);
+    let shown = landing(&visible, &found, &slug("nowhere")).expect("a page");
+    assert_eq!(shown.slug, slug("accounts"));
+    assert_eq!(found.first_page(), Some(&slug("accounts")));
 }
