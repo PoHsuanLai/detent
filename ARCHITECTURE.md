@@ -23,7 +23,7 @@ rules every repo shares; this file is detent's map and rules, and wins where the
 | 1 | `detent-model` | Pure: `discover` (stale schemas skipped with a `Warning`), `Catalogue` (page then section grouping, fixed page order), `blocks` (what a page draws in order: the Intelligence sections in design/22's order, the local runtimes and the model picker after Models, the Accounts pane before the Accounts page's file sections), `PickerState` and `step` (inferd's live model picker as a pure machine), `AccountsState` and `accounts_step` (accountd's Accounts pane: the live rows read as accounts, one screen at a time, a removal asked about before it is run; `AccountsPane::local_runtimes`: the accounts whose `place` row is this computer), `FirstRun` and `first_run_step` (the welcome window's choices; `runtime_choice` names the picker row and word a runtime is written to), `Reason` (the footer's sentences over `Why` and `Declined`), `Control` per `KeyKind` (a two-word enum is a switch only when it is on and off; a `Rows` key is `Columns`, whose cells are checked against each column), `Range`, `search`, `visible_pages`/`landing` | `ds-settings` (no features), `porter-core`, `porter-infer`; `regex` (a rows column's pattern) |
 | 2 | `detent-files` | Effects on the settings files: `load` (lenient, unknown keys reported, unrepresentable values kept as written), `save` (one key set in place, atomic temp and rename), `FirstRunMark` (the one-line state file that says the first run happened) | `detent-model`, `ds-settings` (no features) |
 | 3 | `detent-intents` | What an agent or a command line may do in Settings: the manifest `org.quire.Settings` (read from `dist/intents/`), `SettingsProvider` (the `IntentProvider1` for `settings.page.show`, `settings.key.read`, `settings.key.set`), the undo journal, `serve` and `serve_session`. A `Window` trait is how it tells the window; no UI crate | `detent-model`, `detent-files`, docket and porter (above), `ds-settings` (no features) |
-| 3 | `detent-ui` | The window: `App`, `Env`, sidebar, pages, sections, one control component per `Control`, the model picker, the Accounts pane, `inference/runtimes_view.rs` ("On this computer"), `first_run/` (the welcome window), `live/` (the look-for-a-daemon loop they share) | `detent-model`, `detent-files`, `ds`, `ds-settings` (dioxus, live, tokio), `ds-blitz`, `porter-dbus`, `porter-infer`; tokio, zbus; dev: `ds-harness`, `ds-lint` |
+| 3 | `detent-ui` | The window: `App`, `Env`, sidebar, pages, sections, one control component per `Control`, the model picker, the Accounts pane, `inference/runtimes_view.rs` ("On this computer"), `first_run/` (the welcome window), `live/` (the look-for-a-daemon loop they share) | `detent-model`, `detent-files`, `ds`, `ds-settings` (dioxus, live, tokio), `ds-blitz`, `porter-client` (dbus), `porter-core`, `porter-dbus`, `porter-infer`, `porter-provider`; tokio, zbus; dev: `ds-harness`, `ds-lint` |
 | 4 | `detent` | The binary: flags, the environment read once, the intents service on the process-wide runtime, `ds_blitz::launch`; `WindowLink` turns the provider's `Window` calls into `detent-ui` notices | `detent-ui`, `detent-intents`, `detent-model`, `detent-files`, `ds-blitz`, `ds-settings`; clap, tokio |
 
 `scripts/check-boundary.sh` keeps this table exact (`EDGES`) and checks that `detent-model` and
@@ -47,7 +47,9 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 | What an Intelligence page draws and in what order | `detent-model::blocks` |
 | The model picker's state and transitions | `detent-model::{PickerState, step}`; the bus calls in `detent-ui/src/inference/io.rs` and the watch for inferd's name in `follow.rs`, the card in `inference/picker_view.rs` |
 | The words of the reason footer | `detent-model::Reason` |
-| The Accounts pane's state and transitions; which row is an account's service, permission or action | `detent-model::{AccountsState, accounts_step, AccountsPane::of}`; the bus calls in `detent-ui/src/accounts/drive.rs`, the screens in `list_view.rs`, `detail_view.rs`, `pane_view.rs` |
+| The Accounts pane's state and transitions; which row is an account's service, permission or action | `detent-model::{AccountsState, accounts_step, AccountsPane::of}`; the bus calls in `detent-ui/src/accounts/drive.rs` (and `add_io.rs`: Add Account… through porter's client), the screens in `list_view.rs`, `detail_view.rs`, `pane_view.rs` |
+| A deletion the sync service holds for the person's word (the banner on a sync row, Keep and Remove) | `detent-model::{Holds, hold_step}` (pure), `detent-ui/src/live/holds.rs` (the Sync1 signal, `Watch`, `ConfirmDiscard`), `accounts/hold_drive.rs`; `HoldBanner` in `adapter.rs` |
+| The marks of the providers shown | `detent-ui/src/marks.rs` (`ProviderMarks`, from porter's shipped provider files: a face, else the named mark, else `@`) |
 | The local runtimes of the Intelligence page; the link from one to its account | `detent-model::AccountsPane::local_runtimes`, `detent-ui/src/inference/runtimes_view.rs`, `detent-ui/src/accounts/link.rs` (`AccountLink`: the page switches and the pane opens the account) |
 | The first-run window, and whether it ran | `detent-model::{FirstRun, first_run_step}`, `detent-ui/src/first_run/` (the writes go through `files::apply` and inferd's picker), `detent-files::FirstRunMark` (`$XDG_STATE_HOME/detent/first-run`), the flag in `detent/src/cli.rs` and `main.rs` |
 | Which pieces of the pane quire's R2a changes | `detent-ui/src/accounts/adapter.rs` (nothing else names them) |
@@ -119,10 +121,12 @@ a `params` list even when empty), add its arm in `detent-intents/src/ask.rs` and
 
 detent's app id is `org.quire.Settings` (porter refuses a name that is not reverse-DNS), and
 `dist/org.quire.Settings.desktop` is named after it, with `StartupWMClass` the same, so the window's
-class matches its launcher entry. The porter daemons admit it as the Settings caller through
-porter's own config, which detent does not copy: porter's `dist/callers.toml` (installed to
-`/etc/porter/callers.toml`, read by accountd and syncd) has the `org.quire.Settings` → `settings`
-row, and porter's `dist/inferd.toml` has `[callers] settings = ["org.quire.Settings"]`.
+class matches its launcher entry. The porter daemons give it the Settings role by its unit, not by its name (sec-3): only the main
+process of the user unit `org.quire.Settings.service` (`dist/systemd/org.quire.Settings.service`,
+Type=dbus, BusName=org.quire.Settings, ExecStart=/usr/bin/detent) is Settings; the D-Bus service file
+names it with `SystemdService=` so activation starts that unit, and `scripts/install.sh` puts both in
+place. A detent started any other way (a terminal, an app scope) is an ordinary app with no Settings
+role. porter's `dist/callers.toml` and `dist/inferd.toml` name the unit, which detent does not copy.
 
 `dist/skills/settings/` is the companion's skill for this app (docket's skills format). Its `uses`
 are `settings.key.read` and `settings.key.set` of the intents manifest, and its body lists the
