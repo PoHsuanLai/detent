@@ -56,9 +56,24 @@ fn the_service_file_names_the_app_and_the_installed_binary() {
             .expect("the service file is installed beside the manifest");
     assert!(service.contains("Name=org.quire.Settings\n"), "{service}");
     assert!(service.contains("Exec=/usr/bin/detent\n"), "{service}");
+    assert!(
+        service.contains("SystemdService=org.quire.Settings.service\n"),
+        "{service}"
+    );
     assert!(usr.join("bin/detent").is_file());
     assert!(
         usr.join("share/applications/org.quire.Settings.desktop")
             .is_file()
     );
+}
+
+#[test]
+fn the_user_unit_is_the_one_the_service_file_names() {
+    let scratch = Scratch::under(TMP, "install-unit");
+    let usr = install_into(&scratch);
+    let unit = std::fs::read_to_string(usr.join("lib/systemd/user/org.quire.Settings.service"))
+        .expect("the user unit is installed");
+    assert!(unit.contains("Type=dbus\n"), "{unit}");
+    assert!(unit.contains("BusName=org.quire.Settings\n"), "{unit}");
+    assert!(unit.contains("ExecStart=/usr/bin/detent\n"), "{unit}");
 }

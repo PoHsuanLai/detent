@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Installs detent: the binary, its desktop entry, its intents manifest and the D-Bus service file
-# that starts it when an intent addresses `org.quire.Settings`.
+# Installs detent: the binary, its desktop entry, its intents manifest, the D-Bus service file
+# that starts it when an intent addresses `org.quire.Settings`, and the systemd user unit that file
+# names (the unit accountd and inferd know Settings by).
 #
 # usage: scripts/install.sh
 # environment:
@@ -23,3 +24,7 @@ mkdir -p "$share/dbus-1/services"
 sed "s|^Exec=.*|Exec=$prefix/bin/detent|" "$repo/dist/dbus-1/services/org.quire.Settings.service" \
   >"$share/dbus-1/services/org.quire.Settings.service"
 chmod 644 "$share/dbus-1/services/org.quire.Settings.service"
+# The user unit the D-Bus file names (`SystemdService=`): porter gives Settings its role only to this
+# unit's main process.
+install -Dm644 "$repo/dist/systemd/org.quire.Settings.service" "$dest$prefix/lib/systemd/user/org.quire.Settings.service"
+sed -i "s|^ExecStart=.*|ExecStart=$prefix/bin/detent|" "$dest$prefix/lib/systemd/user/org.quire.Settings.service"

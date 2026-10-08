@@ -1,0 +1,12 @@
+# Settings (detent) as a systemd user unit: the unit accountd and inferd know Settings by.
+# Both give the Settings role only to this unit's main process, so a detent started any other way
+# (a terminal, an app scope, another unit) is an ordinary app with no Settings role. It is found,
+# and started, by D-Bus activation (dbus-1/services/org.quire.Settings.service) when an intent
+# addresses org.quire.Settings.
+[Unit]
+Description=Settings (org.quire.Settings)
+
+[Service]
+Type=dbus
+BusName=org.quire.Settings
+ExecStart=/usr/bin/detent
