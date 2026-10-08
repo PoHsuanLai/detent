@@ -2,11 +2,12 @@
 //! plain text field, initial focus on an alert). Every use of them in the pane goes through here,
 //! so the switch to R2a is these few lines and nothing else.
 
-use detent_model::{Ask, RemovalQuestion};
+use detent_model::{Adding, Ask, HoldCounts, KEEP_HELP, LocalFiles, RemovalQuestion, SyncHold};
 use dioxus::prelude::*;
 use ds::components::controls::button::Button;
-use ds::components::controls::button_model::{Bezel, ButtonRole};
+use ds::components::controls::button_model::{Answers, Bezel, ButtonRole};
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
+use ds::components::overlays::inline_banner::InlineBanner;
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
@@ -80,7 +81,7 @@ pub(super) fn BackButton(label: String, onpress: EventHandler<()>) -> Element {
     }
 }
 
-/// The question before an account is removed or a coding agent signed out: a critical alert whose
+/// The question before an account is removed or an assistant signed out: a critical alert whose
 /// destructive button is never the default, so Return keeps the account signed in.
 #[component]
 pub(super) fn RemoveAlert(
@@ -91,8 +92,17 @@ pub(super) fn RemoveAlert(
     let (title, message, keep, action) = match question.ask {
         Ask::Remove => (
             format!("{remove_name} {}?", question.account),
-            "Its stored credentials and every permission given for it are deleted. \
-             It cannot be undone.",
+            match question.files {
+                LocalFiles::Kept => {
+                    "Its stored credentials and every permission given for it are deleted. \
+                     Files kept on this computer for the account are deleted too. \
+                     It cannot be undone."
+                }
+                LocalFiles::None => {
+                    "Its stored credentials and every permission given for it are deleted. \
+                     It cannot be undone."
+                }
+            },
             "Keep",
             remove_name.clone(),
         ),
@@ -116,18 +126,82 @@ pub(super) fn RemoveAlert(
     }
 }
 
-/// A text field for a client id: it holds what is typed until the caret leaves or Enter is
-/// pressed, and is made anew when the stored value changes (the caller keys it on the value).
+/// A text field for a sign-in key or secret: it holds what is typed until the caret leaves or
+/// Enter is pressed, and is made anew when the stored value changes (the caller keys it on the
+/// value). A secret waits (greyed) until its key is set.
 #[component]
-pub(super) fn ClientField(label: String, value: String, onchange: EventHandler<String>) -> Element {
+pub(super) fn ClientField(
+    label: String,
+    value: String,
+    availability: Availability,
+    onchange: EventHandler<String>,
+) -> Element {
     let mut draft = use_signal(|| value.clone());
     rsx! {
         TextField {
             label,
             value: draft(),
+            availability,
             size: ControlSize::Small,
             oninput: move |next| draft.set(next),
             onchange: move |next: String| onchange.call(next),
+        }
+    }
+}
+
+/// The button that opens the add sheet; it waits while one is open or a change is in flight.
+#[component]
+pub(super) fn AddAccountButton(
+    adding: Adding,
+    availability: Availability,
+    onpress: EventHandler<()>,
+) -> Element {
+    let availability = match adding {
+        Adding::Idle => availability,
+        Adding::SheetOpen => Availability::Disabled,
+    };
+    rsx! {
+        Button {
+            label: "Add Account\u{2026}",
+            size: ControlSize::Small,
+            availability,
+            onclick: move |_| onpress.call(()),
+        }
+    }
+}
+
+/// The banner on a sync row whose deletion waits for the person: Keep (the default, asks nothing
+/// of anyone) and Remove (destructive, never the default).
+#[component]
+pub(super) fn HoldBanner(
+    hold: SyncHold,
+    onkeep: EventHandler<()>,
+    onremove: EventHandler<()>,
+) -> Element {
+    let HoldCounts { held, .. } = hold.counts;
+    rsx! {
+        InlineBanner {
+            severity: Severity::Warn,
+            text: TextLine::from(hold.banner()),
+            detail: Some(TextLine::from(KEEP_HELP)),
+            common: Common {
+                aria_label: Some(format!("{held} files removed on the server")),
+                ..Common::default()
+            },
+            actions: rsx! {
+                Button {
+                    label: "Keep",
+                    size: ControlSize::Small,
+                    answers: Answers::Return,
+                    onclick: move |_| onkeep.call(()),
+                }
+                Button {
+                    label: "Remove",
+                    role: ButtonRole::Destructive,
+                    size: ControlSize::Small,
+                    onclick: move |_| onremove.call(()),
+                }
+            },
         }
     }
 }

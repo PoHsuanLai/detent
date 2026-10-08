@@ -1278,9 +1278,11 @@ dependencies = [
  "ds-lint",
  "ds-settings",
  "image",
+ "porter-client",
  "porter-core",
  "porter-dbus",
  "porter-infer",
+ "porter-provider",
  "tokio",
  "toml",
  "zbus",
@@ -3955,6 +3957,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "porter-client"
+version = "0.1.0"
+dependencies = [
+ "porter-core",
+ "porter-dbus",
+ "porter-provider",
+ "porter-secrets",
+ "porter-service",
+ "rustix",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "tokio",
+]
+
+[[package]]
 name = "porter-core"
 version = "0.1.0"
 dependencies = [
@@ -3984,6 +4002,34 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "porter-provider"
+version = "0.1.0"
+dependencies = [
+ "porter-core",
+ "serde",
+ "thiserror 2.0.21",
+ "toml",
+]
+
+[[package]]
+name = "porter-secrets"
+version = "0.1.0"
+dependencies = [
+ "porter-core",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "porter-service"
+version = "0.1.0"
+dependencies = [
+ "porter-core",
+ "porter-provider",
+ "porter-secrets",
 ]
 
 [[package]]

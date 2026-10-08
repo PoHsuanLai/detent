@@ -7,6 +7,7 @@ pub mod accountd;
 pub mod bus;
 pub mod drive;
 pub mod inferd;
+pub mod syncd;
 
 use detent_files::{ConfigHome, StateHome};
 use detent_testkit::{Scratch, seed_schemas};

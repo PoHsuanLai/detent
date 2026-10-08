@@ -15,14 +15,16 @@ dioxus = { workspace = true }
 ds = { workspace = true }
 ds-blitz = { workspace = true }
 ds-settings = { workspace = true, features = ["dioxus", "live", "tokio"] }
+porter-client = { workspace = true }
+porter-core = { workspace = true }
 porter-dbus = { workspace = true }
+porter-provider = { workspace = true }
 porter-infer = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
 zbus = { workspace = true }
 
 [dev-dependencies]
-porter-core = { workspace = true }
 detent-testkit = { workspace = true }
 dioxus-ssr = { workspace = true }
 ds-harness = { workspace = true }

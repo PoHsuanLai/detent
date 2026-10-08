@@ -21,7 +21,7 @@ fn absence_of(error: LiveError) -> Absence {
     }
 }
 
-pub(super) async fn connect(bus: &BusSource) -> Result<Connection, Absence> {
+pub(crate) async fn connect(bus: &BusSource) -> Result<Connection, Absence> {
     match bus {
         BusSource::Absent => Err(Absence::NoBus),
         BusSource::Session => Connection::session().await.map_err(failed),
@@ -35,7 +35,7 @@ pub(super) async fn connect(bus: &BusSource) -> Result<Connection, Absence> {
 
 /// The signals that say the daemon's bus name changed hands, subscribed before anyone asks
 /// whether it is there, so no change falls between the question and the listening.
-pub(super) async fn owner_changes(
+pub(crate) async fn owner_changes(
     connection: &Connection,
     daemon: &Daemon,
 ) -> Result<NameOwnerChangedStream, Absence> {
@@ -48,7 +48,7 @@ pub(super) async fn owner_changes(
 }
 
 /// The next time the daemon's name changes hands; `None` when the bus is gone.
-pub(super) async fn next_owner(owners: &mut NameOwnerChangedStream) -> Option<()> {
+pub(crate) async fn next_owner(owners: &mut NameOwnerChangedStream) -> Option<()> {
     use zbus::export::futures_core::Stream;
     std::future::poll_fn(|cx| std::pin::Pin::new(&mut *owners).poll_next(cx))
         .await

@@ -100,9 +100,21 @@
   padding: 0 var(--s-4);
 }
 
+.accounts-add,
+.accounts-hold,
 .accounts-clients,
 .accounts-note {
   padding: 0 var(--s-4);
+}
+
+.accounts-add {
+  display: flex;
+}
+
+.account-kind {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
 }
 
 .runtimes {

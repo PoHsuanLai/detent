@@ -1,30 +1,27 @@
-//! How a coding agent's sign-out ended, as accountd announces it on the account's `sign_out`
+//! How an assistant's sign-out ended, as the module announces it on the account's `sign_out`
 //! row, and the line the person reads for it.
 
-use super::step::AccountsInput;
-use ds_settings::schema::KeyPath;
-
-/// What accountd says the sign-out came to.
+/// What the module says the sign-out came to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SignOutEnd {
-    /// The agent's launcher was asked and has not answered yet.
+    /// The assistant's app was asked and has not answered yet.
     Asked,
-    /// The agent signs itself in and out; Detent could not touch its login.
+    /// The assistant signs itself in and out; Settings could not touch its login.
     LoginUntouched,
-    /// The agent signed out.
+    /// The assistant signed out.
     Done,
-    /// The agent tried and could not.
+    /// The assistant tried and could not.
     Failed,
-    /// The person turned it down in the agent.
+    /// The person turned it down in the assistant.
     Cancelled,
-    /// The launcher did not answer in time.
+    /// The assistant's app did not answer in time.
     Expired,
-    /// The app that runs the agent quit before it signed out.
+    /// The app that runs the assistant quit before it signed out.
     LauncherGone,
 }
 
 impl SignOutEnd {
-    /// The end accountd's word names, if it is one of the seven.
+    /// The end the module's word names, if it is one of the seven.
     pub fn parse(word: &str) -> Option<Self> {
         Some(match word {
             "asked" => Self::Asked,
@@ -58,22 +55,5 @@ impl SignOutEnd {
     /// Whether the account may have changed, so the pane reads it again.
     pub(crate) fn settles(self) -> bool {
         !matches!(self, Self::Asked)
-    }
-}
-
-impl AccountsInput {
-    /// What the module's announcement of `value` at `path` means to the pane: a sign-out's end
-    /// when it is on an account's `sign_out` row and says one of the seven words, else a change
-    /// to read again.
-    pub fn heard(path: KeyPath, value: &toml::Value) -> Self {
-        let end = path
-            .0
-            .ends_with(".sign_out")
-            .then(|| value.as_str().and_then(SignOutEnd::parse))
-            .flatten();
-        match end {
-            Some(end) => Self::SignedOut { path, end },
-            None => Self::Changed,
-        }
     }
 }

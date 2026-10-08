@@ -1,7 +1,7 @@
 //! The list of accounts, and the sign-in client ids under it.
 
-use super::adapter::{ClientField, OpenButton};
-use detent_model::{AccountKey, AccountsPane as Pane};
+use super::adapter::{AddAccountButton, ClientField, OpenButton};
+use detent_model::{AccountKey, AccountsPane as Pane, Adding, ClientEntry};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::disclosure::Disclosure;
@@ -11,9 +11,26 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds_settings::schema::KeyPath;
 
-/// One row per account: its name and how it stands, and the button that opens it.
+/// The button that adds an account, under the list (or the empty state).
 #[component]
-pub(super) fn AccountList(pane: Pane, onopen: EventHandler<AccountKey>) -> Element {
+fn AddAccount(adding: Adding, availability: Availability, onadd: EventHandler<()>) -> Element {
+    rsx! {
+        div { class: "accounts-add", "data-accounts": "add",
+            AddAccountButton { adding, availability, onpress: move |()| onadd.call(()) }
+        }
+    }
+}
+
+/// One row per account: its name and how it stands, and the button that opens it; under them the
+/// button that adds an account.
+#[component]
+pub(super) fn AccountList(
+    pane: Pane,
+    adding: Adding,
+    availability: Availability,
+    onopen: EventHandler<AccountKey>,
+    onadd: EventHandler<()>,
+) -> Element {
     if pane.accounts.is_empty() {
         return rsx! {
             div { class: "accounts-empty", "data-accounts": "empty",
@@ -22,6 +39,7 @@ pub(super) fn AccountList(pane: Pane, onopen: EventHandler<AccountKey>) -> Eleme
                     description: "An app that needs an account asks for it, and it appears here.",
                 }
             }
+            AddAccount { adding, availability, onadd }
         };
     }
     rsx! {
@@ -44,12 +62,13 @@ pub(super) fn AccountList(pane: Pane, onopen: EventHandler<AccountKey>) -> Eleme
                     }
                 }
             }
+            AddAccount { adding, availability, onadd }
         }
     }
 }
 
 /// The bring-your-own client ids, under a disclosure of their own (the page's Advanced one holds
-/// the file's keys); nothing when accountd lists none.
+/// the file's keys); nothing when the account service lists none.
 #[component]
 pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(KeyPath, String)>) -> Element {
     let mut opened = use_signal(|| Shown::Hidden);
@@ -60,7 +79,7 @@ pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(KeyPath, String)>) -> 
         div { class: "accounts-clients", "data-accounts": "clients",
             Disclosure {
                 common: Common { id: Some("sign-in-clients".to_owned()), ..Common::default() },
-                label: Some("Sign-in clients".to_owned()),
+                label: Some("Sign-in keys".to_owned()),
                 shown: opened(),
                 on_toggle: move |next| opened.set(next),
                 FieldGroup {
@@ -73,6 +92,10 @@ pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(KeyPath, String)>) -> 
                                 key: "{client.path.0}/{client.value}",
                                 label: client.label.clone(),
                                 value: client.value.clone(),
+                                availability: match client.entry {
+                                    ClientEntry::Open => Availability::Enabled,
+                                    ClientEntry::WaitsForKey => Availability::Disabled,
+                                },
                                 onchange: {
                                     let path = client.path.clone();
                                     move |text| onedit.call((path.clone(), text))

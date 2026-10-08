@@ -39,6 +39,8 @@ pub struct Held {
     pub expires: Option<String>,
     /// The slug of the read-only `sign_in` row, when the module publishes one.
     pub sign_in: Option<String>,
+    /// The provider's id and name, for the read-only `provider` row.
+    pub provider: Option<(String, String)>,
 }
 
 impl Held {
@@ -53,6 +55,7 @@ impl Held {
             on_this_computer: false,
             expires: None,
             sign_in: None,
+            provider: None,
         }
     }
 
@@ -79,6 +82,12 @@ impl Held {
     /// How the account signs in again: the `sign_in` row says `slug`.
     pub fn signing_in(mut self, slug: &str) -> Held {
         self.sign_in = Some(slug.to_owned());
+        self
+    }
+
+    /// The kind of account it is: the `provider` row says `id`, and `name` is what a person reads.
+    pub fn of_provider(mut self, id: &str, name: &str) -> Held {
+        self.provider = Some((id.to_owned(), name.to_owned()));
         self
     }
 
@@ -193,6 +202,13 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
     if let Some(slug) = &held.sign_in {
         rows.push(fixed("sign_in", "How", slug));
     }
+    if let Some((provider, name)) = &held.provider {
+        let mut row = fixed("provider", "Account type", provider);
+        row.labels = ds_settings::schema::WordLabels(
+            [(provider.clone(), name.clone())].into_iter().collect(),
+        );
+        rows.push(row);
+    }
     if held.on_this_computer {
         rows.push(fixed("place", "Where", "this_computer"));
     }
@@ -212,7 +228,7 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
             "files" => "Keep this account's files on this computer",
             _ => "Upload new photos from a folder on this computer to Google Photos",
         };
-        rows.push(spec(
+        let mut row = spec(
             format!("accounts.{id}.sync.{leaf}"),
             section,
             label,
@@ -220,7 +236,15 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
                 variants: ["on".to_owned(), "off".to_owned()],
             },
             toml::Value::String("off".to_owned()),
-        ));
+        );
+        if leaf == "photos" {
+            row.help = Help(
+                "Sends each new photo you put in the upload folder to an album in Google Photos. \
+                 It never reads or deletes anything else in your Google Photos."
+                    .to_owned(),
+            );
+        }
+        rows.push(row);
     }
     for (grant, what) in &held.grants {
         rows.push(spec(

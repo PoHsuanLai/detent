@@ -294,7 +294,8 @@ fn removing_an_account_is_never_run_without_the_question_answered() {
         Some(RemovalQuestion {
             ask: Ask::Remove,
             path: remove.clone(),
-            account: "Home cloud".to_owned()
+            account: "Home cloud".to_owned(),
+            files: LocalFiles::Kept,
         })
     );
 
@@ -527,7 +528,7 @@ fn agent_described() -> Described {
     Described {
         keys: vec![
             fixed("accounts.agent.label", "Account", "Claude Code"),
-            fixed("accounts.agent.state", "Status", "needs_login"),
+            fixed("accounts.agent.state", "Status", "ok"),
             action("accounts.agent.sign_out", "Sign out", ActionWeight::Plain),
             action(
                 "accounts.agent.remove",
@@ -543,8 +544,8 @@ fn agent_described() -> Described {
 fn an_agent_account_shows_its_sign_out_row_and_signs_out_only_when_confirmed() {
     let pane = AccountsPane::of(&agent_described());
     let agent = &pane.accounts[0];
-    assert_eq!(agent.status, AccountStatus::NeedsLogin);
-    assert_eq!(agent.status.label(), "Needs sign-in");
+    assert_eq!(agent.status, AccountStatus::Ok);
+    assert_eq!(agent.status.label(), "Signed in");
     assert_eq!(
         agent.sign_out,
         Some((path("accounts.agent.sign_out"), "Sign out".to_owned()))
@@ -567,7 +568,8 @@ fn an_agent_account_shows_its_sign_out_row_and_signs_out_only_when_confirmed() {
         Some(RemovalQuestion {
             ask: Ask::SignOut,
             path: sign_out.clone(),
-            account: "Claude Code".to_owned()
+            account: "Claude Code".to_owned(),
+            files: LocalFiles::None,
         })
     );
     // Cancel: still nothing.
@@ -693,7 +695,11 @@ fn the_sign_in_row_is_read_and_each_slug_words_the_reauth_line() {
         ),
         ("password", SignInWay::Password, "Enter the password again."),
         ("key", SignInWay::Key, "Enter the key again."),
-        ("agent", SignInWay::Agent, "Sign in to the account again."),
+        (
+            "agent",
+            SignInWay::Agent,
+            "Asks the assistant to sign itself in, which needs its app to be running.",
+        ),
         (
             "outside",
             SignInWay::Outside,

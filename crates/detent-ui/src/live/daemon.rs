@@ -1,8 +1,11 @@
 //! Which daemon a live module belongs to.
 
-use porter_dbus::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
+use porter_dbus::{
+    ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH, SYNC_BUS,
+    SYNC_PATH,
+};
 
-/// A daemon that serves a live settings module: its bus name and the module's object path.
+/// A daemon on the bus: its name and its object path (for a live settings module, the module's).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Daemon {
     /// The bus name the daemon owns.
@@ -25,6 +28,14 @@ impl Daemon {
         Daemon {
             name: ACCOUNTS_BUS,
             path: ACCOUNTS_SETTINGS_PATH.to_owned(),
+        }
+    }
+
+    /// syncd, which holds a deletion for the person's word and tells it (`org.quire.Sync1`).
+    pub fn syncd() -> Daemon {
+        Daemon {
+            name: SYNC_BUS,
+            path: SYNC_PATH.to_owned(),
         }
     }
 }

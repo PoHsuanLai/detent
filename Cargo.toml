@@ -41,6 +41,10 @@ prov          = { path = "../porter/crates/prov" }
 
 # porter: the model picker's vocabulary (tiers, the Why and Declined facts) and inferd's bus names.
 porter-dbus  = { path = "../porter/crates/porter-dbus" }
+# Settings' own "Add Account…" goes through the app-facing client (the Settings role may call AddAccount).
+porter-client = { path = "../porter/crates/porter-client", default-features = false, features = ["dbus"] }
+# The provider files porter ships, for the marks (`mark_face`) of the providers Settings shows.
+porter-provider = { path = "../porter/crates/porter-provider" }
 porter-infer = { path = "../porter/crates/porter-infer" }
 
 # A rows column's pattern: the whole cell must match it.
@@ -199,8 +203,10 @@ vision-prep = { path = "../stoker/crates/vision-prep" }
 almanac-core = { path = "../almanac/crates/almanac-core" }
 
 [patch."https://github.com/PoHsuanLai/porter"]
+porter-client = { path = "../porter/crates/porter-client" }
 porter-core = { path = "../porter/crates/porter-core" }
 porter-dbus = { path = "../porter/crates/porter-dbus" }
+porter-provider = { path = "../porter/crates/porter-provider" }
 porter-infer = { path = "../porter/crates/porter-infer" }
 prov = { path = "../porter/crates/prov" }
 

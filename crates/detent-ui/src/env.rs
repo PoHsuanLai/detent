@@ -5,6 +5,7 @@
 use crate::inbox::Inbox;
 use crate::inference::ReasonFeed;
 use crate::live::BusSource;
+use crate::marks::ProviderMarks;
 use detent_files::{ConfigHome, FirstRunMark, StateHome};
 use detent_model::{Catalogue, PageSlug, Warning, discover};
 use ds_settings::SystemPrefsSource;
@@ -41,6 +42,8 @@ pub struct Env {
     pub bus: BusSource,
     /// Where the model picker's reason footer reads inferd's `Why` and `Declined` from.
     pub reasons: ReasonFeed,
+    /// The marks of the providers the Accounts page shows.
+    pub marks: ProviderMarks,
 }
 
 impl Env {
@@ -64,6 +67,7 @@ impl Env {
             inbox: Inbox::default(),
             bus,
             reasons: ReasonFeed::default(),
+            marks: ProviderMarks::shipped(),
         }
     }
 

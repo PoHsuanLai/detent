@@ -1,6 +1,7 @@
 //! What the Accounts pane shows: the accounts, each with its services, permissions and actions,
 //! read from the module's rows alone. Nothing here knows an account or a service by name.
 
+use super::add_account::Adding;
 use super::sign_in_help::sign_in_of;
 use crate::picker::{Absence, Described};
 use crate::words::humanize;
@@ -46,7 +47,7 @@ pub enum AccountStatus {
     Ok,
     /// The sign-in has to be done again.
     NeedsReauth,
-    /// A coding agent that has to be signed in, inside the agent itself.
+    /// An assistant that has to be signed in, inside the assistant itself.
     NeedsLogin,
     /// The service cannot be reached.
     Offline,
@@ -126,6 +127,9 @@ pub struct AccountSync {
     pub path: KeyPath,
     /// The module's own words for it.
     pub label: String,
+    /// The module's help under it ("never reads or deletes anything else"); empty when it gave
+    /// none.
+    pub help: String,
     /// Whether it is turned on.
     pub on: bool,
 }
@@ -153,6 +157,16 @@ pub struct AccountExpiry {
     pub text: String,
 }
 
+/// The kind of account it is, as the module's `provider` row says: the provider's id and the
+/// name a person reads for it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AccountProvider {
+    /// The provider's id (`fastmail`), what a mark is looked up by.
+    pub id: String,
+    /// The name a person reads ("Fastmail").
+    pub name: String,
+}
+
 /// One account.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Account {
@@ -168,6 +182,8 @@ pub struct Account {
     pub expires: Option<AccountExpiry>,
     /// How it signs in again, from the module's `sign_in` row; none when the row is missing.
     pub sign_in: Option<SignInWay>,
+    /// What kind of account it is, from the module's `provider` row; none when the row is missing.
+    pub provider: Option<AccountProvider>,
     /// Its services, in the module's order.
     pub services: Vec<AccountService>,
     /// Its sync switches, in the module's order; none when syncd cannot mirror it.
@@ -176,7 +192,7 @@ pub struct Account {
     pub permissions: Vec<AccountPermission>,
     /// The row that signs in again, with its action's name.
     pub reauth: Option<(KeyPath, String)>,
-    /// The row that signs a coding agent's account out, with its action's name.
+    /// The row that signs an assistant's account out, with its action's name.
     pub sign_out: Option<(KeyPath, String)>,
     /// The row that removes the account, with its action's name.
     pub remove: Option<(KeyPath, String)>,
@@ -186,6 +202,18 @@ impl Account {
     /// Whether this is a language-model runtime on this computer.
     pub fn is_local_runtime(&self) -> bool {
         self.place == Place::ThisComputer && self.services.iter().any(|s| s.kind == LLM)
+    }
+
+    /// Drops the rows the account's state makes no sense for, whatever the module sent: a
+    /// program on this computer has nothing to sign in to, and an assistant that is not signed in
+    /// has nothing to sign out of.
+    fn keep_offered_rows(&mut self) {
+        if self.place == Place::ThisComputer {
+            self.reauth = None;
+        }
+        if self.status == AccountStatus::NeedsLogin {
+            self.sign_out = None;
+        }
     }
 
     /// The account as one line for a reader that is not the window: its label, the kinds of
@@ -201,7 +229,16 @@ impl Account {
     }
 }
 
-/// One bring-your-own sign-in client id: a text row.
+/// Whether a sign-in client field can be filled in now.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ClientEntry {
+    /// Yes.
+    Open,
+    /// Not yet: it is a secret, and the sign-in key it belongs to is still empty.
+    WaitsForKey,
+}
+
+/// One bring-your-own sign-in key (or its secret): a text row.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignInClient {
     /// The row, `accounts.clients.<issuer>`.
@@ -210,8 +247,37 @@ pub struct SignInClient {
     pub label: String,
     /// What the module says about it.
     pub help: String,
-    /// The id held now; empty when the build's own is used.
+    /// The text held now; empty when the build's own is used.
     pub value: String,
+    /// Whether it can be filled in now.
+    pub entry: ClientEntry,
+}
+
+/// What a secret row's path ends in, after the path of the key it belongs to.
+const SECRET_LEAF: &str = ".secret";
+
+impl SignInClient {
+    /// The line the person reads when they try to fill in a secret before its key.
+    pub const KEY_FIRST: &'static str = "Set the sign-in key first, then its secret.";
+}
+
+/// Marks each secret whose key is still empty as not yet fillable.
+fn wait_for_keys(clients: &mut [SignInClient]) {
+    let empty_keys: Vec<String> = clients
+        .iter()
+        .filter(|c| c.value.is_empty() && !c.path.0.ends_with(SECRET_LEAF))
+        .map(|c| c.path.0.clone())
+        .collect();
+    for client in clients.iter_mut() {
+        let waits = client
+            .path
+            .0
+            .strip_suffix(SECRET_LEAF)
+            .is_some_and(|key| empty_keys.iter().any(|empty| empty == key));
+        if waits {
+            client.entry = ClientEntry::WaitsForKey;
+        }
+    }
 }
 
 /// Everything the module described, read as accounts.
@@ -230,6 +296,7 @@ pub(super) enum Row<'a> {
     Place(&'a str),
     Expires(&'a str),
     SignIn(&'a str),
+    Provider(&'a str),
     AccountService(&'a str, bool),
     Sync(bool),
     Grant,
@@ -267,6 +334,7 @@ pub(super) fn classify<'a>(
                 "place" => Row::Place(variant),
                 "expires" => Row::Expires(variant),
                 "sign_in" => Row::SignIn(variant),
+                "provider" => Row::Provider(variant),
                 _ => return None,
             };
             Some((AccountKey(id.to_owned()), row))
@@ -300,6 +368,7 @@ fn account_of<'a>(accounts: &'a mut Vec<Account>, key: &AccountKey) -> &'a mut A
                 place: Place::default(),
                 expires: None,
                 sign_in: None,
+                provider: None,
                 services: Vec::new(),
                 sync: Vec::new(),
                 permissions: Vec::new(),
@@ -337,6 +406,7 @@ impl AccountsPane {
                         .get(&spec.path)
                         .cloned()
                         .unwrap_or_default(),
+                    entry: ClientEntry::Open,
                 });
                 continue;
             }
@@ -349,6 +419,12 @@ impl AccountsPane {
                 Row::State(word) => account.status = AccountStatus::of(word),
                 Row::Place(word) => account.place = Place::of(word),
                 Row::SignIn(word) => account.sign_in = sign_in_of(word),
+                Row::Provider(id) => {
+                    account.provider = Some(AccountProvider {
+                        id: id.to_owned(),
+                        name: spec.labels.of(id).unwrap_or(id).to_owned(),
+                    });
+                }
                 Row::Expires(text) => {
                     account.expires = Some(AccountExpiry {
                         label: spec.label.0.clone(),
@@ -368,6 +444,7 @@ impl AccountsPane {
                 Row::Sync(on) => account.sync.push(AccountSync {
                     path: spec.path.clone(),
                     label: spec.label.0.clone(),
+                    help: spec.help.0.clone(),
                     on,
                 }),
                 Row::Grant => account.permissions.push(AccountPermission {
@@ -380,6 +457,10 @@ impl AccountsPane {
                 Row::Remove => account.remove = Some((spec.path.clone(), action_name(spec))),
             }
         }
+        pane.accounts
+            .iter_mut()
+            .for_each(Account::keep_offered_rows);
+        wait_for_keys(&mut pane.clients);
         pane
     }
 
@@ -420,8 +501,18 @@ pub enum AccountsScreen {
 pub enum Ask {
     /// Remove the account.
     Remove,
-    /// Sign a coding agent's account out.
+    /// Sign an assistant's account out.
     SignOut,
+}
+
+/// Whether this computer keeps files for the account that a removal would delete too: a sync
+/// switch of the account is on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LocalFiles {
+    /// A sync switch is on: files kept for the account go with it.
+    Kept,
+    /// None are kept.
+    None,
 }
 
 /// A removal or sign-out waiting for the person's answer.
@@ -433,6 +524,8 @@ pub struct RemovalQuestion {
     pub path: KeyPath,
     /// The account's label, for the question.
     pub account: String,
+    /// Whether files kept on this computer for the account are deleted with it.
+    pub files: LocalFiles,
 }
 
 /// A pane that is there.
@@ -446,6 +539,8 @@ pub struct AccountsReady {
     pub pending: Option<KeyPath>,
     /// The removal asked about, if any.
     pub confirming: Option<RemovalQuestion>,
+    /// Whether the add sheet is open.
+    pub adding: Adding,
 }
 
 /// Where the pane stands.
@@ -468,6 +563,7 @@ impl AccountsReady {
             screen: AccountsScreen::List,
             pending: None,
             confirming: None,
+            adding: Adding::Idle,
         }
     }
 

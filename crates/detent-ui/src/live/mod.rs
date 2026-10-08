@@ -5,8 +5,11 @@
 mod bus;
 mod daemon;
 mod follow;
+mod holds;
 mod io;
 
 pub use bus::BusSource;
 pub(crate) use daemon::Daemon;
 pub(crate) use follow::{Followed, follow, open_once, read_once, reread};
+pub(crate) use holds::{confirm_discard, follow_holds, hold_now};
+pub(crate) use io::connect;

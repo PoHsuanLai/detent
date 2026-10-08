@@ -1,66 +1,83 @@
-//! The Accounts page's pane: accountd's accounts, or why they are not there.
+//! The Accounts page's pane: the accounts, or why they are not there.
 
 use super::adapter::RemoveAlert;
 use super::detail_view::{AccountDetail, Handlers};
 use super::drive::{drive, is_valued};
+use super::hold_drive::drive_holds;
 use super::link::AccountLink;
 use super::list_view::{AccountList, ClientIds};
 use crate::env::Env;
-use crate::live::{Daemon, Followed, follow};
-use detent_model::{Absence, AccountsInput, AccountsReady, AccountsState};
+use crate::live::{Daemon, Followed, follow, follow_holds};
+use crate::marks::ProviderMarks;
+use detent_model::{Absence, AccountsInput, AccountsReady, AccountsState, HoldInput, Holds};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 use ds_settings::live::LiveClient;
 
-/// accountd's accounts as a list and a detail screen, or one row that says accountd is not
+/// The accounts as a list and a detail screen, or one row that says the account service is not
 /// there.
 #[component]
 pub fn AccountsPane() -> Element {
     let env = use_context::<Env>();
     let toasts = use_toasts();
     let state = use_signal(AccountsState::default);
-    let mut client = use_signal(|| None::<LiveClient>);
+    let client = use_signal(|| None::<LiveClient>);
+    let mut set_client = client;
+    let holds = use_signal(Holds::default);
 
-    use_future(move || {
+    // The sync service's held deletions are told apart from the accounts' rows.
+    use_future({
         let bus = env.bus.clone();
-        async move {
-            follow(
-                &bus,
-                &Daemon::accountd(),
-                is_valued,
-                |followed| match followed {
-                    Followed::Opened(opened, described) => {
-                        client.set(Some(opened));
-                        spawn(drive(
-                            state,
-                            client,
-                            toasts,
-                            AccountsInput::Found(Ok(described)),
-                        ));
-                    }
-                    Followed::Gone(absence) => {
-                        client.set(None);
-                        spawn(drive(
-                            state,
-                            client,
-                            toasts,
-                            AccountsInput::Found(Err(absence)),
-                        ));
-                    }
-                    Followed::Changed(path, value) => {
-                        let heard = AccountsInput::heard(path, &value);
-                        spawn(drive(state, client, toasts, heard));
-                    }
-                },
-            )
-            .await;
+        move || {
+            let bus = bus.clone();
+            async move {
+                follow_holds(&bus, |input| {
+                    spawn(drive_holds(holds, bus.clone(), toasts, input));
+                })
+                .await;
+            }
         }
     });
 
-    let send = EventHandler::new(move |input: AccountsInput| {
-        spawn(drive(state, client, toasts, input));
+    use_future({
+        let bus = env.bus.clone();
+        move || {
+            let bus = bus.clone();
+            async move {
+                follow(&bus, &Daemon::accountd(), is_valued, |followed| {
+                    let run = |input| spawn(drive(state, client, bus.clone(), toasts, input));
+                    match followed {
+                        Followed::Opened(opened, described) => {
+                            set_client.set(Some(opened));
+                            run(AccountsInput::Found(Ok(described)));
+                        }
+                        Followed::Gone(absence) => {
+                            set_client.set(None);
+                            run(AccountsInput::Found(Err(absence)));
+                        }
+                        Followed::Changed(path, value) => {
+                            run(AccountsInput::heard(path, &value));
+                        }
+                    }
+                })
+                .await;
+            }
+        }
+    });
+
+    let send = EventHandler::new({
+        let bus = env.bus.clone();
+        move |input: AccountsInput| {
+            spawn(drive(state, client, bus.clone(), toasts, input));
+        }
+    });
+    let send_hold = EventHandler::new({
+        let bus = env.bus.clone();
+        move |input: HoldInput| {
+            spawn(drive_holds(holds, bus.clone(), toasts, input));
+        }
     });
 
     // A link from another page asked for an account: open it once the list is there.
@@ -75,13 +92,26 @@ pub fn AccountsPane() -> Element {
     match state() {
         AccountsState::Probing => rsx! {},
         AccountsState::Unavailable(absence) => rsx! { Unavailable { absence } },
-        AccountsState::Ready(ready) => rsx! { Ready { ready, send } },
+        AccountsState::Ready(ready) => rsx! {
+            Ready { ready, holds: holds(), marks: env.marks.clone(), send, send_hold }
+        },
     }
 }
 
 #[component]
-fn Ready(ready: AccountsReady, send: EventHandler<AccountsInput>) -> Element {
+fn Ready(
+    ready: AccountsReady,
+    holds: Holds,
+    marks: ProviderMarks,
+    send: EventHandler<AccountsInput>,
+    send_hold: EventHandler<HoldInput>,
+) -> Element {
     let busy = ready.pending.is_some();
+    let availability = if busy {
+        Availability::Disabled
+    } else {
+        Availability::Enabled
+    };
     let on = Handlers {
         back: EventHandler::new(move |()| send.call(AccountsInput::Back)),
         switched: EventHandler::new(move |(path, on)| {
@@ -90,16 +120,20 @@ fn Ready(ready: AccountsReady, send: EventHandler<AccountsInput>) -> Element {
         ran: EventHandler::new(move |path| send.call(AccountsInput::Ran(path))),
         remove: EventHandler::new(move |path| send.call(AccountsInput::AskRemove(path))),
         sign_out: EventHandler::new(move |path| send.call(AccountsInput::AskSignOut(path))),
+        hold: send_hold,
     };
     let asked = ready.confirming.clone();
     rsx! {
         div { class: "accounts", "data-accounts": "ready",
             if let Some(account) = ready.open().cloned() {
-                AccountDetail { account, busy, on }
+                AccountDetail { account, busy, holds, marks, on }
             } else {
                 AccountList {
                     pane: ready.pane.clone(),
+                    adding: ready.adding,
+                    availability,
                     onopen: move |key| send.call(AccountsInput::Open(key)),
+                    onadd: move |()| send.call(AccountsInput::AddAccount),
                 }
                 ClientIds {
                     pane: ready.pane.clone(),
@@ -123,21 +157,25 @@ fn Ready(ready: AccountsReady, send: EventHandler<AccountsInput>) -> Element {
     }
 }
 
-/// What the absence of accountd says.
+/// What the absence of the account service says.
 fn absence_help(absence: &Absence) -> String {
     match absence {
-        Absence::NoBus => "Settings is not connected to the session bus.".to_owned(),
+        Absence::NoBus => {
+            "Settings is not connected to the desktop, so there are no accounts to show.".to_owned()
+        }
         Absence::NotRunning => {
-            "accountd is not running, so there are no accounts to show.".to_owned()
+            "The accounts service is not running, so there are no accounts to show.".to_owned()
         }
-        Absence::NotPermitted => {
-            "accountd does not list Settings among its callers (callers.toml).".to_owned()
+        Absence::NotPermitted => "Accounts can only be managed when Settings is opened from \
+            the desktop. Close this window and open Settings again from the launcher."
+            .to_owned(),
+        Absence::Failed(_) => {
+            "The accounts service did not answer. Try again in a moment.".to_owned()
         }
-        Absence::Failed(why) => format!("accountd could not be asked: {why}"),
     }
 }
 
-/// The pane's place when accountd cannot be reached: one row that says so, blocking nothing.
+/// The pane's place when the account service cannot be reached: one row that says so, blocking nothing.
 #[component]
 fn Unavailable(absence: Absence) -> Element {
     rsx! {

@@ -1,12 +1,16 @@
-//! One account: how it stands, its services, its sync switches, the apps' permissions, Sign in again and Remove.
+//! One account: how it stands, its services, its sync switches (and the deletions waiting on them), the apps' permissions, Sign in again and Remove.
 
-use super::adapter::{ActionButton, BackButton};
+use super::adapter::{ActionButton, BackButton, HoldBanner};
 use super::list_view::Note;
-use detent_model::{Account, AccountService, AccountSync, reauth_help};
+use crate::marks::ProviderMarks;
+use detent_model::{
+    Account, AccountService, AccountSync, DatasetName, HoldInput, Holds, SyncHold, reauth_help,
+};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
+use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::{ActionWeight, KeyPath};
 
 /// What the detail screen reports to the pane.
@@ -22,6 +26,8 @@ pub(super) struct Handlers {
     pub remove: EventHandler<KeyPath>,
     /// Sign out was pressed.
     pub sign_out: EventHandler<KeyPath>,
+    /// Keep or Remove was pressed on a held deletion.
+    pub hold: EventHandler<HoldInput>,
 }
 
 fn availability_of(busy: bool) -> Availability {
@@ -32,9 +38,16 @@ fn availability_of(busy: bool) -> Availability {
     }
 }
 
-/// `account`'s screen. `busy` is whether a change is in flight: its actions wait.
+/// `account`'s screen. `busy` is whether a change is in flight: its actions wait. `holds` are the
+/// deletions waiting for the person's word; `marks` draw the provider.
 #[component]
-pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Element {
+pub(super) fn AccountDetail(
+    account: Account,
+    busy: bool,
+    holds: Holds,
+    marks: ProviderMarks,
+    on: Handlers,
+) -> Element {
     let availability = availability_of(busy);
     rsx! {
         div { class: "accounts-detail", "data-accounts": "detail", "data-account": "{account.key.0}",
@@ -45,6 +58,18 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                 FieldRow {
                     label: TextLine::from("Status"),
                     Label { text: account.status.label(), role: LabelRole::Secondary }
+                }
+                if let Some(provider) = account.provider.clone() {
+                    FieldRow { label: TextLine::from("Account type"),
+                        div { class: "account-kind",
+                            ProviderMark {
+                                provider: marks.of(&provider.id).provider,
+                                face: marks.of(&provider.id).face,
+                                size: ControlSize::Small,
+                            }
+                            Label { text: provider.name, role: LabelRole::Secondary }
+                        }
+                    }
                 }
                 if let Some(expiry) = account.expires.clone() {
                     FieldRow {
@@ -87,10 +112,16 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                 }
                 Note { text: "Whether apps may use each service of the account." }
             }
-            if !account.sync.is_empty() {
+            if !account.sync.is_empty() || holds.any_of(&account) {
                 FieldGroup { title: Some("Sync".to_owned()),
                     for sync in account.sync.iter().cloned() {
-                        SyncRow { key: "{sync.path.0}", sync, availability, on }
+                        SyncRow { key: "{sync.path.0}", sync: sync.clone(), availability, on }
+                        for hold in holds.on_switch(&account, &sync.path).cloned() {
+                            Held { key: "{hold.dataset.0}", hold, on }
+                        }
+                    }
+                    for hold in holds.on_no_switch(&account).cloned() {
+                        Held { key: "{hold.dataset.0}", hold, on }
                     }
                 }
             }
@@ -155,12 +186,31 @@ fn ServiceRow(service: AccountService, availability: Availability, on: Handlers)
 fn SyncRow(sync: AccountSync, availability: Availability, on: Handlers) -> Element {
     let path = sync.path.clone();
     rsx! {
-        FieldRow { label: TextLine::from(sync.label.clone()), availability,
+        FieldRow {
+            label: TextLine::from(sync.label.clone()),
+            help: (!sync.help.is_empty()).then(|| TextLine::from(sync.help.clone())),
+            availability,
             Toggle {
                 label: sync.label.clone(),
                 value: if sync.on { Check::On } else { Check::Off },
                 availability,
                 onchange: move |next| on.switched.call((path.clone(), next == Check::On)),
+            }
+        }
+    }
+}
+
+/// A held deletion, under the sync row it is on.
+#[component]
+fn Held(hold: SyncHold, on: Handlers) -> Element {
+    let dataset: DatasetName = hold.dataset.clone();
+    let (keep, remove) = (dataset.clone(), dataset.clone());
+    rsx! {
+        div { class: "accounts-hold", "data-accounts": "hold", "data-dataset": "{dataset.0}",
+            HoldBanner {
+                hold,
+                onkeep: move |()| on.hold.call(HoldInput::Keep(keep.clone())),
+                onremove: move |()| on.hold.call(HoldInput::Remove(remove.clone())),
             }
         }
     }

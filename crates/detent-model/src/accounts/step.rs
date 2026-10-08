@@ -1,9 +1,11 @@
 //! The pane's one transition: `(state, input) -> (state, effects)`.
 
+use super::add_account::{AddEnd, Adding};
 use super::model::{
-    AccountKey, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, RemovalQuestion,
-    toggle_word,
+    AccountKey, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, ClientEntry,
+    LocalFiles, RemovalQuestion, SignInClient, toggle_word,
 };
+use super::reauth_end::ReauthEnd;
 use super::sign_out::SignOutEnd;
 use crate::picker::{Absence, Described};
 use ds_settings::schema::KeyPath;
@@ -28,7 +30,7 @@ pub enum AccountsInput {
     Ran(KeyPath),
     /// The person asked to remove an account.
     AskRemove(KeyPath),
-    /// The person asked to sign a coding agent's account out.
+    /// The person asked to sign a assistant's account out.
     AskSignOut(KeyPath),
     /// The person answered the question: no.
     Keep,
@@ -50,9 +52,20 @@ pub enum AccountsInput {
         /// What the module said.
         why: String,
     },
+    /// The person pressed Add Account….
+    AddAccount,
+    /// The add sheet ended.
+    AddEnded(AddEnd),
     /// The module says something changed.
     Changed,
-    /// The module says how a coding agent's sign-out at `path` ended.
+    /// The module says how the sign-in the person started at `path` ended.
+    SignedIn {
+        /// The account's reauth row.
+        path: KeyPath,
+        /// How it ended.
+        end: ReauthEnd,
+    },
+    /// The module says how an assistant's sign-out at `path` ended.
     SignedOut {
         /// The account's sign-out row.
         path: KeyPath,
@@ -73,8 +86,12 @@ pub enum AccountsEffect {
     },
     /// Run the action at `path`.
     Invoke(KeyPath),
+    /// Open the account service's add sheet and tell how it ended as `AddEnded`.
+    OpenAddSheet,
     /// Read the module again.
     Reload,
+    /// Open the account with this key once the rows are read again.
+    Show(AccountKey),
     /// Tell the person something went wrong.
     Tell(String),
 }
@@ -167,6 +184,11 @@ fn ready_step(
                         ask: Ask::Remove,
                         path,
                         account: account.label.clone(),
+                        files: if account.sync.iter().any(|sync| sync.on) {
+                            LocalFiles::Kept
+                        } else {
+                            LocalFiles::None
+                        },
                     })
             });
         }
@@ -180,6 +202,7 @@ fn ready_step(
                         ask: Ask::SignOut,
                         path,
                         account: account.label.clone(),
+                        files: LocalFiles::None,
                     })
             });
         }
@@ -197,7 +220,13 @@ fn ready_step(
                 .clients
                 .iter_mut()
                 .find(|client| client.path == path && client.value != text);
-            if let Some(client) = client {
+            if let Some(SignInClient {
+                entry: ClientEntry::WaitsForKey,
+                ..
+            }) = client
+            {
+                effects.push(AccountsEffect::Tell(SignInClient::KEY_FIRST.to_owned()));
+            } else if let Some(client) = client {
                 client.value.clone_from(&text);
                 effects.push(AccountsEffect::Set {
                     path: path.clone(),
@@ -219,7 +248,27 @@ fn ready_step(
             effects.push(AccountsEffect::Tell(why));
             effects.push(AccountsEffect::Reload);
         }
+        AccountsInput::AddAccount if idle && ready.adding == Adding::Idle => {
+            ready.adding = Adding::SheetOpen;
+            effects.push(AccountsEffect::OpenAddSheet);
+        }
+        AccountsInput::AddEnded(end) => {
+            ready.adding = Adding::Idle;
+            effects.extend(end.line().map(|line| AccountsEffect::Tell(line.to_owned())));
+            effects.push(AccountsEffect::Reload);
+            if let AddEnd::AlreadyThere(key) = end {
+                effects.push(AccountsEffect::Show(key));
+            }
+        }
         AccountsInput::Changed => effects.push(AccountsEffect::Reload),
+        AccountsInput::SignedIn { path, end } => {
+            let label = ready
+                .pane
+                .owner(&path)
+                .map_or("this account", |account| account.label.as_str());
+            effects.push(AccountsEffect::Tell(end.line(label)));
+            effects.push(AccountsEffect::Reload);
+        }
         AccountsInput::SignedOut { path, end } => {
             let label = ready
                 .pane

@@ -1,5 +1,6 @@
 //! Running the pane's effects against accountd: the one place the pane calls the bus.
 
+use super::add_io::add_account;
 use crate::live::{BusSource, Daemon, reread};
 use detent_model::{
     Absence, AccountsEffect, AccountsInput, AccountsPane as Pane, AccountsState, accounts_step,
@@ -27,6 +28,7 @@ pub async fn read_accounts(bus: &BusSource) -> Result<Pane, Absence> {
 pub(super) async fn drive(
     mut state: Signal<AccountsState>,
     client: Signal<Option<LiveClient>>,
+    bus: BusSource,
     toasts: ToastHub,
     first: AccountsInput,
 ) {
@@ -38,6 +40,10 @@ pub(super) async fn drive(
         for effect in effects {
             match (effect, &opened) {
                 (AccountsEffect::Tell(text), _) => toasts.push(text, None),
+                (AccountsEffect::OpenAddSheet, _) => {
+                    queue.push_back(AccountsInput::AddEnded(add_account(&bus).await));
+                }
+                (AccountsEffect::Show(key), _) => queue.push_back(AccountsInput::Open(key)),
                 (AccountsEffect::Reload, Some(opened)) => {
                     queue.push_back(AccountsInput::Found(reread(opened, is_valued).await));
                 }

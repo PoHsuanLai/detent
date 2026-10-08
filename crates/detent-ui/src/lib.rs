@@ -14,6 +14,7 @@ mod inbox;
 mod inference;
 mod key_row;
 mod live;
+mod marks;
 mod page_view;
 mod section_view;
 mod sidebar;
@@ -27,6 +28,7 @@ pub use first_run::FirstRunApp;
 pub use inbox::{Inbox, Notice, Outbox, inbox};
 pub use inference::ReasonFeed;
 pub use live::BusSource;
+pub use marks::ProviderMarks;
 
 /// The app's own layout stylesheet: tokens only.
 pub const STYLE: &str = include_str!("style.css");

@@ -109,7 +109,7 @@ fn the_list_has_a_row_per_account_with_its_state() {
     }
     assert_eq!(w.harness.count(".account-row"), 2);
     assert!(
-        html.contains("Sign-in clients"),
+        html.contains("Sign-in keys"),
         "the client ids have a disclosure"
     );
 }
@@ -166,6 +166,10 @@ fn the_sync_switches_sit_under_the_services_and_set_on_and_off() {
         .expect("sync");
     assert!(services < sync, "the sync switches come after the services");
     assert!(html.contains("Upload new photos from a folder on this computer to Google Photos"));
+    assert!(
+        html.contains("never reads or deletes anything else"),
+        "the sync rows keep their help text"
+    );
     assert_eq!(
         w.harness.attr(KEEP_FILES, "aria-checked").as_deref(),
         Some("false")
@@ -367,7 +371,7 @@ fn a_bus_with_no_accountd_says_accountd_is_not_running() {
         .on_bus(&bus.address)
         .harness(accounts());
     settle(&mut harness, "the pane giving up", |h| {
-        h.html().contains("accountd is not running")
+        h.html().contains("The accounts service is not running")
     });
     drop(rt);
 }
@@ -382,8 +386,9 @@ fn accountd_refusing_settings_is_said_in_its_own_words() {
         .on_bus(&bus.address)
         .harness(accounts());
     settle(&mut harness, "the refusal", |h| {
-        h.html().contains("does not list Settings")
+        h.html().contains("opened from the desktop")
     });
+    assert_no_developer_words(&harness);
 }
 
 #[test]
@@ -410,6 +415,154 @@ fn a_client_id_is_set_when_the_field_is_left() {
             toml::Value::String("abc".to_owned())
         )]
     );
+}
+
+/// No service, program or file name of the desktop's insides is in what the pane says.
+fn assert_no_developer_words(harness: &Harness) {
+    let text = harness.text_of(".accounts").unwrap_or_default();
+    assert!(
+        !text.is_empty(),
+        "the pane says something:\n{}",
+        harness.html()
+    );
+    let words = [
+        "accountd",
+        "callers.toml",
+        "inferd",
+        "syncd",
+        "ACP",
+        "MCP",
+        "OAuth",
+        "daemon",
+    ];
+    for word in words {
+        assert!(!text.contains(word), "{word} is in: {text}");
+    }
+}
+
+#[test]
+fn the_absence_texts_use_plain_words() {
+    let sandbox = Sandbox::new("accounts-plain-no-bus");
+    assert_no_developer_words(&sandbox.harness(accounts()));
+    let rt = runtime();
+    let bus = PrivateBus::start("accounts-plain-none");
+    let mut harness = Sandbox::new("accounts-plain-none")
+        .on_bus(&bus.address)
+        .harness(accounts());
+    settle(&mut harness, "the pane giving up", |h| {
+        h.html().contains("The accounts service is not running")
+    });
+    assert_no_developer_words(&harness);
+    drop(rt);
+}
+
+const ADD: &str = ".accounts-add .ds-button";
+
+#[test]
+fn the_list_has_an_add_account_button_and_a_refused_ask_is_told_calmly() {
+    let mut w = world("accounts-add");
+    assert_eq!(w.harness.count(".accounts-add .ds-button"), 1);
+    assert!(w.harness.html().contains("Add Account\u{2026}"));
+    click(&mut w.harness, ADD);
+    settle(&mut w.harness, "the line", |h| {
+        h.html()
+            .contains("Could not add an account. Try again later.")
+    });
+    // The button is free again after the sheet ended.
+    settle(&mut w.harness, "the button", |h| {
+        h.attr(".accounts-add .ds-button", "data-availability")
+            .as_deref()
+            != Some("disabled")
+    });
+}
+
+#[test]
+fn a_sign_in_that_ends_is_told_in_a_calm_line_and_the_rows_are_read_again() {
+    let mut w = world("accounts-reauth-end");
+    detail(&mut w);
+    w.fake.stop("home", "needs_reauth");
+    w._rt
+        .block_on(w.served.changed(
+            &ds_settings::schema::KeyPath("accounts.home.reauth".to_owned()),
+            &toml::Value::String("failed".to_owned()),
+        ))
+        .expect("announced");
+    settle(&mut w.harness, "the line", |h| {
+        h.html()
+            .contains("Could not sign in to Home cloud. Try again later.")
+    });
+    settle(&mut w.harness, "the rows to be read again", |h| {
+        h.html().contains("Needs sign-in")
+    });
+}
+
+#[test]
+fn the_remove_question_adds_a_clause_about_kept_files_only_when_a_sync_row_is_on() {
+    let mut w = world("accounts-remove-files");
+    detail(&mut w);
+    click(&mut w.harness, REMOVE);
+    settle(&mut w.harness, "the question", |h| {
+        h.html().contains("Remove account Home cloud?")
+    });
+    assert!(!w.harness.html().contains("Files kept on this computer"));
+    click(
+        &mut w.harness,
+        ".ds-alert .ds-button:not([data-role=\"destructive\"])",
+    );
+    settle(&mut w.harness, "the question to go", |h| {
+        !h.html().contains("Remove account Home cloud?")
+    });
+    click(&mut w.harness, KEEP_FILES);
+    settle(&mut w.harness, "the switch on", |h| {
+        h.attr(KEEP_FILES, "aria-checked").as_deref() == Some("true")
+    });
+    settle(&mut w.harness, "the pane to be free", |h| {
+        h.attr(REMOVE, "data-availability").as_deref() != Some("disabled")
+    });
+    click(&mut w.harness, REMOVE);
+    settle(&mut w.harness, "the question", |h| {
+        h.html()
+            .contains("Files kept on this computer for the account are deleted too.")
+    });
+}
+
+#[test]
+fn the_account_type_is_drawn_with_the_providers_mark() {
+    let rt = runtime();
+    let bus = PrivateBus::start("accounts-mark");
+    let fake = Accountd::new(
+        Policy::Allow,
+        vec![
+            Held::new("local-ai", "Ollama", "ok", &["llm"]).of_provider("ollama", "Ollama"),
+            Held::new("mail", "Fastmail", "ok", &["mail"]).of_provider("fastmail", "Fastmail"),
+        ],
+    );
+    let _daemon = rt.block_on(fake.serve_on(&bus));
+    let mut harness = Sandbox::new("accounts-mark")
+        .on_bus(&bus.address)
+        .harness(accounts());
+    settle(&mut harness, "the list", |h| h.count(".accounts-list") == 1);
+    click(&mut harness, "[aria-label=\"Ollama\"] .ds-button");
+    settle(&mut harness, "the account", |h| {
+        h.count(".accounts-detail") == 1
+    });
+    assert_eq!(
+        harness.count(".ds-provider[data-kind=\"face\"]"),
+        1,
+        "a provider whose file gives a face is drawn from it:\n{}",
+        harness.html()
+    );
+    click(&mut harness, BACK);
+    click(&mut harness, "[aria-label=\"Fastmail\"] .ds-button");
+    settle(&mut harness, "the account", |h| {
+        h.attr(".accounts-detail", "data-account").as_deref() == Some("mail")
+    });
+    assert_eq!(
+        harness.count(".ds-provider[data-kind=\"letter\"]"),
+        1,
+        "one without a face keeps its named mark"
+    );
+    drop(rt);
 }
 
 fn shot(harness: &mut Harness, name: &str) -> usize {
