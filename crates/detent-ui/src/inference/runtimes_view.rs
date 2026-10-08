@@ -19,7 +19,7 @@ use ds_settings::live::LiveClient;
 const TITLE: &str = "On this computer";
 
 /// What the list says before any runtime is found.
-const NONE_FOUND: &str = "No local runtime is running. Ollama, llama.cpp and LM Studio appear \
+const NONE_FOUND: &str = "Nothing is running here yet. Ollama, llama.cpp and LM Studio appear \
     here when they are.";
 
 /// Where the list stands.
@@ -89,7 +89,7 @@ pub fn LocalRuntimes() -> Element {
             div { class: "runtimes", "data-runtimes": "unavailable",
                 FieldGroup { title: Some(TITLE.to_owned()),
                     FieldRow {
-                        label: TextLine::from("Local runtimes"),
+                        label: TextLine::from("Local models"),
                         help: Some(TextLine::from(absence_help(&absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
@@ -101,7 +101,7 @@ pub fn LocalRuntimes() -> Element {
             div { class: "runtimes", "data-runtimes": "empty",
                 FieldGroup { title: Some(TITLE.to_owned()),
                     FieldRow {
-                        label: TextLine::from("Local runtimes"),
+                        label: TextLine::from("Local models"),
                         help: Some(TextLine::from(NONE_FOUND)),
                         Label { text: "None", role: LabelRole::Tertiary }
                     }
@@ -124,17 +124,20 @@ pub fn LocalRuntimes() -> Element {
     }
 }
 
-/// What the absence of accountd says here.
+/// What the absence of the account service says here.
 fn absence_help(absence: &Absence) -> String {
     match absence {
-        Absence::NoBus => "Settings is not connected to the session bus.".to_owned(),
+        Absence::NoBus => "Settings is not connected to the desktop.".to_owned(),
         Absence::NotRunning => {
-            "accountd is not running, so no local runtime can be listed.".to_owned()
+            "The accounts service is not running, so nothing on this computer can be listed."
+                .to_owned()
         }
-        Absence::NotPermitted => {
-            "accountd does not list Settings among its callers (callers.toml).".to_owned()
+        Absence::NotPermitted => "Models on this computer can only be listed when Settings is \
+            opened from the desktop. Close this window and open Settings again from the launcher."
+            .to_owned(),
+        Absence::Failed(_) => {
+            "The accounts service did not answer. Try again in a moment.".to_owned()
         }
-        Absence::Failed(why) => format!("accountd could not be asked: {why}"),
     }
 }
 

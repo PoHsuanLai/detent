@@ -23,7 +23,7 @@ pub(super) async fn save(
         .map(|(_, entry)| entry)
         .find(|entry| entry.spec.path.0 == LOCAL_ONLY)
         .cloned()
-        .ok_or_else(|| "inferd's settings schema is not installed.".to_owned())?;
+        .ok_or_else(|| "The model settings are not installed.".to_owned())?;
     let edit = Edit {
         entry,
         value: toml::Value::String(local_only.word().to_owned()),
@@ -43,6 +43,6 @@ async fn choose(env: &Env, runtime: &AccountKey) -> Result<(), String> {
         .await
         .map_err(|absence| format!("The model could not be chosen: {absence}."))?;
     let (path, word) = runtime_choice(&described, runtime)
-        .ok_or_else(|| format!("inferd lists no model of {} to choose.", runtime.0))?;
+        .ok_or_else(|| format!("There is no model on {} to choose.", runtime.0))?;
     set(&client, &path, &word).await
 }

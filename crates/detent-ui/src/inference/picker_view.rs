@@ -18,7 +18,7 @@ use ds::style::tokens::control_size::ControlSize;
 use ds_settings::live::LiveClient;
 use ds_settings::schema::KeyPath;
 
-/// The inferd row that turns the footer on.
+/// The row that turns the footer on.
 const SHOW_REASON: &str = "ai.auto.show_reason";
 
 /// What the "Automatic" choice of every row does.
@@ -157,18 +157,18 @@ pub fn ModelPicker(reasons: Shown) -> Element {
 /// What the absence of the picker says.
 fn absence_help(absence: &Absence) -> String {
     match absence {
-        Absence::NoBus => "Settings is not connected to the session bus.".to_owned(),
+        Absence::NoBus => "Settings is not connected to the desktop.".to_owned(),
         Absence::NotRunning => {
-            "inferd is not running, so there are no models to choose from.".to_owned()
+            "The model service is not running, so there are no models to choose from.".to_owned()
         }
-        Absence::NotPermitted => {
-            "inferd does not list Settings among its callers (settings in inferd.toml).".to_owned()
-        }
-        Absence::Failed(why) => format!("inferd could not be asked: {why}"),
+        Absence::NotPermitted => "Models can only be chosen when Settings is opened from the \
+            desktop. Close this window and open Settings again from the launcher."
+            .to_owned(),
+        Absence::Failed(_) => "The model service did not answer. Try again in a moment.".to_owned(),
     }
 }
 
-/// The picker's place when inferd cannot be reached: one row that says so, blocking nothing.
+/// The picker's place when the model service cannot be reached: one row that says so, blocking nothing.
 #[component]
 fn Unavailable(absence: Absence) -> Element {
     rsx! {

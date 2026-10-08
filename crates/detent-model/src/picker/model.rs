@@ -29,10 +29,10 @@ pub enum Absence {
 impl std::fmt::Display for Absence {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Absence::NoBus => f.write_str("there is no bus to look on"),
-            Absence::NotRunning => f.write_str("the daemon is not running"),
-            Absence::NotPermitted => f.write_str("the daemon does not list Settings as a caller"),
-            Absence::Failed(why) => write!(f, "the daemon could not be asked: {why}"),
+            Absence::NoBus => f.write_str("Settings is not connected to the desktop"),
+            Absence::NotRunning => f.write_str("the service is not running"),
+            Absence::NotPermitted => f.write_str("Settings was not opened from the desktop"),
+            Absence::Failed(_) => f.write_str("the service did not answer"),
         }
     }
 }

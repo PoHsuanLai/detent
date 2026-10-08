@@ -157,7 +157,7 @@ fn a_bus_with_no_inferd_on_it_says_inferd_is_not_running() {
     settle(&mut harness, "the picker giving up", |h| {
         h.attr(".picker", "data-picker").as_deref() == Some("unavailable")
     });
-    assert!(harness.html().contains("inferd is not running"));
+    assert!(harness.html().contains("The model service is not running"));
     drop(rt);
 }
 
@@ -172,7 +172,7 @@ fn inferd_refusing_settings_is_said_in_its_own_words() {
     settle(&mut harness, "the refusal", |h| {
         h.attr(".picker", "data-picker").as_deref() == Some("unavailable")
     });
-    assert!(harness.html().contains("does not list Settings"));
+    assert!(harness.html().contains("opened from the desktop"));
 }
 
 #[test]
@@ -337,7 +337,7 @@ fn an_inferd_that_starts_after_the_page_opened_is_found_and_one_that_stops_is_mi
     settle(&mut harness, "the card", |h| {
         h.attr(".picker", "data-picker").as_deref() == Some("unavailable")
     });
-    assert!(harness.html().contains("inferd is not running"));
+    assert!(harness.html().contains("The model service is not running"));
     assert_eq!(harness.count(".picker-kind"), 0);
 
     let fake = Inferd::new(Policy::Allow);
@@ -351,7 +351,7 @@ fn an_inferd_that_starts_after_the_page_opened_is_found_and_one_that_stops_is_mi
     settle(&mut harness, "the card to return", |h| {
         h.attr(".picker", "data-picker").as_deref() == Some("unavailable")
     });
-    assert!(harness.html().contains("inferd is not running"));
+    assert!(harness.html().contains("The model service is not running"));
     assert_eq!(harness.count(".picker-kind"), 0);
 
     let _again = rt.block_on(fake.serve_on(&bus));

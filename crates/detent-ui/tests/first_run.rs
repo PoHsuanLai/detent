@@ -221,7 +221,7 @@ fn without_inferds_schema_nothing_is_written_and_nothing_is_remembered() {
     settle(&mut harness, "the window", |h| stage(h).is_some());
     click(&mut harness, DONE);
     settle(&mut harness, "the refusal", |h| {
-        h.html().contains("settings schema is not installed")
+        h.html().contains("The model settings are not installed")
     });
     assert_eq!(mark(&sandbox), FirstRunStanding::Pending);
     assert_eq!(sandbox.read("quire/inferd.toml"), None);

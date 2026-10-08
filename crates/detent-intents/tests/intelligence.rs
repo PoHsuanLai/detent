@@ -51,7 +51,7 @@ async fn an_agent_cannot_turn_local_only_off_or_choose_a_model() {
             panic!("{path}: {refusal:?}");
         };
         assert!(
-            why.0.contains("not marked agent-settable"),
+            why.0.contains("not a setting an assistant may change"),
             "{path}: {}",
             why.0
         );

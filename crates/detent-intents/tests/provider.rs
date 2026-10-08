@@ -120,7 +120,7 @@ async fn a_key_the_schema_does_not_mark_is_not_set() {
         )
         .await
         .expect_err("refused");
-    assert!(failed(refusal).contains("not marked agent-settable"));
+    assert!(failed(refusal).contains("not a setting an assistant may change"));
     assert_eq!(world.read(SILL), None, "nothing was written");
     assert_eq!(world.window.told(), []);
 }
@@ -310,7 +310,7 @@ async fn a_dry_run_shows_the_change_and_makes_none() {
         )
         .await
         .expect_err("a refused change has no preview either");
-    assert!(failed(refusal).contains("not marked agent-settable"));
+    assert!(failed(refusal).contains("not a setting an assistant may change"));
 }
 
 #[tokio::test(flavor = "multi_thread")]

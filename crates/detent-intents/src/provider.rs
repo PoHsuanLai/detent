@@ -107,7 +107,7 @@ impl SettingsProvider {
         let entry = self.key(path)?;
         if entry.agent != AgentSetting::Settable {
             return Err(refusal(format!(
-                "{} is not marked agent-settable: only the person changes it, in Settings",
+                "{} is not a setting an assistant may change: only the person changes it, in Settings",
                 path.0
             )));
         }

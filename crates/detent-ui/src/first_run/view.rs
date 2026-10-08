@@ -159,7 +159,7 @@ fn Welcome(state: FirstRun, onchange: EventHandler<FirstRunInput>) -> Element {
                 }
                 if !state.runtimes.is_empty() {
                     FieldRow {
-                        label: TextLine::from("Local model runtime"),
+                        label: TextLine::from("Local model"),
                         help: Some(TextLine::from("Used for text. Automatic picks a model for each request.")),
                         availability: busy,
                         PopUpButton::<String> {

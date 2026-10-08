@@ -187,7 +187,7 @@ fn an_accountd_that_names_no_place_lists_no_runtime() {
     settle(&mut harness, "the empty list", |h| {
         h.attr(".runtimes", "data-runtimes").as_deref() == Some("empty")
     });
-    assert!(harness.html().contains("No local runtime is running"));
+    assert!(harness.html().contains("Nothing is running here yet"));
 }
 
 #[test]
@@ -206,7 +206,7 @@ fn without_accountd_the_list_says_so_and_the_page_still_works() {
         .on_bus(&bus.address)
         .harness(intelligence());
     settle(&mut harness, "accountd given up on", |h| {
-        h.html().contains("accountd is not running")
+        h.html().contains("The accounts service is not running")
     });
     drop(rt);
 }

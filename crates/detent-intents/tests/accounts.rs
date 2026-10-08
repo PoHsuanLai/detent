@@ -21,6 +21,7 @@ fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Acco
         place: Place::Elsewhere,
         expires: None,
         sign_in: None,
+        provider: None,
         services: kinds
             .iter()
             .map(|kind| AccountService {
