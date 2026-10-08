@@ -2,7 +2,7 @@
 
 use super::adapter::{ActionButton, BackButton};
 use super::list_view::Note;
-use detent_model::{Account, AccountService, AccountSync};
+use detent_model::{Account, AccountService, AccountSync, SignInWay};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -56,9 +56,10 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                 if let Some((path, name)) = account.reauth.clone() {
                     FieldRow {
                         label: TextLine::from(name.clone()),
-                        help: Some(TextLine::from("Sign in to the account again in your browser.")),
+                        help: Some(TextLine::from(SignInWay::of(&account).help())),
                         ActionButton {
                             label: name,
+                            subject: account.label.clone(),
                             weight: ActionWeight::Plain,
                             availability,
                             onpress: move |()| on.ran.call(path.clone()),
@@ -70,6 +71,7 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                         label: TextLine::from(name.clone()),
                         ActionButton {
                             label: name,
+                            subject: account.label.clone(),
                             weight: ActionWeight::Plain,
                             availability,
                             onpress: move |()| on.sign_out.call(path.clone()),
@@ -100,6 +102,7 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                             label: TextLine::from(permission.label.clone()),
                             ActionButton {
                                 label: permission.action.clone(),
+                                subject: permission.label.clone(),
                                 weight: ActionWeight::Plain,
                                 availability,
                                 onpress: {
@@ -118,6 +121,7 @@ pub(super) fn AccountDetail(account: Account, busy: bool, on: Handlers) -> Eleme
                         label: TextLine::from(name.clone()),
                         ActionButton {
                             label: name,
+                            subject: account.label.clone(),
                             weight: ActionWeight::Destructive,
                             availability,
                             onpress: move |()| on.remove.call(path.clone()),

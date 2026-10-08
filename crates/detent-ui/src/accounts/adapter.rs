@@ -8,6 +8,8 @@ use ds::components::controls::button::Button;
 use ds::components::controls::button_model::{Bezel, ButtonRole};
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
+use ds::root::common::Common;
+use ds::root::pass_through::ExtraClass;
 use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::ActionWeight;
 
@@ -19,17 +21,28 @@ fn role_of(weight: ActionWeight) -> ButtonRole {
     }
 }
 
-/// A button for an action key. A destructive one is drawn as such; it never acts on its own
-/// press (the pane puts a question between the press and the action).
+/// The name a screen reader says for a button that acts on `subject`: "Revoke Photos allowed:
+/// storage". Several rows carry the same visible word; this says which one it is.
+fn spoken(label: &str, subject: &str) -> Common {
+    Common {
+        aria_label: Some(format!("{label} {subject}")),
+        ..Common::default()
+    }
+}
+
+/// A button for an action key, named by the thing it acts on. A destructive one is drawn as such;
+/// it never acts on its own press (the pane puts a question between the press and the action).
 #[component]
 pub(super) fn ActionButton(
     label: String,
+    subject: String,
     weight: ActionWeight,
     availability: Availability,
     onpress: EventHandler<()>,
 ) -> Element {
     rsx! {
         Button {
+            common: spoken(&label, &subject),
             label,
             role: role_of(weight),
             size: ControlSize::Small,
@@ -39,11 +52,13 @@ pub(super) fn ActionButton(
     }
 }
 
-/// The quiet button on an account's row that opens the account.
+/// The quiet button on an account's row that opens the account, named by it ("Manage Home
+/// cloud").
 #[component]
-pub(crate) fn OpenButton(label: String, onpress: EventHandler<()>) -> Element {
+pub(crate) fn OpenButton(label: String, subject: String, onpress: EventHandler<()>) -> Element {
     rsx! {
         Button {
+            common: spoken(&label, &subject),
             label,
             bezel: Bezel::Inline,
             size: ControlSize::Small,
@@ -96,7 +111,8 @@ pub(super) fn RemoveAlert(
             style: AlertStyle::Critical,
             buttons: vec![
                 AlertButton::new(keep, AlertRole::Cancel, EventHandler::new(move |()| onanswer.call(false))),
-                AlertButton::new(action, AlertRole::Destructive, EventHandler::new(move |()| onanswer.call(true))),
+                AlertButton::new(action, AlertRole::Destructive, EventHandler::new(move |()| onanswer.call(true)))
+                    .with_common(Common { extra_class: ExtraClass::parse("alert-destructive").ok(), ..Common::default() }),
             ],
         }
     }

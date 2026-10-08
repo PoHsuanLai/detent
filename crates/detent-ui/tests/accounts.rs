@@ -439,3 +439,134 @@ fn the_list_the_account_and_the_question_are_drawn_in_light_and_dark() {
         assert!(shot(&mut w.harness, &format!("accounts-remove-{tag}.png")) > 50);
     }
 }
+
+/// WCAG relative luminance of an 8-bit sRGB pixel.
+fn luminance(pixel: [u8; 3]) -> f64 {
+    let linear = |c: u8| {
+        let c = f64::from(c) / 255.0;
+        if c <= 0.03928 {
+            c / 12.92
+        } else {
+            ((c + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    0.2126 * linear(pixel[0]) + 0.7152 * linear(pixel[1]) + 0.0722 * linear(pixel[2])
+}
+
+/// The contrast between a button's fill (the commonest colour inside it) and its label (the
+/// colour furthest from the fill).
+fn label_contrast(harness: &mut Harness, selector: &str) -> f64 {
+    let rect = harness.rect(selector).expect("the button is laid out");
+    let image = harness.render_over(Backdrop::Scheme).expect("a picture");
+    let (x0, y0) = (rect.origin.x.0 as u32, rect.origin.y.0 as u32);
+    let (w, h) = (rect.size.width.0 as u32, rect.size.height.0 as u32);
+    let mut counts = std::collections::HashMap::new();
+    let mut inside = Vec::new();
+    for y in y0 + 2..y0 + h.saturating_sub(2) {
+        for x in x0 + 6..x0 + w.saturating_sub(6) {
+            let p = image.get_pixel(x, y).0;
+            let rgb = [p[0], p[1], p[2]];
+            *counts.entry(rgb).or_insert(0usize) += 1;
+            inside.push(rgb);
+        }
+    }
+    let fill = counts
+        .into_iter()
+        .max_by_key(|(_, n)| *n)
+        .map(|(rgb, _)| rgb)
+        .expect("pixels");
+    let far = |p: &[u8; 3]| {
+        p.iter()
+            .zip(fill)
+            .map(|(a, b)| i32::from(*a).abs_diff(i32::from(b)))
+            .sum::<u32>()
+    };
+    let label = inside
+        .iter()
+        .max_by_key(|p| far(p))
+        .copied()
+        .expect("pixels");
+    let (hi, lo) = (
+        luminance(fill).max(luminance(label)),
+        luminance(fill).min(luminance(label)),
+    );
+    (hi + 0.05) / (lo + 0.05)
+}
+
+#[test]
+fn the_remove_answer_is_legible_in_light_and_dark() {
+    for (scheme, tag) in [(Scheme::Light, "light"), (Scheme::Dark, "dark")] {
+        let mut w = world_in(&format!("accounts-legible-{tag}"), scheme);
+        detail(&mut w);
+        click(&mut w.harness, REMOVE);
+        settle(&mut w.harness, "the question", |h| {
+            h.html().contains("Remove account Home cloud?")
+        });
+        let ratio = label_contrast(
+            &mut w.harness,
+            ".ds-alert .ds-button[data-role=\"destructive\"]",
+        );
+        assert!(
+            ratio >= 4.5,
+            "{tag}: Remove account is {ratio:.2}:1 on its fill"
+        );
+    }
+}
+
+#[test]
+fn every_button_says_which_account_or_app_it_is_for() {
+    let mut w = world("accounts-names");
+    for (name, row) in [
+        ("Manage Home cloud", "Home cloud"),
+        ("Manage Work mail", "Work mail"),
+    ] {
+        let selector = format!("[aria-label=\"{row}\"] .ds-button");
+        assert_eq!(
+            w.harness.attr(&selector, "aria-label").as_deref(),
+            Some(name)
+        );
+    }
+    assert_eq!(
+        w.harness.count("[aria-label=\"Manage\"]"),
+        0,
+        "no bare Manage"
+    );
+    detail(&mut w);
+    for (selector, name) in [
+        (REVOKE, "Revoke Photos allowed: storage"),
+        (SIGN_IN, "Sign in again Home cloud"),
+        (REMOVE, "Remove account Home cloud"),
+    ] {
+        assert_eq!(
+            w.harness.attr(selector, "aria-label").as_deref(),
+            Some(name)
+        );
+    }
+    assert_eq!(
+        w.harness.count("[aria-label=\"Revoke\"]"),
+        0,
+        "no bare Revoke"
+    );
+}
+
+#[test]
+fn sign_in_again_says_a_browser_only_for_an_account_a_browser_signs_in() {
+    let mut w = world("accounts-sign-in-words");
+    detail(&mut w);
+    let plain = w.harness.html();
+    assert!(plain.contains("Sign in to the account again."), "{plain}");
+    assert!(!plain.contains("in your browser"));
+    click(&mut w.harness, BACK);
+    settle(&mut w.harness, "the list", |h| {
+        h.count(".accounts-list") == 1
+    });
+    click(&mut w.harness, "[aria-label=\"Work mail\"] .ds-button");
+    settle(&mut w.harness, "the account", |h| {
+        h.count(".accounts-detail") == 1
+    });
+    assert!(
+        w.harness
+            .html()
+            .contains("Sign in to the account again in your browser.")
+    );
+}

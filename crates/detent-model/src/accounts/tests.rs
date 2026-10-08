@@ -671,3 +671,11 @@ fn a_change_that_is_no_sign_out_word_just_reads_again() {
     let row = path("accounts.agent.sign_out");
     assert_eq!(AccountsInput::heard(row, &unknown), AccountsInput::Changed);
 }
+
+#[test]
+fn only_a_browser_sign_in_is_told_to_use_the_browser() {
+    assert!(SignInWay::Browser.help().contains("browser"));
+    assert!(!SignInWay::Password.help().contains("browser"));
+    assert!(SignInWay::Password.help().contains("password"));
+    assert!(!SignInWay::Unstated.help().contains("browser"));
+}

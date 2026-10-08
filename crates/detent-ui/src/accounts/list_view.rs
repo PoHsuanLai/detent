@@ -35,6 +35,7 @@ pub(super) fn AccountList(pane: Pane, onopen: EventHandler<AccountKey>) -> Eleme
                         common: Common { extra_class: ds::root::pass_through::ExtraClass::parse("account-row").ok(), ..Common::default() },
                         OpenButton {
                             label: "Manage",
+                            subject: account.label.clone(),
                             onpress: {
                                 let key = account.key.clone();
                                 move |()| onopen.call(key.clone())

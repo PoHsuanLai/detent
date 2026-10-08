@@ -171,7 +171,7 @@ fn RuntimeRow(runtime: Runtime, onopen: EventHandler<()>) -> Element {
                 muting,
             }
             Label { text: runtime.state_label(), role, style: LabelStyle::Footnote }
-            OpenButton { label: "Manage", onpress: move |()| onopen.call(()) }
+            OpenButton { label: "Manage", subject: runtime.label.clone(), onpress: move |()| onopen.call(()) }
         }
     }
 }

@@ -125,6 +125,24 @@ fn searching_highlights_the_matching_row_and_shows_its_page() {
 }
 
 #[test]
+fn typing_the_start_of_a_page_name_keeps_that_page_and_shows_it() {
+    let sandbox = Sandbox::new("search-page-name");
+    let mut harness = sandbox.harness(opening("dock"));
+    search_for(&mut harness, "acc");
+    assert_eq!(
+        page_of(&harness).as_deref(),
+        Some("accounts"),
+        "the page the name starts"
+    );
+    assert_eq!(title_of(&harness).as_deref(), Some("Accounts"));
+    let listed = harness.html();
+    assert!(
+        listed.contains("data-page=\"accounts\""),
+        "the Accounts page is not dropped"
+    );
+}
+
+#[test]
 fn a_hit_among_the_advanced_keys_opens_its_disclosure() {
     let sandbox = Sandbox::new("search-advanced");
     let mut harness = sandbox.harness(opening("dock"));
