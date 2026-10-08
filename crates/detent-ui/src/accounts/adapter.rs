@@ -9,7 +9,6 @@ use ds::components::controls::button_model::{Bezel, ButtonRole};
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
 use ds::root::common::Common;
-use ds::root::pass_through::ExtraClass;
 use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::ActionWeight;
 
@@ -111,8 +110,7 @@ pub(super) fn RemoveAlert(
             style: AlertStyle::Critical,
             buttons: vec![
                 AlertButton::new(keep, AlertRole::Cancel, EventHandler::new(move |()| onanswer.call(false))),
-                AlertButton::new(action, AlertRole::Destructive, EventHandler::new(move |()| onanswer.call(true)))
-                    .with_common(Common { extra_class: ExtraClass::parse("alert-destructive").ok(), ..Common::default() }),
+                AlertButton::new(action, AlertRole::Destructive, EventHandler::new(move |()| onanswer.call(true))),
             ],
         }
     }

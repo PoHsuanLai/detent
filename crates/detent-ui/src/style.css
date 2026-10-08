@@ -124,14 +124,3 @@
   align-self: stretch;
   text-align: start;
 }
-
-/* The destructive answer of a question is quire's danger pair, `--danger-ink` on `--danger`, at rest
-   and under the pointer (quire's alert rule for a destructive button names a bezel that no button
-   has, so it stayed the soft ink on the soft fill; quire's legibility test gates this pair in both
-   schemes, where `--danger` as text on the fill is 3.5:1 in dark). It is never the default. The
-   class is repeated to outweigh the button's own rules, which a consumer's sheet may not name. */
-.alert-destructive.alert-destructive.alert-destructive,
-.alert-destructive.alert-destructive.alert-destructive.alert-destructive:hover {
-  background: var(--danger);
-  color: var(--danger-ink);
-}
