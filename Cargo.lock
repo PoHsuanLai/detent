@@ -3961,6 +3961,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+ "zeroize",
 ]
 
 [[package]]
@@ -6661,6 +6662,12 @@ dependencies = [
  "syn 3.0.6",
  "synstructure 0.14.0",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e13084392c5e4bc371903e2935a5eaeed24905a7511356b883835e18a78f6879"
 
 [[package]]
 name = "zerotrie"
