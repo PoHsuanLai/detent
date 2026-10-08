@@ -23,6 +23,7 @@ zbus = { workspace = true }
 
 [dev-dependencies]
 detent-testkit = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 

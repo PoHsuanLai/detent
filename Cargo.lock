@@ -1213,6 +1213,7 @@ dependencies = [
  "ds-settings",
  "tokio",
  "toml",
+ "zbus",
 ]
 
 [[package]]
@@ -1240,6 +1241,7 @@ dependencies = [
  "ds-settings",
  "porter-core",
  "prov",
+ "serde",
  "serde_json",
  "thiserror 2.0.21",
  "tokio",

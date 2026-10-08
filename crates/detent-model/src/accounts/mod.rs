@@ -11,6 +11,7 @@ mod reauth_end;
 mod sign_in_help;
 mod sign_out;
 mod step;
+mod target;
 
 pub use add_account::{AddEnd, Adding};
 pub use hold::{DatasetName, HoldCounts, KEEP_HELP, SyncHold};
@@ -24,6 +25,7 @@ pub use reauth_end::ReauthEnd;
 pub use sign_in_help::reauth_help;
 pub use sign_out::SignOutEnd;
 pub use step::{AccountsEffect, AccountsInput, accounts_step};
+pub use target::{AccountSegment, AccountTarget};
 
 #[cfg(test)]
 mod flow_tests;

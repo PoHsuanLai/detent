@@ -8,7 +8,7 @@ use crate::view::View;
 use crate::window::Window;
 use dioxus::prelude::*;
 use ds::prelude::*;
-use ds_blitz::TokioSpawner;
+use ds_blitz::{TokioSpawner, use_window_handle};
 use ds_settings::{AppName, ConfigRoot, Store, use_environment};
 use std::sync::Arc;
 
@@ -21,7 +21,8 @@ pub fn App() -> Element {
     let opening = env.opening.clone();
     let page = use_signal(|| opening.page.clone().or(first).unwrap_or_default());
     let query = use_signal(|| opening.query.clone());
-    AccountLink::provide(page, query);
+    let link = AccountLink::provide(page, query);
+    let handle = use_window_handle();
     let files = use_signal({
         let env = env.clone();
         move || load_all(&env)
@@ -31,6 +32,7 @@ pub fn App() -> Element {
     use_future(move || {
         let (told, catalogue) = (told.clone(), told.catalogue.clone());
         let (mut page, mut query, mut files) = (page, query, files);
+        let handle = handle.clone();
         async move {
             let Some(mut notices) = told.inbox.take() else {
                 return;
@@ -43,6 +45,12 @@ pub fn App() -> Element {
                     }
                     Notice::OpenPage(_) => {}
                     Notice::Reload => files.set(load_all(&told)),
+                    Notice::OpenAccount(target) => link.open_target(target),
+                    Notice::Raise(token) => {
+                        if let Some(window) = &handle {
+                            window.focus_with_token(token);
+                        }
+                    }
                 }
             }
         }

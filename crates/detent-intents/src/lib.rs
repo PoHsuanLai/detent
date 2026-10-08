@@ -4,10 +4,13 @@
 //! schema marks agent-settable (undoable, the undo restores the old value), list the accounts
 //! and open the Accounts page (read only: an agent never changes an account). Reading and writing
 //! the settings files is `detent-files`; which keys exist and which are settable is
-//! `detent-model`; telling the window is a [`Window`] the binary implements.
+//! `detent-model`; telling the window is a [`Window`] the binary implements. The same bus name
+//! also serves `org.freedesktop.Application` at `/org/quire/Settings` (the Desktop Entry
+//! spec's D-Bus activation), so a launcher can start Settings, raise it, or open an account.
 
 mod accounts;
 mod answer;
+mod application;
 mod ask;
 mod context;
 mod journal;
@@ -17,6 +20,7 @@ mod serve;
 mod window;
 
 pub use accounts::{AccountsRead, AccountsSource};
+pub use application::{APPLICATION_INTERFACE, APPLICATION_PATH, hand_over};
 pub use manifest::{ManifestFault, manifest};
 pub use provider::SettingsProvider;
 pub use serve::{ServeFault, serve, serve_session};

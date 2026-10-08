@@ -1,6 +1,6 @@
 //! The window, as the provider needs it: told what happened, never asked.
 
-use detent_model::PageSlug;
+use detent_model::{AccountTarget, PageSlug};
 
 /// There is no window to tell: the app is closing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -14,4 +14,8 @@ pub trait Window: Send + Sync {
     fn open_page(&self, page: PageSlug) -> Result<(), WindowGone>;
     /// A settings file changed behind the window's back: read the files again.
     fn files_changed(&self) -> Result<(), WindowGone>;
+    /// Show the Accounts page at `target` (an account's detail, or the list).
+    fn open_account(&self, target: AccountTarget) -> Result<(), WindowGone>;
+    /// Show the window and raise it; `token` is the xdg-activation token the caller handed over.
+    fn raise(&self, token: Option<String>) -> Result<(), WindowGone>;
 }

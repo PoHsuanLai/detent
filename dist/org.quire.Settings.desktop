@@ -6,6 +6,7 @@ Comment=Change how the desktop looks and behaves
 Exec=detent
 Icon=preferences-system
 Terminal=false
+DBusActivatable=true
 Categories=Settings;DesktopSettings;
 Keywords=settings;preferences;appearance;dock;mouse;
 StartupWMClass=org.quire.Settings

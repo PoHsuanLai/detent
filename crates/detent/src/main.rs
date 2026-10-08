@@ -9,7 +9,7 @@ use accounts::LiveAccounts;
 use clap::Parser;
 use cli::Run;
 use detent_files::{FirstRunMark, FirstRunStanding};
-use detent_intents::{SettingsProvider, serve_session};
+use detent_intents::{ServeFault, SettingsProvider, hand_over, serve_session};
 use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, inbox};
 use ds_blitz::{AppConfig, AppId, Decorations, WindowSize, enter_runtime, launch};
 use ds_settings::SystemPrefsSource;
@@ -89,17 +89,27 @@ fn settings(opening: Opening) -> ExitCode {
     let config_home = env.config_home.clone();
     // The runtime `launch` will use: the intents service lives on it for the app's life.
     let _runtime = enter_runtime();
-    match SettingsProvider::new(
+    let provider = SettingsProvider::new(
         env.catalogue.clone(),
         config_home,
         Arc::new(WindowLink(outbox)),
         Arc::new(LiveAccounts(BusSource::Session)),
-    ) {
-        Ok(provider) => {
-            tokio::spawn(serve_intents(provider));
+    );
+    // Held until the process ends: dropping the connection takes the service off the bus.
+    let _service = match provider {
+        Ok(provider) => match enter_runtime_block(serve_session(provider)) {
+            Ok(connection) => Some(connection),
+            Err(ServeFault::Running) => return hand_over_to_running(),
+            Err(fault) => {
+                eprintln!("detent: no intents service: {fault}");
+                None
+            }
+        },
+        Err(fault) => {
+            eprintln!("detent: no intents service: {fault}");
+            None
         }
-        Err(fault) => eprintln!("detent: no intents service: {fault}"),
-    }
+    };
     let config = AppConfig::new("Settings", WindowSize::new(WIDTH, HEIGHT))
         .with_app_id(AppId("org.quire.Settings".to_owned()))
         .with_decorations(Decorations::Client)
@@ -108,12 +118,26 @@ fn settings(opening: Opening) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-/// Answers the desktop's intents (open a page, read and set a key, list the accounts) on the session bus while the
-/// window runs. Without a bus, or with another Settings already on it, the window runs without.
-async fn serve_intents(provider: SettingsProvider) {
-    match serve_session(provider).await {
-        // Dropping the connection takes the service off the bus: keep it until the process ends.
-        Ok(_connection) => std::future::pending::<()>().await,
-        Err(fault) => eprintln!("detent: no intents service: {fault}"),
+/// Runs `future` to its end on the process-wide runtime, before any window exists.
+fn enter_runtime_block<T>(future: impl std::future::Future<Output = T>) -> T {
+    tokio::runtime::Handle::current().block_on(future)
+}
+
+/// Another Settings is running: ask it to show itself (with the activation token this process
+/// was started with) and leave, so there is never a second window.
+fn hand_over_to_running() -> ExitCode {
+    let token = std::env::var("XDG_ACTIVATION_TOKEN")
+        .ok()
+        .filter(|token| !token.is_empty());
+    let handed = enter_runtime_block(async {
+        let connection = zbus::connection::Builder::session()?.build().await?;
+        hand_over(&connection, token).await
+    });
+    match handed {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(fault) => {
+            eprintln!("detent: Settings is running but did not answer: {fault}");
+            ExitCode::FAILURE
+        }
     }
 }

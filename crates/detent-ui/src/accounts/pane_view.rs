@@ -83,8 +83,8 @@ pub fn AccountsPane() -> Element {
     // A link from another page asked for an account: open it once the list is there.
     let link = use_context::<AccountLink>();
     use_effect(move || {
-        if let (AccountsState::Ready(_), Some(key)) = (state(), link.wanted()) {
-            send.call(AccountsInput::Open(key));
+        if let (AccountsState::Ready(ready), Some(wanted)) = (state(), link.wanted()) {
+            send.call(wanted.input(&ready.pane));
             link.clear();
         }
     });

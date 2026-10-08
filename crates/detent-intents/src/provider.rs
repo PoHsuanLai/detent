@@ -68,6 +68,11 @@ impl SettingsProvider {
         &self.app
     }
 
+    /// The window the provider tells, for the app's own `org.freedesktop.Application` object.
+    pub(crate) fn window(&self) -> Arc<dyn Window> {
+        self.window.clone()
+    }
+
     fn journal(&self) -> MutexGuard<'_, Journal> {
         self.journal.lock().unwrap_or_else(|p| p.into_inner())
     }

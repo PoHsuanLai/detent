@@ -6,7 +6,7 @@ mod bus;
 
 use detent_files::ConfigHome;
 use detent_intents::{AccountsRead, AccountsSource, SettingsProvider, Window, WindowGone, serve};
-use detent_model::{Absence, AccountsPane, Catalogue, PageSlug, discover};
+use detent_model::{Absence, AccountTarget, AccountsPane, Catalogue, PageSlug, discover};
 use detent_testkit::{Scratch, seed_schemas_settable};
 use docket_core::{
     AppRefusal, Args, CallId, EntityRef, Hit, Invocation, Origin, Outcome, ParamName, Preview,
@@ -26,6 +26,8 @@ const APP: &str = "org.quire.Settings";
 pub enum Told {
     Page(String),
     Files,
+    Account(AccountTarget),
+    Raised(Option<String>),
 }
 
 /// A window that writes down what it is told.
@@ -45,6 +47,14 @@ impl Window for WrittenDown {
     }
     fn files_changed(&self) -> Result<(), WindowGone> {
         self.0.lock().expect("lock").push(Told::Files);
+        Ok(())
+    }
+    fn open_account(&self, target: AccountTarget) -> Result<(), WindowGone> {
+        self.0.lock().expect("lock").push(Told::Account(target));
+        Ok(())
+    }
+    fn raise(&self, token: Option<String>) -> Result<(), WindowGone> {
+        self.0.lock().expect("lock").push(Told::Raised(token));
         Ok(())
     }
 }
@@ -160,6 +170,11 @@ impl World {
             _app: app,
             _intentd: intentd,
         }
+    }
+
+    /// A connection to the bus, as the launcher (sill) has: it calls the app by name.
+    pub async fn launcher(&self) -> zbus::Connection {
+        self._bus.connect().await
     }
 
     pub fn config_home(&self) -> ConfigHome {

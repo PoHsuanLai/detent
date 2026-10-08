@@ -1,7 +1,7 @@
 //! The window, as the intents provider reaches it: a notice into the window's inbox.
 
 use detent_intents::{Window, WindowGone};
-use detent_model::PageSlug;
+use detent_model::{AccountTarget, PageSlug};
 use detent_ui::{Notice, Outbox};
 
 /// Tells the running window what the provider did.
@@ -22,13 +22,21 @@ impl Window for WindowLink {
     fn files_changed(&self) -> Result<(), WindowGone> {
         self.tell(Notice::Reload)
     }
+
+    fn open_account(&self, target: AccountTarget) -> Result<(), WindowGone> {
+        self.tell(Notice::OpenAccount(target))
+    }
+
+    fn raise(&self, token: Option<String>) -> Result<(), WindowGone> {
+        self.tell(Notice::Raise(token))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::WindowLink;
     use detent_intents::{Window, WindowGone};
-    use detent_model::PageSlug;
+    use detent_model::{AccountTarget, PageSlug};
     use detent_ui::{Notice, inbox};
 
     #[test]

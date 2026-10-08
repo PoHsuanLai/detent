@@ -2,7 +2,7 @@
 //! under it. The provider that answers the desktop's intents sends these; the window takes them
 //! in order.
 
-use detent_model::PageSlug;
+use detent_model::{AccountTarget, PageSlug};
 use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, error::SendError, unbounded_channel};
 
@@ -13,6 +13,10 @@ pub enum Notice {
     OpenPage(PageSlug),
     /// A settings file changed behind the window's back: read every file again.
     Reload,
+    /// Show the Accounts page at this account's detail, or its list.
+    OpenAccount(AccountTarget),
+    /// Show the window and raise it; the token is the one the compositor handed the launcher.
+    Raise(Option<String>),
 }
 
 /// The sending end: held by whoever tells the window.

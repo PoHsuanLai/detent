@@ -23,11 +23,11 @@ mod warning;
 mod words;
 
 pub use accounts::{
-    Account, AccountExpiry, AccountKey, AccountPermission, AccountProvider, AccountService,
-    AccountStatus, AccountSync, AccountsEffect, AccountsInput, AccountsPane, AccountsReady,
-    AccountsScreen, AccountsState, AddEnd, Adding, Ask, ClientEntry, DatasetName, HoldCounts,
-    HoldEffect, HoldInput, Holds, KEEP_HELP, LocalFiles, Place, ReauthEnd, RemovalQuestion,
-    SignInClient, SignOutEnd, SyncHold, accounts_step, hold_step, reauth_help,
+    Account, AccountExpiry, AccountKey, AccountPermission, AccountProvider, AccountSegment,
+    AccountService, AccountStatus, AccountSync, AccountTarget, AccountsEffect, AccountsInput,
+    AccountsPane, AccountsReady, AccountsScreen, AccountsState, AddEnd, Adding, Ask, ClientEntry,
+    DatasetName, HoldCounts, HoldEffect, HoldInput, Holds, KEEP_HELP, LocalFiles, Place, ReauthEnd,
+    RemovalQuestion, SignInClient, SignOutEnd, SyncHold, accounts_step, hold_step, reauth_help,
 };
 pub use agent::AgentSetting;
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};

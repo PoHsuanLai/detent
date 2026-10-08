@@ -42,7 +42,9 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 | Whether an agent may set a key | the schema's `agent = "settable"` mark, read by `detent-model::discover` into `KeyEntry::agent` (a key without it is hands-off) |
 | A key's value as text, and text as a value | `detent-model::{Control::from_text, show_value}` |
 | What the desktop's intents may do here | `dist/intents/org.quire.Settings.toml` (the one declaration) and `detent-intents::SettingsProvider` |
-| What the window is told while it runs | `detent-ui::{Notice, inbox}` (a page to open, files to read again) |
+| What the window is told while it runs | `detent-ui::{Notice, inbox}` (a page to open, files to read again, an account to show, a raise) |
+| The D-Bus surface of `org.quire.Settings` | `org.quire.IntentProvider1` at `/org/quire/IntentProvider1` (`detent-intents/src/serve.rs`) and `org.freedesktop.Application` at `/org/quire/Settings` (`detent-intents/src/application.rs`: `Activate`, `Open` not supported, `ActivateAction("open-account", [path])`); the second launch's hand-over is `hand_over`, called by `detent/src/main.rs` |
+| Which account an object path names | `detent-model::{AccountTarget, AccountsPane::key_of}` (the path prefix is written there once; an unknown segment shows the list) |
 | Where the window opens, where files live | `detent-ui::Env` (a context; the binary fills it, a test fills it with scratch paths) |
 | What an Intelligence page draws and in what order | `detent-model::blocks` |
 | The model picker's state and transitions | `detent-model::{PickerState, step}`; the bus calls in `detent-ui/src/inference/io.rs` and the watch for inferd's name in `follow.rs`, the card in `inference/picker_view.rs` |
@@ -102,6 +104,7 @@ a `params` list even when empty), add its arm in `detent-intents/src/ask.rs` and
   account); `first_run.rs` drives the welcome window over a fake inferd and accountd on one bus (the
   default, off, a runtime picked, none found, a refusal, the mark); `detent/tests/first_run.rs` runs the
   binary with the mark present and sees it exit at once. Both draw pictures to `$DETENT_SHOTS`.
+- `detent-ui/tests/account_notice.rs` drives `Notice::OpenAccount` over the fake accountd (an account's detail, an unknown one gives the list).
 - No test reads the real config, the session bus or the portal.
 
 ## 5. Repo rules
