@@ -149,17 +149,17 @@ peniko = "0.6"
 # (github.com/PoHsuanLai/pdfrum, MIT OR Apache-2.0). `pdfrum-anyrender` is the anyrender painter
 # (scenes as vector PDF pages); it writes through pdfrum-edit (glyph-run fonts subset and
 # instanced, gradients, JPEG and PNG passthrough; `variable-fonts` lets the subsetter instance
-# variable and CFF2 faces). Every pdfrum crate is taken from one git rev so the tree holds one
-# copy of each; the rev is master after #102 (stop flag, owned page) and #103 (link border).
-pdfrum-anyrender = { git = "https://github.com/PoHsuanLai/pdfrum", rev = "e21b9352e0e070e4572ad67d16a309c570df2b83" }
-pdfrum-edit = { git = "https://github.com/PoHsuanLai/pdfrum", rev = "e21b9352e0e070e4572ad67d16a309c570df2b83", features = ["variable-fonts"] }
-pdfrum-object = { git = "https://github.com/PoHsuanLai/pdfrum", rev = "e21b9352e0e070e4572ad67d16a309c570df2b83" }
-pdfrum-common = { git = "https://github.com/PoHsuanLai/pdfrum", rev = "e21b9352e0e070e4572ad67d16a309c570df2b83" }
+# variable and CFF2 faces). Every pdfrum crate comes from crates.io at one minor (0.5), so the tree holds
+# one copy of each.
+pdfrum-anyrender = "0.5"
+pdfrum-edit = { version = "0.5", features = ["variable-fonts"] }
+pdfrum-object = "0.5"
+pdfrum-common = "0.5"
 # Font tables read directly by ds-blitz's tests (cmap): the version parley already resolves at
 # the blitz rev. pdfrum pins its own skrifa for its painter; the two do not meet in a signature.
 skrifa = "0.44"
 # Reading PDFs back in tests (text, fonts, images, a rasterised page): dev-dependency only.
-pdfrum = { git = "https://github.com/PoHsuanLai/pdfrum", rev = "e21b9352e0e070e4572ad67d16a309c570df2b83", default-features = false, features = ["vello-cpu"] }
+pdfrum = { version = "0.5", default-features = false, features = ["vello-cpu"] }
 # The print portal's fd, from a sealed anonymous file (ds-blitz's `print` feature, Linux only).
 memfd = "0.6"
 # Spellchecking (ds-blitz's `spell` feature): a pure-Rust Hunspell-compatible checker,
