@@ -17,7 +17,7 @@ const AUTOMATIC: &str = "";
 
 /// What the row's switch is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Switch {
+pub(crate) enum Switch {
     /// This computer: always on, so there is no switch.
     Always,
     /// A switch, with its state.
@@ -26,7 +26,7 @@ pub(super) enum Switch {
 
 /// What a row shows.
 #[derive(Debug, Clone, PartialEq)]
-pub(super) struct PlaceView {
+pub(crate) struct PlaceView {
     /// The place's name.
     pub name: String,
     /// The line under the name.
@@ -39,17 +39,30 @@ pub(super) struct PlaceView {
     pub offers: Vec<ModelOffer>,
     /// "Ask me each time": its state for a cloud account, none for any other place.
     pub ask: Option<Check>,
+    /// Whether it answers now, for one of the person's computers.
+    pub standing: Option<&'static str>,
 }
 
 /// What a row reports.
 #[derive(Clone, Copy, PartialEq)]
-pub(super) struct PlaceHandlers {
+pub(crate) struct PlaceHandlers {
     /// The switch was flipped.
     pub switched: EventHandler<Check>,
     /// "Ask me each time" was flipped.
     pub asked: EventHandler<Check>,
     /// A model was picked; none is Automatic.
     pub picked: EventHandler<Option<ModelChoice>>,
+    /// Remove was pressed, for one of the person's computers.
+    pub removed: Option<EventHandler<()>>,
+}
+
+/// A row with what it reports.
+#[derive(Clone, PartialEq)]
+pub(crate) struct PlaceEntry {
+    /// What the row shows.
+    pub view: PlaceView,
+    /// What it reports.
+    pub on: PlaceHandlers,
 }
 
 fn items_of(view: &PlaceView) -> Vec<MenuItem<String>> {
@@ -71,7 +84,7 @@ fn items_of(view: &PlaceView) -> Vec<MenuItem<String>> {
 
 /// A place's row and its Advanced disclosure.
 #[component]
-pub(super) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
+pub(crate) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
     let mut shown = use_signal(|| Shown::Hidden);
     let items = items_of(&view);
     let current = view
@@ -98,6 +111,17 @@ pub(super) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
                         onchange: move |next| on.switched.call(next),
                     }
                 },
+            }
+            if let Some(standing) = view.standing {
+                Label { text: standing, role: LabelRole::Secondary, style: LabelStyle::Footnote }
+            }
+            if let Some(removed) = on.removed {
+                Button {
+                    common: Common { aria_label: Some(format!("Remove {}", view.name)), ..Common::default() },
+                    label: "Remove",
+                    size: ControlSize::Small,
+                    onclick: move |_| removed.call(()),
+                }
             }
         }
         Disclosure {

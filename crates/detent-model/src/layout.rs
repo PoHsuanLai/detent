@@ -14,14 +14,12 @@ pub enum Block {
     /// "On this computer": the local runtimes accountd lists (Ollama, llama.cpp, LM Studio), each
     /// linked to its account. Not in any file.
     LocalRuntimes,
-    /// "Your computers": the person's other computers the assistant may borrow models from,
-    /// the Add list, and the computers asking to borrow this computer's models. Not in any file.
-    Computers,
     /// accountd's live Accounts pane (PLAN section 2.5): the Accounts page's rows that are not in
     /// any file.
     AccountsPane,
-    /// Where the built-in assistant may run, and the assistants that sign themselves in: the
-    /// Intelligence page's rows that are in no schema.
+    /// Where the built-in assistant may run (this computer, "Your computers" with the Add list
+    /// and the computers asking to borrow this one's models, cloud accounts), and the assistants
+    /// that sign themselves in: the Intelligence page's rows that are in no schema.
     Assistants,
     /// The desktop-wide Spaces accountd keeps, each with Remove: the Spaces page's rows that are
     /// in no file.
@@ -72,7 +70,6 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
     // Right after Companion: the first section is about the assistant, and so is this.
     slotted.push((rank("Companion") * 2 + 1, Block::Assistants));
     slotted.push((live, Block::LocalRuntimes));
-    slotted.push((live, Block::Computers));
     slotted.push((live, Block::ModelPicker));
     slotted.sort_by_key(|(slot, _)| *slot);
     slotted.into_iter().map(|(_, block)| block).collect()
@@ -106,7 +103,6 @@ mod tests {
             .map(|block| match block {
                 Block::Section(section) => section.title.as_str(),
                 Block::LocalRuntimes => "<runtimes>",
-                Block::Computers => "<computers>",
                 Block::ModelPicker => "<picker>",
                 Block::AccountsPane => "<accounts>",
                 Block::Assistants => "<assistants>",
@@ -126,7 +122,6 @@ mod tests {
                 "<assistants>",
                 "Models",
                 "<runtimes>",
-                "<computers>",
                 "<picker>",
                 "Memory",
                 "Computer use",
@@ -141,7 +136,6 @@ mod tests {
                 "Companion",
                 "<assistants>",
                 "<runtimes>",
-                "<computers>",
                 "<picker>",
                 "Privacy",
             ],
@@ -154,7 +148,6 @@ mod tests {
                 "<assistants>",
                 "Models",
                 "<runtimes>",
-                "<computers>",
                 "<picker>",
                 "Privacy",
                 "Zed",

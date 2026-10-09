@@ -164,14 +164,20 @@ fn cancel_leaves_the_account_off_and_writes_nothing() {
 #[test]
 fn a_computer_of_the_persons_switches_without_a_question_and_the_file_follows() {
     let file = "[assistant]\nthis_computer = {}\n\n[[assistant.own_computers]]\nname = \"lab server\"\nallowed = \"on\"\n";
-    let mut w = world("assistants-own", vec![acme()], Some(file));
-    settle(&mut w.harness, "the computer", |h| h.count(LAB) == 1);
-    assert_eq!(w.harness.attr(LAB, "aria-checked").as_deref(), Some("true"));
-    click(&mut w.harness, LAB);
-    settle(&mut w.harness, "the write", |_| {
-        written(&w.sandbox).is_some_and(|places| places.own[0].allowed == Toggle::Off)
+    let mut c = computers_in(
+        "assistants-own",
+        Some(file),
+        vec![LAB_SERVER],
+        vec![],
+        vec![],
+    );
+    settle(&mut c.harness, "the computer", |h| h.count(LAB) == 1);
+    assert_eq!(c.harness.attr(LAB, "aria-checked").as_deref(), Some("true"));
+    click(&mut c.harness, LAB);
+    settle(&mut c.harness, "the write", |_| {
+        written(&c.sandbox).is_some_and(|places| places.own[0].allowed == Toggle::Off)
     });
-    assert!(!w.harness.html().contains("Turn on lab server?"));
+    assert!(!c.harness.html().contains("Turn on lab server?"));
 }
 
 #[test]
@@ -242,7 +248,14 @@ const LAPTOP: Asker = Asker {
     state: "asking",
 };
 
+const LAB_SERVER: Own = Own {
+    name: "lab server",
+    models: &[("qwen", "Qwen")],
+    ready: true,
+};
+
 struct Computers {
+    sandbox: Sandbox,
     harness: Harness,
     fake: Fake,
     _rt: tokio::runtime::Runtime,
@@ -250,6 +263,17 @@ struct Computers {
 }
 
 fn computers(name: &str, own: Vec<Own>, lenders: Vec<Lender>, askers: Vec<Asker>) -> Computers {
+    computers_in(name, None, own, lenders, askers)
+}
+
+/// The same, in a world whose docket file holds `file`.
+fn computers_in(
+    name: &str,
+    file: Option<&str>,
+    own: Vec<Own>,
+    lenders: Vec<Lender>,
+    askers: Vec<Asker>,
+) -> Computers {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()
@@ -258,9 +282,13 @@ fn computers(name: &str, own: Vec<Own>, lenders: Vec<Lender>, askers: Vec<Asker>
     let bus = PrivateBus::start(name);
     let fake = rt.block_on(serve(&bus, own, lenders, askers));
     let sandbox = Sandbox::new(name).on_bus(&bus.address);
+    if let Some(text) = file {
+        sandbox.write(SETTINGS, text);
+    }
     let mut harness = sandbox.harness(intelligence());
     settle(&mut harness, "the computers", |h| h.count(GROUP) == 1);
     Computers {
+        sandbox,
         harness,
         fake,
         _rt: rt,

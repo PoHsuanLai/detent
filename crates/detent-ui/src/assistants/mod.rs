@@ -7,4 +7,5 @@ mod outside_view;
 mod place_row;
 mod places_view;
 
+pub(crate) use place_row::{PlaceEntry, PlaceRow};
 pub(crate) use places_view::Assistants;

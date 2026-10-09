@@ -3,7 +3,6 @@
 use crate::accounts::AccountsPane;
 use crate::advanced_view::AdvancedView;
 use crate::assistants::Assistants;
-use crate::computers::Computers;
 use crate::env::Env;
 use crate::files::{Edit, Files};
 use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
@@ -36,7 +35,6 @@ pub fn PageView(
                     Block::SpacesPane => rsx! { SpacesPane {} },
                     Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
-                    Block::Computers => rsx! { Computers {} },
                     Block::ModelPicker => rsx! {
                         ModelPicker { reasons: show_reason(&env, &files()) }
                     },

@@ -1,10 +1,13 @@
 //! The places' transitions: nothing turns a cloud account on without the person's yes.
 
-use super::{Confirm, PlaceRef, PlacesEffect, PlacesInput, PlacesState, places_step};
+use super::{Confirm, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, places_step};
+use crate::accounts::AccountsPane;
+use crate::computers::{ComputerRow, Standing};
 use docket_settings::{
     CloudAccount, CloudAllowed, Known, KnownPlace, ModelChoice, OwnComputer, PlaceName, Places,
     Toggle,
 };
+use porter_infer::ComputerName;
 
 fn name(text: &str) -> PlaceName {
     PlaceName(text.to_owned())
@@ -265,4 +268,18 @@ mod offers {
         let ready = picker(&["acme/big"]);
         assert!(offers_for(&PlaceRef::Own(name("lab")), &pane(), &ready).is_empty());
     }
+}
+
+#[test]
+fn the_computers_the_service_lists_are_known_places() {
+    let lab = ComputerRow {
+        computer: ComputerName::parse("lab").expect("a name"),
+        name: "lab".to_owned(),
+        models: vec![],
+        standing: Standing::Silent,
+    };
+    assert_eq!(
+        known_of(&AccountsPane::default(), &[lab]),
+        Known(vec![KnownPlace::OwnComputer(name("lab"))])
+    );
 }

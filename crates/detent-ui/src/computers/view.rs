@@ -1,11 +1,13 @@
-//! The "Your computers" group and the group of computers asking to use this one's models.
+//! The "Your computers" group (its rows are the assistant's places, drawn by the Assistants block),
+//! the Add list, and the group of computers asking to use this one's models.
 
 use super::io::{Change, Watch, candidates, change, read};
+use crate::assistants::{PlaceEntry, PlaceRow};
 use crate::env::Env;
 use crate::live::{BusSource, Daemon, next_owner, owner_changes};
 use detent_model::{
-    Absence, AddList, ComputerRow, ComputersEffect, ComputersInput, ComputersReady, ComputersState,
-    Standing, computers_step, guest_line,
+    Absence, AddList, ComputersEffect, ComputersInput, ComputersReady, ComputersState,
+    computers_step, guest_line,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -23,7 +25,7 @@ const TITLE: &str = "Your computers";
 const GUESTS_TITLE: &str = "Computers asking to use this computer's models";
 
 /// What the list says before a computer is added.
-const NONE_YET: &str = "Computers you add appear here. The assistant can use their models.";
+const NONE_YET: &str = "Computers you add appear here. Each starts off.";
 
 /// What the Add list says when Tailscale knows no computer of the person's that lends.
 const NOBODY_LENDING: &str = "None of your other computers is lending its models. On the other \
@@ -125,9 +127,8 @@ async fn reread(state: Signal<ComputersState>, toasts: ToastHub, bus: &BusSource
     drive(state, toasts, bus.clone(), ComputersInput::Found(found));
 }
 
-/// The person's computers, the Add list, and the guests.
-#[component]
-pub(crate) fn Computers() -> Element {
+/// Follows the computers and hands back their state and the way to feed it an input.
+pub(crate) fn use_computers() -> (Signal<ComputersState>, EventHandler<ComputersInput>) {
     let env = use_context::<Env>();
     let toasts = use_toasts();
     let state = use_signal(ComputersState::default);
@@ -139,7 +140,18 @@ pub(crate) fn Computers() -> Element {
     let feed = EventHandler::new(move |input: ComputersInput| {
         drive(state, toasts, bus.clone(), input);
     });
-    match state() {
+    (state, feed)
+}
+
+/// The person's computers (`rows`, one per computer the service lists), the Add list, and the
+/// guests.
+#[component]
+pub(crate) fn Computers(
+    state: ComputersState,
+    feed: EventHandler<ComputersInput>,
+    rows: Vec<PlaceEntry>,
+) -> Element {
+    match state {
         ComputersState::Looking => rsx! {},
         ComputersState::Unavailable(absence) => rsx! {
             div { class: "computers", "data-computers": "unavailable",
@@ -153,12 +165,16 @@ pub(crate) fn Computers() -> Element {
                 }
             }
         },
-        ComputersState::Ready(ready) => rsx! { Listed { ready, feed } },
+        ComputersState::Ready(ready) => rsx! { Listed { ready, feed, rows } },
     }
 }
 
 #[component]
-fn Listed(ready: ComputersReady, feed: EventHandler<ComputersInput>) -> Element {
+fn Listed(
+    ready: ComputersReady,
+    feed: EventHandler<ComputersInput>,
+    rows: Vec<PlaceEntry>,
+) -> Element {
     let add_list = match ready.adding {
         AddList::Closed => Availability::Enabled,
         AddList::Looking | AddList::Choosing(_) => Availability::Disabled,
@@ -166,13 +182,13 @@ fn Listed(ready: ComputersReady, feed: EventHandler<ComputersInput>) -> Element 
     rsx! {
         div { class: "computers", "data-computers": "list",
             FieldGroup { title: Some(TITLE.to_owned()),
-                if ready.computers.is_empty() {
+                if rows.is_empty() {
                     FieldRow { label: TextLine::from(NONE_YET), availability: Availability::Disabled,
                         Label { text: "None", role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                     }
                 }
-                for computer in ready.computers.iter().cloned() {
-                    ComputerLine { key: "{computer.computer}", computer, feed }
+                for row in rows {
+                    PlaceRow { key: "{row.view.name}", view: row.view, on: row.on }
                 }
                 FieldRow { label: TextLine::from("Add a computer"),
                     Button {
@@ -199,31 +215,6 @@ fn Listed(ready: ComputersReady, feed: EventHandler<ComputersInput>) -> Element 
                         GuestLine { key: "{guest.node}", guest, feed }
                     }
                 }
-            }
-        }
-    }
-}
-
-#[component]
-fn ComputerLine(computer: ComputerRow, feed: EventHandler<ComputersInput>) -> Element {
-    let help = if computer.models.is_empty() {
-        "No models right now".to_owned()
-    } else {
-        computer.models.join(", ")
-    };
-    let standing = match computer.standing {
-        Standing::Answering => "Ready",
-        Standing::Silent => "Not answering",
-    };
-    let computer_id = computer.computer.clone();
-    rsx! {
-        FieldRow { label: TextLine::from(computer.name.clone()), help: Some(TextLine::from(help)),
-            Label { text: standing, role: LabelRole::Secondary, style: LabelStyle::Footnote }
-            Button {
-                common: Common { aria_label: Some(format!("Remove {}", computer.name)), ..Common::default() },
-                label: "Remove",
-                size: ControlSize::Small,
-                onclick: move |_| feed.call(ComputersInput::Remove(computer_id.clone())),
             }
         }
     }

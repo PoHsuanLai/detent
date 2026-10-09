@@ -5,25 +5,26 @@
 use super::external_view::ExternalAssistants;
 use super::models::use_picker;
 use super::outside_view::OutsideAssistants;
-use super::place_row::{PlaceHandlers, PlaceRow, PlaceView, Switch};
+use super::place_row::{PlaceEntry, PlaceHandlers, PlaceRow, PlaceView, Switch};
 use crate::accounts::{Listed, use_listed};
+use crate::computers::{Computers, use_computers};
 use crate::env::Env;
 use detent_files::{load_places, save_places};
 use detent_model::{
-    AccountsPane, Confirm, PlaceRef, PlacesEffect, PlacesInput, PlacesState, Ready, known_of,
-    offers_for, places_step,
+    AccountsPane, ComputerRow, ComputersInput, ComputersState, Confirm, PlaceRef, PlacesEffect,
+    PlacesInput, PlacesState, Ready, Standing, known_of, offers_for, places_step,
 };
 use dioxus::prelude::*;
 use docket_settings::{
-    CloudAccount, CloudAllowed, ModelChoice, OwnComputer, PlaceKind, Toggle, kind_label,
+    CloudAccount, CloudAllowed, ModelChoice, OwnComputer, PlaceKind, PlaceName, Toggle, kind_label,
 };
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
+use porter_client::ComputerName;
 
 /// What a group says when it has no place.
-const NO_COMPUTERS: &str = "Computers you add appear here. Each starts off.";
 const NO_ACCOUNTS: &str = "Signed-in accounts that offer AI appear here. Each starts off.";
 
 fn toggle_of(check: Check) -> Toggle {
@@ -40,11 +41,29 @@ fn check_of(toggle: Toggle) -> Check {
     }
 }
 
-fn own_view(own: &OwnComputer, pane: &AccountsPane, picker: Option<&Ready>) -> PlaceView {
+/// What the line under a computer's name says: the models it lends now.
+fn models_line(computer: &ComputerRow) -> String {
+    if computer.models.is_empty() {
+        "No models right now".to_owned()
+    } else {
+        computer.models.join(", ")
+    }
+}
+
+fn own_view(
+    own: &OwnComputer,
+    computer: &ComputerRow,
+    pane: &AccountsPane,
+    picker: Option<&Ready>,
+) -> PlaceView {
     let place = PlaceRef::Own(own.name.clone());
     PlaceView {
         name: own.name.0.clone(),
-        detail: None,
+        detail: Some(models_line(computer)),
+        standing: Some(match computer.standing {
+            Standing::Answering => "Ready",
+            Standing::Silent => "Not answering",
+        }),
         switch: Switch::Is(check_of(own.allowed)),
         model: own.model.clone(),
         offers: picker.map_or_else(Vec::new, |ready| offers_for(&place, pane, ready)),
@@ -66,6 +85,7 @@ fn cloud_view(cloud: &CloudAccount, pane: &AccountsPane, picker: Option<&Ready>)
         model: cloud.model.clone(),
         offers: picker.map_or_else(Vec::new, |ready| offers_for(&place, pane, ready)),
         ask: Some(ask),
+        standing: None,
     }
 }
 
@@ -76,6 +96,7 @@ pub(crate) fn Assistants() -> Element {
     let toasts = use_toasts();
     let listed = use_listed();
     let picker = use_picker();
+    let (computers, feed) = use_computers();
     let mut state = use_signal({
         let env = env.clone();
         move || PlacesState::of(load_places(&env.config_home).places)
@@ -85,18 +106,24 @@ pub(crate) fn Assistants() -> Element {
         Listed::Looking | Listed::Absent(_) => AccountsPane::default(),
     };
 
-    // What the machine knows is merged into the setting each time accountd's rows change.
+    let listing = listed_computers(computers());
+
+    // What the machine knows (the service's computers, accountd's accounts) is merged into the
+    // setting each time either list changes.
     use_effect({
         let env = env.clone();
         move || {
-            if let Listed::Accounts(pane) = listed() {
-                let read = load_places(&env.config_home).places;
-                let (next, _) = places_step(
-                    state.peek().clone(),
-                    PlacesInput::Read(read, known_of(&pane)),
-                );
-                state.set(next);
-            }
+            let pane = match listed() {
+                Listed::Accounts(pane) => pane,
+                Listed::Looking | Listed::Absent(_) => AccountsPane::default(),
+            };
+            let computers = listed_computers(computers());
+            let read = load_places(&env.config_home).places;
+            let (next, _) = places_step(
+                state.peek().clone(),
+                PlacesInput::Read(read, known_of(&pane, &computers)),
+            );
+            state.set(next);
         }
     });
 
@@ -119,6 +146,20 @@ pub(crate) fn Assistants() -> Element {
     let current = state();
     let ready = picker();
     let question = current.question();
+    let own_rows: Vec<PlaceEntry> = listing
+        .iter()
+        .filter_map(|computer| {
+            let own = current
+                .places
+                .own
+                .iter()
+                .find(|own| own.name.0 == computer.name)?;
+            Some(PlaceEntry {
+                view: own_view(own, computer, &pane, ready.as_ref()),
+                on: own_handlers(own.name.clone(), computer.computer.clone(), apply, feed),
+            })
+        })
+        .collect();
     let this_view = PlaceView {
         name: "This computer".to_owned(),
         detail: None,
@@ -128,6 +169,7 @@ pub(crate) fn Assistants() -> Element {
             .as_ref()
             .map_or_else(Vec::new, |r| offers_for(&PlaceRef::ThisComputer, &pane, r)),
         ask: None,
+        standing: None,
     };
     rsx! {
         div { class: "assistants", "data-assistants": "places",
@@ -140,35 +182,11 @@ pub(crate) fn Assistants() -> Element {
                         picked: EventHandler::new(move |model: Option<ModelChoice>| {
                             apply.call(PlacesInput::Model { place: PlaceRef::ThisComputer, model });
                         }),
+                        removed: None,
                     },
                 }
             }
-            FieldGroup { title: Some(kind_label(PlaceKind::OwnComputer).to_owned()),
-                if current.places.own.is_empty() {
-                    EmptyRow { text: NO_COMPUTERS }
-                }
-                for own in current.places.own.iter().cloned() {
-                    PlaceRow {
-                        key: "{own.name.0}",
-                        view: own_view(&own, &pane, ready.as_ref()),
-                        on: PlaceHandlers {
-                            switched: {
-                                let name = own.name.clone();
-                                EventHandler::new(move |next: Check| {
-                                    apply.call(PlacesInput::OwnSwitched { name: name.clone(), to: toggle_of(next) });
-                                })
-                            },
-                            asked: EventHandler::new(|_| {}),
-                            picked: {
-                                let name = own.name.clone();
-                                EventHandler::new(move |model: Option<ModelChoice>| {
-                                    apply.call(PlacesInput::Model { place: PlaceRef::Own(name.clone()), model });
-                                })
-                            },
-                        },
-                    }
-                }
-            }
+            Computers { state: computers(), feed, rows: own_rows }
             FieldGroup { title: Some(kind_label(PlaceKind::Cloud).to_owned()),
                 if current.places.cloud.is_empty() {
                     EmptyRow { text: NO_ACCOUNTS }
@@ -196,6 +214,7 @@ pub(crate) fn Assistants() -> Element {
                                     apply.call(PlacesInput::Model { place: PlaceRef::Cloud(name.clone()), model });
                                 })
                             },
+                            removed: None,
                         },
                     }
                 }
@@ -222,6 +241,43 @@ pub(crate) fn Assistants() -> Element {
                 }
             }
         }
+    }
+}
+
+/// The computers the service lists; none while it is not there.
+fn listed_computers(state: ComputersState) -> Vec<ComputerRow> {
+    match state {
+        ComputersState::Ready(ready) => ready.computers,
+        ComputersState::Looking | ComputersState::Unavailable(_) => Vec::new(),
+    }
+}
+
+fn own_handlers(
+    name: PlaceName,
+    computer: ComputerName,
+    apply: EventHandler<PlacesInput>,
+    feed: EventHandler<ComputersInput>,
+) -> PlaceHandlers {
+    PlaceHandlers {
+        switched: {
+            let name = name.clone();
+            EventHandler::new(move |next: Check| {
+                apply.call(PlacesInput::OwnSwitched {
+                    name: name.clone(),
+                    to: toggle_of(next),
+                });
+            })
+        },
+        asked: EventHandler::new(|_| {}),
+        picked: EventHandler::new(move |model: Option<ModelChoice>| {
+            apply.call(PlacesInput::Model {
+                place: PlaceRef::Own(name.clone()),
+                model,
+            });
+        }),
+        removed: Some(EventHandler::new(move |()| {
+            feed.call(ComputersInput::Remove(computer.clone()));
+        })),
     }
 }
 
