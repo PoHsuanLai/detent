@@ -11,7 +11,7 @@ use cli::Run;
 use detent_files::{FirstRunMark, FirstRunStanding};
 use detent_intents::{ServeFault, SettingsProvider, hand_over, serve_session};
 use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, inbox};
-use ds_blitz::{AppConfig, AppId, Decorations, WindowSize, enter_runtime, launch};
+use ds_blitz::{AppConfig, AppId, Decorations, LaunchError, WindowSize, enter_runtime, launch};
 use ds_settings::SystemPrefsSource;
 use link::WindowLink;
 use std::process::ExitCode;
@@ -75,8 +75,7 @@ fn first_run() -> ExitCode {
     .with_app_id(AppId("org.quire.Settings".to_owned()))
     .with_decorations(Decorations::Client)
     .with_context(env);
-    launch(FirstRunApp, config);
-    ExitCode::SUCCESS
+    ended(launch(FirstRunApp, config))
 }
 
 fn settings(opening: Opening) -> ExitCode {
@@ -114,8 +113,18 @@ fn settings(opening: Opening) -> ExitCode {
         .with_app_id(AppId("org.quire.Settings".to_owned()))
         .with_decorations(Decorations::Client)
         .with_context(env);
-    launch(App, config);
-    ExitCode::SUCCESS
+    ended(launch(App, config))
+}
+
+/// The exit code of a window that ran to its end: failure, with the reason said, when it could not run.
+fn ended(launched: Result<(), LaunchError>) -> ExitCode {
+    match launched {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(fault) => {
+            eprintln!("detent: {fault}");
+            ExitCode::FAILURE
+        }
+    }
 }
 
 /// Runs `future` to its end on the process-wide runtime, before any window exists.

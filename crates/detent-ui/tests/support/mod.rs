@@ -96,10 +96,7 @@ impl Sandbox {
             &[self.scratch.join("data/quire/settings")],
             self.config_home(),
             &self.state_home(),
-            SystemPrefsSource::Fixed(SystemPrefs {
-                scheme,
-                ..SystemPrefs::default()
-            }),
+            SystemPrefsSource::Fixed(SystemPrefs::default().with_scheme(scheme)),
             opening,
             self.bus.clone(),
         )
