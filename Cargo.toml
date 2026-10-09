@@ -38,6 +38,8 @@ docket-core   = { path = "../docket/crates/docket-core" }
 docket-dbus   = { path = "../docket/crates/docket-dbus" }
 # The assistant's places (where it may run) and the Space-removal choice, typed by their owners.
 docket-settings = { path = "../docket/crates/docket-settings" }
+# Where the outside agents docket may start are installed and what each last offered (the type in `read_agents`' signature).
+docket-agents = { path = "../docket/crates/docket-agents" }
 almanac-core  = { path = "../almanac/crates/almanac-core" }
 porter-core   = { path = "../porter/crates/porter-core" }
 prov          = { path = "../porter/crates/prov" }

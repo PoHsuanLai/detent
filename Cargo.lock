@@ -1256,6 +1256,7 @@ version = "0.1.0"
 dependencies = [
  "detent-model",
  "detent-testkit",
+ "docket-agents",
  "docket-settings",
  "ds-settings",
  "thiserror 2.0.21",

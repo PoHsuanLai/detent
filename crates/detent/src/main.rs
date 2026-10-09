@@ -34,13 +34,16 @@ fn main() -> ExitCode {
 
 /// The environment both windows read, from the person's directories.
 fn environment(opening: Opening) -> Result<Env, ExitCode> {
-    let (Some(config_home), Some(state_home)) = (dirs::config_home(), dirs::state_home()) else {
+    let (Some(config_home), Some(data_home), Some(state_home)) =
+        (dirs::config_home(), dirs::data_home(), dirs::state_home())
+    else {
         eprintln!("detent: neither XDG_CONFIG_HOME nor HOME is set, nowhere to keep settings");
         return Err(ExitCode::FAILURE);
     };
     let env = Env::discover(
         &dirs::schema_dirs(),
         config_home,
+        data_home,
         &state_home,
         SystemPrefsSource::Portal,
         opening,

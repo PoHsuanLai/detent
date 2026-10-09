@@ -10,6 +10,7 @@ publish.workspace = true
 
 [dependencies]
 detent-model = { workspace = true }
+docket-agents = { workspace = true }
 docket-settings = { workspace = true }
 ds-settings = { workspace = true }
 thiserror = { workspace = true }

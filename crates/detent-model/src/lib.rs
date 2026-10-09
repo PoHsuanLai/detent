@@ -14,6 +14,7 @@ mod entry;
 mod first_run;
 mod layout;
 mod navigation;
+mod outside;
 mod page;
 mod picker;
 mod range;
@@ -53,6 +54,7 @@ pub use first_run::{
 };
 pub use layout::{Block, blocks};
 pub use navigation::{landing, visible_pages};
+pub use outside::{AGENTS_OWN, Entry, model_choice, model_menu, model_word, way_choice, way_menu};
 pub use page::PageSlug;
 pub use picker::{
     Absence, Applying, ChoiceSection, Described, KindRows, ModelRow, PickerEffect, PickerInput,

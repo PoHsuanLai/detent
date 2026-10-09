@@ -3,6 +3,7 @@
 
 mod external_view;
 mod models;
+mod outside_view;
 mod place_row;
 mod places_view;
 

@@ -17,6 +17,11 @@ impl ConfigHome {
     }
 }
 
+/// `$XDG_DATA_HOME` (or a scratch directory standing in for it): where docket keeps the agents it
+/// installed and what each last offered.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DataHome(pub PathBuf);
+
 /// The current value of every key of a file that has one: what the file says where the key's
 /// control can hold it, and the key's default elsewhere.
 ///

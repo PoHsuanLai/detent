@@ -11,7 +11,7 @@ pub mod inferd;
 pub mod spaces;
 pub mod syncd;
 
-use detent_files::{ConfigHome, StateHome};
+use detent_files::{ConfigHome, DataHome, StateHome};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, Outbox, ReasonFeed, inbox};
 use ds::prelude::{Scheme, SystemPrefs};
@@ -74,6 +74,11 @@ impl Sandbox {
         ConfigHome(self.scratch.join("config"))
     }
 
+    /// The scratch `$XDG_DATA_HOME`.
+    pub fn data_home(&self) -> DataHome {
+        DataHome(self.scratch.join("data"))
+    }
+
     /// The scratch `$XDG_STATE_HOME`.
     pub fn state_home(&self) -> StateHome {
         StateHome(self.scratch.join("state"))
@@ -91,11 +96,19 @@ impl Sandbox {
         std::fs::write(path, text).expect("write");
     }
 
+    /// Puts `text` at `relative` under the data home.
+    pub fn write_data(&self, relative: &str, text: &str) {
+        let path = self.data_home().0.join(relative);
+        std::fs::create_dir_all(path.parent().expect("a file has a parent")).expect("mkdir");
+        std::fs::write(path, text).expect("write");
+    }
+
     /// The app's environment, the desktop reporting `scheme`.
     pub fn env(&self, opening: Opening, scheme: Scheme) -> Env {
         Env::discover(
             &[self.scratch.join("data/quire/settings")],
             self.config_home(),
+            self.data_home(),
             &self.state_home(),
             SystemPrefsSource::Fixed(SystemPrefs::default().with_scheme(scheme)),
             opening,

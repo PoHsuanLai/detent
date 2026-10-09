@@ -4,6 +4,7 @@
 //! temp-and-rename. The programs' own directory watches apply what is written;
 //! nothing here talks to a program.
 
+mod agents;
 mod error;
 mod first_run;
 mod load;
@@ -12,9 +13,10 @@ mod save;
 mod unknown;
 mod values;
 
+pub use agents::{load_agents, save_agent_choice};
 pub use error::FilesError;
 pub use first_run::{FirstRunMark, FirstRunStanding, StateHome};
 pub use load::load;
 pub use places::{load_places, save_places};
 pub use save::save;
-pub use values::{ConfigHome, FileValues};
+pub use values::{ConfigHome, DataHome, FileValues};

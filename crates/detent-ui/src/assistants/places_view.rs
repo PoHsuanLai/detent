@@ -4,6 +4,7 @@
 
 use super::external_view::ExternalAssistants;
 use super::models::use_picker;
+use super::outside_view::OutsideAssistants;
 use super::place_row::{PlaceHandlers, PlaceRow, PlaceView, Switch};
 use crate::accounts::{Listed, use_listed};
 use crate::env::Env;
@@ -200,6 +201,7 @@ pub(crate) fn Assistants() -> Element {
                 }
             }
             ExternalAssistants { pane: pane.clone() }
+            OutsideAssistants {}
             if let Some((title, message)) = question {
                 Alert {
                     title,

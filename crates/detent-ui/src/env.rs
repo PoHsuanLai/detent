@@ -6,7 +6,7 @@ use crate::inbox::Inbox;
 use crate::inference::ReasonFeed;
 use crate::live::BusSource;
 use crate::marks::ProviderMarks;
-use detent_files::{ConfigHome, FirstRunMark, StateHome};
+use detent_files::{ConfigHome, DataHome, FirstRunMark, StateHome};
 use detent_model::{Catalogue, PageSlug, Warning, discover};
 use ds_settings::SystemPrefsSource;
 use std::path::PathBuf;
@@ -30,6 +30,8 @@ pub struct Env {
     pub warnings: Vec<Warning>,
     /// The directory the settings files' paths are under.
     pub config_home: ConfigHome,
+    /// Where docket keeps the agents it installed and what each offered.
+    pub data_home: DataHome,
     /// Whether the first run happened, kept under the state home.
     pub first_run: FirstRunMark,
     /// Where the desktop's own preferences come from.
@@ -51,6 +53,7 @@ impl Env {
     pub fn discover(
         schema_dirs: &[PathBuf],
         config_home: ConfigHome,
+        data_home: DataHome,
         state_home: &StateHome,
         system: SystemPrefsSource,
         opening: Opening,
@@ -61,6 +64,7 @@ impl Env {
             catalogue: Arc::new(Catalogue::build(&found.programs)),
             warnings: found.warnings,
             config_home,
+            data_home,
             first_run: FirstRunMark::under(state_home),
             system,
             opening,

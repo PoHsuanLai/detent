@@ -9,7 +9,7 @@ mod support;
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use docket_settings::{CloudAllowed, Toggle, read_places};
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::{Driver, Harness, Input, Query};
 use std::time::Duration;
 use support::Sandbox;
 use support::accountd::{Accountd, Held, Policy};
@@ -438,5 +438,47 @@ fn a_computer_that_starts_asking_appears_when_inferd_says_the_guests_changed() {
         c.fake.changes(),
         Vec::<String>::new(),
         "nobody was asked to change anything"
+    );
+}
+
+// ---- Coding assistants: the outside agents docket may start ----
+
+const AGENTS: &str = "# mine\n[[agent]]\nprogram = \"claude-code\"\nlabel = \"Claude Code\"\nregistry = \"claude-code\"\nversion = \"1.0.0\"\n";
+const OFFERED: &str = "seen = 1\nstart = \"signed_in\"\n\n[[model]]\nid = \"sonnet\"\nname = \"Sonnet 5.5\"\n\n[[model]]\nid = \"opus\"\nname = \"Opus\"\n";
+
+#[test]
+fn an_outside_assistant_is_listed_by_its_plain_name_and_its_model_is_chosen_in_its_entry() {
+    let sandbox = Sandbox::new("coding-assistants");
+    sandbox.write("docket/agents.toml", AGENTS);
+    sandbox.write_data("docket/agents/state/claude-code/offered.toml", OFFERED);
+    let mut harness = sandbox.harness(intelligence());
+    let group = "[data-assistants=\"coding\"]";
+    settle(&mut harness, "the group", |h| h.count(group) == 1);
+    let text = harness.text_of(group).unwrap_or_default();
+    for want in [
+        "Coding assistants",
+        "Claude Code",
+        "Signed in",
+        "The agent\u{2019}s own choice",
+    ] {
+        assert!(text.contains(want), "{want} in {text}");
+    }
+    for protocol in ["ACP", "MCP", "protocol"] {
+        assert!(!text.contains(protocol), "{protocol} in {text}");
+    }
+    assert_eq!(sandbox.read("docket/agents.toml").as_deref(), Some(AGENTS));
+
+    let button = format!("{group} .ds-popup .ds-button");
+    scroll_into_view(&mut harness, &button);
+    click(&mut harness, &button);
+    let item = ".ds-menu-item:nth-child(3) .ds-menu-label";
+    let at = harness.centre(item).expect("the menu is open");
+    harness.send(Input::pointer_move(at));
+    click(&mut harness, item);
+    let written = sandbox.read("docket/agents.toml").expect("the file");
+    assert_eq!(
+        written,
+        format!("{AGENTS}model = \"opus\"\n"),
+        "the model lands in the entry and the comment stays"
     );
 }

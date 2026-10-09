@@ -1,6 +1,6 @@
 //! Where the schemas and the settings are, read from the environment once, here at the edge.
 
-use detent_files::{ConfigHome, StateHome};
+use detent_files::{ConfigHome, DataHome, StateHome};
 use std::ffi::OsString;
 use std::path::PathBuf;
 
@@ -31,6 +31,18 @@ pub fn state_home() -> Option<StateHome> {
     state_home_from(std::env::var_os("XDG_STATE_HOME"), std::env::var_os("HOME"))
 }
 
+/// `$XDG_DATA_HOME`, else `$HOME/.local/share`.
+fn data_home_from(xdg: Option<OsString>, home: Option<OsString>) -> Option<DataHome> {
+    xdg.map(PathBuf::from)
+        .or_else(|| home.map(|home| PathBuf::from(home).join(".local/share")))
+        .map(DataHome)
+}
+
+/// The person's data home, `None` when neither variable is set.
+pub fn data_home() -> Option<DataHome> {
+    data_home_from(std::env::var_os("XDG_DATA_HOME"), std::env::var_os("HOME"))
+}
+
 /// `dirs` without a directory already listed, in order: `$XDG_DATA_HOME` is often also in
 /// `$XDG_DATA_DIRS`, and its schemas would otherwise shadow themselves.
 fn unique(dirs: Vec<PathBuf>) -> Vec<PathBuf> {
@@ -49,7 +61,7 @@ pub fn schema_dirs() -> Vec<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::{config_home_from, state_home_from, unique};
+    use super::{config_home_from, data_home_from, state_home_from, unique};
     use std::ffi::OsString;
     use std::path::PathBuf;
 
@@ -79,6 +91,23 @@ mod tests {
         ];
         for (xdg, home, want) in cases {
             let got = state_home_from(xdg.map(OsString::from), home.map(OsString::from));
+            assert_eq!(
+                got.map(|h| h.0),
+                want.map(PathBuf::from),
+                "{xdg:?} {home:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn xdg_data_home_wins_over_home() {
+        let cases: &[(Option<&str>, Option<&str>, Option<&str>)] = &[
+            (Some("/xdg"), Some("/home/ada"), Some("/xdg")),
+            (None, Some("/home/ada"), Some("/home/ada/.local/share")),
+            (None, None, None),
+        ];
+        for (xdg, home, want) in cases {
+            let got = data_home_from(xdg.map(OsString::from), home.map(OsString::from));
             assert_eq!(
                 got.map(|h| h.0),
                 want.map(PathBuf::from),
