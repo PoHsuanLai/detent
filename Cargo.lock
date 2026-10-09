@@ -4092,14 +4092,12 @@ dependencies = [
  "porter-core",
  "porter-dbus",
  "porter-infer",
- "porter-provider",
- "porter-secrets",
- "porter-service",
  "rustix",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
  "tokio",
+ "zbus",
  "zeroize",
 ]
 
@@ -4144,24 +4142,6 @@ dependencies = [
  "serde",
  "thiserror 2.0.21",
  "toml",
-]
-
-[[package]]
-name = "porter-secrets"
-version = "0.1.0"
-dependencies = [
- "porter-core",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "porter-service"
-version = "0.1.0"
-dependencies = [
- "porter-core",
- "porter-provider",
- "porter-secrets",
 ]
 
 [[package]]
