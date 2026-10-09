@@ -4,9 +4,8 @@ use super::io::{Change, Watch, candidates, change, read};
 use crate::env::Env;
 use crate::live::{BusSource, Daemon, next_owner, owner_changes};
 use detent_model::{
-    Absence, AddList, Approval, Candidate, ComputerRow, ComputersEffect, ComputersInput,
-    ComputersReady, ComputersState, Guest, GuestAnswer, GuestState, Standing, computers_step,
-    guest_line,
+    Absence, AddList, ComputerRow, ComputersEffect, ComputersInput, ComputersReady, ComputersState,
+    Standing, computers_step, guest_line,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -15,6 +14,7 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::stack::toast_hub::ToastHub;
 use ds::style::tokens::control_size::ControlSize;
+use porter_core::lending::{Approval, ComputerCandidate, GuestAnswer, GuestRow, RowState};
 
 /// The group's title.
 const TITLE: &str = "Your computers";
@@ -172,7 +172,7 @@ fn Listed(ready: ComputersReady, feed: EventHandler<ComputersInput>) -> Element 
                     }
                 }
                 for computer in ready.computers.iter().cloned() {
-                    ComputerLine { key: "{computer.id}", computer, feed }
+                    ComputerLine { key: "{computer.computer}", computer, feed }
                 }
                 FieldRow { label: TextLine::from("Add a computer"),
                     Button {
@@ -196,7 +196,7 @@ fn Listed(ready: ComputersReady, feed: EventHandler<ComputersInput>) -> Element 
             if !ready.guests.is_empty() {
                 FieldGroup { title: Some(GUESTS_TITLE.to_owned()),
                     for guest in ready.guests.iter().cloned() {
-                        GuestLine { key: "{guest.node.0}", guest, feed }
+                        GuestLine { key: "{guest.node}", guest, feed }
                     }
                 }
             }
@@ -215,7 +215,7 @@ fn ComputerLine(computer: ComputerRow, feed: EventHandler<ComputersInput>) -> El
         Standing::Answering => "Ready",
         Standing::Silent => "Not answering",
     };
-    let id = computer.id.clone();
+    let computer_id = computer.computer.clone();
     rsx! {
         FieldRow { label: TextLine::from(computer.name.clone()), help: Some(TextLine::from(help)),
             Label { text: standing, role: LabelRole::Secondary, style: LabelStyle::Footnote }
@@ -223,21 +223,21 @@ fn ComputerLine(computer: ComputerRow, feed: EventHandler<ComputersInput>) -> El
                 common: Common { aria_label: Some(format!("Remove {}", computer.name)), ..Common::default() },
                 label: "Remove",
                 size: ControlSize::Small,
-                onclick: move |_| feed.call(ComputersInput::Remove(id.clone())),
+                onclick: move |_| feed.call(ComputersInput::Remove(computer_id.clone())),
             }
         }
     }
 }
 
 #[component]
-fn Candidates(found: Vec<Candidate>, feed: EventHandler<ComputersInput>) -> Element {
+fn Candidates(found: Vec<ComputerCandidate>, feed: EventHandler<ComputersInput>) -> Element {
     rsx! {
         FieldGroup { title: Some("Add a computer".to_owned()),
             if found.is_empty() {
                 FieldRow { label: TextLine::from(NOBODY_LENDING), availability: Availability::Disabled }
             }
             for candidate in found {
-                CandidateLine { key: "{candidate.node.0}", candidate, feed }
+                CandidateLine { key: "{candidate.node}", candidate, feed }
             }
             FieldRow { label: TextLine::from("Done"),
                 Button {
@@ -251,8 +251,13 @@ fn Candidates(found: Vec<Candidate>, feed: EventHandler<ComputersInput>) -> Elem
 }
 
 #[component]
-fn CandidateLine(candidate: Candidate, feed: EventHandler<ComputersInput>) -> Element {
-    let models = candidate.models.join(", ");
+fn CandidateLine(candidate: ComputerCandidate, feed: EventHandler<ComputersInput>) -> Element {
+    let models = candidate
+        .models
+        .iter()
+        .map(|model| model.name.as_str())
+        .collect::<Vec<_>>()
+        .join(", ");
     let help = match candidate.approval {
         Approval::Given => models,
         Approval::Needed => format!("{models}. Say yes on {} when it asks.", candidate.name),
@@ -271,9 +276,9 @@ fn CandidateLine(candidate: Candidate, feed: EventHandler<ComputersInput>) -> El
 }
 
 #[component]
-fn GuestLine(guest: Guest, feed: EventHandler<ComputersInput>) -> Element {
-    let allow = guest.state != GuestState::Approved;
-    let deny = guest.state != GuestState::Denied;
+fn GuestLine(guest: GuestRow, feed: EventHandler<ComputersInput>) -> Element {
+    let allow = guest.state != RowState::Approved;
+    let deny = guest.state != RowState::Denied;
     let (a, b, c) = (guest.node.clone(), guest.node.clone(), guest.node.clone());
     rsx! {
         FieldRow { label: TextLine::from(guest.name.clone()), help: Some(TextLine::from(guest_line(&guest))),

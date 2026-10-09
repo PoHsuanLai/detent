@@ -3,11 +3,9 @@
 //! of it and the lists are read again after.
 
 use crate::picker::Absence;
-use porter_infer::{PlaceKind, PlaceRow, PlaceState};
-
-/// A Tailscale node's id, as Tailscale names the computer.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct NodeKey(pub String);
+use porter_core::NodeId;
+use porter_core::lending::{ComputerCandidate, GuestAnswer, GuestRow};
+use porter_infer::{ComputerName, PlaceKind, PlaceRow, PlaceState, PlaceTarget};
 
 /// Whether a computer answers now.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,8 +19,8 @@ pub enum Standing {
 /// One of the person's computers the assistant may borrow models from.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComputerRow {
-    /// The place's id, which names it to Remove.
-    pub id: String,
+    /// The computer's name in the service: what Remove names it by.
+    pub computer: ComputerName,
     /// What the person calls it.
     pub name: String,
     /// The names of the models it lends now.
@@ -34,9 +32,9 @@ pub struct ComputerRow {
 impl ComputerRow {
     /// The row of `place`, when it is one of the person's own computers.
     pub fn of(place: &PlaceRow) -> Option<ComputerRow> {
-        match place.kind {
-            PlaceKind::OwnComputer => Some(ComputerRow {
-                id: place.id.as_str().to_owned(),
+        match (place.kind, place.id.target()) {
+            (PlaceKind::OwnComputer, PlaceTarget::OwnComputer(computer)) => Some(ComputerRow {
+                computer,
                 name: place.name.clone(),
                 models: place.models.iter().map(|m| m.name.clone()).collect(),
                 standing: match place.state {
@@ -49,68 +47,13 @@ impl ComputerRow {
     }
 }
 
-/// Whether the person still has to say yes on the other computer.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Approval {
-    /// Nothing is waiting for them.
-    Given,
-    /// The other computer will ask them first.
-    Needed,
-}
-
-/// A Tailscale computer that can be added.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Candidate {
-    /// Its node id.
-    pub node: NodeKey,
-    /// What Tailscale calls it.
-    pub name: String,
-    /// The names of the models it lends.
-    pub models: Vec<String>,
-    /// Whether the person still has to say yes on it.
-    pub approval: Approval,
-}
-
-/// How a computer that asked to borrow this one's models stands.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GuestState {
-    /// It may.
-    Approved,
-    /// It may not.
-    Denied,
-    /// It asked and waits for an answer.
-    Asking,
-}
-
-/// A computer that asked to borrow this computer's models.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Guest {
-    /// Its node id.
-    pub node: NodeKey,
-    /// What Tailscale calls it.
-    pub name: String,
-    /// How it stands.
-    pub state: GuestState,
-    /// When it began asking, in seconds since 1970.
-    pub since: i64,
-}
-
-/// The person's answer to a guest.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GuestAnswer {
-    /// Let it use the models.
-    Allow,
-    /// Keep it out.
-    Deny,
-}
-
 /// What the service lists.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComputersFound {
     /// The person's computers.
     pub computers: Vec<ComputerRow>,
     /// The computers that asked to borrow models.
-    pub guests: Vec<Guest>,
+    pub guests: Vec<GuestRow>,
 }
 
 /// Whether the Add list is up.
@@ -121,7 +64,7 @@ pub enum AddList {
     /// It is, and Tailscale is being asked who is there.
     Looking,
     /// It is, listing these.
-    Choosing(Vec<Candidate>),
+    Choosing(Vec<ComputerCandidate>),
 }
 
 /// A list that is there.
@@ -130,7 +73,7 @@ pub struct ComputersReady {
     /// The person's computers.
     pub computers: Vec<ComputerRow>,
     /// The computers that asked to borrow models.
-    pub guests: Vec<Guest>,
+    pub guests: Vec<GuestRow>,
     /// The Add list.
     pub adding: AddList,
 }
@@ -155,17 +98,17 @@ pub enum ComputersInput {
     /// The person pressed Add.
     OpenAdd,
     /// The candidates were read, or why not.
-    Candidates(Result<Vec<Candidate>, String>),
+    Candidates(Result<Vec<ComputerCandidate>, String>),
     /// The person pressed Done on the Add list.
     CloseAdd,
     /// The person chose a candidate.
-    Add(NodeKey),
-    /// The person pressed Remove on a computer, by place id.
-    Remove(String),
+    Add(NodeId),
+    /// The person pressed Remove on a computer.
+    Remove(ComputerName),
     /// The person answered a guest.
-    Answer(NodeKey, GuestAnswer),
+    Answer(NodeId, GuestAnswer),
     /// The person asked to forget a guest.
-    Forget(NodeKey),
+    Forget(NodeId),
     /// A change ended: done, or the sentence that says why not.
     Changed(Result<(), String>),
 }
@@ -178,13 +121,13 @@ pub enum ComputersEffect {
     /// Ask who can be added.
     LoadCandidates,
     /// Add the computer.
-    Add(NodeKey),
-    /// Remove the computer, by place id.
-    Remove(String),
+    Add(NodeId),
+    /// Remove the computer.
+    Remove(ComputerName),
     /// Pass the person's answer on.
-    Answer(NodeKey, GuestAnswer),
+    Answer(NodeId, GuestAnswer),
     /// Forget the guest.
-    Forget(NodeKey),
+    Forget(NodeId),
     /// Tell the person something.
     Tell(String),
 }
@@ -241,7 +184,7 @@ fn ready_step(
         }
         ComputersInput::CloseAdd => ready.adding = AddList::Closed,
         ComputersInput::Add(node) => effects.push(ComputersEffect::Add(node)),
-        ComputersInput::Remove(id) => effects.push(ComputersEffect::Remove(id)),
+        ComputersInput::Remove(computer) => effects.push(ComputersEffect::Remove(computer)),
         ComputersInput::Answer(node, answer) => effects.push(ComputersEffect::Answer(node, answer)),
         ComputersInput::Forget(node) => effects.push(ComputersEffect::Forget(node)),
         ComputersInput::Changed(Ok(())) => {

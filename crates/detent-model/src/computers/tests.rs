@@ -1,33 +1,36 @@
 //! The computers' transitions and words.
 
 use super::{
-    AddList, Approval, Candidate, ComputerRow, ComputersEffect as Effect, ComputersFound,
-    ComputersInput as Input, ComputersState as State, Guest, GuestAnswer, GuestState, NodeKey,
-    Standing, computers_step, guest_line, refusal_sentence,
+    AddList, ComputerRow, ComputersEffect as Effect, ComputersFound, ComputersInput as Input,
+    ComputersState as State, Standing, computers_step, guest_line,
 };
 use crate::picker::Absence;
-use porter_infer::{PlaceId, PlaceKind, PlaceModel, PlaceRow, PlaceState};
+use porter_core::lending::{
+    Approval, CandidateModel, ComputerCandidate, GuestAnswer, GuestRow, RowState,
+};
+use porter_core::{NodeId, UnixSeconds};
+use porter_infer::{ComputerName, PlaceId, PlaceKind, PlaceModel, PlaceRow, PlaceState};
 
-fn node(text: &str) -> NodeKey {
-    NodeKey(text.to_owned())
+fn node(text: &str) -> NodeId {
+    NodeId::parse(text).expect("a node id")
 }
 
 fn lab() -> ComputerRow {
     ComputerRow {
-        id: "computer:lab".to_owned(),
+        computer: ComputerName::parse("lab").expect("a name"),
         name: "lab".to_owned(),
         models: vec!["Qwen".to_owned()],
         standing: Standing::Answering,
     }
 }
 
-fn candidate() -> Candidate {
-    Candidate {
-        node: node("n1"),
-        name: "studio".to_owned(),
-        models: vec!["Llama".to_owned()],
-        approval: Approval::Needed,
-    }
+fn candidate() -> ComputerCandidate {
+    ComputerCandidate::new(
+        node("n1"),
+        "studio".to_owned(),
+        vec![CandidateModel::new("llama".to_owned(), "Llama".to_owned())],
+        Approval::Needed,
+    )
 }
 
 fn ready() -> State {
@@ -114,9 +117,9 @@ fn asks() -> Vec<(&'static str, Input, Vec<Effect>)> {
             vec![Effect::Add(node("n1"))],
         ),
         (
-            "remove asks by place id",
-            Input::Remove("computer:lab".to_owned()),
-            vec![Effect::Remove("computer:lab".to_owned())],
+            "remove asks by computer name",
+            Input::Remove(lab().computer),
+            vec![Effect::Remove(lab().computer)],
         ),
         (
             "allow is passed on",
@@ -178,50 +181,21 @@ fn reading_again_keeps_the_add_list_and_a_missing_service_replaces_everything() 
 }
 
 #[test]
-fn the_refusals_read_as_sentences_a_person_can_act_on() {
-    const CASES: &[(&str, &str)] = &[
-        (
-            "NotOnTailscale",
-            "That is not one of your computers on Tailscale.",
-        ),
-        (
-            "NotAnswering",
-            "That computer isn't lending its models right now. Check that it is on, and that it is set to let your other computers use its models.",
-        ),
-        (
-            "NotAsking",
-            "That computer is not asking to use this computer's models.",
-        ),
-        (
-            "TooManyAsking",
-            "Too many computers are asking at once. Answer some of them first.",
-        ),
-        (
-            "Whatever",
-            "Your computers could not be changed. Try again in a moment.",
-        ),
-    ];
-    for (name, sentence) in CASES {
-        assert_eq!(refusal_sentence(name), *sentence, "{name}");
-    }
-}
-
-#[test]
 fn a_guest_line_says_how_it_stands() {
-    const CASES: &[(GuestState, &str)] = &[
-        (GuestState::Approved, "Can use this computer's models"),
+    const CASES: &[(RowState, &str)] = &[
+        (RowState::Approved, "Can use this computer's models"),
         (
-            GuestState::Denied,
+            RowState::Denied,
             "Not allowed to use this computer's models",
         ),
-        (GuestState::Asking, "Asking to use this computer's models"),
+        (RowState::Asking, "Asking to use this computer's models"),
     ];
     for (state, line) in CASES {
-        let guest = Guest {
+        let guest = GuestRow {
             node: node("n2"),
             name: "laptop".to_owned(),
             state: *state,
-            since: 0,
+            since: UnixSeconds(0),
         };
         assert_eq!(guest_line(&guest), *line);
     }

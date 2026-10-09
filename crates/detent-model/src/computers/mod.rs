@@ -6,11 +6,10 @@ mod step;
 mod words;
 
 pub use step::{
-    AddList, Approval, Candidate, ComputerRow, ComputersEffect, ComputersFound, ComputersInput,
-    ComputersReady, ComputersState, Guest, GuestAnswer, GuestState, NodeKey, Standing,
-    computers_step,
+    AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,
+    ComputersState, Standing, computers_step,
 };
-pub use words::{guest_line, refusal_sentence};
+pub use words::guest_line;
 
 #[cfg(test)]
 mod tests;

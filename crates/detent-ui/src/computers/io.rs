@@ -1,16 +1,13 @@
-//! The computers over inferd. The places go through porter's client; the Tailscale candidates,
-//! the guests and the changes it does not carry yet go through porter's typed proxy.
+//! The computers over inferd, through porter's client: the places, the Tailscale candidates, the
+//! guests and the changes. The engines signal (a computer answering or not) comes from its proxy.
 
-use super::rows::{candidate, guest};
 use crate::live::{BusSource, connect};
-use detent_model::{
-    Absence, Candidate, ComputerRow, ComputersFound, GuestAnswer, NodeKey, refusal_sentence,
+use detent_model::{Absence, ComputerRow, ComputersFound};
+use porter_client::{
+    Accounts, ClientError, ComputerName, DbusTransport, GuestAnswer, NodeId, TransportError,
 };
-use porter_client::{Accounts, ClientError, DbusTransport, TransportError};
-use porter_dbus::{
-    BusFailure, BusStream, COMPUTER_ERROR_PREFIX, GUEST_ANSWER_ALLOW, GUEST_ANSWER_DENY,
-    INFERENCE_BUS, InferenceProxy, classify,
-};
+use porter_core::lending::ComputerCandidate;
+use porter_dbus::{BusFailure, BusStream, INFERENCE_BUS, InferenceProxy, classify};
 use zbus::Connection;
 use zbus::fdo::DBusProxy;
 use zbus::names::BusName;
@@ -26,13 +23,13 @@ const NOT_ALLOWED: &str =
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Change {
     /// Add the Tailscale computer.
-    Add(NodeKey),
-    /// Remove the computer, by place id.
-    Remove(String),
+    Add(NodeId),
+    /// Remove the computer.
+    Remove(ComputerName),
     /// Answer a guest.
-    Answer(NodeKey, GuestAnswer),
+    Answer(NodeId, GuestAnswer),
     /// Forget a guest.
-    Forget(NodeKey),
+    Forget(NodeId),
 }
 
 fn absence_of(error: ClientError) -> Absence {
@@ -53,18 +50,14 @@ fn absence_of_bus(error: &zbus::Error) -> Absence {
     }
 }
 
-/// The sentence for a bus error: the service's own refusal in plain words, else the general one.
-fn sentence_of(error: &zbus::Error) -> String {
+/// The sentence for a refused call: the service's own words, else the general one.
+fn sentence_of(error: &ClientError) -> String {
     match error {
-        zbus::Error::MethodError(name, _, _) => name
-            .as_str()
-            .strip_prefix(COMPUTER_ERROR_PREFIX)
-            .map_or(COULD_NOT, refusal_sentence)
-            .to_owned(),
-        other => match classify(other) {
-            BusFailure::Denied(_) => NOT_ALLOWED.to_owned(),
-            _ => COULD_NOT.to_owned(),
-        },
+        ClientError::Transport(TransportError::Computer { words, .. }) if !words.is_empty() => {
+            words.clone()
+        }
+        ClientError::Transport(TransportError::Denied(_)) => NOT_ALLOWED.to_owned(),
+        _ => COULD_NOT.to_owned(),
     }
 }
 
@@ -86,57 +79,40 @@ async fn inferd(bus: &BusSource) -> Result<Connection, Absence> {
     }
 }
 
-async fn proxy(connection: &Connection) -> Result<InferenceProxy<'_>, Absence> {
-    InferenceProxy::new(connection)
-        .await
-        .map_err(|e| absence_of_bus(&e))
+fn accounts(connection: &Connection) -> Accounts<DbusTransport> {
+    Accounts::over(DbusTransport::over(connection.clone()))
 }
 
 /// The person's computers and the guests, as inferd lists them now.
 pub(super) async fn read(bus: &BusSource) -> Result<ComputersFound, Absence> {
     let connection = inferd(bus).await?;
-    let places = Accounts::over(DbusTransport::over(connection.clone()))
-        .places()
-        .await
-        .map_err(absence_of)?;
-    let guests = proxy(&connection)
-        .await?
-        .guests()
-        .await
-        .map_err(|e| absence_of_bus(&e))?;
+    let accounts = accounts(&connection);
+    let places = accounts.places().await.map_err(absence_of)?;
+    let guests = accounts.guests().await.map_err(absence_of)?;
     Ok(ComputersFound {
         computers: places.iter().filter_map(ComputerRow::of).collect(),
-        guests: guests.into_iter().filter_map(guest).collect(),
+        guests,
     })
 }
 
 /// The Tailscale computers that can be added, or the sentence that says why they cannot be listed.
-pub(super) async fn candidates(bus: &BusSource) -> Result<Vec<Candidate>, String> {
+pub(super) async fn candidates(bus: &BusSource) -> Result<Vec<ComputerCandidate>, String> {
     let connection = inferd(bus).await.map_err(|_| COULD_NOT.to_owned())?;
-    let rows = proxy(&connection)
-        .await
-        .map_err(|_| COULD_NOT.to_owned())?
+    accounts(&connection)
         .candidates()
         .await
-        .map_err(|e| sentence_of(&e))?;
-    Ok(rows.into_iter().filter_map(candidate).collect())
+        .map_err(|e| sentence_of(&e))
 }
 
 /// Makes one change; the sentence that says why not when it was refused.
 pub(super) async fn change(bus: &BusSource, change: Change) -> Result<(), String> {
     let connection = inferd(bus).await.map_err(|_| COULD_NOT.to_owned())?;
-    let inference = proxy(&connection).await.map_err(|_| COULD_NOT.to_owned())?;
+    let accounts = accounts(&connection);
     let done = match change {
-        Change::Add(node) => inference.add_tailnet_computer(&node.0).await.map(drop),
-        Change::Remove(id) => inference.remove_computer(&id).await,
-        Change::Answer(node, answer) => {
-            let word = match answer {
-                GuestAnswer::Allow => GUEST_ANSWER_ALLOW,
-                GuestAnswer::Deny => GUEST_ANSWER_DENY,
-            };
-            inference.answer_guest(&node.0, word).await
-        }
-        Change::Forget(node) => inference.forget_guest(&node.0).await,
+        Change::Add(node) => accounts.add_tailnet_computer(&node).await.map(drop),
+        Change::Remove(computer) => accounts.remove_computer(&computer).await,
+        Change::Answer(node, answer) => accounts.answer_guest(&node, answer).await,
+        Change::Forget(node) => accounts.forget_guest(&node).await,
     };
     done.map_err(|e| sentence_of(&e))
 }
@@ -166,12 +142,13 @@ impl Watch {
     /// Subscribes, only when inferd is on the bus.
     pub(super) async fn start(bus: &BusSource) -> Result<Watch, Absence> {
         let connection = inferd(bus).await?;
-        let inference = proxy(&connection).await?;
-        let guests = inference
-            .receive_guests_changed()
+        let guests = accounts(&connection)
+            .watch_guests()
             .await
-            .map_err(|e| absence_of_bus(&e))?;
-        let engines = inference
+            .map_err(absence_of)?;
+        let engines = InferenceProxy::new(&connection)
+            .await
+            .map_err(|e| absence_of_bus(&e))?
             .receive_engines_changed()
             .await
             .map_err(|e| absence_of_bus(&e))?;

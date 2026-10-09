@@ -40,9 +40,8 @@ pub use assistants::{
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use computers::{
-    AddList, Approval, Candidate, ComputerRow, ComputersEffect, ComputersFound, ComputersInput,
-    ComputersReady, ComputersState, Guest, GuestAnswer, GuestState, NodeKey, Standing,
-    computers_step, guest_line, refusal_sentence,
+    AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,
+    ComputersState, Standing, computers_step, guest_line,
 };
 pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};

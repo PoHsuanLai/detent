@@ -89,7 +89,7 @@ struct Inference {
 impl Inference {
     fn refusal(&self) -> Result<(), Refusal> {
         let name = self.state.lock().expect("state").refuse.take();
-        let words = String::from("the service's own sentence");
+        let words = format!("The sentence for {}.", name.unwrap_or_default());
         match name {
             None => Ok(()),
             Some("NotOnTailscale") => Err(Refusal::NotOnTailscale(words)),
@@ -202,7 +202,7 @@ impl Inference {
             .lock()
             .expect("state")
             .own
-            .retain(|own| format!("computer:{}", own.name) != name);
+            .retain(|own| own.name != name);
         let _ = Self::engines_changed(&emitter).await;
         Ok(())
     }

@@ -333,7 +333,7 @@ fn remove_asks_for_that_computer_and_it_leaves_the_list() {
     settle(&mut c.harness, "the row to go", |h| {
         !group_text(h).contains("Qwen")
     });
-    assert_eq!(c.fake.changes(), ["remove computer:lab"]);
+    assert_eq!(c.fake.changes(), ["remove lab"]);
     assert!(group_text(&c.harness).contains("Computers you add appear here"));
 }
 
@@ -368,37 +368,22 @@ fn each_refusal_reads_as_a_sentence_and_changes_nothing() {
     settle(&mut c.harness, "the lender", |h| {
         group_text(h).contains("Say yes on studio")
     });
-    // `(refusal, the button that provokes it, the sentence)`.
-    const CASES: &[(&str, &str, &str)] = &[
-        (
-            "NotOnTailscale",
-            "Add studio",
-            "That is not one of your computers on Tailscale.",
-        ),
-        (
-            "NotAnswering",
-            "Add studio",
-            "That computer isn't lending its models right now.",
-        ),
-        (
-            "NotAsking",
-            "Add studio",
-            "That computer is not asking to use this computer's models.",
-        ),
-        (
-            "TooManyAsking",
-            "Add studio",
-            "Too many computers are asking at once.",
-        ),
+    // The service's own sentence is what the person reads.
+    const REFUSALS: &[&str] = &[
+        "NotOnTailscale",
+        "NotAnswering",
+        "NotAsking",
+        "TooManyAsking",
     ];
-    for (refusal, button, sentence) in CASES {
+    for refusal in REFUSALS {
+        let sentence = format!("The sentence for {refusal}.");
         c.fake.refuse_next(refusal);
-        press(&mut c.harness, button);
+        press(&mut c.harness, "Add studio");
         settle(&mut c.harness, refusal, |h| {
             h.html()
                 .replace("&#39;", "'")
                 .replace('\u{2019}', "'")
-                .contains(sentence)
+                .contains(&sentence)
         });
     }
     assert_eq!(
