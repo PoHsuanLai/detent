@@ -4090,6 +4090,7 @@ version = "0.1.0"
 dependencies = [
  "porter-core",
  "porter-dbus",
+ "porter-infer",
  "porter-provider",
  "porter-secrets",
  "porter-service",

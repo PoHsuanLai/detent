@@ -131,7 +131,8 @@
 
 .assistants,
 .spaces,
-.runtimes {
+.runtimes,
+.computers {
   display: flex;
   flex-direction: column;
   gap: var(--s-14);

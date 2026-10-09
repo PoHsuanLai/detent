@@ -6,6 +6,7 @@ mod accounts;
 mod agent;
 mod assistants;
 mod catalogue;
+mod computers;
 mod config_file;
 mod control;
 mod discovery;
@@ -37,6 +38,11 @@ pub use assistants::{
     places_step,
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
+pub use computers::{
+    AddList, Approval, Candidate, ComputerRow, ComputersEffect, ComputersFound, ComputersInput,
+    ComputersReady, ComputersState, Guest, GuestAnswer, GuestState, NodeKey, Standing,
+    computers_step, guest_line, refusal_sentence,
+};
 pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
 pub use discovery::{Discovery, ProgramSchema, discover};

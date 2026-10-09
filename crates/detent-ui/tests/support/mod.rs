@@ -5,6 +5,7 @@
 
 pub mod accountd;
 pub mod bus;
+pub mod computers;
 pub mod drive;
 pub mod inferd;
 pub mod spaces;

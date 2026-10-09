@@ -6,6 +6,7 @@ mod accounts;
 mod advanced_view;
 mod app;
 mod assistants;
+mod computers;
 mod controls;
 mod env;
 mod files;

@@ -1,6 +1,8 @@
 //! The Intelligence page's assistants: where the built-in assistant may run (this computer, the
 //! person's computers, signed-in cloud accounts), written to docket's settings file, and the
-//! assistants that sign themselves in.
+//! assistants that sign themselves in; and "Your computers" (the computers the assistant may borrow
+//! models from, the Tailscale computers that can be added, the computers asking to borrow this
+//! one's) over a fake inferd.
 
 mod support;
 
@@ -12,7 +14,8 @@ use std::time::Duration;
 use support::Sandbox;
 use support::accountd::{Accountd, Held, Policy};
 use support::bus::PrivateBus;
-use support::drive::click;
+use support::computers::{Asker, Fake, Lender, Own, serve};
+use support::drive::{click, scroll_into_view};
 
 const CLOUD: &str = "[aria-label=\"me@acme.example\"] .ds-toggle";
 const LAB: &str = "[aria-label=\"lab server\"] .ds-toggle";
@@ -217,4 +220,222 @@ fn an_assistant_that_signs_itself_in_keeps_its_own_row_apart_from_the_places() {
     settle(&mut w.harness, "the account", |h| {
         h.count(".accounts-detail") == 1
     });
+}
+
+// ---- Your computers: the persons computers, the Add list, the guests ----
+
+const GROUP: &str = "[data-computers=\"list\"]";
+const LAB_COMPUTER: Own = Own {
+    name: "lab",
+    models: &[("qwen", "Qwen")],
+    ready: true,
+};
+const STUDIO: Lender = Lender {
+    node: "n1",
+    name: "studio",
+    models: &[("llama", "Llama")],
+    needs_approval: true,
+};
+const LAPTOP: Asker = Asker {
+    node: "n3",
+    name: "laptop",
+    state: "asking",
+};
+
+struct Computers {
+    harness: Harness,
+    fake: Fake,
+    _rt: tokio::runtime::Runtime,
+    _bus: PrivateBus,
+}
+
+fn computers(name: &str, own: Vec<Own>, lenders: Vec<Lender>, askers: Vec<Asker>) -> Computers {
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(2)
+        .enable_all()
+        .build()
+        .expect("a runtime for the fake daemon");
+    let bus = PrivateBus::start(name);
+    let fake = rt.block_on(serve(&bus, own, lenders, askers));
+    let sandbox = Sandbox::new(name).on_bus(&bus.address);
+    let mut harness = sandbox.harness(intelligence());
+    settle(&mut harness, "the computers", |h| h.count(GROUP) == 1);
+    Computers {
+        harness,
+        fake,
+        _rt: rt,
+        _bus: bus,
+    }
+}
+
+/// The group's words, with the typographic apostrophe a sentence may carry made plain.
+fn group_text(harness: &Harness) -> String {
+    harness
+        .text_of(GROUP)
+        .unwrap_or_default()
+        .replace('\u{2019}', "'")
+}
+
+fn press(harness: &mut Harness, aria: &str) {
+    let selector = format!("{GROUP} .ds-button[aria-label=\"{aria}\"]");
+    settle(harness, aria, |h| h.count(&selector) == 1);
+    scroll_into_view(harness, &selector);
+    click(harness, &selector);
+}
+
+#[test]
+fn only_the_persons_own_computers_are_listed_and_there_is_no_address_to_type() {
+    let c = computers("computers-list", vec![LAB_COMPUTER], vec![], vec![]);
+    let text = group_text(&c.harness);
+    for want in ["Your computers", "lab", "Qwen", "Ready", "Add\u{2026}"] {
+        assert!(text.contains(want), "{want} in {text}");
+    }
+    for not in ["Acme One", "Local", "me@acme.example"] {
+        assert!(
+            !text.contains(not),
+            "{not} is another kind of place: {text}"
+        );
+    }
+    assert_eq!(c.harness.count(&format!("{GROUP} input")), 0);
+    assert_eq!(
+        c.fake.changes(),
+        Vec::<String>::new(),
+        "reading changes nothing"
+    );
+}
+
+#[test]
+fn add_lists_the_lenders_and_adding_one_moves_it_into_the_list() {
+    let mut c = computers("computers-add", vec![LAB_COMPUTER], vec![STUDIO], vec![]);
+    press(&mut c.harness, "Add a computer");
+    settle(&mut c.harness, "the lender", |h| {
+        group_text(h).contains("Llama. Say yes on studio when it asks.")
+    });
+    press(&mut c.harness, "Add studio");
+    settle(&mut c.harness, "studio in the list", |_| {
+        c.fake.changes() == ["add n1"]
+    });
+    settle(&mut c.harness, "the empty Add list", |h| {
+        group_text(h).contains("None of your other computers is lending its models")
+    });
+    let text = group_text(&c.harness);
+    assert_eq!(
+        text.matches("studio").count(),
+        1,
+        "one row, not two: {text}"
+    );
+}
+
+#[test]
+fn remove_asks_for_that_computer_and_it_leaves_the_list() {
+    let mut c = computers("computers-remove", vec![LAB_COMPUTER], vec![], vec![]);
+    press(&mut c.harness, "Remove lab");
+    settle(&mut c.harness, "the row to go", |h| {
+        !group_text(h).contains("Qwen")
+    });
+    assert_eq!(c.fake.changes(), ["remove computer:lab"]);
+    assert!(group_text(&c.harness).contains("Computers you add appear here"));
+}
+
+#[test]
+fn a_guest_is_allowed_denied_and_forgotten() {
+    let mut c = computers("computers-guests", vec![], vec![], vec![LAPTOP]);
+    let asking = "Asking to use this computer's models";
+    assert!(group_text(&c.harness).contains(asking));
+    press(&mut c.harness, "Allow laptop");
+    settle(&mut c.harness, "approved", |h| {
+        group_text(h).contains("Can use this computer's models")
+    });
+    press(&mut c.harness, "Don\u{2019}t Allow laptop");
+    settle(&mut c.harness, "denied", |h| {
+        group_text(h).contains("Not allowed to use this computer's models")
+    });
+    press(&mut c.harness, "Forget laptop");
+    settle(&mut c.harness, "forgotten", |h| {
+        !group_text(h).contains("laptop")
+    });
+    assert_eq!(
+        c.fake.changes(),
+        ["answer n3 allow", "answer n3 deny", "forget n3"]
+    );
+}
+
+#[test]
+fn each_refusal_reads_as_a_sentence_and_changes_nothing() {
+    let mut c = computers("computers-refused", vec![], vec![STUDIO], vec![LAPTOP]);
+    press(&mut c.harness, "Add a computer");
+    settle(&mut c.harness, "the lender", |h| {
+        group_text(h).contains("Say yes on studio")
+    });
+    // `(refusal, the button that provokes it, the sentence)`.
+    const CASES: &[(&str, &str, &str)] = &[
+        (
+            "NotOnTailscale",
+            "Add studio",
+            "That is not one of your computers on Tailscale.",
+        ),
+        (
+            "NotAnswering",
+            "Add studio",
+            "That computer isn't lending its models right now.",
+        ),
+        (
+            "NotAsking",
+            "Allow laptop",
+            "That computer is not asking to use this computer's models.",
+        ),
+        (
+            "TooManyAsking",
+            "Allow laptop",
+            "Too many computers are asking at once.",
+        ),
+    ];
+    for (refusal, button, sentence) in CASES {
+        c.fake.refuse_next(refusal);
+        press(&mut c.harness, button);
+        settle(&mut c.harness, refusal, |h| {
+            h.html()
+                .replace("&#39;", "'")
+                .replace('\u{2019}', "'")
+                .contains(sentence)
+        });
+    }
+    assert_eq!(
+        c.fake.changes(),
+        Vec::<String>::new(),
+        "a refusal changes nothing"
+    );
+}
+
+#[test]
+fn without_inferd_the_group_says_so_and_nothing_else_is_blocked() {
+    let bus = PrivateBus::start("computers-absent");
+    let sandbox = Sandbox::new("computers-absent").on_bus(&bus.address);
+    let mut harness = sandbox.harness(intelligence());
+    settle(&mut harness, "the notice", |h| {
+        h.count("[data-computers=\"unavailable\"]") == 1
+    });
+    assert!(
+        group_text_of(&harness, "[data-computers=\"unavailable\"]")
+            .contains("The assistant is not running")
+    );
+}
+
+fn group_text_of(harness: &Harness, selector: &str) -> String {
+    harness.text_of(selector).unwrap_or_default()
+}
+
+#[test]
+fn a_computer_that_starts_asking_appears_when_inferd_says_the_guests_changed() {
+    let mut c = computers("computers-signal", vec![], vec![], vec![]);
+    assert!(!group_text(&c.harness).contains("laptop"));
+    c._rt.block_on(c.fake.asks(LAPTOP));
+    settle(&mut c.harness, "the guest", |h| {
+        group_text(h).contains("Asking to use this computer's models")
+    });
+    assert_eq!(
+        c.fake.changes(),
+        Vec::<String>::new(),
+        "nobody was asked to change anything"
+    );
 }
