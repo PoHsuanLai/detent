@@ -467,6 +467,15 @@ const MINUS: &str = ".accounts-add [aria-label=\"Remove Account\"]";
 fn the_list_has_an_add_account_button_and_a_refused_ask_is_told_calmly() {
     let mut w = world("accounts-add");
     assert_eq!(w.harness.count(ADD), 1);
+    // The tip is the short name; the spoken name keeps the ellipsis.
+    assert_eq!(
+        w.harness.attr(ADD, "aria-description").as_deref(),
+        Some("Add Account")
+    );
+    assert_eq!(
+        w.harness.attr(MINUS, "data-tip").as_deref(),
+        Some("Remove Account")
+    );
     click(&mut w.harness, ADD);
     settle(&mut w.harness, "the line", |h| {
         h.html()

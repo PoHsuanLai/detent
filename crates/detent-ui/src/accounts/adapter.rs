@@ -164,6 +164,7 @@ pub(super) fn AddAccountButton(
     rsx! {
         Button {
             label: "Add Account\u{2026}",
+            title: Some("Add Account".to_owned()),
             icon: Some(Icon::Plus),
             image: ImagePosition::Only,
             size: ControlSize::Small,
@@ -182,6 +183,7 @@ pub(super) fn RemoveAccountButton(
     rsx! {
         Button {
             label: "Remove Account",
+            title: Some("Remove Account".to_owned()),
             icon: Some(Icon::Minus),
             image: ImagePosition::Only,
             size: ControlSize::Small,
