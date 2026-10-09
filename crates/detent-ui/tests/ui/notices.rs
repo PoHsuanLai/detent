@@ -1,13 +1,11 @@
 //! The window told from outside while it runs: a page to open, files that changed under it.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::drive::{click, page_of, search_for, title_of};
 use detent_model::PageSlug;
 use detent_ui::{Notice, Opening};
 use ds_harness::{Driver, Query};
 use std::time::Duration;
-use support::Sandbox;
-use support::drive::{click, page_of, search_for, title_of};
 
 const SETTLE: Duration = Duration::from_millis(400);
 

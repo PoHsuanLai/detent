@@ -2,15 +2,13 @@
 //! its own `section` names, the Advanced ones behind the disclosure, a write in the program's own
 //! file, and cua's list of apps edited as rows.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::drive::{click, scroll_into_view};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::{Point, ShortcutKey};
 use ds_harness::{Driver, Harness, Input, Query};
 use std::time::Duration;
-use support::Sandbox;
-use support::drive::{click, scroll_into_view};
 
 fn intelligence() -> Opening {
     Opening {

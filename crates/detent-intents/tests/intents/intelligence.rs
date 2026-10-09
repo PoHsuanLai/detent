@@ -1,12 +1,10 @@
 //! Settings' Intelligence action: it only shows the page. Every `ai.*` row stays the person's:
 //! no action sets one and an agent's `settings.key.set` of one is refused.
 
-mod support;
-
+use crate::support::{Told, World, key, text};
 use detent_intents::manifest;
 use docket_core::AppRefusal;
 use prov::Effect;
-use support::{Told, World, key, text};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn opening_the_intelligence_settings_tells_the_window_to_show_the_page() {

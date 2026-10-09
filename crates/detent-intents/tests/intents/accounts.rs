@@ -1,8 +1,7 @@
 //! Settings' account actions, called over a private bus the way intentd calls an app: the list
 //! says what an agent may know of the accounts, and nothing in the manifest changes one.
 
-mod support;
-
+use crate::support::{Listed, Told, World, entity, key};
 use detent_intents::manifest;
 use detent_model::{
     Absence, Account, AccountKey, AccountService, AccountStatus, AccountsPane, Place,
@@ -12,7 +11,6 @@ use ds_settings::schema::KeyPath;
 use porter_core::sheet::ProviderGroup;
 use prov::Effect;
 use prov::Integrity;
-use support::{Listed, Told, World, entity, key};
 
 fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Account {
     Account {
@@ -143,7 +141,7 @@ async fn an_account_row_cannot_be_read_or_set_as_a_key() {
         "accounts.secret-id-1.remove",
     ] {
         for action in ["settings.key.read", "settings.key.set"] {
-            let args = [("key", key(path)), ("value", support::text("off"))];
+            let args = [("key", key(path)), ("value", crate::support::text("off"))];
             let refusal = world.perform(action, &args).await.expect_err("refused");
             assert_eq!(
                 refusal,

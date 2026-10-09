@@ -1,18 +1,16 @@
 //! The Intelligence page: its sections in design/22's order, inferd's model picker over a fake
 //! `org.quire.SettingsModule1` on a private bus, and the page without inferd.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::bus::PrivateBus;
+use crate::support::drive::{click, scroll_into_view};
+use crate::support::inferd::{Inferd, Policy};
 use detent_model::PageSlug;
 use detent_ui::{Opening, ReasonFeed};
 use ds_harness::{Driver, Harness, Input, Query};
 use porter_core::{AccountId, ModelId};
 use porter_infer::{Declined, DeclinedBecause, InferEvent, ModelRef, Why};
 use std::time::Duration;
-use support::Sandbox;
-use support::bus::PrivateBus;
-use support::drive::{click, scroll_into_view};
-use support::inferd::{Inferd, Policy};
 
 fn intelligence() -> Opening {
     Opening {

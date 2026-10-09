@@ -1,16 +1,14 @@
 //! A request from outside to show an account (D-Bus activation's `open-account`): the window
 //! moves to that account's detail, or to the list when the account is not known.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::bus::PrivateBus;
+use crate::support::drive::page_of;
 use detent_model::{AccountSegment, AccountTarget, PageSlug};
 use detent_ui::{Notice, Opening};
 use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
-use support::Sandbox;
-use support::accountd::{Accountd, Held, Policy};
-use support::bus::PrivateBus;
-use support::drive::page_of;
 
 fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
     for _ in 0..200 {

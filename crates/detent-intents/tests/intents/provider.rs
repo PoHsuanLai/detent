@@ -1,10 +1,8 @@
 //! Settings' three actions, called over a private bus the way intentd calls an app.
 
-mod support;
-
+use crate::support::{Told, World, entity, key, text};
 use docket_core::{AppRefusal, Preview, UndoFault, Undoable, Value};
 use prov::Integrity;
-use support::{Told, World, entity, key, text};
 
 const MAGNIFICATION: &str = "dock.magnification";
 const TILE_SIZE: &str = "dock.tile_size_px";

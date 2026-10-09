@@ -1,8 +1,7 @@
 //! Pictures of the Appearance, Dock and Mouse & Gestures pages, light and dark, built from the
 //! real schemas. They are written to `$DETENT_SHOTS` (else the target directory's `tmp/shots`).
 
-mod support;
-
+use crate::support::{Sandbox, TMP, VIEW};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::Scheme;
@@ -10,7 +9,6 @@ use ds_harness::snapshot_with;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::time::Duration;
-use support::{Sandbox, TMP, VIEW};
 
 fn shots_dir() -> PathBuf {
     std::env::var_os("DETENT_SHOTS")

@@ -1,8 +1,8 @@
 //! The window driven through the harness: pages, toggles, choices and search, on scratch
 //! directories. Every write is read back from the scratch config home.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::drive::{click, page_of, search_for, sidebar_row, title_of};
 use detent_files::load;
 use detent_model::PageSlug;
 use detent_ui::Opening;
@@ -10,8 +10,6 @@ use ds::prelude::Word;
 use ds::prelude::{Point, Px};
 use ds_harness::{Driver, Input, Query};
 use std::time::Duration;
-use support::Sandbox;
-use support::drive::{click, page_of, search_for, sidebar_row, title_of};
 
 fn opening(page: &str) -> Opening {
     Opening {

@@ -1,18 +1,16 @@
 //! "On this computer" on the Intelligence page, over a fake accountd on a private bus: the local
 //! runtimes it lists, a stopped one greyed, each linking to its account in the Accounts pane.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::bus::PrivateBus;
+use crate::support::drive::{click, page_of, scroll_into_view};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::Scheme;
 use ds_harness::{Backdrop, Driver, Harness, Query};
 use std::path::PathBuf;
 use std::time::Duration;
-use support::Sandbox;
-use support::accountd::{Accountd, Held, Policy};
-use support::bus::PrivateBus;
-use support::drive::{click, page_of, scroll_into_view};
 
 const ROWS: &str = ".runtimes .ds-field-row";
 const OLLAMA: &str = ".runtimes [aria-label=\"Ollama\"] .ds-button";
@@ -214,7 +212,7 @@ fn without_accountd_the_list_says_so_and_the_page_still_works() {
 fn shot(harness: &mut Harness, name: &str) -> usize {
     let dir = std::env::var_os("DETENT_SHOTS")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(support::TMP).join("shots"));
+        .unwrap_or_else(|| PathBuf::from(crate::support::TMP).join("shots"));
     std::fs::create_dir_all(&dir).expect("shots dir");
     let image = harness.render_over(Backdrop::Scheme).expect("a picture");
     image.save(dir.join(name)).expect("save png");

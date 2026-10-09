@@ -4,18 +4,16 @@
 //! models from, the Tailscale computers that can be added, the computers asking to borrow this
 //! one's) over a fake inferd.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::bus::PrivateBus;
+use crate::support::computers::{Asker, Fake, Lender, Own, serve};
+use crate::support::drive::{click, scroll_into_view};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use docket_settings::{CloudAllowed, Toggle, read_places};
 use ds_harness::{Driver, Harness, Input, Query};
 use std::time::Duration;
-use support::Sandbox;
-use support::accountd::{Accountd, Held, Policy};
-use support::bus::PrivateBus;
-use support::computers::{Asker, Fake, Lender, Own, serve};
-use support::drive::{click, scroll_into_view};
 
 const CLOUD: &str = "[aria-label=\"me@acme.example\"] .ds-toggle";
 const LAB: &str = "[aria-label=\"lab server\"] .ds-toggle";

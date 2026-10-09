@@ -1,0 +1,40 @@
+//! The crate's integration tests: one executable, one module per former test file.
+//! A separate test target needs a stated reason (CONVENTIONS.md, Tests).
+
+mod account_notice;
+mod accounts;
+mod assistants;
+mod behaviour;
+mod coherence;
+mod first_run;
+mod holds;
+mod intelligence;
+mod intelligence_programs;
+mod local_runtimes;
+mod notices;
+mod snapshots;
+mod spaces;
+mod support;
+mod viewer_page;
+
+/// Fails when a topic file in this directory is not declared above, so a new file cannot be
+/// left out of the binary without anyone noticing.
+#[test]
+fn every_topic_file_is_declared_as_a_module() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/ui");
+    let main = include_str!("main.rs");
+    let mut missing = Vec::new();
+    for entry in std::fs::read_dir(&dir).expect("the tests directory") {
+        let path = entry.expect("an entry").path();
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default()
+            .to_owned();
+        let topic = path.is_dir() || path.extension().is_some_and(|e| e == "rs");
+        if topic && stem != "main" && !main.contains(&format!("mod {stem};")) {
+            missing.push(stem);
+        }
+    }
+    assert!(missing.is_empty(), "not declared in main.rs: {missing:?}");
+}

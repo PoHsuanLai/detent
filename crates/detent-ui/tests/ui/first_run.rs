@@ -2,18 +2,16 @@
 //! computer by default, a runtime found can be picked, Done writes through the Intelligence page's
 //! own settings path and records that the first run happened.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::accountd::{Accountd, Held, Policy as AccountPolicy};
+use crate::support::bus::PrivateBus;
+use crate::support::drive::click;
+use crate::support::inferd::{Inferd, Policy as InferPolicy};
 use detent_files::{FirstRunMark, FirstRunStanding};
 use ds::prelude::Scheme;
 use ds_harness::{Backdrop, Driver, Harness, Input, Query};
 use std::path::PathBuf;
 use std::time::Duration;
-use support::Sandbox;
-use support::accountd::{Accountd, Held, Policy as AccountPolicy};
-use support::bus::PrivateBus;
-use support::drive::click;
-use support::inferd::{Inferd, Policy as InferPolicy};
 
 const LOCAL_ONLY: &str = ".first-run [aria-label=\"Keep AI on this computer\"] .ds-toggle";
 const DONE: &str = ".first-run > .ds-button";
@@ -248,7 +246,7 @@ fn the_same_write_the_page_makes_leaves_every_other_key_of_the_file() {
 fn shot(harness: &mut Harness, name: &str) -> usize {
     let dir = std::env::var_os("DETENT_SHOTS")
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(support::TMP).join("shots"));
+        .unwrap_or_else(|| PathBuf::from(crate::support::TMP).join("shots"));
     std::fs::create_dir_all(&dir).expect("shots dir");
     let image = harness.render_over(Backdrop::Scheme).expect("a picture");
     image.save(dir.join(name)).expect("save png");

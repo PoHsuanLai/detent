@@ -1,17 +1,15 @@
 //! A deletion the sync service holds for the person's word, on the account's sync row: over a fake
 //! accountd and a fake syncd on a private bus.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::bus::PrivateBus;
+use crate::support::drive::click;
+use crate::support::syncd::Syncd;
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
-use support::Sandbox;
-use support::accountd::{Accountd, Held, Policy};
-use support::bus::PrivateBus;
-use support::drive::click;
-use support::syncd::Syncd;
 
 const HOME: &str = "[aria-label=\"Manage Home cloud\"]";
 const BANNER: &str = ".accounts-hold .ds-inline-banner";

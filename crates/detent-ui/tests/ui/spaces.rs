@@ -2,16 +2,14 @@
 //! the sheet first, memory is told the choice before the registry is asked, and Cancel sends
 //! nothing.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::bus::PrivateBus;
+use crate::support::drive::click;
+use crate::support::spaces::{Fakes, serve};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
-use support::Sandbox;
-use support::bus::PrivateBus;
-use support::drive::click;
-use support::spaces::{Fakes, serve};
 
 const TRIP: &str = "[aria-label=\"Remove Trip\"]";
 const SHEET: &str = ".space-sheet";

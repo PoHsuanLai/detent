@@ -1,13 +1,11 @@
 //! quire's coherence rules (CONSUMING.md section 5) on this app: layout-only CSS, and markup that
 //! is only quire's components. The markup is a server render of every page of the real schemas.
 
-mod support;
-
+use crate::support::Sandbox;
 use detent_model::PageSlug;
 use detent_ui::{App, Env, Opening, STYLE};
 use dioxus::prelude::VirtualDom;
 use ds_lint::{LintConfig, Profile, Rule, assert_clean, markup};
-use support::Sandbox;
 
 /// A server render of the app opened on `page`, inside the runtime the app's watches need.
 fn render(env: Env) -> String {

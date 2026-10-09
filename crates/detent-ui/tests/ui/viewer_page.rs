@@ -3,8 +3,8 @@
 //! anyview does not write its schema yet (its FINDINGS wait for quire's `viewer.*` rows), so
 //! the test installs a scratch schema of the keys its FINDINGS name, on `Page::Viewer`.
 
-mod support;
-
+use crate::support::Sandbox;
+use crate::support::drive::{click, page_of, title_of};
 use detent_files::load;
 use detent_model::PageSlug;
 use detent_ui::Opening;
@@ -12,8 +12,6 @@ use ds_harness::Query;
 use ds_settings::schema::{
     AppId, Exposure, FilePath, Help, KeyKind, KeyPath, KeySpec, Label, Page, Schema, Section,
 };
-use support::Sandbox;
-use support::drive::{click, page_of, title_of};
 
 const FILE: &str = "anyview/settings.toml";
 

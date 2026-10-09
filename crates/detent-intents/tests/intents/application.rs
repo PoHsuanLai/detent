@@ -1,11 +1,9 @@
 //! `org.freedesktop.Application` on `org.quire.Settings`, called the way sill calls it.
 
-mod support;
-
+use crate::support::{Told, World};
 use detent_intents::{APPLICATION_INTERFACE, APPLICATION_PATH};
 use detent_model::{AccountSegment, AccountTarget};
 use std::collections::HashMap;
-use support::{Told, World};
 use zbus::zvariant::{ObjectPath, Value};
 
 const ACCOUNT: &str = "/org/quire/Accounts1/account/work_example";
