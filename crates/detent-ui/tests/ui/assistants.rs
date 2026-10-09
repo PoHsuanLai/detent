@@ -16,7 +16,7 @@ use ds_harness::{Driver, Harness, Input, Query};
 use std::time::Duration;
 
 const CLOUD: &str = "[aria-label=\"me@acme.example\"] .ds-toggle";
-const LAB: &str = "[aria-label=\"lab server\"] .ds-toggle";
+const LAB: &str = "[aria-label=\"lab-server\"] .ds-toggle";
 const SETTINGS: &str = "docket/settings.toml";
 
 fn intelligence() -> Opening {
@@ -169,7 +169,7 @@ fn cancel_leaves_the_account_off_and_writes_nothing() {
 
 #[test]
 fn a_computer_of_the_persons_switches_without_a_question_and_the_file_follows() {
-    let file = "[assistant]\nthis_computer = {}\n\n[[assistant.own_computers]]\nname = \"lab server\"\nallowed = \"on\"\n";
+    let file = "[assistant]\nthis_computer = {}\n\n[[assistant.own_computers]]\nname = \"lab-server\"\nallowed = \"on\"\n";
     let mut c = computers_in(
         "assistants-own",
         Some(file),
@@ -183,7 +183,7 @@ fn a_computer_of_the_persons_switches_without_a_question_and_the_file_follows() 
     settle(&mut c.harness, "the write", |_| {
         written(&c.sandbox).is_some_and(|places| places.own[0].allowed == Toggle::Off)
     });
-    assert!(!c.harness.html().contains("Turn on lab server?"));
+    assert!(!c.harness.html().contains("Turn on lab-server?"));
 }
 
 #[test]
@@ -241,7 +241,11 @@ fn an_assistant_docket_and_accountd_both_know_is_one_row_with_both_facts() {
         .signing_in("agent");
     let mut w = world_with("assistants-joined", vec![claude], None, Some(AGENTS));
     let group = "[data-assistants=\"coding\"]";
-    settle(&mut w.harness, "the row", |h| h.count(group) == 1);
+    // The row is there from docket's list; accountd's status joins it once its list arrives.
+    settle(&mut w.harness, "the status", |h| {
+        h.text_of(group)
+            .is_some_and(|t| t.contains("Needs sign-in"))
+    });
     let text = w.harness.text_of(group).unwrap_or_default();
     assert_eq!(text.matches("Claude Code").count(), 1, "one row: {text}");
     for want in ["Needs sign-in", "The agent\u{2019}s own choice"] {
@@ -270,7 +274,7 @@ const LAPTOP: Asker = Asker {
 };
 
 const LAB_SERVER: Own = Own {
-    name: "lab server",
+    name: "lab-server",
     models: &[("qwen", "Qwen")],
     ready: true,
 };
