@@ -19,7 +19,7 @@ porter-core = { workspace = true }
 prov = { workspace = true }
 thiserror = { workspace = true }
 toml = { workspace = true }
-zbus = { workspace = true }
+zbus = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
 detent-testkit = { workspace = true }
