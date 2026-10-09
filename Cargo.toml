@@ -36,6 +36,8 @@ ds-settings = { path = "../quire/crates/ds-settings" }  # detent-ui adds the `di
 docket-client = { path = "../docket/crates/docket-client", features = ["dbus"] }
 docket-core   = { path = "../docket/crates/docket-core" }
 docket-dbus   = { path = "../docket/crates/docket-dbus" }
+# The assistant's places (where it may run), typed by their owner.
+docket-settings = { path = "../docket/crates/docket-settings" }
 porter-core   = { path = "../porter/crates/porter-core" }
 prov          = { path = "../porter/crates/prov" }
 

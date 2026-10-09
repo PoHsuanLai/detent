@@ -17,6 +17,9 @@ pub enum Block {
     /// accountd's live Accounts pane (PLAN section 2.5): the Accounts page's rows that are not in
     /// any file.
     AccountsPane,
+    /// Where the built-in assistant may run, and the assistants that sign themselves in: the
+    /// Intelligence page's rows that are in no schema.
+    Assistants,
 }
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
@@ -57,6 +60,8 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
         .map(|section| (rank(&section.title) * 2, Block::Section(section.clone())))
         .collect();
     let live = rank(PICKER_AFTER) * 2 + 1;
+    // Right after Companion: the first section is about the assistant, and so is this.
+    slotted.push((rank("Companion") * 2 + 1, Block::Assistants));
     slotted.push((live, Block::LocalRuntimes));
     slotted.push((live, Block::ModelPicker));
     slotted.sort_by_key(|(slot, _)| *slot);
@@ -93,6 +98,7 @@ mod tests {
                 Block::LocalRuntimes => "<runtimes>",
                 Block::ModelPicker => "<picker>",
                 Block::AccountsPane => "<accounts>",
+                Block::Assistants => "<assistants>",
             })
             .collect()
     }
@@ -105,6 +111,7 @@ mod tests {
             &["Privacy", "Models", "Companion", "Memory", "Computer use"],
             &[
                 "Companion",
+                "<assistants>",
                 "Models",
                 "<runtimes>",
                 "<picker>",
@@ -117,13 +124,20 @@ mod tests {
             "the picker takes the place of Models when no schema has it",
             Page::Intelligence,
             &["Privacy", "Companion"],
-            &["Companion", "<runtimes>", "<picker>", "Privacy"],
+            &[
+                "Companion",
+                "<assistants>",
+                "<runtimes>",
+                "<picker>",
+                "Privacy",
+            ],
         ),
         (
             "a section nobody listed follows the listed ones in schema order",
             Page::Intelligence,
             &["Zed", "Privacy", "Alpha", "Models"],
             &[
+                "<assistants>",
                 "Models",
                 "<runtimes>",
                 "<picker>",

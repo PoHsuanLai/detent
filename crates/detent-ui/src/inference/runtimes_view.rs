@@ -1,10 +1,8 @@
 //! "On this computer": the language-model runtimes accountd lists (Ollama, llama.cpp, LM Studio),
 //! each a row with its mark and state and a button to its account. A stopped one stays, greyed.
 
-use crate::accounts::{AccountLink, OpenButton, is_valued};
-use crate::env::Env;
-use crate::live::{Daemon, Followed, follow, reread};
-use detent_model::{Absence, AccountsPane, Runtime};
+use crate::accounts::{AccountLink, Listed, OpenButton, use_listed};
+use detent_model::{Absence, Runtime};
 use dioxus::prelude::*;
 use ds::base::vocab::Muting;
 use ds::components::content::avatar::{Avatar, AvatarSize, AvatarTone, person_hue};
@@ -13,10 +11,9 @@ use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::root::pass_through::{DataAttr, DataName};
-use ds_settings::live::LiveClient;
 
 /// The group's title.
-const TITLE: &str = "On this computer";
+const TITLE: &str = "Models on this computer";
 
 /// What the list says before any runtime is found.
 const NONE_FOUND: &str = "Nothing is running here yet. Ollama, llama.cpp and LM Studio appear \
@@ -33,48 +30,14 @@ pub(crate) enum Found {
     Runtimes(Vec<Runtime>),
 }
 
-/// What accountd lists, kept current: read when accountd appears, again when it says a row
-/// changed (a runtime came up or stopped), and again when its name changes hands.
-pub(crate) fn use_runtimes() -> Signal<Found> {
-    let env = use_context::<Env>();
-    let mut found = use_signal(|| Found::Looking);
-    let mut client = use_signal(|| None::<LiveClient>);
-    use_future(move || {
-        let bus = env.bus.clone();
-        async move {
-            follow(
-                &bus,
-                &Daemon::accountd(),
-                is_valued,
-                |followed| match followed {
-                    Followed::Opened(opened, described) => {
-                        client.set(Some(opened));
-                        found.set(Found::Runtimes(Runtime::all_of(&AccountsPane::of(
-                            &described,
-                        ))));
-                    }
-                    Followed::Gone(absence) => {
-                        client.set(None);
-                        found.set(Found::Absent(absence));
-                    }
-                    Followed::Changed(..) => {
-                        let Some(opened) = client.peek().clone() else {
-                            return;
-                        };
-                        spawn(async move {
-                            if let Ok(described) = reread(&opened, is_valued).await {
-                                found.set(Found::Runtimes(Runtime::all_of(&AccountsPane::of(
-                                    &described,
-                                ))));
-                            }
-                        });
-                    }
-                },
-            )
-            .await;
-        }
-    });
-    found
+/// What accountd lists as runtimes, kept current.
+pub(crate) fn use_runtimes() -> Memo<Found> {
+    let listed = use_listed();
+    use_memo(move || match listed() {
+        Listed::Looking => Found::Looking,
+        Listed::Absent(absence) => Found::Absent(absence),
+        Listed::Accounts(pane) => Found::Runtimes(Runtime::all_of(&pane)),
+    })
 }
 
 /// The runtimes accountd lists, or why they are not there.

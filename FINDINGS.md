@@ -161,9 +161,28 @@ Open items, each with its closing condition:
   label, kinds and state per account and nothing that names or reaches one (no id, no grant);
   `detent-intents/tests/accounts.rs` holds that.
 
+## Assistants (`detent-ui/src/assistants/`)
+
+- **There is no Assistants page.** A fixed page is a variant of `ds_settings::schema::Page`, which is
+  quire's to add. Until it is, the assistants are a block of the Intelligence page, right after
+  Companion (`Block::Assistants`). The runtimes group that was "On this computer" is now "Models on
+  this computer", because the assistant's own group has that name. Closes when quire adds the page
+  variant and the block moves to its own page.
+- **No source lists a person's other computers.** `docket_settings::PlaceSource` has no
+  implementation; "Your computers" shows the rows the settings file already holds, each off or on as
+  the file says. Cloud accounts come from accountd (signed-in accounts of the Intelligence group).
+  Closes when inferd or accountd lists computers.
+- **A place offers the models of its own accounts.** The Advanced model picker lists inferd's picker
+  words (`<account>/<model>`) that belong to the place's accounts: the local runtimes for this
+  computer, the account of that name for a cloud row, none for a computer of the person's.
+- **The assistants that sign themselves in have a row and the way to their account, not a model
+  picker.** Their model is a `model` key of an `[[agent]]` entry in docket's `agents.toml`, which is
+  keyed by the program, and nothing maps an accountd account to that entry or lists the models an
+  agent offers (it says them in a live session). Closes when docket publishes both.
+
 ## Local runtimes and first run (`detent-ui/src/inference/runtimes_view.rs`, `first_run/`)
 
-- **Where the runtimes list comes from.** The Intelligence page's "On this computer" lists accountd's
+- **Where the runtimes list comes from.** The Intelligence page's "Models on this computer" lists accountd's
   accounts whose `accounts.<id>.place` row says `this_computer` and that serve `llm`
   (`AccountsPane::local_runtimes`); inferd reports each probed runtime to accountd (`Peer.ReportLocal`),
   so a stopped one stays as an `Offline` account and is drawn greyed (a muted mark, "Offline") with its

@@ -9,6 +9,7 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+docket-settings = { workspace = true }
 ds-settings = { workspace = true }
 porter-core = { workspace = true }
 porter-infer = { workspace = true }

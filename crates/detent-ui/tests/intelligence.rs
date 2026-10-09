@@ -472,7 +472,7 @@ fn an_old_key_module_still_renders() {
     );
     open_first_menu(&mut harness);
     let html = harness.html();
-    // The one "On this computer" is the runtimes' own title; a picker group would be a second.
+    // The one "On this computer" is the assistant's own group; a picker group would be a second.
     assert_eq!(
         html.matches(">On this computer<").count(),
         1,

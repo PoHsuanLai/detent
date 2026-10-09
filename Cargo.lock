@@ -1223,6 +1223,7 @@ version = "0.1.0"
 dependencies = [
  "detent-model",
  "detent-testkit",
+ "docket-settings",
  "ds-settings",
  "thiserror 2.0.21",
  "toml",
@@ -1255,6 +1256,7 @@ name = "detent-model"
 version = "0.1.0"
 dependencies = [
  "detent-testkit",
+ "docket-settings",
  "ds-settings",
  "porter-core",
  "porter-infer",
@@ -1275,6 +1277,7 @@ dependencies = [
  "detent-testkit",
  "dioxus",
  "dioxus-ssr",
+ "docket-settings",
  "ds",
  "ds-blitz",
  "ds-harness",
@@ -1650,6 +1653,16 @@ dependencies = [
  "prov",
  "thiserror 2.0.21",
  "zbus",
+]
+
+[[package]]
+name = "docket-settings"
+version = "0.1.0"
+dependencies = [
+ "docket-core",
+ "porter-core",
+ "serde",
+ "toml",
 ]
 
 [[package]]

@@ -4,6 +4,7 @@
 
 mod accounts;
 mod agent;
+mod assistants;
 mod catalogue;
 mod config_file;
 mod control;
@@ -30,6 +31,10 @@ pub use accounts::{
     RemovalQuestion, SignInClient, SignOutEnd, SyncHold, accounts_step, hold_step, reauth_help,
 };
 pub use agent::AgentSetting;
+pub use assistants::{
+    Confirm, ModelOffer, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, offers_for,
+    places_step,
+};
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};

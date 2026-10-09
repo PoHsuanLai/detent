@@ -11,9 +11,10 @@ mod hold_drive;
 mod link;
 mod list_view;
 mod pane_view;
+mod watch;
 
 pub(crate) use adapter::OpenButton;
-pub(crate) use drive::is_valued;
 pub use drive::read_accounts;
 pub(crate) use link::AccountLink;
 pub(crate) use pane_view::AccountsPane;
+pub(crate) use watch::{Listed, use_listed};

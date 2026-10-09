@@ -92,9 +92,13 @@ fn each_basic_row_is_drawn_in_the_section_its_schema_names() {
 fn the_advanced_rows_sit_in_the_one_disclosure_and_not_among_the_basic_ones() {
     let sandbox = Sandbox::new("programs-advanced");
     let harness = sandbox.harness(intelligence());
-    assert_eq!(harness.count(".ds-disclosure"), 1, "one disclosure");
     assert_eq!(
-        harness.count(".ds-disclosure[*|data-shown=hidden]"),
+        harness.count(".advanced .ds-disclosure"),
+        1,
+        "one disclosure"
+    );
+    assert_eq!(
+        harness.count(".advanced .ds-disclosure[*|data-shown=hidden]"),
         1,
         "closed until opened"
     );
@@ -167,9 +171,12 @@ fn a_write_lands_in_the_file_of_the_program_that_owns_the_row() {
 fn an_advanced_row_writes_its_own_file_too() {
     let sandbox = Sandbox::new("programs-advanced-write");
     let mut harness = sandbox.harness(intelligence());
-    scroll_into_view(&mut harness, ".ds-disclosure-trigger");
-    click(&mut harness, ".ds-disclosure-trigger");
-    assert_eq!(harness.count(".ds-disclosure[*|data-shown=visible]"), 1);
+    scroll_into_view(&mut harness, ".advanced .ds-disclosure-trigger");
+    click(&mut harness, ".advanced .ds-disclosure-trigger");
+    assert_eq!(
+        harness.count(".advanced .ds-disclosure[*|data-shown=visible]"),
+        1
+    );
     let slider = "[aria-label=\"Steps per run\"] .ds-slider";
     scroll_into_view(&mut harness, slider);
     let at = harness.centre(slider).expect("the slider");

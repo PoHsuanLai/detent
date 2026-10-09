@@ -2,6 +2,7 @@
 
 use crate::accounts::AccountsPane;
 use crate::advanced_view::AdvancedView;
+use crate::assistants::Assistants;
 use crate::env::Env;
 use crate::files::{Edit, Files};
 use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
@@ -30,6 +31,7 @@ pub fn PageView(
                         SectionView { key: "{section.title}", section, hits: hits.clone(), files, onedit }
                     },
                     Block::AccountsPane => rsx! { AccountsPane {} },
+                    Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
                     Block::ModelPicker => rsx! {
                         ModelPicker { reasons: show_reason(&env, &files()) }

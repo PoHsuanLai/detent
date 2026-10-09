@@ -7,6 +7,7 @@
 mod error;
 mod first_run;
 mod load;
+mod places;
 mod save;
 mod unknown;
 mod values;
@@ -14,5 +15,6 @@ mod values;
 pub use error::FilesError;
 pub use first_run::{FirstRunMark, FirstRunStanding, StateHome};
 pub use load::load;
+pub use places::{load_places, save_places};
 pub use save::save;
 pub use values::{ConfigHome, FileValues};

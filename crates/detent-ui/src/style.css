@@ -129,6 +129,7 @@
   gap: var(--s-8);
 }
 
+.assistants,
 .runtimes {
   display: flex;
   flex-direction: column;
