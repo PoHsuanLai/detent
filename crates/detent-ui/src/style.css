@@ -130,6 +130,7 @@
 }
 
 .assistants,
+.spaces,
 .runtimes {
   display: flex;
   flex-direction: column;
@@ -148,4 +149,18 @@
 .first-run-card {
   align-self: stretch;
   text-align: start;
+}
+
+.space-sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-10);
+  padding: var(--s-14);
+}
+
+.space-sheet-buttons {
+  display: flex;
+  align-self: flex-end;
+  gap: var(--s-8);
 }

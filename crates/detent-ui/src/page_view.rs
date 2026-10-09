@@ -7,6 +7,7 @@ use crate::env::Env;
 use crate::files::{Edit, Files};
 use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
 use crate::section_view::SectionView;
+use crate::spaces::SpacesPane;
 use detent_model::{Block, PageSlug, blocks};
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
@@ -31,6 +32,7 @@ pub fn PageView(
                         SectionView { key: "{section.title}", section, hits: hits.clone(), files, onedit }
                     },
                     Block::AccountsPane => rsx! { AccountsPane {} },
+                    Block::SpacesPane => rsx! { SpacesPane {} },
                     Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
                     Block::ModelPicker => rsx! {

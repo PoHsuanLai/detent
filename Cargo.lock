@@ -1255,12 +1255,14 @@ dependencies = [
 name = "detent-model"
 version = "0.1.0"
 dependencies = [
+ "almanac-core",
  "detent-testkit",
  "docket-settings",
  "ds-settings",
  "porter-core",
  "porter-infer",
  "regex",
+ "serde_json",
  "toml",
 ]
 
@@ -1272,6 +1274,7 @@ version = "0.1.0"
 name = "detent-ui"
 version = "0.1.0"
 dependencies = [
+ "almanac-core",
  "detent-files",
  "detent-model",
  "detent-testkit",
@@ -1289,6 +1292,7 @@ dependencies = [
  "porter-dbus",
  "porter-infer",
  "porter-provider",
+ "serde_json",
  "tokio",
  "toml",
  "zbus",

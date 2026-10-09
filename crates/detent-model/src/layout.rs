@@ -20,6 +20,9 @@ pub enum Block {
     /// Where the built-in assistant may run, and the assistants that sign themselves in: the
     /// Intelligence page's rows that are in no schema.
     Assistants,
+    /// The desktop-wide Spaces accountd keeps, each with Remove: the Spaces page's rows that are
+    /// in no file.
+    SpacesPane,
 }
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
@@ -48,6 +51,9 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
             return std::iter::once(Block::AccountsPane)
                 .chain(sections)
                 .collect();
+        }
+        Page::Spaces => {
+            return std::iter::once(Block::SpacesPane).chain(sections).collect();
         }
         Page::Intelligence => {}
         _ => return sections.collect(),
@@ -99,6 +105,7 @@ mod tests {
                 Block::ModelPicker => "<picker>",
                 Block::AccountsPane => "<accounts>",
                 Block::Assistants => "<assistants>",
+                Block::SpacesPane => "<spaces>",
             })
             .collect()
     }
@@ -151,6 +158,12 @@ mod tests {
             Page::Accounts,
             &["Sign-in clients"],
             &["<accounts>", "Sign-in clients"],
+        ),
+        (
+            "the spaces pane comes before any section of the page",
+            Page::Spaces,
+            &["Look"],
+            &["<spaces>", "Look"],
         ),
         (
             "another page keeps the schema order and has no picker",

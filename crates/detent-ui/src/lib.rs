@@ -19,6 +19,7 @@ mod marks;
 mod page_view;
 mod section_view;
 mod sidebar;
+mod spaces;
 mod view;
 mod window;
 

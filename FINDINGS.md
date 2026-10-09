@@ -161,7 +161,7 @@ Open items, each with its closing condition:
   label, kinds and state per account and nothing that names or reaches one (no id, no grant);
   `detent-intents/tests/accounts.rs` holds that.
 
-## Assistants (`detent-ui/src/assistants/`)
+## Assistants and Spaces (`detent-ui/src/assistants/`, `spaces/`)
 
 - **There is no Assistants page.** A fixed page is a variant of `ds_settings::schema::Page`, which is
   quire's to add. Until it is, the assistants are a block of the Intelligence page, right after
@@ -179,6 +179,10 @@ Open items, each with its closing condition:
   picker.** Their model is a `model` key of an `[[agent]]` entry in docket's `agents.toml`, which is
   keyed by the program, and nothing maps an accountd account to that entry or lists the models an
   agent offers (it says them in a live session). Closes when docket publishes both.
+- **The Spaces list is read when the page opens.** `Spaces1.Changed` is not followed, so a Space an
+  app makes meanwhile shows after the page is opened again.
+- **Removal order.** `Control.RemoveSpace` goes to memory first and `Spaces1.Remove` second. Memory
+  not being on the bus means nothing is settled and the registry is still asked.
 
 ## Local runtimes and first run (`detent-ui/src/inference/runtimes_view.rs`, `first_run/`)
 
