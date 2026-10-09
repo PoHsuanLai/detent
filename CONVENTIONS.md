@@ -169,8 +169,9 @@ remembers.
 
 - **Name tests after behaviour:** `row_leaves_and_rows_below_heal`, not `fixes_3`.
 - **Unit tests beside the code** (`#[cfg(test)] mod tests`, or the concept's `tests.rs`) for
-  private behaviour; **integration tests** in `crates/<crate>/tests/<topic>.rs` for the public
-  surface.
+  private behaviour; **integration tests** in `crates/<crate>/tests/<crate>/<topic>.rs`, one module of the
+  crate's single `tests/<crate>/main.rs` binary (it declares each topic and has a guard that fails
+  when one is left out), for the public surface.
 - **Pure functions get table tests.** One table per function, a `const CASES: &[(Input,
   Expected)]` and one loop; each row names its case, and a failure names the row.
 - **Behaviour tests go through the real shape**: a surface test drives the surface through the
