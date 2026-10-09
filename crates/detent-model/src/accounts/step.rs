@@ -17,6 +17,8 @@ pub enum AccountsInput {
     Found(Result<Described, Absence>),
     /// The person opened an account.
     Open(AccountKey),
+    /// The person chose an account in the list.
+    Select(AccountKey),
     /// The person went back to the list.
     Back,
     /// The person turned a service on or off.
@@ -128,9 +130,11 @@ fn refreshed(ready: AccountsReady, described: &Described) -> AccountsReady {
     let confirming = ready
         .confirming
         .filter(|asked| pane.owner(&asked.path).is_some());
+    let selected = ready.selected.filter(|key| pane.account(key).is_some());
     AccountsReady {
         pane,
         screen,
+        selected,
         confirming,
         ..ready
     }
@@ -145,6 +149,9 @@ fn ready_step(
     match input {
         AccountsInput::Open(key) if ready.pane.account(&key).is_some() => {
             ready.screen = AccountsScreen::Detail(key);
+        }
+        AccountsInput::Select(key) if ready.pane.account(&key).is_some() => {
+            ready.selected = Some(key);
         }
         AccountsInput::Back => {
             ready.screen = AccountsScreen::List;

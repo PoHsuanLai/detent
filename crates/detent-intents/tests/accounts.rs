@@ -9,6 +9,7 @@ use detent_model::{
 };
 use docket_core::{AppRefusal, Value};
 use ds_settings::schema::KeyPath;
+use porter_core::sheet::ProviderGroup;
 use prov::Effect;
 use prov::Integrity;
 use support::{Listed, Told, World, entity, key};
@@ -22,6 +23,7 @@ fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Acco
         expires: None,
         sign_in: None,
         provider: None,
+        group: ProviderGroup::Internet,
         services: kinds
             .iter()
             .map(|kind| AccountService {

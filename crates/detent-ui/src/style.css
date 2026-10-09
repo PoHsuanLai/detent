@@ -109,6 +109,18 @@
 
 .accounts-add {
   display: flex;
+  gap: var(--s-4);
+}
+
+.account-row-body {
+  display: flex;
+  align-items: center;
+  gap: var(--s-10);
+}
+
+.account-row-words {
+  display: flex;
+  flex-direction: column;
 }
 
 .account-kind {

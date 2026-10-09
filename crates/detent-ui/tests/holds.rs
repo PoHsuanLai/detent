@@ -13,7 +13,7 @@ use support::bus::PrivateBus;
 use support::drive::click;
 use support::syncd::Syncd;
 
-const HOME: &str = "[aria-label=\"Home cloud\"] .ds-button";
+const HOME: &str = "[aria-label=\"Manage Home cloud\"]";
 const BANNER: &str = ".accounts-hold .ds-inline-banner";
 const KEEP: &str = ".accounts-hold [data-answers=\"return\"]";
 const REMOVE: &str = ".accounts-hold [data-role=\"destructive\"]";

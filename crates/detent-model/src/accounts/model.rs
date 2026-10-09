@@ -2,11 +2,14 @@
 //! read from the module's rows alone. Nothing here knows an account or a service by name.
 
 use super::add_account::Adding;
+use super::grant::{AccountPermission, GrantFact, GrantScope, grant_path};
 use super::sign_in_help::sign_in_of;
 use crate::picker::{Absence, Described};
 use crate::words::humanize;
 use ds_settings::schema::{KeyKind, KeyPath, KeySpec};
 use porter_core::SignInWay;
+use porter_core::sheet::ProviderGroup;
+use std::collections::BTreeSet;
 
 /// The prefix of every row's path.
 const PREFIX: &str = "accounts.";
@@ -134,17 +137,6 @@ pub struct AccountSync {
     pub on: bool,
 }
 
-/// One permission an app holds for the account: a sentence and the action that takes it back.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AccountPermission {
-    /// The row, `accounts.<id>.grant.<grant>`.
-    pub path: KeyPath,
-    /// What the app may or may not do.
-    pub label: String,
-    /// The action's name (`Revoke`).
-    pub action: String,
-}
-
 /// When a sign-in that expires ends, or that it did: a read-only line the module words, such as
 /// "Google signs this account out on 2026-10-14".
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -184,6 +176,9 @@ pub struct Account {
     pub sign_in: Option<SignInWay>,
     /// What kind of account it is, from the module's `provider` row; none when the row is missing.
     pub provider: Option<AccountProvider>,
+    /// The part of the page it is listed under, from the module's `group` row; decided from
+    /// the account's own rows when the row is missing.
+    pub group: ProviderGroup,
     /// Its services, in the module's order.
     pub services: Vec<AccountService>,
     /// Its sync switches, in the module's order; none when syncd cannot mirror it.
@@ -213,6 +208,18 @@ impl Account {
         }
         if self.status == AccountStatus::NeedsLogin {
             self.sign_out = None;
+        }
+    }
+
+    /// The group the account's own rows put it in, when the module sent no `group` row: the
+    /// assistants that sign themselves in, then what runs on this computer, then the rest.
+    fn fallback_group(&self) -> ProviderGroup {
+        if self.sign_in == Some(SignInWay::Agent) {
+            ProviderGroup::Agent
+        } else if self.place == Place::ThisComputer {
+            ProviderGroup::Intelligence
+        } else {
+            ProviderGroup::Internet
         }
     }
 
@@ -289,6 +296,13 @@ pub struct AccountsPane {
     pub clients: Vec<SignInClient>,
 }
 
+/// The group a `group` row's word names; none for a word this build does not know.
+fn group_of(word: &str) -> Option<ProviderGroup> {
+    ProviderGroup::ALL
+        .into_iter()
+        .find(|group| group.slug() == word)
+}
+
 /// What a row of an account is, by its kind and where its path puts it.
 pub(super) enum Row<'a> {
     Label(&'a str),
@@ -297,6 +311,9 @@ pub(super) enum Row<'a> {
     Expires(&'a str),
     SignIn(&'a str),
     Provider(&'a str),
+    Group(&'a str),
+    GrantSince(&'a str, &'a str),
+    GrantScope(&'a str, &'a str),
     AccountService(&'a str, bool),
     Sync(bool),
     Grant,
@@ -327,8 +344,17 @@ pub(super) fn classify<'a>(
                 .then(|| (AccountKey(id.to_owned()), Row::Sync(held(&spec.path))))
         }
         KeyKind::Fixed { variant } => {
+            if let Some((id, tail)) = rest.split_once(GRANT) {
+                let row = match tail.rsplit_once('.')? {
+                    (grant, "since") => Row::GrantSince(grant, variant),
+                    (grant, "scope") => Row::GrantScope(grant, variant),
+                    _ => return None,
+                };
+                return Some((AccountKey(id.to_owned()), row));
+            }
             let (id, leaf) = rest.rsplit_once('.')?;
             let row = match leaf {
+                "group" => Row::Group(variant),
                 "label" => Row::Label(variant),
                 "state" => Row::State(variant),
                 "place" => Row::Place(variant),
@@ -369,6 +395,7 @@ fn account_of<'a>(accounts: &'a mut Vec<Account>, key: &AccountKey) -> &'a mut A
                 expires: None,
                 sign_in: None,
                 provider: None,
+                group: ProviderGroup::Internet,
                 services: Vec::new(),
                 sync: Vec::new(),
                 permissions: Vec::new(),
@@ -381,7 +408,7 @@ fn account_of<'a>(accounts: &'a mut Vec<Account>, key: &AccountKey) -> &'a mut A
     &mut accounts[at]
 }
 
-fn action_name(spec: &KeySpec) -> String {
+pub(super) fn action_name(spec: &KeySpec) -> String {
     match &spec.kind {
         KeyKind::Live { action } => action.label.0.clone(),
         _ => spec.label.0.clone(),
@@ -392,6 +419,8 @@ impl AccountsPane {
     /// The pane `described` makes.
     pub fn of(described: &Described) -> AccountsPane {
         let mut pane = AccountsPane::default();
+        let mut told = BTreeSet::new();
+        let mut facts = Vec::new();
         for spec in &described.keys {
             if let Some(id) = spec.path.0.strip_prefix(PREFIX)
                 && id.starts_with(CLIENTS)
@@ -425,6 +454,21 @@ impl AccountsPane {
                         name: spec.labels.of(id).unwrap_or(id).to_owned(),
                     });
                 }
+                Row::Group(word) => {
+                    if let Some(group) = group_of(word) {
+                        account.group = group;
+                        told.insert(key.clone());
+                    }
+                }
+                Row::GrantSince(grant, day) => {
+                    facts.push((grant_path(&key, grant), GrantFact::Since(day.to_owned())));
+                }
+                Row::GrantScope(grant, word) => {
+                    facts.extend(
+                        GrantScope::of(word)
+                            .map(|scope| (grant_path(&key, grant), GrantFact::Scope(scope))),
+                    );
+                }
                 Row::Expires(text) => {
                     account.expires = Some(AccountExpiry {
                         label: spec.label.0.clone(),
@@ -451,15 +495,26 @@ impl AccountsPane {
                     path: spec.path.clone(),
                     label: spec.label.0.clone(),
                     action: action_name(spec),
+                    since: None,
+                    scope: None,
                 }),
                 Row::Reauth => account.reauth = Some((spec.path.clone(), action_name(spec))),
                 Row::SignOut => account.sign_out = Some((spec.path.clone(), action_name(spec))),
                 Row::Remove => account.remove = Some((spec.path.clone(), action_name(spec))),
             }
         }
-        pane.accounts
-            .iter_mut()
-            .for_each(Account::keep_offered_rows);
+        for account in &mut pane.accounts {
+            if !told.contains(&account.key) {
+                account.group = account.fallback_group();
+            }
+            account.keep_offered_rows();
+            for permission in &mut account.permissions {
+                let path = permission.path.clone();
+                for (_, fact) in facts.iter().filter(|(row, _)| *row == path) {
+                    permission.learn(fact);
+                }
+            }
+        }
         wait_for_keys(&mut pane.clients);
         pane
     }
@@ -469,13 +524,18 @@ impl AccountsPane {
         self.accounts.iter().filter(|a| a.is_local_runtime())
     }
 
+    /// The accounts of `group`, in the module's order.
+    pub fn in_group(&self, group: ProviderGroup) -> impl Iterator<Item = &Account> {
+        self.accounts.iter().filter(move |a| a.group == group)
+    }
+
     /// The account with `key`.
     pub fn account(&self, key: &AccountKey) -> Option<&Account> {
         self.accounts.iter().find(|account| &account.key == key)
     }
 
     /// The row at `path`: the account that holds it, for the pane to say what it is changing.
-    pub(crate) fn owner(&self, path: &KeyPath) -> Option<&Account> {
+    pub fn owner(&self, path: &KeyPath) -> Option<&Account> {
         self.accounts.iter().find(|account| {
             account.services.iter().any(|s| &s.path == path)
                 || account.sync.iter().any(|s| &s.path == path)
@@ -535,6 +595,8 @@ pub struct AccountsReady {
     pub pane: AccountsPane,
     /// The screen up.
     pub screen: AccountsScreen,
+    /// The account the list rests on: the one its foot's minus acts on.
+    pub selected: Option<AccountKey>,
     /// The row being set or run: one at a time.
     pub pending: Option<KeyPath>,
     /// The removal asked about, if any.
@@ -561,6 +623,7 @@ impl AccountsReady {
         AccountsReady {
             pane,
             screen: AccountsScreen::List,
+            selected: None,
             pending: None,
             confirming: None,
             adding: Adding::Idle,

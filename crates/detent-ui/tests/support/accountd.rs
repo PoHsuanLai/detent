@@ -41,6 +41,10 @@ pub struct Held {
     pub sign_in: Option<String>,
     /// The provider's id and name, for the read-only `provider` row.
     pub provider: Option<(String, String)>,
+    /// The slug of the read-only `group` row, when the module publishes one.
+    pub group: Option<String>,
+    /// Each grant's read-only `since` day and `scope` word: `(grant, since, scope)`.
+    pub grant_facts: Vec<(String, String, String)>,
 }
 
 impl Held {
@@ -56,6 +60,8 @@ impl Held {
             expires: None,
             sign_in: None,
             provider: None,
+            group: None,
+            grant_facts: Vec::new(),
         }
     }
 
@@ -88,6 +94,19 @@ impl Held {
     /// The kind of account it is: the `provider` row says `id`, and `name` is what a person reads.
     pub fn of_provider(mut self, id: &str, name: &str) -> Held {
         self.provider = Some((id.to_owned(), name.to_owned()));
+        self
+    }
+
+    /// The part of the page the account is listed under: the `group` row says `slug`.
+    pub fn in_group(mut self, slug: &str) -> Held {
+        self.group = Some(slug.to_owned());
+        self
+    }
+
+    /// When grant `grant` was given and how long it holds: its `since` and `scope` rows.
+    pub fn granted_on(mut self, grant: &str, since: &str, scope: &str) -> Held {
+        self.grant_facts
+            .push((grant.to_owned(), since.to_owned(), scope.to_owned()));
         self
     }
 
@@ -209,6 +228,20 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
         );
         rows.push(row);
     }
+    if let Some(slug) = &held.group {
+        let mut row = fixed("group", "Group", slug);
+        row.labels = ds_settings::schema::WordLabels(
+            [
+                ("internet", "Internet Accounts"),
+                ("intelligence", "Intelligence"),
+                ("agent", "Assistants"),
+            ]
+            .into_iter()
+            .map(|(word, label)| (word.to_owned(), label.to_owned()))
+            .collect(),
+        );
+        rows.push(row);
+    }
     if held.on_this_computer {
         rows.push(fixed("place", "Where", "this_computer"));
     }
@@ -254,6 +287,10 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
             action("Revoke", ActionWeight::Plain),
             toml::Value::Boolean(false),
         ));
+        if let Some((_, since, scope)) = held.grant_facts.iter().find(|(g, ..)| g == grant) {
+            rows.push(fixed(&format!("grant.{grant}.since"), "Since", since));
+            rows.push(fixed(&format!("grant.{grant}.scope"), "Lasts", scope));
+        }
     }
     rows.push(spec(
         format!("accounts.{id}.reauth"),

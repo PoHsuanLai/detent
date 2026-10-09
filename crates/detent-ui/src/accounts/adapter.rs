@@ -5,7 +5,7 @@
 use detent_model::{Adding, Ask, HoldCounts, KEEP_HELP, LocalFiles, RemovalQuestion, SyncHold};
 use dioxus::prelude::*;
 use ds::components::controls::button::Button;
-use ds::components::controls::button_model::{Answers, Bezel, ButtonRole};
+use ds::components::controls::button_model::{Answers, Bezel, ButtonRole, ImagePosition};
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::components::overlays::inline_banner::InlineBanner;
 use ds::prelude::*;
@@ -149,7 +149,8 @@ pub(super) fn ClientField(
     }
 }
 
-/// The button that opens the add sheet; it waits while one is open or a change is in flight.
+/// The plus under the list, which opens the add sheet; it waits while one is open or a change
+/// is in flight.
 #[component]
 pub(super) fn AddAccountButton(
     adding: Adding,
@@ -163,6 +164,26 @@ pub(super) fn AddAccountButton(
     rsx! {
         Button {
             label: "Add Account\u{2026}",
+            icon: Some(Icon::Plus),
+            image: ImagePosition::Only,
+            size: ControlSize::Small,
+            availability,
+            onclick: move |_| onpress.call(()),
+        }
+    }
+}
+
+/// The minus under the list, which asks to remove the selected account.
+#[component]
+pub(super) fn RemoveAccountButton(
+    availability: Availability,
+    onpress: EventHandler<()>,
+) -> Element {
+    rsx! {
+        Button {
+            label: "Remove Account",
+            icon: Some(Icon::Minus),
+            image: ImagePosition::Only,
             size: ControlSize::Small,
             availability,
             onclick: move |_| onpress.call(()),

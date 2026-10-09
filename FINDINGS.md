@@ -147,7 +147,11 @@ Open items, each with its closing condition:
 - **The pane's quire seam is `accounts/adapter.rs`.** It holds the button roles, the alert, and the
   client-id `TextField` that keeps its own draft (and is made anew when the stored value changes,
   because quire's `TextField` is not controlled). Closes when quire's R2a lands: the adapter takes
-  the controlled field, and the account rows become a selectable list.
+  the controlled field.
+- **The list is grouped by the `group` row** (Internet Accounts, Intelligence, Assistants), a row per
+  account with a plus and a minus under it; the minus removes the selected account after the usual
+  question. An account whose module sends no `group` row is placed by its own rows. A permission's
+  `since` and `scope` rows are keyed by the grant (`accounts.<id>.grant.<grant>.since`).
 - **Search does not reach the live rows.** The sidebar's search reads the file schemas, so no account
   or service is a hit; the Accounts page is listed only while the search box is empty or matches a
   file key of that page. Closes when a live module's rows can be searched (needs the pane to hand

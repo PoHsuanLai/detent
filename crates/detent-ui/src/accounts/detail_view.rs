@@ -131,6 +131,7 @@ pub(super) fn AccountDetail(
                         FieldRow {
                             key: "{permission.path.0}",
                             label: TextLine::from(permission.label.clone()),
+                            help: permission.detail().map(TextLine::from),
                             ActionButton {
                                 label: permission.action.clone(),
                                 subject: permission.label.clone(),

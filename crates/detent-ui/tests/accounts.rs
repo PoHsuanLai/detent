@@ -14,7 +14,7 @@ use support::accountd::{Accountd, Held, Policy};
 use support::bus::PrivateBus;
 use support::drive::click;
 
-const HOME: &str = "[aria-label=\"Home cloud\"] .ds-button";
+const HOME: &str = "[aria-label=\"Manage Home cloud\"]";
 const STORAGE: &str = "[aria-label=\"Storage\"] .ds-toggle";
 const KEEP_FILES: &str = "[aria-label=\"Keep this account's files on this computer\"] .ds-toggle";
 const UPLOAD_PHOTOS: &str =
@@ -76,9 +76,13 @@ fn world(name: &str) -> World {
 }
 
 fn world_in(name: &str, scheme: Scheme) -> World {
+    world_of(name, held(), scheme)
+}
+
+fn world_of(name: &str, rows: Vec<Held>, scheme: Scheme) -> World {
     let rt = runtime();
     let bus = PrivateBus::start(name);
-    let fake = Accountd::new(Policy::Allow, held());
+    let fake = Accountd::new(Policy::Allow, rows);
     let (daemon, served) = rt.block_on(fake.serve_announcing(&bus));
     let sandbox = Sandbox::new(name).on_bus(&bus.address);
     let mut harness = sandbox.harness_in(accounts(), scheme);
@@ -198,7 +202,7 @@ fn the_sync_switches_sit_under_the_services_and_set_on_and_off() {
 #[test]
 fn the_expiry_is_a_read_only_line_in_the_modules_words() {
     let mut w = world("accounts-expires");
-    click(&mut w.harness, "[aria-label=\"Work mail\"] .ds-button");
+    click(&mut w.harness, "[aria-label=\"Manage Work mail\"]");
     settle(&mut w.harness, "the account", |h| {
         h.count(".accounts-detail") == 1
     });
@@ -260,7 +264,7 @@ fn a_session_grant_row_comes_and_goes_with_the_announcement() {
 #[test]
 fn an_account_without_the_toggles_shows_no_sync_rows() {
     let mut w = world("accounts-no-sync");
-    click(&mut w.harness, "[aria-label=\"Work mail\"] .ds-button");
+    click(&mut w.harness, "[aria-label=\"Manage Work mail\"]");
     settle(&mut w.harness, "the account", |h| {
         h.count(".accounts-detail") == 1
     });
@@ -343,7 +347,7 @@ fn confirming_the_removal_removes_the_account_and_returns_to_the_list() {
 #[test]
 fn an_account_with_a_dotted_id_opens_and_switches_by_its_whole_id() {
     let mut w = world("accounts-dotted");
-    click(&mut w.harness, "[aria-label=\"Work mail\"] .ds-button");
+    click(&mut w.harness, "[aria-label=\"Manage Work mail\"]");
     settle(&mut w.harness, "the account", |h| {
         h.attr(".accounts-detail", "data-account").as_deref() == Some("work.example")
     });
@@ -456,13 +460,13 @@ fn the_absence_texts_use_plain_words() {
     drop(rt);
 }
 
-const ADD: &str = ".accounts-add .ds-button";
+const ADD: &str = ".accounts-add [aria-label=\"Add Account\u{2026}\"]";
+const MINUS: &str = ".accounts-add [aria-label=\"Remove Account\"]";
 
 #[test]
 fn the_list_has_an_add_account_button_and_a_refused_ask_is_told_calmly() {
     let mut w = world("accounts-add");
-    assert_eq!(w.harness.count(".accounts-add .ds-button"), 1);
-    assert!(w.harness.html().contains("Add Account\u{2026}"));
+    assert_eq!(w.harness.count(ADD), 1);
     click(&mut w.harness, ADD);
     settle(&mut w.harness, "the line", |h| {
         h.html()
@@ -470,9 +474,7 @@ fn the_list_has_an_add_account_button_and_a_refused_ask_is_told_calmly() {
     });
     // The button is free again after the sheet ended.
     settle(&mut w.harness, "the button", |h| {
-        h.attr(".accounts-add .ds-button", "data-availability")
-            .as_deref()
-            != Some("disabled")
+        h.attr(ADD, "data-availability").as_deref() != Some("disabled")
     });
 }
 
@@ -542,7 +544,7 @@ fn the_account_type_is_drawn_with_the_providers_mark() {
         .on_bus(&bus.address)
         .harness(accounts());
     settle(&mut harness, "the list", |h| h.count(".accounts-list") == 1);
-    click(&mut harness, "[aria-label=\"Ollama\"] .ds-button");
+    click(&mut harness, "[aria-label=\"Manage Ollama\"]");
     settle(&mut harness, "the account", |h| {
         h.count(".accounts-detail") == 1
     });
@@ -553,7 +555,7 @@ fn the_account_type_is_drawn_with_the_providers_mark() {
         harness.html()
     );
     click(&mut harness, BACK);
-    click(&mut harness, "[aria-label=\"Fastmail\"] .ds-button");
+    click(&mut harness, "[aria-label=\"Manage Fastmail\"]");
     settle(&mut harness, "the account", |h| {
         h.attr(".accounts-detail", "data-account").as_deref() == Some("mail")
     });
@@ -670,15 +672,9 @@ fn the_remove_answer_is_legible_in_light_and_dark() {
 #[test]
 fn every_button_says_which_account_or_app_it_is_for() {
     let mut w = world("accounts-names");
-    for (name, row) in [
-        ("Manage Home cloud", "Home cloud"),
-        ("Manage Work mail", "Work mail"),
-    ] {
-        let selector = format!("[aria-label=\"{row}\"] .ds-button");
-        assert_eq!(
-            w.harness.attr(&selector, "aria-label").as_deref(),
-            Some(name)
-        );
+    for name in ["Manage Home cloud", "Manage Work mail"] {
+        let selector = format!(".account-row [aria-label=\"{name}\"]");
+        assert_eq!(w.harness.count(&selector), 1, "{name}");
     }
     assert_eq!(
         w.harness.count("[aria-label=\"Manage\"]"),
@@ -714,7 +710,7 @@ fn sign_in_again_says_a_browser_only_for_an_account_whose_row_says_browser() {
     settle(&mut w.harness, "the list", |h| {
         h.count(".accounts-list") == 1
     });
-    click(&mut w.harness, "[aria-label=\"Work mail\"] .ds-button");
+    click(&mut w.harness, "[aria-label=\"Manage Work mail\"]");
     settle(&mut w.harness, "the account", |h| {
         h.count(".accounts-detail") == 1
     });
@@ -722,5 +718,100 @@ fn sign_in_again_says_a_browser_only_for_an_account_whose_row_says_browser() {
         w.harness
             .html()
             .contains("Sign in to the account again in your browser.")
+    );
+}
+
+fn grouped() -> Vec<Held> {
+    vec![
+        Held::new("claude", "Claude Code", "ok", &["agent"])
+            .in_group("agent")
+            .signing_in("agent"),
+        Held::new("work", "Work mail", "ok", &["mail"]).in_group("internet"),
+        Held::runtime("ollama", "Ollama", "ok").in_group("intelligence"),
+    ]
+}
+
+/// The headings of the list, top to bottom.
+fn headings(w: &World) -> Vec<String> {
+    let page = w.harness.html();
+    let html = &page[page.find("class=\"accounts-list\"").expect("the list")..];
+    ["Internet Accounts", "Intelligence", "Assistants"]
+        .into_iter()
+        .map(|name| (html.find(&format!(">{name}<")), name))
+        .filter_map(|(at, name)| at.map(|at| (at, name.to_owned())))
+        .collect::<std::collections::BTreeMap<_, _>>()
+        .into_values()
+        .collect()
+}
+
+#[test]
+fn the_list_is_grouped_by_the_groups_the_module_names_whatever_order_it_sends() {
+    let w = world_of("accounts-groups", grouped(), Scheme::Light);
+    assert_eq!(
+        headings(&w),
+        ["Internet Accounts", "Intelligence", "Assistants"]
+    );
+    let page = w.harness.html();
+    let html = &page[page.find("class=\"accounts-list\"").expect("the list")..];
+    let at = |text: &str| html.find(text).expect(text);
+    assert!(
+        at("Work mail") < at("Ollama"),
+        "Internet before Intelligence"
+    );
+    assert!(
+        at("Ollama") < at("Claude Code"),
+        "Intelligence before Assistants"
+    );
+}
+
+#[test]
+fn an_account_without_a_group_row_is_listed_where_its_own_rows_put_it() {
+    let rows = vec![
+        Held::new("claude", "Claude Code", "ok", &["agent"]).signing_in("agent"),
+        Held::new("work", "Work mail", "ok", &["mail"]),
+        Held::runtime("ollama", "Ollama", "ok"),
+    ];
+    let w = world_of("accounts-fallback-groups", rows, Scheme::Light);
+    assert_eq!(
+        headings(&w),
+        ["Internet Accounts", "Intelligence", "Assistants"]
+    );
+}
+
+#[test]
+fn the_minus_waits_for_a_selection_then_asks_before_removing_the_selected_account() {
+    let mut w = world("accounts-minus");
+    assert_eq!(
+        w.harness.attr(MINUS, "data-availability").as_deref(),
+        Some("disabled"),
+        "nothing is selected"
+    );
+    click(&mut w.harness, "[aria-posinset=\"3\"] .account-row");
+    settle(&mut w.harness, "the minus", |h| {
+        h.attr(MINUS, "data-availability").as_deref() != Some("disabled")
+    });
+    click(&mut w.harness, MINUS);
+    settle(&mut w.harness, "the question", |h| {
+        h.html().contains("Remove account Work mail?")
+    });
+    assert!(w.fake.sets().is_empty(), "the press alone removes nothing");
+}
+
+#[test]
+fn a_permission_says_since_when_and_for_how_long_from_the_rows_keyed_by_its_grant() {
+    let rows = vec![
+        Held::new("home", "Home cloud", "ok", &["storage"])
+            .granting("g1", "Photos allowed: storage")
+            .granted_on("g1", "2026-10-08", "always")
+            .granting("g2", "Mail allowed: storage")
+            .granted_on("g2", "2026-10-09", "session"),
+    ];
+    let mut w = world_of("accounts-grant-facts", rows, Scheme::Light);
+    detail(&mut w);
+    let html = w.harness.html();
+    assert!(html.contains("Since 2026-10-08. Always"), "{html}");
+    assert!(
+        html.contains("Since 2026-10-09. This session only"),
+        "{html}"
     );
 }

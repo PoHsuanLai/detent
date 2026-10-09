@@ -3,6 +3,7 @@
 //! and the transition a person's choices make.
 
 mod add_account;
+mod grant;
 mod heard;
 mod hold;
 mod hold_step;
@@ -14,12 +15,13 @@ mod step;
 mod target;
 
 pub use add_account::{AddEnd, Adding};
+pub use grant::AccountPermission;
 pub use hold::{DatasetName, HoldCounts, KEEP_HELP, SyncHold};
 pub use hold_step::{HoldEffect, HoldInput, Holds, hold_step};
 pub use model::{
-    Account, AccountExpiry, AccountKey, AccountPermission, AccountProvider, AccountService,
-    AccountStatus, AccountSync, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask,
-    ClientEntry, LocalFiles, Place, RemovalQuestion, SignInClient,
+    Account, AccountExpiry, AccountKey, AccountProvider, AccountService, AccountStatus,
+    AccountSync, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, ClientEntry,
+    LocalFiles, Place, RemovalQuestion, SignInClient,
 };
 pub use reauth_end::ReauthEnd;
 pub use sign_in_help::reauth_help;

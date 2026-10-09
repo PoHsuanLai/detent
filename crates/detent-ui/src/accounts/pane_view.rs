@@ -5,7 +5,7 @@ use super::detail_view::{AccountDetail, Handlers};
 use super::drive::{drive, is_valued};
 use super::hold_drive::drive_holds;
 use super::link::AccountLink;
-use super::list_view::{AccountList, ClientIds};
+use super::list_view::{AccountList, ClientIds, FootHandlers};
 use crate::env::Env;
 use crate::live::{Daemon, Followed, follow, follow_holds};
 use crate::marks::ProviderMarks;
@@ -123,6 +123,19 @@ fn Ready(
         hold: send_hold,
     };
     let asked = ready.confirming.clone();
+    let remove_name = asked
+        .as_ref()
+        .and_then(|question| ready.pane.owner(&question.path))
+        .and_then(|account| account.remove.clone())
+        .map(|(_, name)| name)
+        .unwrap_or_default();
+    // The row the list's minus runs: the selected account's remove row.
+    let removal_row = ready
+        .selected
+        .as_ref()
+        .and_then(|key| ready.pane.account(key))
+        .and_then(|account| account.remove.as_ref())
+        .map(|(path, _)| path.clone());
     rsx! {
         div { class: "accounts", "data-accounts": "ready",
             if let Some(account) = ready.open().cloned() {
@@ -130,10 +143,20 @@ fn Ready(
             } else {
                 AccountList {
                     pane: ready.pane.clone(),
+                    selected: ready.selected.clone(),
                     adding: ready.adding,
                     availability,
+                    marks,
+                    onselect: move |key| send.call(AccountsInput::Select(key)),
                     onopen: move |key| send.call(AccountsInput::Open(key)),
-                    onadd: move |()| send.call(AccountsInput::AddAccount),
+                    on: FootHandlers {
+                        add: EventHandler::new(move |()| send.call(AccountsInput::AddAccount)),
+                        remove: EventHandler::new(move |()| {
+                            if let Some(path) = removal_row.clone() {
+                                send.call(AccountsInput::AskRemove(path));
+                            }
+                        }),
+                    },
                 }
                 ClientIds {
                     pane: ready.pane.clone(),
@@ -143,11 +166,7 @@ fn Ready(
             if let Some(question) = asked {
                 RemoveAlert {
                     question,
-                    remove_name: ready
-                        .open()
-                        .and_then(|account| account.remove.clone())
-                        .map(|(_, name)| name)
-                        .unwrap_or_default(),
+                    remove_name,
                     onanswer: move |yes| {
                         send.call(if yes { AccountsInput::Remove } else { AccountsInput::Keep });
                     },

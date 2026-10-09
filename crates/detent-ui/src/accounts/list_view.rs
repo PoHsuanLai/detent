@@ -1,36 +1,152 @@
 //! The list of accounts, and the sign-in client ids under it.
 
-use super::adapter::{AddAccountButton, ClientField, OpenButton};
-use detent_model::{AccountKey, AccountsPane as Pane, Adding, ClientEntry};
+use super::adapter::{AddAccountButton, ClientField, OpenButton, RemoveAccountButton};
+use crate::marks::ProviderMarks;
+use detent_model::{Account, AccountKey, AccountsPane as Pane, Adding, ClientEntry};
 use dioxus::prelude::*;
+use ds::base::vocab::RowState;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::disclosure::Disclosure;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
+use ds::components::lists::list::model::ListStyle;
 use ds::components::overlays::empty_state::EmptyState;
 use ds::prelude::*;
 use ds::root::common::Common;
+use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::KeyPath;
+use porter_core::sheet::ProviderGroup;
 
-/// The button that adds an account, under the list (or the empty state).
+/// What the list's foot does: add an account, or remove the one the list rests on.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) struct FootHandlers {
+    /// The plus was pressed.
+    pub add: EventHandler<()>,
+    /// The minus was pressed.
+    pub remove: EventHandler<()>,
+}
+
+/// The foot under the list: a plus that adds an account and a minus that removes the selected
+/// one, which waits while nothing is selected or the selection cannot be removed.
 #[component]
-fn AddAccount(adding: Adding, availability: Availability, onadd: EventHandler<()>) -> Element {
+fn ListFoot(
+    adding: Adding,
+    availability: Availability,
+    removal: Availability,
+    on: FootHandlers,
+) -> Element {
     rsx! {
         div { class: "accounts-add", "data-accounts": "add",
-            AddAccountButton { adding, availability, onpress: move |()| onadd.call(()) }
+            AddAccountButton { adding, availability, onpress: move |()| on.add.call(()) }
+            RemoveAccountButton { availability: removal, onpress: move |()| on.remove.call(()) }
         }
     }
 }
 
-/// One row per account: its name and how it stands, and the button that opens it; under them the
-/// button that adds an account.
+/// The account group's rows as list items: a heading, then a row each.
+fn items_of(
+    pane: &Pane,
+    selected: Option<&AccountKey>,
+    marks: &ProviderMarks,
+    onselect: EventHandler<AccountKey>,
+    onopen: EventHandler<AccountKey>,
+) -> Vec<ListItem<String>> {
+    ProviderGroup::ALL
+        .into_iter()
+        .flat_map(|group| {
+            let accounts: Vec<&Account> = pane.in_group(group).collect();
+            let heading = (!accounts.is_empty()).then(|| {
+                ListItem::heading(
+                    format!("group:{}", group.slug()),
+                    rsx! { SectionHeader { title: group.display_name().to_owned() } },
+                )
+            });
+            let rows = accounts
+                .into_iter()
+                .map(|account| account_item(account, selected, marks, onselect, onopen));
+            heading.into_iter().chain(rows).collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+fn account_item(
+    account: &Account,
+    selected: Option<&AccountKey>,
+    marks: &ProviderMarks,
+    onselect: EventHandler<AccountKey>,
+    onopen: EventHandler<AccountKey>,
+) -> ListItem<String> {
+    let key = account.key.clone();
+    let provider = account.provider.as_ref();
+    let mark = provider.map(|p| marks.of(&p.id));
+    let kind = provider.map_or_else(String::new, |p| p.name.clone());
+    let standing = account.status.label();
+    let detail = if kind.is_empty() {
+        standing
+    } else {
+        format!("{kind}, {standing}")
+    };
+    let state = RowState {
+        selection: if selected == Some(&key) {
+            Selection::Selected
+        } else {
+            Selection::Unselected
+        },
+        ..RowState::default()
+    };
+    let content = rsx! {
+        div { class: "account-row-body",
+            if let Some(mark) = mark {
+                ProviderMark { provider: mark.provider, face: mark.face, size: ControlSize::Regular }
+            }
+            div { class: "account-row-words",
+                Label { text: account.label.clone(), role: LabelRole::Primary }
+                Label { text: detail, role: LabelRole::Secondary, style: LabelStyle::Footnote }
+            }
+        }
+    };
+    let (picked, opened) = (key.clone(), key.clone());
+    ListItem::row(
+        key.0.clone(),
+        account.label.clone(),
+        rsx! {
+            Row {
+                title: account.label.clone(),
+                content,
+                state,
+                common: Common {
+                    extra_class: ds::root::pass_through::ExtraClass::parse("account-row").ok(),
+                    ..Common::default()
+                },
+                accessory: Accessory::Slot(rsx! {
+                    OpenButton {
+                        label: "Manage",
+                        subject: account.label.clone(),
+                        onpress: move |()| onopen.call(opened.clone()),
+                    }
+                }),
+                onclick: move |_| onselect.call(picked.clone()),
+            }
+        },
+    )
+}
+
+/// The accounts in groups, one row each, and the foot that adds and removes; the empty state
+/// when there are none. A row's Manage button opens the account.
 #[component]
 pub(super) fn AccountList(
     pane: Pane,
+    selected: Option<AccountKey>,
     adding: Adding,
     availability: Availability,
+    marks: ProviderMarks,
+    onselect: EventHandler<AccountKey>,
     onopen: EventHandler<AccountKey>,
-    onadd: EventHandler<()>,
+    on: FootHandlers,
 ) -> Element {
+    let removal = match selected.as_ref().and_then(|key| pane.account(key)) {
+        Some(account) if account.remove.is_some() => availability,
+        _ => Availability::Disabled,
+    };
     if pane.accounts.is_empty() {
         return rsx! {
             div { class: "accounts-empty", "data-accounts": "empty",
@@ -39,30 +155,21 @@ pub(super) fn AccountList(
                     description: "An app that needs an account asks for it, and it appears here.",
                 }
             }
-            AddAccount { adding, availability, onadd }
+            ListFoot { adding, availability, removal, on }
         };
     }
+    let items = items_of(&pane, selected.as_ref(), &marks, onselect, onopen);
     rsx! {
         div { class: "accounts-list", "data-accounts": "list",
-            FieldGroup { title: Some("Accounts".to_owned()),
-                for account in pane.accounts.iter().cloned() {
-                    FieldRow {
-                        key: "{account.key.0}",
-                        label: TextLine::from(account.label.clone()),
-                        help: Some(TextLine::from(account.status.label())),
-                        common: Common { extra_class: ds::root::pass_through::ExtraClass::parse("account-row").ok(), ..Common::default() },
-                        OpenButton {
-                            label: "Manage",
-                            subject: account.label.clone(),
-                            onpress: {
-                                let key = account.key.clone();
-                                move |()| onopen.call(key.clone())
-                            },
-                        }
-                    }
-                }
+            List::<String> {
+                label: "Accounts",
+                items,
+                style: ListStyle::Grouped,
+                cursor: selected.as_ref().map(|key| key.0.clone()),
+                onselect: move |id: String| onselect.call(AccountKey(id)),
+                onpick: move |id: String| onopen.call(AccountKey(id)),
             }
-            AddAccount { adding, availability, onadd }
+            ListFoot { adding, availability, removal, on }
         }
     }
 }
