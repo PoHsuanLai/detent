@@ -24,10 +24,12 @@ fn page(slug: &str) -> Value {
     Value::Entity(entity("settings.page", slug))
 }
 
+/// `(action, its arguments, the page the window is told)`.
+type Case = (&'static str, Vec<(&'static str, Value)>, &'static str);
+
 #[tokio::test(flavor = "multi_thread")]
 async fn opening_a_page_tells_the_window() {
-    // `(action, its arguments, the page the window is told)`.
-    let cases: [(&str, Vec<(&str, Value)>, &str); 3] = [
+    let cases: [Case; 3] = [
         ("settings.page.show", vec![("page", page("dock"))], "dock"),
         ("settings.accounts.open", vec![], "accounts"),
         ("settings.intelligence.open", vec![], "intelligence"),

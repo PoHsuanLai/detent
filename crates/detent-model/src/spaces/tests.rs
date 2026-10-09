@@ -54,13 +54,13 @@ fn the_sheet_opens_safe_flips_and_makes_remove_destructive_by_either_delete_choi
     assert_eq!(flipped.body(), "Its memories will be deleted.");
     assert_eq!(flipped.flip_label(), "Move its memories instead");
     assert!(flipped.destroys());
-    assert_eq!(flipped.after(SheetInput::FlipMemories), trip());
     // Each delete choice alone makes Remove destructive.
     let history = trip().after(SheetInput::History(HistoryFate::Delete));
     assert!(history.destroys());
     assert_eq!(history.memories, MemoryFate::MoveToApps);
     assert!(flipped.destroys());
     assert_eq!(flipped.history, HistoryFate::Keep);
+    assert_eq!(flipped.after(SheetInput::FlipMemories), trip());
 }
 
 #[test]

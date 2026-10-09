@@ -73,7 +73,14 @@ mod tests {
         let state: Home = |xdg, home| state_home_from(xdg, home).map(|h| h.0);
         let data: Home = |xdg, home| data_home_from(xdg, home).map(|h| h.0);
         // `(directory, XDG variable, HOME, the home)`.
-        let cases: &[(&str, Home, Option<&str>, Option<&str>, Option<&str>)] = &[
+        type Case<'a> = (
+            &'a str,
+            Home,
+            Option<&'a str>,
+            Option<&'a str>,
+            Option<&'a str>,
+        );
+        let cases: &[Case] = &[
             (
                 "config",
                 config,
