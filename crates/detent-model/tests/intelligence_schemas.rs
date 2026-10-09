@@ -92,7 +92,11 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
             ),
             (
                 "Memory",
-                vec!["memory.files.at_rest", "memory.consolidation.when"]
+                vec![
+                    "memory.files.at_rest",
+                    "memory.consolidation.when",
+                    "memory.consolidation.apply"
+                ]
             ),
             (
                 "Privacy",
@@ -102,7 +106,7 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
     );
     let advanced = titles(&page.advanced);
     let advanced_keys: usize = advanced.iter().map(|(_, keys)| keys.len()).sum();
-    assert_eq!(advanced_keys, 15 + 6 + 10, "docket 15, almanac 6, cua 10");
+    assert_eq!(advanced_keys, 18 + 6 + 10, "docket 18, almanac 6, cua 10");
     let names: Vec<&str> = advanced.iter().map(|(title, _)| *title).collect();
     for section in [
         "Review time",

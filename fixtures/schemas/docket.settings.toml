@@ -53,6 +53,48 @@ off = "Off"
 on = "On"
 
 [[key]]
+path = "agent.acp.expose"
+default = "off"
+label = "Let a code editor drive the assistant (ACP)"
+help = "Whether an editor such as Zed may open sessions with the assistant and send it prompts over the Agent Client Protocol. Off by default; the editor's permission prompts come on top of the usual checks, never instead of them."
+section = "Privacy"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.page]
+kind = "intelligence"
+
+[key.labels]
+off = "Off"
+on = "On"
+
+[[key]]
+path = "agent.acp.agents"
+default = "off"
+label = "Let the assistant use coding agents (Claude Code, Gemini CLI)"
+help = "Whether docket may start the coding agents you list in agents.toml and run them as its helpers, inside a sandbox, with every file write, command and permission request going through the usual checks. Off by default. An agent's own sign-in stays its own; docket never reads it."
+section = "Privacy"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.page]
+kind = "intelligence"
+
+[key.labels]
+off = "Off"
+on = "On"
+
+[[key]]
 path = "agent.undo.keep_h"
 default = 24
 label = "Keep undo for"
@@ -127,6 +169,27 @@ unit = "ms"
 
 [key.page]
 kind = "intelligence"
+
+[[key]]
+path = "agent.review.shadow"
+default = "off"
+label = "Compare quick checks with a second scorer"
+help = "Keeps a private record of how a second scorer would have judged each quick check, so the two can be compared later. It never changes what the assistant does, and nothing in the record leaves this computer."
+section = "Review time"
+exposure = "advanced"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.page]
+kind = "intelligence"
+
+[key.labels]
+off = "Off"
+on = "On"
 
 [[key]]
 path = "agent.budget.calls"

@@ -130,7 +130,7 @@ mod tests {
 
     fn claude() -> AgentRow {
         AgentRow {
-            program: "claude-code-acp".to_owned(),
+            program: "claude-code-bin".to_owned(),
             label: "Claude Code".to_owned(),
             source: Source::Registry {
                 id: "claude-code".to_owned(),
@@ -158,7 +158,7 @@ mod tests {
             (
                 "the program as the key",
                 "Other",
-                "claude-code-acp",
+                "claude-code-bin",
                 None,
                 true,
             ),
