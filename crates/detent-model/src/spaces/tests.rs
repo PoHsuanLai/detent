@@ -33,7 +33,8 @@ fn asked() -> SpacesState {
 }
 
 #[test]
-fn the_sheet_opens_on_the_choices_nothing_is_lost_by() {
+fn the_sheet_opens_safe_flips_and_makes_remove_destructive_by_either_delete_choice() {
+    // It opens on the choices nothing is lost by.
     let sheet = trip();
     assert_eq!(sheet.title(), "Remove \u{201c}Trip\u{201d}?");
     assert_eq!(
@@ -48,25 +49,18 @@ fn the_sheet_opens_on_the_choices_nothing_is_lost_by() {
     );
     assert!(!sheet.destroys());
     assert_eq!(sheet.removal(), Removal::KEEP_ALL);
-}
-
-#[test]
-fn the_link_flips_the_body_and_its_own_label_and_back() {
+    // The link flips the body and its own label, and back.
     let flipped = trip().after(SheetInput::FlipMemories);
     assert_eq!(flipped.body(), "Its memories will be deleted.");
     assert_eq!(flipped.flip_label(), "Move its memories instead");
     assert!(flipped.destroys());
     assert_eq!(flipped.after(SheetInput::FlipMemories), trip());
-}
-
-#[test]
-fn each_delete_choice_alone_makes_remove_destructive() {
+    // Each delete choice alone makes Remove destructive.
     let history = trip().after(SheetInput::History(HistoryFate::Delete));
     assert!(history.destroys());
     assert_eq!(history.memories, MemoryFate::MoveToApps);
-    let memories = trip().after(SheetInput::FlipMemories);
-    assert!(memories.destroys());
-    assert_eq!(memories.history, HistoryFate::Keep);
+    assert!(flipped.destroys());
+    assert_eq!(flipped.history, HistoryFate::Keep);
 }
 
 #[test]

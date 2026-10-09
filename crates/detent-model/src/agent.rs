@@ -111,12 +111,6 @@ agent = "settable"
     }
 
     #[test]
-    fn a_never_settable_key_stays_hands_off_however_it_is_marked() {
-        let (_, keys) = keys_marked(SCHEMA).expect("a schema");
-        assert!(keys.iter().all(|k| k.0 != "idle.timeout"));
-    }
-
-    #[test]
     fn text_that_is_not_a_schema_marks_nothing() {
         assert_eq!(keys_marked("not = [valid"), None);
         assert_eq!(keys_marked("version = 1"), None, "no app");

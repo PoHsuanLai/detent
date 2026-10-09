@@ -58,16 +58,24 @@ mod tests {
 
     #[test]
     fn the_flags_say_where_the_window_opens() {
-        let opening = opening(&["detent", "--page", "dock", "--search", "magnification"]);
-        assert_eq!(opening.page, Some(PageSlug("dock".to_owned())));
-        assert_eq!(opening.query, "magnification");
-    }
-
-    #[test]
-    fn no_flags_open_on_the_first_page() {
-        let opening = opening(&["detent"]);
-        assert_eq!(opening.page, None);
-        assert_eq!(opening.query, "");
+        // `(arguments, the page, the search)`; no flags open on the first page.
+        const OPENINGS: &[(&[&str], Option<&str>, &str)] = &[
+            (
+                &["detent", "--page", "dock", "--search", "magnification"],
+                Some("dock"),
+                "magnification",
+            ),
+            (&["detent"], None, ""),
+        ];
+        for (args, page, query) in OPENINGS {
+            let opening = opening(args);
+            assert_eq!(
+                opening.page,
+                page.map(|slug| PageSlug(slug.to_owned())),
+                "{args:?}"
+            );
+            assert_eq!(opening.query, *query, "{args:?}");
+        }
     }
 
     #[test]

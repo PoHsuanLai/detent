@@ -286,6 +286,21 @@ mod tests {
                 Control::Menu(words(&["a", "b", "c", "d", "e", "f"])),
             ),
             (
+                "bounded",
+                KeyKind::Bounded {
+                    min: 1,
+                    max: 9,
+                    unit: Some("px".to_owned()),
+                },
+                Value::Integer(3),
+                Control::Slider(crate::range::Range {
+                    min: 1,
+                    max: 9,
+                    unit: Some("px".to_owned()),
+                    number: crate::range::Number::Whole,
+                }),
+            ),
+            (
                 "text",
                 KeyKind::Text,
                 Value::String(String::new()),
@@ -324,17 +339,6 @@ mod tests {
         for (name, kind, default, want) in cases {
             assert_eq!(Control::of(&spec(kind, default)), want, "{name}");
         }
-    }
-
-    #[test]
-    fn a_bounded_key_is_a_slider_with_its_range() {
-        let kind = KeyKind::Bounded {
-            min: 1,
-            max: 9,
-            unit: Some("px".to_owned()),
-        };
-        let control = Control::of(&spec(kind, Value::Integer(3)));
-        assert!(matches!(control, Control::Slider(range) if range.max == 9));
     }
 
     #[test]

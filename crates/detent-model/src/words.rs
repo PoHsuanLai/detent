@@ -22,28 +22,25 @@ pub fn humanize(word: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{humanize, word_label};
+    use super::word_label;
     use ds_settings::schema::WordLabels;
 
     #[test]
     fn a_stored_word_reads_as_a_label() {
+        let labels =
+            WordLabels([("workspace_prev".to_owned(), "Previous workspace".to_owned())].into());
+        // `(stored word, what is read)`: the schema's label wins, else the word humanized.
         const CASES: &[(&str, &str)] = &[
             ("when_scrolling", "When scrolling"),
             ("on", "On"),
             ("top_right", "Top right"),
             ("", ""),
             ("h24", "H24"),
+            ("workspace_prev", "Previous workspace"),
+            ("smart_zoom", "Smart zoom"),
         ];
         for (word, want) in CASES {
-            assert_eq!(humanize(word), *want, "{word:?}");
+            assert_eq!(word_label(&labels, word), *want, "{word:?}");
         }
-    }
-
-    #[test]
-    fn a_schema_label_wins_over_the_humanized_word() {
-        let labels =
-            WordLabels([("workspace_prev".to_owned(), "Previous workspace".to_owned())].into());
-        assert_eq!(word_label(&labels, "workspace_prev"), "Previous workspace");
-        assert_eq!(word_label(&labels, "smart_zoom"), "Smart zoom");
     }
 }

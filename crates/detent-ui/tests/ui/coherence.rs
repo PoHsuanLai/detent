@@ -5,7 +5,7 @@ use crate::support::Sandbox;
 use detent_model::PageSlug;
 use detent_ui::{App, Env, Opening, STYLE};
 use dioxus::prelude::VirtualDom;
-use ds_lint::{LintConfig, Profile, Rule, assert_clean, markup};
+use ds_lint::{LintConfig, Profile, assert_clean, markup};
 
 /// A server render of the app opened on `page`, inside the runtime the app's watches need.
 fn render(env: Env) -> String {
@@ -53,36 +53,6 @@ fn our_stylesheet_has_no_colours_or_raw_values() {
             ..LintConfig::new(&ds::kits())
         },
     );
-}
-
-/// Rule 2: every class on every page is styled by quire's sheet or ours.
-#[test]
-fn every_page_uses_only_styled_classes() {
-    let sandbox = Sandbox::new("coherence-classes");
-    for page in pages(&sandbox) {
-        let html = render_page(&sandbox, &page);
-        let offences = markup(&html, &css(), &LintConfig::new(&ds::kits()));
-        let unstyled: Vec<_> = offences
-            .iter()
-            .filter(|o| o.rule == Rule::UnstyledClass)
-            .collect();
-        assert!(unstyled.is_empty(), "{}: {unstyled:#?}", page.0);
-    }
-}
-
-/// Rule 2: no hand-written form control or svg on any page.
-#[test]
-fn no_page_draws_a_raw_form_control_or_svg() {
-    let sandbox = Sandbox::new("coherence-raw");
-    for page in pages(&sandbox) {
-        let html = render_page(&sandbox, &page);
-        let offences = markup(&html, &css(), &LintConfig::new(&ds::kits()));
-        let raw: Vec<_> = offences
-            .iter()
-            .filter(|o| o.rule == Rule::RawMarkup)
-            .collect();
-        assert!(raw.is_empty(), "{}: {raw:#?}", page.0);
-    }
 }
 
 /// The whole lint, every rule the markup lint has, on every page.

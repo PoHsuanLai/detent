@@ -1,15 +1,13 @@
 //! Settings' account actions, called over a private bus the way intentd calls an app: the list
 //! says what an agent may know of the accounts, and nothing in the manifest changes one.
 
-use crate::support::{Listed, Told, World, entity, key};
-use detent_intents::manifest;
+use crate::support::{Listed, World, entity, key};
 use detent_model::{
     Absence, Account, AccountKey, AccountService, AccountStatus, AccountsPane, Place,
 };
 use docket_core::{AppRefusal, Value};
 use ds_settings::schema::KeyPath;
 use porter_core::sheet::ProviderGroup;
-use prov::Effect;
 use prov::Integrity;
 
 fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Account {
@@ -72,27 +70,18 @@ async fn listing_the_accounts_gives_labels_kinds_and_state_and_trusts_none_of_it
         .await
         .expect("listed");
     let told = out.value.expect("a value");
-    assert_eq!(
-        told.value,
-        Value::Text(
-            "Home cloud (storage, calendar): Signed in\nWork mail (mail): Needs sign-in".to_owned()
-        )
-    );
-    assert_eq!(told.label.integrity, Integrity::Untrusted);
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn the_list_carries_no_id_and_no_key() {
-    let world = World::start_listing("list-no-ids", &[], two_accounts()).await;
-    let out = world
-        .perform("settings.accounts.list", &[])
-        .await
-        .expect("listed");
-    let Some(Value::Text(text)) = out.value.map(|v| v.value) else {
+    let Value::Text(text) = &told.value else {
         panic!("text");
     };
-    assert!(!text.contains("secret-id"), "{text}");
-    assert!(!text.contains("accounts."), "{text}");
+    assert_eq!(
+        text,
+        "Home cloud (storage, calendar): Signed in\nWork mail (mail): Needs sign-in"
+    );
+    assert!(
+        !text.contains("secret-id") && !text.contains("accounts."),
+        "no id and no key: {text}"
+    );
+    assert_eq!(told.label.integrity, Integrity::Untrusted);
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -107,30 +96,6 @@ async fn no_accountd_is_a_refusal_with_words() {
         panic!("{refusal:?}");
     };
     assert!(why.0.contains("not running"), "{}", why.0);
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn opening_the_accounts_tells_the_window_to_show_the_page() {
-    let world = World::start("open-accounts", &[]).await;
-    world
-        .perform("settings.accounts.open", &[])
-        .await
-        .expect("opened");
-    assert_eq!(world.window.told(), [Told::Page("accounts".to_owned())]);
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn the_manifest_offers_no_way_to_change_an_account() {
-    let manifest = manifest().expect("a manifest");
-    let accounts: Vec<_> = manifest
-        .manifest()
-        .actions
-        .iter()
-        .filter(|action| action.name.as_str().starts_with("settings.accounts."))
-        .collect();
-    let names: Vec<&str> = accounts.iter().map(|a| a.name.as_str()).collect();
-    assert_eq!(names, ["settings.accounts.list", "settings.accounts.open"]);
-    assert!(accounts.iter().all(|action| action.effect == Effect::Read));
 }
 
 #[tokio::test(flavor = "multi_thread")]

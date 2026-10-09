@@ -45,21 +45,14 @@ mod tests {
         let link = WindowLink(outbox);
         link.open_page(PageSlug("dock".to_owned())).expect("sent");
         link.files_changed().expect("sent");
+        link.open_account(AccountTarget::List).expect("sent");
+        link.raise(Some("t".to_owned())).expect("sent");
         let mut notices = inbox.take().expect("the receiver");
         assert_eq!(
             notices.try_recv(),
             Ok(Notice::OpenPage(PageSlug("dock".to_owned())))
         );
         assert_eq!(notices.try_recv(), Ok(Notice::Reload));
-    }
-
-    #[test]
-    fn an_account_and_a_raise_reach_the_window() {
-        let (outbox, inbox) = inbox();
-        let link = WindowLink(outbox);
-        link.open_account(AccountTarget::List).expect("sent");
-        link.raise(Some("t".to_owned())).expect("sent");
-        let mut notices = inbox.take().expect("the receiver");
         assert_eq!(
             notices.try_recv(),
             Ok(Notice::OpenAccount(AccountTarget::List))

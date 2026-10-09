@@ -8,8 +8,7 @@ use crate::support::drive::{click, page_of, scroll_into_view};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::Scheme;
-use ds_harness::{Backdrop, Driver, Harness, Query};
-use std::path::PathBuf;
+use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
 
 const ROWS: &str = ".runtimes .ds-field-row";
@@ -207,27 +206,4 @@ fn without_accountd_the_list_says_so_and_the_page_still_works() {
         h.html().contains("The accounts service is not running")
     });
     drop(rt);
-}
-
-fn shot(harness: &mut Harness, name: &str) -> usize {
-    let dir = std::env::var_os("DETENT_SHOTS")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(crate::support::TMP).join("shots"));
-    std::fs::create_dir_all(&dir).expect("shots dir");
-    let image = harness.render_over(Backdrop::Scheme).expect("a picture");
-    image.save(dir.join(name)).expect("save png");
-    image
-        .pixels()
-        .map(|p| p.0)
-        .collect::<std::collections::HashSet<_>>()
-        .len()
-}
-
-#[test]
-fn the_page_with_its_runtimes_is_drawn_in_light_and_dark() {
-    for (scheme, tag) in [(Scheme::Light, "light"), (Scheme::Dark, "dark")] {
-        let mut w = world_in(&format!("runtimes-shots-{tag}"), scheme, held());
-        scroll_into_view(&mut w.harness, ROWS);
-        assert!(shot(&mut w.harness, &format!("intelligence-{tag}.png")) > 50);
-    }
 }

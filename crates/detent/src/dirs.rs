@@ -65,54 +65,58 @@ mod tests {
     use std::ffi::OsString;
     use std::path::PathBuf;
 
-    #[test]
-    fn xdg_config_home_wins_over_home() {
-        let cases: &[(Option<&str>, Option<&str>, Option<&str>)] = &[
-            (Some("/xdg"), Some("/home/ada"), Some("/xdg")),
-            (None, Some("/home/ada"), Some("/home/ada/.config")),
-            (None, None, None),
-        ];
-        for (xdg, home, want) in cases {
-            let got = config_home_from(xdg.map(OsString::from), home.map(OsString::from));
-            assert_eq!(
-                got.map(|h| h.0),
-                want.map(PathBuf::from),
-                "{xdg:?} {home:?}"
-            );
-        }
-    }
+    type Home = fn(Option<OsString>, Option<OsString>) -> Option<PathBuf>;
 
     #[test]
-    fn xdg_state_home_wins_over_home() {
-        let cases: &[(Option<&str>, Option<&str>, Option<&str>)] = &[
-            (Some("/xdg"), Some("/home/ada"), Some("/xdg")),
-            (None, Some("/home/ada"), Some("/home/ada/.local/state")),
-            (None, None, None),
+    fn the_xdg_variable_wins_over_home() {
+        let config: Home = |xdg, home| config_home_from(xdg, home).map(|h| h.0);
+        let state: Home = |xdg, home| state_home_from(xdg, home).map(|h| h.0);
+        let data: Home = |xdg, home| data_home_from(xdg, home).map(|h| h.0);
+        // `(directory, XDG variable, HOME, the home)`.
+        let cases: &[(&str, Home, Option<&str>, Option<&str>, Option<&str>)] = &[
+            (
+                "config",
+                config,
+                Some("/xdg"),
+                Some("/home/ada"),
+                Some("/xdg"),
+            ),
+            (
+                "config",
+                config,
+                None,
+                Some("/home/ada"),
+                Some("/home/ada/.config"),
+            ),
+            ("config", config, None, None, None),
+            (
+                "state",
+                state,
+                Some("/xdg"),
+                Some("/home/ada"),
+                Some("/xdg"),
+            ),
+            (
+                "state",
+                state,
+                None,
+                Some("/home/ada"),
+                Some("/home/ada/.local/state"),
+            ),
+            ("state", state, None, None, None),
+            ("data", data, Some("/xdg"), Some("/home/ada"), Some("/xdg")),
+            (
+                "data",
+                data,
+                None,
+                Some("/home/ada"),
+                Some("/home/ada/.local/share"),
+            ),
+            ("data", data, None, None, None),
         ];
-        for (xdg, home, want) in cases {
-            let got = state_home_from(xdg.map(OsString::from), home.map(OsString::from));
-            assert_eq!(
-                got.map(|h| h.0),
-                want.map(PathBuf::from),
-                "{xdg:?} {home:?}"
-            );
-        }
-    }
-
-    #[test]
-    fn xdg_data_home_wins_over_home() {
-        let cases: &[(Option<&str>, Option<&str>, Option<&str>)] = &[
-            (Some("/xdg"), Some("/home/ada"), Some("/xdg")),
-            (None, Some("/home/ada"), Some("/home/ada/.local/share")),
-            (None, None, None),
-        ];
-        for (xdg, home, want) in cases {
-            let got = data_home_from(xdg.map(OsString::from), home.map(OsString::from));
-            assert_eq!(
-                got.map(|h| h.0),
-                want.map(PathBuf::from),
-                "{xdg:?} {home:?}"
-            );
+        for (name, function, xdg, home, want) in cases {
+            let got = function(xdg.map(OsString::from), home.map(OsString::from));
+            assert_eq!(got, want.map(PathBuf::from), "{name} {xdg:?} {home:?}");
         }
     }
 

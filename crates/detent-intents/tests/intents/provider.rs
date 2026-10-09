@@ -26,13 +26,22 @@ fn page(slug: &str) -> Value {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn opening_a_page_tells_the_window() {
-    let world = world("open-a-page").await;
-    let out = world
-        .perform("settings.page.show", &[("page", page("dock"))])
-        .await
-        .expect("opened");
-    assert_eq!(out.undo, Undoable::No);
-    assert_eq!(world.window.told(), [Told::Page("dock".to_owned())]);
+    // `(action, its arguments, the page the window is told)`.
+    let cases: [(&str, Vec<(&str, Value)>, &str); 3] = [
+        ("settings.page.show", vec![("page", page("dock"))], "dock"),
+        ("settings.accounts.open", vec![], "accounts"),
+        ("settings.intelligence.open", vec![], "intelligence"),
+    ];
+    for (action, args, shown) in cases {
+        let world = world(&format!("open-{shown}")).await;
+        let out = world.perform(action, &args).await.expect(action);
+        assert_eq!(out.undo, Undoable::No, "{action}");
+        assert_eq!(
+            world.window.told(),
+            [Told::Page(shown.to_owned())],
+            "{action}"
+        );
+    }
 }
 
 #[tokio::test(flavor = "multi_thread")]

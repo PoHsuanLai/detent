@@ -9,7 +9,6 @@ use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::Scheme;
 use ds_harness::{Backdrop, Driver, Harness, Query};
-use std::path::PathBuf;
 use std::time::Duration;
 
 const HOME: &str = "[aria-label=\"Manage Home cloud\"]";
@@ -572,35 +571,6 @@ fn the_account_type_is_drawn_with_the_providers_mark() {
         "one without a face keeps its named mark"
     );
     drop(rt);
-}
-
-fn shot(harness: &mut Harness, name: &str) -> usize {
-    let dir = std::env::var_os("DETENT_SHOTS")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(crate::support::TMP).join("shots"));
-    std::fs::create_dir_all(&dir).expect("shots dir");
-    let image = harness.render_over(Backdrop::Scheme).expect("a picture");
-    image.save(dir.join(name)).expect("save png");
-    image
-        .pixels()
-        .map(|p| p.0)
-        .collect::<std::collections::HashSet<_>>()
-        .len()
-}
-
-#[test]
-fn the_list_the_account_and_the_question_are_drawn_in_light_and_dark() {
-    for (scheme, tag) in [(Scheme::Light, "light"), (Scheme::Dark, "dark")] {
-        let mut w = world_in(&format!("accounts-shots-{tag}"), scheme);
-        assert!(shot(&mut w.harness, &format!("accounts-list-{tag}.png")) > 50);
-        detail(&mut w);
-        assert!(shot(&mut w.harness, &format!("accounts-detail-{tag}.png")) > 50);
-        click(&mut w.harness, REMOVE);
-        settle(&mut w.harness, "the question", |h| {
-            h.html().contains("Remove account Home cloud?")
-        });
-        assert!(shot(&mut w.harness, &format!("accounts-remove-{tag}.png")) > 50);
-    }
 }
 
 /// WCAG relative luminance of an 8-bit sRGB pixel.

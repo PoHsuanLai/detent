@@ -125,16 +125,18 @@ mod tests {
 
     #[test]
     fn a_slider_position_maps_to_a_value_and_back() {
-        let cases: &[(&str, Range, u16, Value)] = &[
-            ("floor", whole(), 0, Value::Integer(48)),
-            ("ceiling", whole(), 1000, Value::Integer(128)),
-            ("middle", whole(), 500, Value::Integer(88)),
-            ("fraction", fractional(), 250, Value::Float(1.0)),
-            ("fraction top", fractional(), 1000, Value::Float(4.0)),
+        // `(case, range, position, value, as a person reads it)`.
+        let cases: &[(&str, Range, u16, Value, &str)] = &[
+            ("floor", whole(), 0, Value::Integer(48), "48 px"),
+            ("ceiling", whole(), 1000, Value::Integer(128), "128 px"),
+            ("middle", whole(), 500, Value::Integer(88), "88 px"),
+            ("fraction", fractional(), 250, Value::Float(1.0), "1"),
+            ("fraction top", fractional(), 1000, Value::Float(4.0), "4"),
         ];
-        for (name, range, position, value) in cases {
+        for (name, range, position, value, shown) in cases {
             assert_eq!(&range.value_at(*position), value, "{name}: value_at");
             assert_eq!(range.position(value), *position, "{name}: position");
+            assert_eq!(&range.display(value), shown, "{name}: display");
         }
     }
 
@@ -161,11 +163,5 @@ mod tests {
         for (name, range, value, want) in cases {
             assert_eq!(&range.admit(value), want, "{name}");
         }
-    }
-
-    #[test]
-    fn a_value_reads_with_its_unit() {
-        assert_eq!(whole().display(&Value::Integer(48)), "48 px");
-        assert_eq!(fractional().display(&Value::Float(0.55)), "0.55");
     }
 }

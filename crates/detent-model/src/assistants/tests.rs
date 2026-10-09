@@ -39,51 +39,27 @@ fn written(effects: &[PlacesEffect]) -> Option<&Places> {
 }
 
 #[test]
-fn turning_a_cloud_account_on_asks_first_and_writes_nothing() {
-    let (next, effects) = places_step(
-        state(),
-        PlacesInput::CloudSwitched {
-            name: name("me@acme.example"),
-            to: Toggle::On,
-        },
-    );
-    assert_eq!(next.confirming, Some(name("me@acme.example")));
-    assert_eq!(cloud(&next).allowed, CloudAllowed::Off);
+fn a_cloud_account_is_turned_on_only_after_the_person_says_yes() {
+    let switch = PlacesInput::CloudSwitched {
+        name: name("me@acme.example"),
+        to: Toggle::On,
+    };
+    // The switch asks first and writes nothing.
+    let (asked, effects) = places_step(state(), switch);
+    assert_eq!(asked.confirming, Some(name("me@acme.example")));
+    assert_eq!(cloud(&asked).allowed, CloudAllowed::Off);
     assert!(effects.is_empty());
-}
-
-#[test]
-fn yes_turns_the_asked_account_on_and_writes_it() {
-    let (asked, _) = places_step(
-        state(),
-        PlacesInput::CloudSwitched {
-            name: name("me@acme.example"),
-            to: Toggle::On,
-        },
-    );
-    let (next, effects) = places_step(asked, PlacesInput::Answered(Confirm::Yes));
+    // Yes turns it on and writes it.
+    let (next, effects) = places_step(asked.clone(), PlacesInput::Answered(Confirm::Yes));
     assert_eq!(cloud(&next).allowed, CloudAllowed::On);
     assert_eq!(next.confirming, None);
     assert_eq!(written(&effects), Some(&next.places));
-}
-
-#[test]
-fn no_leaves_it_off_and_writes_nothing() {
-    let (asked, _) = places_step(
-        state(),
-        PlacesInput::CloudSwitched {
-            name: name("me@acme.example"),
-            to: Toggle::On,
-        },
-    );
+    // No leaves it off and writes nothing.
     let (next, effects) = places_step(asked, PlacesInput::Answered(Confirm::No));
     assert_eq!(cloud(&next).allowed, CloudAllowed::Off);
     assert_eq!(next.confirming, None);
     assert!(effects.is_empty());
-}
-
-#[test]
-fn an_answer_with_nothing_asked_changes_nothing() {
+    // An answer with nothing asked changes nothing.
     let (next, effects) = places_step(state(), PlacesInput::Answered(Confirm::Yes));
     assert_eq!(next, state());
     assert!(effects.is_empty());

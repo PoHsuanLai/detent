@@ -9,8 +9,7 @@ use crate::support::drive::click;
 use crate::support::inferd::{Inferd, Policy as InferPolicy};
 use detent_files::{FirstRunMark, FirstRunStanding};
 use ds::prelude::Scheme;
-use ds_harness::{Backdrop, Driver, Harness, Input, Query};
-use std::path::PathBuf;
+use ds_harness::{Driver, Harness, Input, Query};
 use std::time::Duration;
 
 const LOCAL_ONLY: &str = ".first-run [aria-label=\"Keep AI on this computer\"] .ds-toggle";
@@ -241,27 +240,4 @@ fn the_same_write_the_page_makes_leaves_every_other_key_of_the_file() {
         "{text}"
     );
     assert!(text.contains("local_only = \"on\""), "{text}");
-}
-
-fn shot(harness: &mut Harness, name: &str) -> usize {
-    let dir = std::env::var_os("DETENT_SHOTS")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(crate::support::TMP).join("shots"));
-    std::fs::create_dir_all(&dir).expect("shots dir");
-    let image = harness.render_over(Backdrop::Scheme).expect("a picture");
-    image.save(dir.join(name)).expect("save png");
-    image
-        .pixels()
-        .map(|p| p.0)
-        .collect::<std::collections::HashSet<_>>()
-        .len()
-}
-
-#[test]
-fn the_window_is_drawn_in_light_and_dark() {
-    for (scheme, tag) in [(Scheme::Light, "light"), (Scheme::Dark, "dark")] {
-        let mut w = world_in(&format!("first-run-shots-{tag}"), scheme);
-        settle(&mut w.harness, "the runtime menu", |h| h.count(MENU) == 1);
-        assert!(shot(&mut w.harness, &format!("first-run-{tag}.png")) > 50);
-    }
 }

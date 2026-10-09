@@ -26,22 +26,29 @@ pub fn manifest() -> Result<ValidManifest, ManifestFault> {
 #[cfg(test)]
 mod tests {
     use super::manifest;
+    use prov::Effect;
 
     #[test]
-    fn the_shipped_manifest_validates_and_names_its_actions() {
+    fn the_shipped_manifest_validates_and_names_its_actions_with_their_effects() {
         let manifest = manifest().expect("a valid manifest");
         let m = manifest.manifest();
         assert_eq!(m.app.as_str(), "org.quire.Settings");
-        let names: Vec<&str> = m.actions.iter().map(|a| a.name.as_str()).collect();
+        // Nothing offers to change an account or an `ai.*` row: only a key may be set, and it
+        // can be taken back.
+        let actions: Vec<(&str, Effect)> = m
+            .actions
+            .iter()
+            .map(|a| (a.name.as_str(), a.effect))
+            .collect();
         assert_eq!(
-            names,
+            actions,
             [
-                "settings.page.show",
-                "settings.key.read",
-                "settings.key.set",
-                "settings.accounts.list",
-                "settings.accounts.open",
-                "settings.intelligence.open"
+                ("settings.page.show", Effect::Read),
+                ("settings.key.read", Effect::Read),
+                ("settings.key.set", Effect::UndoableWrite),
+                ("settings.accounts.list", Effect::Read),
+                ("settings.accounts.open", Effect::Read),
+                ("settings.intelligence.open", Effect::Read),
             ]
         );
     }
