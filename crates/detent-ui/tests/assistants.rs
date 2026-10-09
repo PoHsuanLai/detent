@@ -49,6 +49,11 @@ struct World {
 }
 
 fn world(name: &str, held: Vec<Held>, file: Option<&str>) -> World {
+    world_with(name, held, file, None)
+}
+
+/// The same, with docket's list of agents too.
+fn world_with(name: &str, held: Vec<Held>, file: Option<&str>, agents: Option<&str>) -> World {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()
@@ -60,6 +65,9 @@ fn world(name: &str, held: Vec<Held>, file: Option<&str>) -> World {
     let sandbox = Sandbox::new(name).on_bus(&bus.address);
     if let Some(text) = file {
         sandbox.write(SETTINGS, text);
+    }
+    if let Some(text) = agents {
+        sandbox.write("docket/agents.toml", text);
     }
     let mut harness = sandbox.harness(intelligence());
     settle(&mut harness, "the places", |h| {
@@ -216,16 +224,31 @@ fn an_assistant_that_signs_itself_in_keeps_its_own_row_apart_from_the_places() {
         .signing_in("agent");
     let mut w = world("assistants-external", vec![acme(), claude], None);
     settle(&mut w.harness, "the assistants", |h| {
-        h.count("[data-assistants=\"others\"]") == 1
+        h.count("[data-assistants=\"coding\"]") == 1
     });
     let html = w.harness.html();
-    let others = &html[html.find("data-assistants=\"others\"").expect("the group")..];
+    let others = &html[html.find("data-assistants=\"coding\"").expect("the group")..];
     assert!(others.contains("Claude Code") && others.contains("Needs sign-in"));
     assert!(!others.contains("me@acme.example"), "no combined list");
     click(&mut w.harness, "[aria-label=\"Sign in Claude Code\"]");
     settle(&mut w.harness, "the account", |h| {
         h.count(".accounts-detail") == 1
     });
+}
+
+#[test]
+fn an_assistant_docket_and_accountd_both_know_is_one_row_with_both_facts() {
+    let claude = Held::new("claude", "Claude Code", "needs_login", &["agent"])
+        .in_group("agent")
+        .signing_in("agent");
+    let mut w = world_with("assistants-joined", vec![claude], None, Some(AGENTS));
+    let group = "[data-assistants=\"coding\"]";
+    settle(&mut w.harness, "the row", |h| h.count(group) == 1);
+    let text = w.harness.text_of(group).unwrap_or_default();
+    assert_eq!(text.matches("Claude Code").count(), 1, "one row: {text}");
+    for want in ["Needs sign-in", "The agent\u{2019}s own choice"] {
+        assert!(text.contains(want), "{want} in {text}");
+    }
 }
 
 // ---- Your computers: the persons computers, the Add list, the guests ----

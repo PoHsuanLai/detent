@@ -2,7 +2,6 @@
 //! computer is always on; each of the person's computers has a switch, on once added; each
 //! signed-in cloud account has a switch that is off until the person confirms.
 
-use super::external_view::ExternalAssistants;
 use super::models::use_picker;
 use super::outside_view::OutsideAssistants;
 use super::place_row::{PlaceEntry, PlaceHandlers, PlaceRow, PlaceView, Switch};
@@ -219,8 +218,7 @@ pub(crate) fn Assistants() -> Element {
                     }
                 }
             }
-            ExternalAssistants { pane: pane.clone() }
-            OutsideAssistants {}
+            OutsideAssistants { pane: pane.clone() }
             if let Some((title, message)) = question {
                 Alert {
                     title,

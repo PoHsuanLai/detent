@@ -53,7 +53,10 @@ pub use first_run::{
 };
 pub use layout::{Block, blocks};
 pub use navigation::{landing, visible_pages};
-pub use outside::{AGENTS_OWN, Entry, model_choice, model_menu, model_word, way_choice, way_menu};
+pub use outside::{
+    AGENTS_OWN, Assistant, Entry, assistants_of, model_choice, model_menu, model_word, way_choice,
+    way_menu,
+};
 pub use page::PageSlug;
 pub use picker::{
     Absence, Applying, ChoiceSection, Described, KindRows, ModelRow, PickerEffect, PickerInput,
