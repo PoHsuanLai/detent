@@ -362,7 +362,8 @@ fn a_guest_is_allowed_denied_and_forgotten() {
 
 #[test]
 fn each_refusal_reads_as_a_sentence_and_changes_nothing() {
-    let mut c = computers("computers-refused", vec![], vec![STUDIO], vec![LAPTOP]);
+    // The service answers any change with the refusal it is told to, so one button provokes all four.
+    let mut c = computers("computers-refused", vec![], vec![STUDIO], vec![]);
     press(&mut c.harness, "Add a computer");
     settle(&mut c.harness, "the lender", |h| {
         group_text(h).contains("Say yes on studio")
@@ -381,12 +382,12 @@ fn each_refusal_reads_as_a_sentence_and_changes_nothing() {
         ),
         (
             "NotAsking",
-            "Allow laptop",
+            "Add studio",
             "That computer is not asking to use this computer's models.",
         ),
         (
             "TooManyAsking",
-            "Allow laptop",
+            "Add studio",
             "Too many computers are asking at once.",
         ),
     ];

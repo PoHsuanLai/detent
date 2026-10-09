@@ -3,7 +3,8 @@
 # changes what inferd does), written by hand until inferd can write its own (`--write-schema`).
 # Install to $XDG_DATA_DIRS/quire/settings/inferd.settings.toml.
 #
-# Not in this file: `ai.model.<kind>.<tier>`, the model picker. Its choices are the models inferd
+# Not in this file: `ai.model.<slot>.<tier>`, the model picker (slots: text, voice_in, voice_out,
+# image_in, computer_use, embeddings; the old kind segments llm, speech_in and speech_out still read). Its choices are the models inferd
 # knows now, so inferd describes those rows itself, as the live module org.quire.SettingsModule1 at
 # /org/quire/Inference1/settings (callable by the Settings role only).
 #
@@ -12,6 +13,9 @@
 app = "inferd"
 file = "quire/inferd.toml"
 version = 1
+# The tables inferd keeps in its file beside the rows (quire's ForeignTables; v0.2.19's parser
+# ignores this line, v0.2.20 reads it).
+foreign = ["engines", "probe", "callers"]
 
 [[key]]
 path = "ai.local_only"
@@ -30,6 +34,69 @@ variants = ["on", "off"]
 [key.labels]
 on = "On"
 off = "Off"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.attached.my_network"
+default = "off"
+label = "Count my other machines as this computer"
+help = "An AI model you set up on another of your own machines (reached through a tunnel, such as a lab server) keeps your data on your own network, but it is not this computer. While off, data set to stay on this computer is not sent to it. While on, it may receive that data too."
+section = "Models"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.labels]
+off = "Off"
+on = "On"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.tailnet.serve"
+default = "off"
+label = "Let my other computers use this computer's models"
+help = "While on, your other computers on your Tailscale network may ask to use the AI models that run on this computer. The first time each one asks, you are asked whether to let it. Only your own computers are asked about: a server, or a computer that belongs to someone else, is never let in unless you allow it in Settings. Your AI accounts and the models you have set up on other computers are never lent. While off, this computer does not answer them."
+section = "Models"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.labels]
+off = "Off"
+on = "On"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.agents.endpoint"
+default = "off"
+label = "Let coding agents use my AI models"
+help = "While on, an external coding agent that your desktop starts may be given a private address on this computer through which it uses an AI account you have granted it, or a model on this computer, with your spend limits and without ever holding the account's key. While off, no such address is opened."
+section = "Models"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.labels]
+off = "Off"
+on = "On"
 
 [key.page]
 kind = "intelligence"
@@ -104,6 +171,28 @@ kind = "intelligence"
 path = "ai.floor.contacts"
 default = "on_device"
 label = "Contacts"
+help = "The farthest data of this kind may travel to be answered by a model."
+section = "Models"
+exposure = "basic"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["on_device", "local_network", "anywhere"]
+
+[key.labels]
+on_device = "This computer"
+local_network = "My machines"
+anywhere = "Anywhere"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.floor.tasks"
+default = "on_device"
+label = "Tasks"
 help = "The farthest data of this kind may travel to be answered by a model."
 section = "Models"
 exposure = "basic"
@@ -380,6 +469,82 @@ unit = "permille"
 kind = "intelligence"
 
 [[key]]
+path = "ai.spend.account_daily_cents"
+default = 0
+label = "Daily cap per account"
+help = "The most a cloud account may cost in a day, in US cents, counting every app that uses it. 0 is no cap. Days and months are counted in UTC."
+section = "Automatic"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 10000000
+unit = "cents"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.spend.account_monthly_cents"
+default = 0
+label = "Monthly cap per account"
+help = "The most a cloud account may cost in a month, in US cents, counting every app that uses it. 0 is no cap. Days and months are counted in UTC."
+section = "Automatic"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 10000000
+unit = "cents"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.spend.app_daily_cents"
+default = 0
+label = "Daily cap per app"
+help = "The most one app may spend on cloud models in a day, in US cents, whichever account pays. 0 is no cap. Days and months are counted in UTC."
+section = "Automatic"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 10000000
+unit = "cents"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.spend.app_monthly_cents"
+default = 0
+label = "Monthly cap per app"
+help = "The most one app may spend on cloud models in a month, in US cents, whichever account pays. 0 is no cap. Days and months are counted in UTC."
+section = "Automatic"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 0
+max = 10000000
+unit = "cents"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
 path = "ai.structured.open_text"
 default = 4096
 label = "Longest free text"
@@ -451,6 +616,27 @@ kind = "bounded"
 min = 0
 max = 3
 unit = "re-asks"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.pipeline.describe_images"
+default = "off"
+label = "Describe images for text-only models"
+help = "When the answering model cannot read an image, let another model describe it first. The description loses detail, so the answer says it was used. Off refuses instead."
+section = "Models"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["off", "on"]
+
+[key.labels]
+off = "Off"
+on = "On"
 
 [key.page]
 kind = "intelligence"

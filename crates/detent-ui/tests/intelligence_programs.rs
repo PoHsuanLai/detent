@@ -40,7 +40,14 @@ fn in_order(html: &str, texts: &[&str]) {
 
 /// `(section, the rows it shows before Advanced)`, in the order the page draws them.
 const BASIC: &[(&str, &[&str])] = &[
-    ("Models", &["Keep AI on this computer"]),
+    (
+        "Models",
+        &[
+            "Keep AI on this computer",
+            "Count my other machines as this computer",
+            "Let my other computers use this computer's models",
+        ],
+    ),
     ("Memory", &["Keep memory files", "Tidy memory"]),
     (
         "Computer use",
@@ -164,6 +171,37 @@ fn a_write_lands_in_the_file_of_the_program_that_owns_the_row() {
         sandbox.read("quire/inferd.toml"),
         None,
         "inferd's file is not touched"
+    );
+}
+
+#[test]
+fn lending_this_computers_models_is_off_until_the_switch_is_flipped() {
+    const LABEL: &str = "Let my other computers use this computer's models";
+    let sandbox = Sandbox::new("programs-tailnet-serve");
+    let mut harness = sandbox.harness(intelligence());
+    let toggle = format!("[aria-label=\"{LABEL}\"] .ds-toggle");
+    scroll_into_view(&mut harness, &toggle);
+    assert_eq!(
+        harness.attr(&toggle, "aria-checked").as_deref(),
+        Some("false"),
+        "off by default"
+    );
+    assert_eq!(
+        sandbox.read("quire/inferd.toml"),
+        None,
+        "looking writes nothing"
+    );
+    click(&mut harness, &toggle);
+    let inferd = sandbox.read("quire/inferd.toml").expect("inferd's file");
+    let table: toml::Table = inferd.parse().expect("toml");
+    assert_eq!(
+        table["ai"]["tailnet"]["serve"].as_str(),
+        Some("on"),
+        "{inferd}"
+    );
+    assert_eq!(
+        harness.attr(&toggle, "aria-checked").as_deref(),
+        Some("true")
     );
 }
 
