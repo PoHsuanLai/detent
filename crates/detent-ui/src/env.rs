@@ -7,7 +7,7 @@ use crate::inference::ReasonFeed;
 use crate::lender::Lender;
 use crate::live::BusSource;
 use crate::marks::ProviderMarks;
-use detent_files::{ConfigHome, DataHome, FirstRunMark, StateHome};
+use detent_files::{ConfigHome, DataHome, FirstRunMark, KeymapFiles, StateHome};
 use detent_model::{Catalogue, PageSlug, Warning, discover};
 use ds_settings::SystemPrefsSource;
 use std::path::PathBuf;
@@ -50,6 +50,8 @@ pub struct Env {
     /// How the switch that lends this computer's models reaches the files and the service
     /// manager; the person's own session unless a test hands in another.
     pub lender: Lender,
+    /// The keymap files the Shortcuts list reads, and the one it writes: the person's own.
+    pub keymap: KeymapFiles,
 }
 
 impl Env {
@@ -64,6 +66,7 @@ impl Env {
         bus: BusSource,
     ) -> Env {
         let found = discover(schema_dirs);
+        let keymap = KeymapFiles::under(&config_home);
         Env {
             catalogue: Arc::new(Catalogue::build(&found.programs)),
             warnings: found.warnings,
@@ -77,12 +80,18 @@ impl Env {
             reasons: ReasonFeed::default(),
             marks: ProviderMarks::shipped(),
             lender: Lender::from_env(),
+            keymap,
         }
     }
 
     /// This environment with the lending switch reaching `lender`.
     pub fn with_lender(self, lender: Lender) -> Env {
         Env { lender, ..self }
+    }
+
+    /// This environment with the Shortcuts list over `keymap`.
+    pub fn with_keymap(self, keymap: KeymapFiles) -> Env {
+        Env { keymap, ..self }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.

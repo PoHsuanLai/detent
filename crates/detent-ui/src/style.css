@@ -131,6 +131,7 @@
 
 .assistants,
 .spaces,
+.shortcuts,
 .runtimes,
 .computers {
   display: flex;
@@ -164,4 +165,17 @@
   display: flex;
   align-self: flex-end;
   gap: var(--s-8);
+}
+
+.shortcut-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+}
+
+.shortcuts-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-10);
 }

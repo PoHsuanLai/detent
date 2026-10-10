@@ -49,6 +49,8 @@ fn environment(opening: Opening) -> Result<Env, ExitCode> {
         opening,
         BusSource::Session,
     );
+    let keymap = env.keymap.clone().with_machine_dir(&dirs::keycap_config_dir());
+    let env = env.with_keymap(keymap);
     for warning in &env.warnings {
         eprintln!("detent: {warning}");
     }

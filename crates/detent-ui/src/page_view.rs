@@ -7,6 +7,7 @@ use crate::env::Env;
 use crate::files::{Edit, Files};
 use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
 use crate::section_view::SectionView;
+use crate::shortcuts::ShortcutsPane;
 use crate::spaces::SpacesPane;
 use detent_model::{Block, PageSlug, blocks};
 use dioxus::prelude::*;
@@ -33,6 +34,7 @@ pub fn PageView(
                     },
                     Block::AccountsPane => rsx! { AccountsPane {} },
                     Block::SpacesPane => rsx! { SpacesPane {} },
+                    Block::Shortcuts => rsx! { ShortcutsPane {} },
                     Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
                     Block::ModelPicker => rsx! {

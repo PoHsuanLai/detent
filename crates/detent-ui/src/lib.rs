@@ -21,6 +21,7 @@ mod marks;
 mod page_view;
 mod section_view;
 mod sharing;
+mod shortcuts;
 mod sidebar;
 mod spaces;
 mod view;

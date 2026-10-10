@@ -1278,6 +1278,7 @@ dependencies = [
 name = "detent-files"
 version = "0.1.0"
 dependencies = [
+ "chordkit",
  "detent-model",
  "detent-testkit",
  "docket-agents",
@@ -1314,6 +1315,7 @@ name = "detent-model"
 version = "0.1.0"
 dependencies = [
  "almanac-core",
+ "chordkit",
  "detent-testkit",
  "docket-core",
  "docket-settings",
@@ -1334,6 +1336,7 @@ name = "detent-ui"
 version = "0.1.0"
 dependencies = [
  "almanac-core",
+ "chordkit",
  "detent-files",
  "detent-model",
  "detent-testkit",

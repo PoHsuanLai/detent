@@ -43,6 +43,18 @@ pub fn data_home() -> Option<DataHome> {
     data_home_from(std::env::var_os("XDG_DATA_HOME"), std::env::var_os("HOME"))
 }
 
+/// Where keycap keeps the machine's keymap: `$KEYCAP_CONFIG_DIR`, else `/etc/keycap` (keycap's
+/// own default).
+fn keycap_dir_from(var: Option<OsString>) -> PathBuf {
+    var.filter(|dir| !dir.is_empty())
+        .map_or_else(|| PathBuf::from("/etc/keycap"), PathBuf::from)
+}
+
+/// The directory of this computer's keymap.
+pub fn keycap_config_dir() -> PathBuf {
+    keycap_dir_from(std::env::var_os("KEYCAP_CONFIG_DIR"))
+}
+
 /// `dirs` without a directory already listed, in order: `$XDG_DATA_HOME` is often also in
 /// `$XDG_DATA_DIRS`, and its schemas would otherwise shadow themselves.
 fn unique(dirs: Vec<PathBuf>) -> Vec<PathBuf> {
@@ -61,7 +73,7 @@ pub fn schema_dirs() -> Vec<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::{config_home_from, data_home_from, state_home_from, unique};
+    use super::{config_home_from, data_home_from, keycap_dir_from, state_home_from, unique};
     use std::ffi::OsString;
     use std::path::PathBuf;
 
@@ -124,6 +136,19 @@ mod tests {
         for (name, function, xdg, home, want) in cases {
             let got = function(xdg.map(OsString::from), home.map(OsString::from));
             assert_eq!(got, want.map(PathBuf::from), "{name} {xdg:?} {home:?}");
+        }
+    }
+
+    #[test]
+    fn keycaps_directory_is_the_variable_or_its_default() {
+        let cases: &[(Option<&str>, &str)] = &[
+            (Some("/scratch/keycap"), "/scratch/keycap"),
+            (Some(""), "/etc/keycap"),
+            (None, "/etc/keycap"),
+        ];
+        for (var, want) in cases {
+            let got = keycap_dir_from(var.map(OsString::from));
+            assert_eq!(got, PathBuf::from(want), "{var:?}");
         }
     }
 

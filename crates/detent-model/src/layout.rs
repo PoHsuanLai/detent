@@ -24,6 +24,9 @@ pub enum Block {
     /// The desktop-wide Spaces accountd keeps, each with Remove: the Spaces page's rows that are
     /// in no file.
     SpacesPane,
+    /// The desktop's shortcuts, grouped, each with its chord and who set it: the Keyboard
+    /// page's rows that are in no schema.
+    Shortcuts,
 }
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
@@ -55,6 +58,9 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
         }
         Page::Spaces => {
             return std::iter::once(Block::SpacesPane).chain(sections).collect();
+        }
+        Page::KeyboardAndShortcuts => {
+            return sections.chain(std::iter::once(Block::Shortcuts)).collect();
         }
         Page::Intelligence => {}
         _ => return sections.collect(),
@@ -107,6 +113,7 @@ mod tests {
                 Block::AccountsPane => "<accounts>",
                 Block::Assistants => "<assistants>",
                 Block::SpacesPane => "<spaces>",
+                Block::Shortcuts => "<shortcuts>",
             })
             .collect()
     }
@@ -165,6 +172,12 @@ mod tests {
             Page::Spaces,
             &["Look"],
             &["<spaces>", "Look"],
+        ),
+        (
+            "the shortcuts follow the sections of the keyboard page",
+            Page::KeyboardAndShortcuts,
+            &["Typing"],
+            &["Typing", "<shortcuts>"],
         ),
         (
             "another page keeps the schema order and has no picker",

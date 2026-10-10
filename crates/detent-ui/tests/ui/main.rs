@@ -13,6 +13,7 @@ mod intelligence_programs;
 mod lending;
 mod local_runtimes;
 mod notices;
+mod shortcuts;
 mod snapshots;
 mod spaces;
 mod support;

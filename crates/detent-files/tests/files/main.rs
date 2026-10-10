@@ -3,6 +3,7 @@
 
 mod agents;
 mod first_run_mark;
+mod keymap;
 mod places;
 mod round_trip;
 

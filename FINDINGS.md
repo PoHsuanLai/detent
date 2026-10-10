@@ -248,6 +248,24 @@ Open items, each with its closing condition:
   only sees the finished `Vec`, so it cannot skip the row; the fix belongs in porter-client (decode
   row by row, drop and log the bad one). Open until porter does it; no test here for it.
 
+## Shortcuts (Keyboard page)
+
+- **The chord recorder is a stand-in.** `detent-ui/src/shortcuts/field.rs` shows the chord and has
+  Clear; quire's `ShortcutField` (with `Recorded` and `Clash`) is not on quire master. When it is,
+  replace `field.rs` with `field_recorder.rs` (same component and props, written against the
+  announced shape) and add a UI test that records a chord, meets "Used by" and answers Replace
+  and Cancel. Until then those paths are covered by `detent-model`'s `shortcuts` tests only.
+- **keycap-client is not used.** It is not on keycap's `main`, so `detent-files::KeymapFiles` reads
+  the keymap files itself: the person's `<config home>/keycap/keymap` and this computer's
+  `$KEYCAP_CONFIG_DIR/keymap` (else `/etc/keycap/keymap`) directly, never asking the daemon, and
+  the list follows them by looking at their stamps once a second. The standard column is
+  chordkit's conventions for our desktop without keycap's own bindings (`system_bindings`: the
+  launcher's second chord, Ctrl+Alt+Space). When keycap-client is on `main`, `KeycapSource`
+  replaces `KeymapFiles::read` and `stamp` (its `machine()`, `person()`, `watch`, and
+  `system_bindings` for the base keymap); the pure model does not change.
+- Actions of apps are not listed; a change to one in the person's file is kept as it is.
+- The page is listed only while some schema names it (sill's does); like Spaces it is not forced.
+
 ## Not in v1
 
 - **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): only inferd's

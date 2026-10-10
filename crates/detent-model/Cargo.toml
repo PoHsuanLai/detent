@@ -10,6 +10,7 @@ publish.workspace = true
 
 [dependencies]
 almanac-core = { workspace = true }
+chordkit = { workspace = true }
 docket-settings = { workspace = true }
 ds-settings = { workspace = true }
 porter-core = { workspace = true }

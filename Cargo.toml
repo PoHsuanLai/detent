@@ -55,6 +55,10 @@ porter-infer = { path = "../porter/crates/porter-infer" }
 # A rows column's pattern: the whole cell must match it.
 regex = { version = "1", default-features = false, features = ["std", "perf", "unicode"] }
 
+# The portable keymap core (own repo, public): the Shortcuts list reads and edits the person's keymap
+# with it. The same line as quire's pinned block, so the lock holds one copy.
+chordkit = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "ba094c62006c280ac53c4c5df5c0e639c1226c07" }
+
 # Editing a settings file in place, keeping every key, comment and spacing the edit does not touch.
 toml_edit = "0.25"
 
