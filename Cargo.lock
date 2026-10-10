@@ -4091,6 +4091,7 @@ version = "0.1.0"
 dependencies = [
  "porter-core",
  "porter-dbus",
+ "porter-fs",
  "porter-infer",
  "rustix",
  "serde",
@@ -4118,9 +4119,14 @@ dependencies = [
  "porter-core",
  "serde",
  "serde_json",
+ "thiserror 2.0.21",
  "tokio",
  "zbus",
 ]
+
+[[package]]
+name = "porter-fs"
+version = "0.1.0"
 
 [[package]]
 name = "porter-infer"
@@ -4209,6 +4215,7 @@ version = "0.1.0"
 dependencies = [
  "porter-core",
  "serde",
+ "thiserror 2.0.21",
 ]
 
 [[package]]

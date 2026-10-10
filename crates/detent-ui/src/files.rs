@@ -97,7 +97,8 @@ pub fn apply(env: &Env, files: &Files, edit: &Edit) -> Result<Files, FilesError>
 /// Writes `edit` and shows it in `files`; a refusal is told in a toast and `files` keeps what it
 /// held.
 pub fn store(env: &Env, mut files: Signal<Files>, toasts: ToastHub, edit: &Edit) {
-    match apply(env, &files.peek(), edit) {
+    let applied = apply(env, &files.peek(), edit);
+    match applied {
         Ok(next) => files.set(next),
         Err(error) => toasts.push(error.to_string(), None),
     }
