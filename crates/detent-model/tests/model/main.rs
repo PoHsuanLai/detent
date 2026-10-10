@@ -5,6 +5,7 @@ mod agent_marks;
 mod catalogue;
 mod discovery;
 mod intelligence_schemas;
+mod sync_now;
 
 /// Fails when a topic file in this directory is not declared above, so a new file cannot be
 /// left out of the binary without anyone noticing.

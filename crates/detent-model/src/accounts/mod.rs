@@ -12,6 +12,7 @@ mod reauth_end;
 mod sign_in_help;
 mod sign_out;
 mod step;
+mod sync_now;
 mod target;
 
 pub use add_account::{AddEnd, Adding};
@@ -27,6 +28,7 @@ pub use reauth_end::ReauthEnd;
 pub use sign_in_help::reauth_help;
 pub use sign_out::SignOutEnd;
 pub use step::{AccountsEffect, AccountsInput, accounts_step};
+pub use sync_now::SyncNowEnd;
 pub use target::{AccountSegment, AccountTarget};
 
 #[cfg(test)]

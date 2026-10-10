@@ -4,8 +4,8 @@
 use super::bus::BusSource;
 use super::daemon::Daemon;
 use super::io::{connect, next_owner, owner_changes};
-use detent_model::{DatasetName, HoldCounts, HoldInput};
-use porter_dbus::names::SYNC_ERROR_NOTHING_HELD;
+use detent_model::{DatasetName, HoldCounts, HoldInput, SyncNowEnd};
+use porter_dbus::names::{SYNC_ERROR_NOTHING_HELD, SYNC_ERROR_PAUSED};
 use porter_dbus::{BusError, SyncProxy};
 use std::collections::HashMap;
 use zbus::Connection;
@@ -130,4 +130,24 @@ pub(crate) async fn hold_now(bus: &BusSource, dataset: DatasetName) -> HoldInput
     }
     .await;
     HoldInput::Told { dataset, counts }
+}
+
+fn is_paused(error: &BusError) -> bool {
+    matches!(error, BusError::MethodError(name, _, _) if name.as_str() == SYNC_ERROR_PAUSED)
+}
+
+/// Has the sync service sync `dataset` at once. It answers when it took the request, not when the
+/// cycle ends.
+pub(crate) async fn sync_now(bus: &BusSource, dataset: DatasetName) -> SyncNowEnd {
+    let asked = async {
+        let connection = connect(bus).await.ok()?;
+        let proxy = SyncProxy::new(&connection).await.ok()?;
+        Some(proxy.sync_now(&dataset.0).await)
+    }
+    .await;
+    match asked {
+        Some(Ok(())) => SyncNowEnd::Started,
+        Some(Err(error)) if is_paused(&error) => SyncNowEnd::Paused,
+        Some(Err(_)) | None => SyncNowEnd::Failed,
+    }
 }

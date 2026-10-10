@@ -3,13 +3,15 @@
 use super::adapter::RemoveAlert;
 use super::detail_view::{AccountDetail, Handlers};
 use super::drive::{drive, is_valued};
-use super::hold_drive::drive_holds;
+use super::hold_drive::{drive_holds, drive_sync_now};
 use super::link::AccountLink;
 use super::list_view::{AccountList, ClientIds, FootHandlers};
 use crate::env::Env;
 use crate::live::{Daemon, Followed, follow, follow_holds};
 use crate::marks::ProviderMarks;
-use detent_model::{Absence, AccountsInput, AccountsReady, AccountsState, HoldInput, Holds};
+use detent_model::{
+    Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds,
+};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -80,6 +82,13 @@ pub fn AccountsPane() -> Element {
         }
     });
 
+    let send_sync = EventHandler::new({
+        let bus = env.bus.clone();
+        move |dataset: DatasetName| {
+            spawn(drive_sync_now(bus.clone(), toasts, dataset));
+        }
+    });
+
     // A link from another page asked for an account: open it once the list is there.
     let link = use_context::<AccountLink>();
     use_effect(move || {
@@ -93,7 +102,7 @@ pub fn AccountsPane() -> Element {
         AccountsState::Probing => rsx! {},
         AccountsState::Unavailable(absence) => rsx! { Unavailable { absence } },
         AccountsState::Ready(ready) => rsx! {
-            Ready { ready, holds: holds(), marks: env.marks.clone(), send, send_hold }
+            Ready { ready, holds: holds(), marks: env.marks.clone(), send, send_hold, send_sync }
         },
     }
 }
@@ -105,6 +114,7 @@ fn Ready(
     marks: ProviderMarks,
     send: EventHandler<AccountsInput>,
     send_hold: EventHandler<HoldInput>,
+    send_sync: EventHandler<DatasetName>,
 ) -> Element {
     let busy = ready.pending.is_some();
     let availability = if busy {
@@ -121,6 +131,7 @@ fn Ready(
         remove: EventHandler::new(move |path| send.call(AccountsInput::AskRemove(path))),
         sign_out: EventHandler::new(move |path| send.call(AccountsInput::AskSignOut(path))),
         hold: send_hold,
+        sync_now: send_sync,
     };
     let asked = ready.confirming.clone();
     let remove_name = asked

@@ -1,7 +1,8 @@
-//! Running the held deletions' effects against the sync service: the one place the pane calls it.
+//! Running the held deletions' effects, and "Sync now", against the sync service: the one place the
+//! pane calls it.
 
-use crate::live::{BusSource, confirm_discard, hold_now};
-use detent_model::{HoldEffect, HoldInput, Holds, hold_step};
+use crate::live::{BusSource, confirm_discard, hold_now, sync_now};
+use detent_model::{DatasetName, HoldEffect, HoldInput, Holds, hold_step};
 use dioxus::prelude::*;
 use ds::stack::toast_hub::ToastHub;
 use std::collections::VecDeque;
@@ -28,4 +29,9 @@ pub(super) async fn drive_holds(
             }
         }
     }
+}
+
+/// Asks the sync service to sync `dataset` now and tells the person how it went.
+pub(super) async fn drive_sync_now(bus: BusSource, toasts: ToastHub, dataset: DatasetName) {
+    toasts.push(sync_now(&bus, dataset).await.line().to_owned(), None);
 }

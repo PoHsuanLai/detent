@@ -74,7 +74,7 @@ impl SyncHold {
 }
 
 /// The id as the sync service writes it in a dataset's name.
-fn segment_of(account: &AccountKey) -> String {
+pub(super) fn segment_of(account: &AccountKey) -> String {
     account
         .0
         .chars()

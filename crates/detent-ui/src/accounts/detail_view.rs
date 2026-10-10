@@ -4,7 +4,8 @@ use super::adapter::{ActionButton, BackButton, HoldBanner};
 use super::list_view::Note;
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Account, AccountService, AccountSync, DatasetName, HoldInput, Holds, SyncHold, reauth_help,
+    Account, AccountKey, AccountService, AccountSync, DatasetName, HoldInput, Holds, SyncHold,
+    reauth_help,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
@@ -28,6 +29,8 @@ pub(super) struct Handlers {
     pub sign_out: EventHandler<KeyPath>,
     /// Keep or Remove was pressed on a held deletion.
     pub hold: EventHandler<HoldInput>,
+    /// Sync now was pressed on a sync row.
+    pub sync_now: EventHandler<DatasetName>,
 }
 
 fn availability_of(busy: bool) -> Availability {
@@ -116,6 +119,9 @@ pub(super) fn AccountDetail(
                 FieldGroup { title: Some("Sync".to_owned()),
                     for sync in account.sync.iter().cloned() {
                         SyncRow { key: "{sync.path.0}", sync: sync.clone(), availability, on }
+                        if sync.on {
+                            SyncNowRow { key: "now-{sync.path.0}", account: account.key.clone(), sync: sync.clone(), availability, on }
+                        }
                         for hold in holds.on_switch(&account, &sync.path).cloned() {
                             Held { key: "{hold.dataset.0}", hold, on }
                         }
@@ -196,6 +202,31 @@ fn SyncRow(sync: AccountSync, availability: Availability, on: Handlers) -> Eleme
                 value: if sync.on { Check::On } else { Check::Off },
                 availability,
                 onchange: move |next| on.switched.call((path.clone(), next == Check::On)),
+            }
+        }
+    }
+}
+
+/// A sync switch's "Sync now": has the sync service sync its dataset at once.
+#[component]
+fn SyncNowRow(
+    account: AccountKey,
+    sync: AccountSync,
+    availability: Availability,
+    on: Handlers,
+) -> Element {
+    let dataset = DatasetName::of_switch(&account, &sync.path);
+    rsx! {
+        FieldRow {
+            label: TextLine::from("Sync now"),
+            help: Some(TextLine::from(sync.label.clone())),
+            availability,
+            ActionButton {
+                label: "Sync now".to_owned(),
+                subject: sync.label.clone(),
+                weight: ActionWeight::Plain,
+                availability,
+                onpress: move |()| on.sync_now.call(dataset.clone()),
             }
         }
     }
