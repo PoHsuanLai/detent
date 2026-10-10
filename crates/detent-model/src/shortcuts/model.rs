@@ -2,7 +2,9 @@
 
 use super::groups::ShortcutGroup;
 use super::names::name_of;
-use chordkit::{Action, Chord, Desktop, Keymap, Overrides, Platform, StandardAction};
+use chordkit::{
+    Action, Chord, Desktop, Keymap, Overrides, Platform, StandardAction, SystemBinding,
+};
 
 /// The platform whose keymap the list shows: this desktop's.
 pub(super) const OURS: Platform = Platform::Linux {
