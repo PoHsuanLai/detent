@@ -221,6 +221,33 @@ Open items, each with its closing condition:
   (`detent-intents/tests/intelligence.rs`), and the manifest has no other `settings.intelligence.*`
   action.
 
+## Lending this computer's models (`detent-ui/src/sharing.rs`, `lender.rs`)
+
+- The switch `ai.tailnet.serve` ("Let my other computers use this computer's models") is not a
+  plain write. `Window` hands an edit of that key to `SharingSwitch`, which runs
+  `detent-model::sharing_step`: on asks first (an Alert: "Let your other computers use this
+  computer's models?", Allow and Cancel), Allow calls porter's `TailnetLending::enable()` and only
+  when that is `Ok` is the setting written; off calls `disable()` and writes "off" even when
+  `disable` failed (the service answers nobody while the setting is off), telling the person why
+  it failed. A failure is `LendingError`'s own plain words in a toast; the switch stays off.
+- `LendingState::Differs` (a file of another making is there) adds one sentence to the question:
+  allowing replaces it. `Installed` and `NotInstalled` ask the same question.
+- `Lender` (in `Env`) is the one handle: `Lender::from_env()` by default (porter's
+  `LendingConfig::from_env`: the shipped file `share/porter/inferd-tailnet.conf` is found under
+  `XDG_DATA_HOME`/`XDG_DATA_DIRS`, the person's units under `XDG_CONFIG_HOME/systemd/user`; with
+  no home folder every change answers with a sentence), `Lender::under_prefix(prefix, config_home)`
+  for a fixed prefix, `Lender::over(config, manager)` for a test. The real manager is
+  `SessionUnits` (session bus), connected when a change is made, never when Settings opens.
+  There is no command-line flag for the prefix; `XDG_DATA_DIRS` is how detent finds schemas too.
+- Tests (`tests/ui/lending.rs`) run over scratch folders and a fake `UnitManager`
+  (`support/lending.rs`); `Sandbox` always hands the window that fake, so no test can reach the
+  real systemd or `~/.config`.
+- **One bad row hides every computer.** `Inference1.Places`, `Guests` and `Candidates` are decoded
+  inside porter-client (`transport/dbus.rs`, `dbus_computers.rs`: `rows.into_iter().map(..).collect::<Result<..>>()`),
+  so a single row with an invalid id fails the whole call and detent shows no computers. detent
+  only sees the finished `Vec`, so it cannot skip the row; the fix belongs in porter-client (decode
+  row by row, drop and log the bad one). Open until porter does it; no test here for it.
+
 ## Not in v1
 
 - **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): only inferd's
