@@ -10,6 +10,7 @@ mod first_run;
 mod holds;
 mod intelligence;
 mod intelligence_programs;
+mod lending;
 mod local_runtimes;
 mod notices;
 mod snapshots;

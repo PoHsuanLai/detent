@@ -17,7 +17,7 @@ dioxus = { workspace = true }
 ds = { workspace = true }
 ds-blitz = { workspace = true }
 ds-settings = { workspace = true, features = ["dioxus", "live", "tokio"] }
-porter-client = { workspace = true, features = ["infer"] }
+porter-client = { workspace = true, features = ["infer", "lending"] }
 porter-core = { workspace = true }
 porter-dbus = { workspace = true }
 porter-provider = { workspace = true }

@@ -3,6 +3,8 @@
 use crate::env::Env;
 use detent_files::{FileValues, FilesError, load, save};
 use detent_model::{ConfigFile, FileSpec, KeyEntry};
+use dioxus::prelude::{ReadableExt, Signal, WritableExt};
+use ds::stack::toast_hub::ToastHub;
 use std::collections::BTreeMap;
 
 /// The current values of every file the catalogue reads.
@@ -90,4 +92,13 @@ pub fn apply(env: &Env, files: &Files, edit: &Edit) -> Result<Files, FilesError>
     let mut next = files.clone();
     next.insert(file.clone(), after);
     Ok(next)
+}
+
+/// Writes `edit` and shows it in `files`; a refusal is told in a toast and `files` keeps what it
+/// held.
+pub fn store(env: &Env, mut files: Signal<Files>, toasts: ToastHub, edit: &Edit) {
+    match apply(env, &files.peek(), edit) {
+        Ok(next) => files.set(next),
+        Err(error) => toasts.push(error.to_string(), None),
+    }
 }

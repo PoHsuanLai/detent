@@ -4,6 +4,7 @@
 
 use crate::inbox::Inbox;
 use crate::inference::ReasonFeed;
+use crate::lender::Lender;
 use crate::live::BusSource;
 use crate::marks::ProviderMarks;
 use detent_files::{ConfigHome, DataHome, FirstRunMark, StateHome};
@@ -46,6 +47,9 @@ pub struct Env {
     pub reasons: ReasonFeed,
     /// The marks of the providers the Accounts page shows.
     pub marks: ProviderMarks,
+    /// How the switch that lends this computer's models reaches the files and the service
+    /// manager; the person's own session unless a test hands in another.
+    pub lender: Lender,
 }
 
 impl Env {
@@ -72,7 +76,13 @@ impl Env {
             bus,
             reasons: ReasonFeed::default(),
             marks: ProviderMarks::shipped(),
+            lender: Lender::from_env(),
         }
+    }
+
+    /// This environment with the lending switch reaching `lender`.
+    pub fn with_lender(self, lender: Lender) -> Env {
+        Env { lender, ..self }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.

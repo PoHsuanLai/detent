@@ -8,16 +8,19 @@ pub mod bus;
 pub mod computers;
 pub mod drive;
 pub mod inferd;
+pub mod lending;
 pub mod spaces;
 pub mod syncd;
 
 use detent_files::{ConfigHome, DataHome, StateHome};
 use detent_testkit::{Scratch, seed_schemas};
-use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, Outbox, ReasonFeed, inbox};
+use detent_ui::{App, BusSource, Env, FirstRunApp, Lender, Opening, Outbox, ReasonFeed, inbox};
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
 use ds_settings::SystemPrefsSource;
 use ds_settings::schema::Schema;
+use lending::Units;
+use porter_client::LendingConfig;
 
 pub const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
@@ -33,6 +36,7 @@ pub struct Sandbox {
     scratch: Scratch,
     bus: BusSource,
     reasons: ReasonFeed,
+    units: Units,
 }
 
 impl Sandbox {
@@ -40,10 +44,14 @@ impl Sandbox {
     pub fn new(name: &str) -> Sandbox {
         let scratch = Scratch::under(TMP, name);
         seed_schemas(&scratch.join("data"));
+        let shipped = scratch.join("share/porter/inferd-tailnet.conf");
+        std::fs::create_dir_all(shipped.parent().expect("a file has a parent")).expect("mkdir");
+        std::fs::write(&shipped, lending::SHIPPED).expect("the shipped file");
         Sandbox {
             scratch,
             bus: BusSource::Absent,
             reasons: ReasonFeed::default(),
+            units: Units::default(),
         }
     }
 
@@ -115,6 +123,29 @@ impl Sandbox {
             self.bus.clone(),
         )
         .with_reasons(self.reasons.clone())
+        .with_lender(self.lender())
+    }
+
+    /// The lending switch over the scratch folders and the recording manager: never the real
+    /// systemd and never the real home.
+    pub fn lender(&self) -> Lender {
+        Lender::over(
+            LendingConfig::new(
+                self.scratch.join("share/porter/inferd-tailnet.conf"),
+                self.scratch.join("config/systemd/user"),
+            ),
+            self.units.clone(),
+        )
+    }
+
+    /// The service manager the lending switch talks to, to read its calls or make it refuse.
+    pub fn units(&self) -> Units {
+        self.units.clone()
+    }
+
+    /// The drop-in the switch wrote, if it is there.
+    pub fn drop_in(&self) -> Option<String> {
+        self.read("systemd/user/inferd.service.d/tailnet.conf")
     }
 
     /// A harness running the app in this world, light.

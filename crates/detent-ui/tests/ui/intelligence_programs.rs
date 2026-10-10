@@ -189,17 +189,12 @@ fn lending_this_computers_models_is_off_until_the_switch_is_flipped() {
         None,
         "looking writes nothing"
     );
+    // Turning it on is asked about first (tests/ui/lending.rs drives the answer).
     click(&mut harness, &toggle);
-    let inferd = sandbox.read("quire/inferd.toml").expect("inferd's file");
-    let table: toml::Table = inferd.parse().expect("toml");
     assert_eq!(
-        table["ai"]["tailnet"]["serve"].as_str(),
-        Some("on"),
-        "{inferd}"
-    );
-    assert_eq!(
-        harness.attr(&toggle, "aria-checked").as_deref(),
-        Some("true")
+        sandbox.read("quire/inferd.toml"),
+        None,
+        "the press alone writes nothing"
     );
 }
 

@@ -1,8 +1,9 @@
 //! The window under the frame: the sidebar with its search field, and the page beside it.
 
 use crate::env::Env;
-use crate::files::{Edit, Files, apply};
+use crate::files::{Edit, Files, store};
 use crate::page_view::PageView;
+use crate::sharing::use_sharing;
 use crate::sidebar::sidebar_items;
 use crate::view::{Searching, View};
 use detent_model::{PageSlug, search};
@@ -28,12 +29,14 @@ pub fn Window(
     let toasts = use_toasts();
     let mut sidebar = use_signal(|| Shown::Visible);
 
+    let sharing = use_sharing(files);
+    let owner = sharing.clone();
     let write_env = env.clone();
     let onedit = EventHandler::new(move |edit: Edit| {
-        let written = apply(&write_env, &files.peek(), &edit);
-        match written {
-            Ok(next) => files.set(next),
-            Err(error) => toasts.push(error.to_string(), None),
+        if owner.owns(&edit) {
+            owner.turned(edit);
+        } else {
+            store(&write_env, files, toasts, &edit);
         }
     });
 
@@ -64,6 +67,7 @@ pub fn Window(
             },
         }
     };
+    let asked = sharing.sheet();
     let hits: Vec<_> = view.hits.iter().map(|hit| hit.path.clone()).collect();
     rsx! {
         div { class: "window",
@@ -90,6 +94,7 @@ pub fn Window(
                             }
                         },
                     }
+                    {asked}
                 }
             }
         }
