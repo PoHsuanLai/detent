@@ -141,6 +141,7 @@ mod tests {
             offers: Offers::NotSeenYet,
             sign_in: SignInState::NotSeenYet,
             way: None,
+            rewind: docket_core::Rewind::Agent,
         }
     }
 
