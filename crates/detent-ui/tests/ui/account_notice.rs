@@ -11,7 +11,9 @@ use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
 
 fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
-    for _ in 0..200 {
+    // The fake daemons answer on real threads; a loaded machine running every test at once can
+    // take several seconds, so the budget is generous (15 s) and costs nothing when it settles.
+    for _ in 0..750 {
         if done(harness) {
             return;
         }
