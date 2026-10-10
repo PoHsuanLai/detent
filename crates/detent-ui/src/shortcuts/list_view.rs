@@ -11,10 +11,6 @@ use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
-use std::time::Duration;
-
-/// How often the files are looked at for a change made elsewhere.
-pub(super) const POLL: Duration = Duration::from_secs(1);
 
 /// What the answer that takes a chord over is called.
 const REPLACE: &str = "Replace";

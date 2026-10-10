@@ -167,12 +167,6 @@
   gap: var(--s-8);
 }
 
-.shortcut-cell {
-  display: flex;
-  align-items: center;
-  gap: var(--s-8);
-}
-
 .shortcuts-footer {
   display: flex;
   align-items: center;

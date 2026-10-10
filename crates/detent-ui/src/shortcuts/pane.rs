@@ -26,7 +26,7 @@ pub(super) fn use_pane() -> Pane {
         let env = env.clone();
         move || {
             let read = ShortcutsInput::Read(env.keymap.read());
-            shortcuts_step(ShortcutsState::standard(), read).0
+            shortcuts_step(ShortcutsState::over(env.keymap.base()), read).0
         }
     });
     Pane {
@@ -62,17 +62,15 @@ impl Pane {
         }
     }
 
-    /// The list follows the files for as long as the window lives: a change made elsewhere (by
-    /// keycap's other clients, by hand) shows within a moment.
+    /// The list follows the keymap for as long as the window lives: a change made elsewhere
+    /// (by keycap's other clients, by hand) shows within a moment.
     pub(super) async fn follow(self) {
-        let mut seen = self.env.keymap.stamp();
-        loop {
-            ds::base::time::clock::sleep(super::list_view::POLL).await;
-            let now = self.env.keymap.stamp();
-            if now != seen {
-                seen = now;
-                self.feed(ShortcutsInput::Read(self.env.keymap.read()));
-            }
+        let (tell, mut changed) = tokio::sync::mpsc::unbounded_channel();
+        let _watch = self.env.keymap.watch(move || {
+            let _ = tell.send(());
+        });
+        while changed.recv().await.is_some() {
+            self.feed(ShortcutsInput::Read(self.env.keymap.read()));
         }
     }
 }

@@ -3,8 +3,8 @@
 
 use super::person_text::render_person;
 use super::{
-    KeymapText, KeymapTexts, Origin, ShortcutGroup, ShortcutRow, ShortcutsEffect, ShortcutsInput,
-    ShortcutsState, name_of, replace_question, shortcuts_step,
+    KeymapText, KeymapTexts, MachineLayer, Origin, ShortcutGroup, ShortcutRow, ShortcutsEffect,
+    ShortcutsInput, ShortcutsState, name_of, replace_question, shortcuts_step,
 };
 use chordkit::{Action, Chord, Overrides, StandardAction};
 
@@ -13,13 +13,16 @@ fn chord(text: &str) -> Chord {
 }
 
 fn texts(machine: &str, person: &str) -> KeymapTexts {
-    let of = |text: &str| KeymapText {
-        text: text.to_owned(),
-        trouble: None,
-    };
+    let (overrides, bad) = Overrides::parse(machine);
     KeymapTexts {
-        machine: of(machine),
-        person: of(person),
+        machine: MachineLayer {
+            overrides,
+            problems: bad.iter().map(ToString::to_string).collect(),
+        },
+        person: KeymapText {
+            text: person.to_owned(),
+            trouble: None,
+        },
     }
 }
 
@@ -136,7 +139,7 @@ fn the_person_wins_over_this_computer() {
 #[test]
 fn the_files_say_what_could_not_be_used() {
     let mut broken = texts("", "copy = Primary+Nope\nredo = Super+Tab\n");
-    broken.machine.trouble = Some("It is not plain text.".to_owned());
+    broken.machine.problems = vec!["It is not plain text.".to_owned()];
     let (state, effects) = shortcuts_step(ShortcutsState::standard(), ShortcutsInput::Read(broken));
     assert!(effects.is_empty());
     let problems = state.problems();

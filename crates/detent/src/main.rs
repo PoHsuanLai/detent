@@ -8,7 +8,7 @@ mod link;
 use accounts::LiveAccounts;
 use clap::Parser;
 use cli::Run;
-use detent_files::{FirstRunMark, FirstRunStanding};
+use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles};
 use detent_intents::{ServeFault, SettingsProvider, hand_over, serve_session};
 use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, inbox};
 use ds_blitz::{AppConfig, AppId, Decorations, LaunchError, WindowSize, enter_runtime, launch};
@@ -48,9 +48,8 @@ fn environment(opening: Opening) -> Result<Env, ExitCode> {
         SystemPrefsSource::Portal,
         opening,
         BusSource::Session,
-    );
-    let keymap = env.keymap.clone().with_machine_dir(&dirs::keycap_config_dir());
-    let env = env.with_keymap(keymap);
+    )
+    .with_keymap(KeymapFiles::standard());
     for warning in &env.warnings {
         eprintln!("detent: {warning}");
     }

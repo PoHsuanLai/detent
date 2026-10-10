@@ -58,14 +58,19 @@ fn words_of(bad: &[OverrideProblem], refused: &[OverrideProblem]) -> Vec<String>
 }
 
 fn read(state: ShortcutsState, texts: KeymapTexts) -> ShortcutsState {
-    let (machine, machine_bad) = Overrides::parse(&texts.machine.text);
+    let machine = texts.machine.overrides;
     let (person, person_bad) = Overrides::parse(&texts.person.text);
     let (under, machine_refused) = state.base.clone().with_overrides(&machine);
     let (_, person_refused) = under.with_overrides(&person);
     let mut problems = labelled(
         "This computer's shortcuts",
-        texts.machine.trouble.as_deref(),
-        words_of(&machine_bad, &machine_refused),
+        None,
+        texts
+            .machine
+            .problems
+            .into_iter()
+            .chain(words_of(&[], &machine_refused))
+            .collect(),
     );
     problems.extend(labelled(
         "Your shortcuts",

@@ -1,107 +1,92 @@
-//! The keymap files the Shortcuts list sits on: this computer's, read only, and the person's own,
-//! which detent writes. Both are keycap's keymap file (`keymap` in keycap's directory), so
-//! keycap's own watch applies what is written.
+//! The keymap the Shortcuts list sits on: keycap's `KeycapSource` for this computer's layer, the
+//! desktop's own bindings and the change watch, and the person's own keymap file, which detent
+//! reads as text (to keep the person's comments) and writes.
 
 use crate::error::FilesError;
 use crate::values::ConfigHome;
-use detent_model::{KeymapText, KeymapTexts};
+use chordkit::{Keymap, KeymapSource, Watch};
+use detent_model::{KeymapText, KeymapTexts, MachineLayer, desktop_keymap};
+use keycap_client::{KeycapSource, system_bindings};
 use std::io::{ErrorKind, Read};
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
-
-/// The keymap file's name, in keycap's directory under both homes.
-const FILE: &str = "keymap";
-
-/// The directory under the config home that holds the person's keymap.
-const DIR: &str = "keycap";
 
 /// The most keycap reads of a keymap file; a larger one is not used, so it is not written over.
 const MAX_BYTES: u64 = 32 * 1024;
 
-/// Whether this computer's keymap is read.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MachineKeymap {
-    /// None: only the person's is.
-    Absent,
-    /// The file at this path.
-    At(PathBuf),
-}
+/// Where keycap's daemon would be, under a scratch home: nowhere, so nothing real is asked.
+const NO_SOCKET: &str = "keycap/no-daemon.sock";
 
-/// The two keymap files.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// The keymap layers: keycap's source.
+#[derive(Debug, Clone)]
 pub struct KeymapFiles {
-    person: PathBuf,
-    machine: MachineKeymap,
+    source: KeycapSource,
 }
-
-/// What the files looked like when last checked: a change to either shows as a different stamp.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct KeymapStamp(Vec<Option<(SystemTime, u64)>>);
 
 impl KeymapFiles {
-    /// The person's keymap under `home` (`<home>/keycap/keymap`) and no machine keymap.
-    pub fn under(home: &ConfigHome) -> KeymapFiles {
+    /// This machine's and person's keymap, from the process environment.
+    pub fn standard() -> KeymapFiles {
         KeymapFiles {
-            person: home.0.join(DIR).join(FILE),
-            machine: MachineKeymap::Absent,
+            source: KeycapSource::standard(),
+        }
+    }
+
+    /// The person's keymap under `home` (`<home>/keycap/keymap`), no daemon and no machine
+    /// keymap: what a test over scratch directories reads.
+    pub fn under(home: &ConfigHome) -> KeymapFiles {
+        let dir = home.0.join("keycap");
+        KeymapFiles {
+            source: KeycapSource::new(home.0.join(NO_SOCKET), PathBuf::new(), dir.join("keymap")),
         }
     }
 
     /// These files with this computer's keymap read from `dir/keymap`.
     #[must_use]
     pub fn with_machine_dir(self, dir: &Path) -> KeymapFiles {
+        let person = self.source.person_file().to_path_buf();
+        let socket = person.with_file_name("no-daemon.sock");
         KeymapFiles {
-            machine: MachineKeymap::At(dir.join(FILE)),
-            ..self
+            source: KeycapSource::new(socket, dir.join("keymap"), person),
         }
     }
 
-    fn machine_path(&self) -> Option<&Path> {
-        match &self.machine {
-            MachineKeymap::Absent => None,
-            MachineKeymap::At(path) => Some(path),
-        }
+    /// The standard keymap: the conventions with the desktop's own bindings.
+    pub fn base(&self) -> Keymap {
+        desktop_keymap(system_bindings())
     }
 
-    /// Both files as they are now. A file that is not there is empty; one that cannot be used
-    /// is empty with the reason.
+    /// Both layers as they are now. A person's file that is not there is empty; one that cannot
+    /// be used is empty with the reason.
     pub fn read(&self) -> KeymapTexts {
+        let machine = self.source.machine();
         KeymapTexts {
-            machine: self.machine_path().map(read_text).unwrap_or_default(),
-            person: read_text(&self.person),
+            machine: MachineLayer {
+                overrides: machine.overrides,
+                problems: machine.problems,
+            },
+            person: read_text(self.source.person_file()),
         }
     }
 
-    /// How the files look now.
-    pub fn stamp(&self) -> KeymapStamp {
-        KeymapStamp(
-            self.machine_path()
-                .into_iter()
-                .chain([self.person.as_path()])
-                .map(stamp_of)
-                .collect(),
-        )
+    /// Calls `on_change` from another thread when either layer changes; keep the `Watch`.
+    pub fn watch(&self, on_change: impl Fn() + Send + Sync + 'static) -> Option<Watch> {
+        self.source.watch(Box::new(on_change)).ok()
     }
 
     /// Writes `text` as the person's keymap through a temporary file and a rename, so a watch
     /// sees one whole file and a crash leaves the old one.
     pub fn save_person(&self, text: &str) -> Result<(), FilesError> {
+        let person = self.source.person_file();
         let io = |at: &Path| {
             let path = at.to_path_buf();
             move |source| FilesError::Io { path, source }
         };
-        if let Some(dir) = self.person.parent() {
+        if let Some(dir) = person.parent() {
             std::fs::create_dir_all(dir).map_err(io(dir))?;
         }
-        let temp = self.person.with_extension("part");
+        let temp = person.with_extension("part");
         std::fs::write(&temp, text).map_err(io(&temp))?;
-        std::fs::rename(&temp, &self.person).map_err(io(&self.person))
+        std::fs::rename(&temp, person).map_err(io(person))
     }
-}
-
-fn stamp_of(path: &Path) -> Option<(SystemTime, u64)> {
-    let meta = std::fs::metadata(path).ok()?;
-    Some((meta.modified().ok()?, meta.len()))
 }
 
 fn trouble(why: impl std::fmt::Display) -> KeymapText {

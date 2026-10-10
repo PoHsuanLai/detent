@@ -1,10 +1,13 @@
 //! The keymap files over a scratch home: read leniently, the person's written whole through a
-//! rename, and the stamp that tells a change.
+//! rename, and the watch that tells a change.
 
 use chordkit::StandardAction;
 use detent_files::{ConfigHome, KeymapFiles};
 use detent_model::{Origin, ShortcutsEffect, ShortcutsInput, ShortcutsState, shortcuts_step};
 use detent_testkit::Scratch;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Duration;
 
 fn scratch(name: &str) -> Scratch {
     Scratch::under(env!("CARGO_TARGET_TMPDIR"), name)
@@ -21,7 +24,8 @@ fn files_that_are_not_there_are_empty() {
     let texts = files(&dir).read();
     assert_eq!(texts.person.text, "");
     assert_eq!(texts.person.trouble, None);
-    assert_eq!(texts.machine.text, "");
+    assert!(texts.machine.overrides.entries().is_empty());
+    assert!(texts.machine.problems.is_empty());
 }
 
 #[test]
@@ -64,17 +68,39 @@ fn a_file_that_is_not_text_or_too_large_comes_back_with_a_reason() {
 }
 
 #[test]
-fn the_stamp_changes_when_either_file_does() {
-    let dir = scratch("keymap-stamp");
-    let files = files(&dir);
-    let none = files.stamp();
-    assert_eq!(files.stamp(), none, "nothing moved");
-    files.save_person("copy = none\n").expect("saved");
-    let person = files.stamp();
-    assert_ne!(person, none, "the person's file appeared");
+fn this_computers_file_is_read_when_no_daemon_answers() {
+    let dir = scratch("keymap-machine");
     std::fs::create_dir_all(dir.join("etc")).expect("mkdir");
-    std::fs::write(dir.join("etc/keymap"), "find = none\n").expect("write");
-    assert_ne!(files.stamp(), person, "this computer's file appeared");
+    std::fs::write(
+        dir.join("etc/keymap"),
+        "find = Super+Alt+F\nteleport = F5\n",
+    )
+    .expect("write");
+    let machine = files(&dir).read().machine;
+    assert_eq!(machine.overrides.entries().len(), 1);
+    assert_eq!(machine.problems.len(), 1, "{:?}", machine.problems);
+}
+
+#[test]
+fn the_watch_fires_when_the_persons_file_changes() {
+    let dir = scratch("keymap-watch");
+    let files = files(&dir);
+    let fired = Arc::new(AtomicUsize::new(0));
+    let seen = Arc::clone(&fired);
+    let _watch = files
+        .watch(move || {
+            seen.fetch_add(1, Ordering::SeqCst);
+        })
+        .expect("a watch");
+    files.save_person("copy = none\n").expect("saved");
+    // The watch looks on its own thread at its own pace.
+    for _ in 0..200 {
+        if fired.load(Ordering::SeqCst) > 0 {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    panic!("the watch never fired");
 }
 
 #[test]
@@ -85,7 +111,7 @@ fn an_edit_goes_through_the_model_to_the_file_and_back_without_losing_a_line() {
         .save_person("# mine\nteleport = F5\ncopy = Super+Alt+C\n")
         .expect("seed");
     let state = shortcuts_step(
-        ShortcutsState::standard(),
+        ShortcutsState::over(files.base()),
         ShortcutsInput::Read(files.read()),
     )
     .0;

@@ -250,19 +250,13 @@ Open items, each with its closing condition:
 
 ## Shortcuts (Keyboard page)
 
-- **The chord recorder is a stand-in.** `detent-ui/src/shortcuts/field.rs` shows the chord and has
-  Clear; quire's `ShortcutField` (with `Recorded` and `Clash`) is not on quire master. When it is,
-  replace `field.rs` with `field_recorder.rs` (same component and props, written against the
-  announced shape) and add a UI test that records a chord, meets "Used by" and answers Replace
-  and Cancel. Until then those paths are covered by `detent-model`'s `shortcuts` tests only.
-- **keycap-client is not used.** It is not on keycap's `main`, so `detent-files::KeymapFiles` reads
-  the keymap files itself: the person's `<config home>/keycap/keymap` and this computer's
-  `$KEYCAP_CONFIG_DIR/keymap` (else `/etc/keycap/keymap`) directly, never asking the daemon, and
-  the list follows them by looking at their stamps once a second. The standard column is
-  chordkit's conventions for our desktop without keycap's own bindings (`system_bindings`: the
-  launcher's second chord, Ctrl+Alt+Space). When keycap-client is on `main`, `KeycapSource`
-  replaces `KeymapFiles::read` and `stamp` (its `machine()`, `person()`, `watch`, and
-  `system_bindings` for the base keymap); the pure model does not change.
+- The chord recorder is quire's `ShortcutField`, named only in `detent-ui/src/shortcuts/field.rs`.
+  Clearing is its Delete key; there is no separate Clear button.
+- `detent-files::KeymapFiles` wraps keycap's `KeycapSource` (keycap-client, by git rev, as casement
+  and sill take it): this computer's layer (`machine()`, from the daemon or its file), the desktop's
+  own bindings (`system_bindings`, the base of "Standard") and `watch`. The person's file is read
+  as text here, not through `person()`, so a save keeps its comments and unreadable lines.
+  Tests use `KeymapFiles::under`, which points the source at a socket that does not exist.
 - Actions of apps are not listed; a change to one in the person's file is kept as it is.
 - The page is listed only while some schema names it (sill's does); like Spaces it is not forced.
 

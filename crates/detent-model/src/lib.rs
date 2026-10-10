@@ -74,8 +74,9 @@ pub use sharing::{
     sharing_question, sharing_step,
 };
 pub use shortcuts::{
-    KeymapText, KeymapTexts, Origin, ReplaceQuestion, ShortcutGroup, ShortcutRow, ShortcutSection,
-    ShortcutsEffect, ShortcutsInput, ShortcutsState, name_of, replace_question, shortcuts_step,
+    KeymapText, KeymapTexts, MachineLayer, Origin, ReplaceQuestion, ShortcutGroup, ShortcutRow,
+    ShortcutSection, ShortcutsEffect, ShortcutsInput, ShortcutsState, desktop_keymap, name_of,
+    replace_question, shortcuts_step,
 };
 pub use spaces::{
     HISTORY_CHOICES, HISTORY_NOTE, RemovalSheet, SheetInput, SpaceKey, SpaceRow, SpacesEffect,

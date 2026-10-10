@@ -10,8 +10,8 @@ mod step;
 
 pub use groups::ShortcutGroup;
 pub use model::{
-    KeymapText, KeymapTexts, Origin, ReplaceQuestion, ShortcutRow, ShortcutSection, ShortcutsState,
-    replace_question,
+    KeymapText, KeymapTexts, MachineLayer, Origin, ReplaceQuestion, ShortcutRow, ShortcutSection,
+    ShortcutsState, desktop_keymap, replace_question,
 };
 pub use names::name_of;
 pub use step::{ShortcutsEffect, ShortcutsInput, shortcuts_step};

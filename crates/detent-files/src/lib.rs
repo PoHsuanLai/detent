@@ -17,7 +17,7 @@ mod values;
 pub use agents::{load_agents, save_agent_choice};
 pub use error::FilesError;
 pub use first_run::{FirstRunMark, FirstRunStanding, StateHome};
-pub use keymap::{KeymapFiles, KeymapStamp, MachineKeymap};
+pub use keymap::KeymapFiles;
 pub use load::load;
 pub use places::{load_places, save_places};
 pub use save::save;

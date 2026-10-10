@@ -18,11 +18,20 @@ pub struct KeymapText {
     pub trouble: Option<String>,
 }
 
-/// The two keymap files that sit over the standard shortcuts.
+/// This computer's keymap, as keycap reads it: already parsed, and what was wrong with it.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct MachineLayer {
+    /// The changes.
+    pub overrides: Overrides,
+    /// Skipped or refused lines, in plain words.
+    pub problems: Vec<String>,
+}
+
+/// The two keymap layers that sit over the standard shortcuts.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct KeymapTexts {
     /// This computer's, for everyone who uses it.
-    pub machine: KeymapText,
+    pub machine: MachineLayer,
     /// The person's own.
     pub person: KeymapText,
 }
@@ -106,6 +115,12 @@ pub struct ReplaceQuestion {
     pub message: String,
 }
 
+/// The desktop's standard keymap: chordkit's conventions for our desktop with `system` (the
+/// desktop's own bindings) laid over them.
+pub fn desktop_keymap(system: Vec<SystemBinding>) -> Keymap {
+    Keymap::conventional(OURS).with_system(system)
+}
+
 /// What the list stands on.
 #[derive(Debug, Clone)]
 pub struct ShortcutsState {
@@ -139,7 +154,7 @@ impl ShortcutsState {
 
     /// The desktop's standard keymap with nothing laid over it.
     pub fn standard() -> ShortcutsState {
-        ShortcutsState::over(Keymap::conventional(OURS))
+        ShortcutsState::over(desktop_keymap(Vec::new()))
     }
 
     /// The keymap in force: the standard, this computer's, then the person's.

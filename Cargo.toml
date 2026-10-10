@@ -59,6 +59,9 @@ regex = { version = "1", default-features = false, features = ["std", "perf", "u
 # with it. The same line as quire's pinned block, so the lock holds one copy.
 chordkit = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "ba094c62006c280ac53c4c5df5c0e639c1226c07" }
 
+# The desktop's keymap (chordkit's layers) and keycap's program end, `KeycapSource`: the same line as casement's.
+keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "95f41dc4b613e3557f3cabc1638e53da348a09ff" }
+
 # Editing a settings file in place, keeping every key, comment and spacing the edit does not touch.
 toml_edit = "0.25"
 
