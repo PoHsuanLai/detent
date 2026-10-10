@@ -841,6 +841,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 
 [[package]]
+name = "chordkit"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=ba094c62006c280ac53c4c5df5c0e639c1226c07#ba094c62006c280ac53c4c5df5c0e639c1226c07"
+dependencies = [
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "chordkit-gnome"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=ba094c62006c280ac53c4c5df5c0e639c1226c07#ba094c62006c280ac53c4c5df5c0e639c1226c07"
+dependencies = [
+ "chordkit",
+]
+
+[[package]]
+name = "chordkit-kde"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=ba094c62006c280ac53c4c5df5c0e639c1226c07#ba094c62006c280ac53c4c5df5c0e639c1226c07"
+dependencies = [
+ "chordkit",
+]
+
+[[package]]
 name = "clap"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1755,6 +1779,7 @@ checksum = "d8b14ccef22fc6f5a8f4d7d768562a182c04ce9a3b3157b91390b52ddfdf1a76"
 name = "ds"
 version = "0.1.0"
 dependencies = [
+ "chordkit",
  "dioxus",
  "ds-core",
  "ds-intents",
@@ -1785,6 +1810,9 @@ dependencies = [
  "blitz-paint",
  "blitz-shell",
  "blitz-traits",
+ "chordkit",
+ "chordkit-gnome",
+ "chordkit-kde",
  "dioxus",
  "dioxus-asset-resolver",
  "dioxus-native",
@@ -1810,6 +1838,7 @@ dependencies = [
 name = "ds-core"
 version = "0.1.0"
 dependencies = [
+ "chordkit",
  "ds-core-derive",
  "futures-timer",
  "keyboard-types 0.7.0",
@@ -1843,6 +1872,7 @@ dependencies = [
  "blitz-kit",
  "blitz-paint",
  "blitz-traits",
+ "chordkit",
  "dioxus",
  "dioxus-native-dom",
  "ds",

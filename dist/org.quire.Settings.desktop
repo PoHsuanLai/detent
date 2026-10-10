@@ -10,3 +10,4 @@ DBusActivatable=true
 Categories=Settings;DesktopSettings;
 Keywords=settings;preferences;appearance;dock;mouse;
 StartupWMClass=org.quire.Settings
+X-Keycap-Profile=keymap-aware
