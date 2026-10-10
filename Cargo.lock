@@ -1315,6 +1315,7 @@ version = "0.1.0"
 dependencies = [
  "almanac-core",
  "detent-testkit",
+ "docket-core",
  "docket-settings",
  "ds-settings",
  "porter-core",
