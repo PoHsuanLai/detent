@@ -14,7 +14,7 @@ use std::time::Duration;
 const LABEL: &str = "Let my other computers use this computer's models";
 const ALLOW: &str = ".ds-alert .ds-button[data-answers=\"return\"]";
 const CANCEL: &str = ".ds-alert .ds-button[data-answers=\"escape\"]";
-const QUESTION: &str = "Let your other computers use this computer&#39;s models?";
+const QUESTION: &str = "Let your other computers use this computer's models?";
 const DROP_IN: &str = "systemd/user/inferd.service.d/tailnet.conf";
 
 fn intelligence() -> Opening {
@@ -26,6 +26,11 @@ fn intelligence() -> Opening {
 
 fn toggle() -> String {
     format!("[aria-label=\"{LABEL}\"] .ds-toggle")
+}
+
+/// The page's markup with an apostrophe read back, however the document spells it.
+fn plain(harness: &Harness) -> String {
+    harness.html().replace("&#39;", "'").replace("&#x27;", "'")
 }
 
 fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
@@ -45,7 +50,7 @@ fn asked(sandbox: &Sandbox) -> Harness {
     scroll_into_view(&mut harness, &toggle());
     click(&mut harness, &toggle());
     settle(&mut harness, "the question", |h| {
-        h.html().contains(QUESTION)
+        plain(h).contains(QUESTION)
     });
     harness
 }
@@ -64,7 +69,7 @@ fn checked(harness: &Harness) -> Option<String> {
 fn the_question_is_asked_in_plain_words_before_anything_is_written() {
     let sandbox = Sandbox::new("lending-asks");
     let harness = asked(&sandbox);
-    let html = harness.html().replace("&#39;", "'");
+    let html = plain(&harness);
     assert!(html.contains("your own Tailscale network"), "{html}");
     assert!(
         html.contains(">Allow<") && html.contains(">Cancel<"),
@@ -85,7 +90,7 @@ fn cancel_writes_nothing() {
     let mut harness = asked(&sandbox);
     click(&mut harness, CANCEL);
     settle(&mut harness, "the question to go", |h| {
-        !h.html().contains(QUESTION)
+        !plain(h).contains(QUESTION)
     });
     assert_eq!(sandbox.drop_in(), None);
     assert_eq!(serve_setting(&sandbox), None);
@@ -153,7 +158,7 @@ fn turning_it_off_takes_sharing_away_without_asking() {
     settle(&mut harness, "the setting off", |_| {
         serve_setting(&sandbox).as_deref() == Some("off")
     });
-    assert!(!harness.html().contains(QUESTION), "off asks nothing");
+    assert!(!plain(&harness).contains(QUESTION), "off asks nothing");
     assert_eq!(
         sandbox.units().calls(),
         ["reload", "restart inferd.service"]
