@@ -379,7 +379,7 @@ fn watching_for_inferd_never_starts_it() {
     assert!(
         !names
             .iter()
-            .any(|n| n.as_str() == porter_dbus::INFERENCE_BUS),
+            .any(|n| n.as_str() == porter_dbus::names::INFERENCE_BUS),
         "nothing owns inferd's name: the page only looked"
     );
 }

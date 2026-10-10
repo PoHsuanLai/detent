@@ -8,7 +8,7 @@ use ds_settings::schema::{
     AgentSetting, ChoiceGroup, ChoiceWord, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page,
     Section, UnavailableReason, WordLabels,
 };
-use porter_dbus::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
+use porter_dbus::names::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;

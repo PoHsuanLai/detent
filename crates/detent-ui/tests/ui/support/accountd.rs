@@ -11,7 +11,7 @@ use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Page, Section,
 };
-use porter_dbus::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
+use porter_dbus::names::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
 use std::sync::{Arc, Mutex};
 
 /// What the fake does with a caller.

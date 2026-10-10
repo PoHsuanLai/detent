@@ -7,7 +7,8 @@ use porter_client::{
     Accounts, ClientError, ComputerName, DbusTransport, GuestAnswer, NodeId, TransportError,
 };
 use porter_core::lending::ComputerCandidate;
-use porter_dbus::{BusFailure, BusStream, INFERENCE_BUS, InferenceProxy, classify};
+use porter_dbus::names::INFERENCE_BUS;
+use porter_dbus::{BusFailure, BusStream, InferenceProxy, classify};
 use zbus::Connection;
 use zbus::fdo::DBusProxy;
 use zbus::names::BusName;

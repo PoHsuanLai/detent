@@ -4,7 +4,7 @@
 #![allow(dead_code)]
 
 use super::bus::PrivateBus;
-use porter_dbus::{SPACE_KEY_CREATED, SPACE_KEY_LOOK, SPACE_KEY_NAME};
+use porter_dbus::names::{SPACE_KEY_CREATED, SPACE_KEY_LOOK, SPACE_KEY_NAME};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use zbus::zvariant::{OwnedValue, Value};

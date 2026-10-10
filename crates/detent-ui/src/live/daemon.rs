@@ -1,6 +1,6 @@
 //! Which daemon a live module belongs to.
 
-use porter_dbus::{
+use porter_dbus::names::{
     ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH, SYNC_BUS,
     SYNC_PATH,
 };
