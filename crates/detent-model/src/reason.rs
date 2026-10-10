@@ -65,6 +65,8 @@ fn declined_line(declined: &Declined) -> String {
         }
         DeclinedBecause::Unavailable => format!("{model} can't do this: it can't run right now."),
         DeclinedBecause::NoRoom => format!("{model} can't do this: it doesn't fit in memory."),
+        // A reason a newer porter adds: no more is known than that the model can't answer.
+        _ => format!("{model} can't do this."),
     }
 }
 

@@ -55,16 +55,17 @@ fn adding_of(state: &State) -> &AddList {
 
 #[test]
 fn only_the_persons_own_computers_make_rows() {
-    let row = |kind, state| PlaceRow {
-        id: PlaceId::parse("computer:lab").expect("an id"),
-        kind,
-        name: "lab".to_owned(),
-        provider: None,
-        models: vec![PlaceModel {
+    let row = |kind, state| {
+        PlaceRow::new(
+            PlaceId::parse("computer:lab").expect("an id"),
+            kind,
+            "lab".to_owned(),
+            state,
+        )
+        .with_models(vec![PlaceModel {
             id: porter_core::ModelId::parse("qwen").expect("a model id"),
             name: "Qwen".to_owned(),
-        }],
-        state,
+        }])
     };
     assert_eq!(
         ComputerRow::of(&row(PlaceKind::OwnComputer, PlaceState::NotReady)),
@@ -191,12 +192,7 @@ fn a_guest_line_says_how_it_stands() {
         (RowState::Asking, "Asking to use this computer's models"),
     ];
     for (state, line) in CASES {
-        let guest = GuestRow {
-            node: node("n2"),
-            name: "laptop".to_owned(),
-            state: *state,
-            since: UnixSeconds(0),
-        };
+        let guest = GuestRow::new(node("n2"), "laptop".to_owned(), *state, UnixSeconds(0));
         assert_eq!(guest_line(&guest), *line);
     }
 }
