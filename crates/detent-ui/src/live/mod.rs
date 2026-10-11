@@ -7,6 +7,9 @@ mod daemon;
 mod follow;
 mod holds;
 mod io;
+mod read;
+#[cfg(test)]
+mod read_tests;
 
 pub use bus::BusSource;
 pub(crate) use daemon::Daemon;

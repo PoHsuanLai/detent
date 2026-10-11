@@ -10,7 +10,7 @@ use crate::env::Env;
 use crate::live::{Daemon, Followed, follow, follow_holds};
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds,
+    Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds, Reads,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
@@ -28,6 +28,7 @@ pub fn AccountsPane() -> Element {
     let client = use_signal(|| None::<LiveClient>);
     let mut set_client = client;
     let holds = use_signal(Holds::default);
+    let reads = use_signal(Reads::default);
 
     // The sync service's held deletions are told apart from the accounts' rows.
     use_future({
@@ -49,7 +50,8 @@ pub fn AccountsPane() -> Element {
             let bus = bus.clone();
             async move {
                 follow(&bus, &Daemon::accountd(), is_valued, |followed| {
-                    let run = |input| spawn(drive(state, client, bus.clone(), toasts, input));
+                    let run =
+                        |input| spawn(drive(state, client, reads, bus.clone(), toasts, input));
                     match followed {
                         Followed::Opened(opened, described) => {
                             set_client.set(Some(opened));
@@ -72,7 +74,7 @@ pub fn AccountsPane() -> Element {
     let send = EventHandler::new({
         let bus = env.bus.clone();
         move |input: AccountsInput| {
-            spawn(drive(state, client, bus.clone(), toasts, input));
+            spawn(drive(state, client, reads, bus.clone(), toasts, input));
         }
     });
     let send_hold = EventHandler::new({

@@ -3,9 +3,10 @@
 
 use super::bus::BusSource;
 use super::daemon::Daemon;
-use super::io::{connect, next_change, next_owner, open, owner_changes, read};
+use super::io::{absence_of, connect, next_change, next_owner, open, owner_changes};
+use super::read::read;
 use detent_model::{Absence, Described};
-use ds_settings::live::LiveClient;
+use ds_settings::live::{Changes, LiveClient};
 use ds_settings::schema::{KeyKind, KeyPath};
 use zbus::Connection;
 use zbus::fdo::NameOwnerChangedStream;
@@ -28,6 +29,19 @@ async fn attach(
     let client = open(connection, daemon).await?;
     let described = read(&client, valued).await?;
     Ok((client, described))
+}
+
+/// Like [`attach`], listening for changes first, so none falls between the reading and the
+/// listening: what changes during the reading is heard after it.
+async fn attach_listening(
+    connection: &Connection,
+    daemon: &Daemon,
+    valued: fn(&KeyKind) -> bool,
+) -> Result<(LiveClient, Described, Changes), Absence> {
+    let client = open(connection, daemon).await?;
+    let changes = client.changes().await.map_err(absence_of)?;
+    let described = read(&client, valued).await?;
+    Ok((client, described, changes))
 }
 
 /// `daemon`'s module and its rows once, when the daemon is already on the bus: for a caller that
@@ -79,10 +93,10 @@ pub(crate) async fn follow(
         Err(absence) => return tell(Followed::Gone(absence)),
     };
     loop {
-        let still_on_bus = match attach(&connection, daemon, valued).await {
-            Ok((client, described)) => {
-                tell(Followed::Opened(client.clone(), described));
-                relay_changes(&client, &mut owners, &mut tell).await
+        let still_on_bus = match attach_listening(&connection, daemon, valued).await {
+            Ok((client, described, changes)) => {
+                tell(Followed::Opened(client, described));
+                relay_changes(changes, &mut owners, &mut tell).await
             }
             Err(absence) => {
                 tell(Followed::Gone(absence));
@@ -98,13 +112,10 @@ pub(crate) async fn follow(
 /// Passes on each change the daemon announces until its name changes hands (`Some`) or the bus
 /// closes (`None`).
 async fn relay_changes(
-    client: &LiveClient,
+    mut changes: Changes,
     owners: &mut NameOwnerChangedStream,
     tell: &mut impl FnMut(Followed),
 ) -> Option<()> {
-    let Ok(mut changes) = client.changes().await else {
-        return next_owner(owners).await;
-    };
     loop {
         tokio::select! {
             owner = next_owner(owners) => return owner,

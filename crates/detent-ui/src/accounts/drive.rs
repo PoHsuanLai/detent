@@ -1,9 +1,11 @@
 //! Running the pane's effects against accountd: the one place the pane calls the bus.
 
 use super::add_io::add_account;
-use crate::live::{BusSource, Daemon, reread};
+use super::reload::{reload, reload_later};
+use crate::live::{BusSource, Daemon};
 use detent_model::{
-    Absence, AccountsEffect, AccountsInput, AccountsPane as Pane, AccountsState, accounts_step,
+    Absence, AccountsEffect, AccountsInput, AccountsPane as Pane, AccountsState, Reads,
+    accounts_step,
 };
 use dioxus::prelude::*;
 use ds::stack::toast_hub::ToastHub;
@@ -24,10 +26,12 @@ pub async fn read_accounts(bus: &BusSource) -> Result<Pane, Absence> {
 }
 
 /// Applies `first` to the pane, then every input its effects lead to, until nothing is left to
-/// do. The calls to accountd wait here, so a caller spawns this and returns.
+/// do. The calls to accountd wait here, so a caller spawns this and returns. Reads of accountd
+/// go through `reads`, one at a time.
 pub(super) async fn drive(
     mut state: Signal<AccountsState>,
     client: Signal<Option<LiveClient>>,
+    reads: Signal<Reads>,
     bus: BusSource,
     toasts: ToastHub,
     first: AccountsInput,
@@ -45,7 +49,12 @@ pub(super) async fn drive(
                 }
                 (AccountsEffect::Show(key), _) => queue.push_back(AccountsInput::Open(key)),
                 (AccountsEffect::Reload, Some(opened)) => {
-                    queue.push_back(AccountsInput::Found(reread(opened, is_valued).await));
+                    let found = reload(reads, opened).await;
+                    queue.extend(found.map(AccountsInput::Reread));
+                }
+                (AccountsEffect::Retry, Some(opened)) => {
+                    let found = reload_later(reads, opened).await;
+                    queue.extend(found.map(AccountsInput::Reread));
                 }
                 (AccountsEffect::Set { path, value }, Some(opened)) => {
                     queue.push_back(answer(path.clone(), opened.set(&path, &value).await));

@@ -13,8 +13,10 @@ use ds_settings::schema::KeyPath;
 /// What happened to the pane.
 #[derive(Debug, Clone, PartialEq)]
 pub enum AccountsInput {
-    /// The module was read: the first time, or again after a change.
+    /// The module was found: the first time it was read, or when it came back.
     Found(Result<Described, Absence>),
+    /// The module was read again after a change; a failed read keeps what is shown.
+    Reread(Result<Described, Absence>),
     /// The person opened an account.
     Open(AccountKey),
     /// The person chose an account in the list.
@@ -92,6 +94,8 @@ pub enum AccountsEffect {
     OpenAddSheet,
     /// Read the module again.
     Reload,
+    /// Read the module again after a short wait: the last read failed.
+    Retry,
     /// Open the account with this key once the rows are read again.
     Show(AccountKey),
     /// Tell the person something went wrong.
@@ -104,14 +108,22 @@ pub fn accounts_step(
     input: AccountsInput,
 ) -> (AccountsState, Vec<AccountsEffect>) {
     match (state, input) {
-        (AccountsState::Ready(ready), AccountsInput::Found(Ok(described))) => {
-            (AccountsState::Ready(refreshed(ready, &described)), vec![])
-        }
-        (_, AccountsInput::Found(Ok(described))) => (
+        (
+            AccountsState::Ready(ready),
+            AccountsInput::Found(Ok(described)) | AccountsInput::Reread(Ok(described)),
+        ) => (AccountsState::Ready(refreshed(ready, &described)), vec![]),
+        (_, AccountsInput::Found(Ok(described)) | AccountsInput::Reread(Ok(described))) => (
             AccountsState::Ready(AccountsReady::new(AccountsPane::of(&described))),
             vec![],
         ),
         (_, AccountsInput::Found(Err(absence))) => (AccountsState::Unavailable(absence), vec![]),
+        // A read that fails while the list shows keeps the list; the module moved under it.
+        (state @ AccountsState::Ready(_), AccountsInput::Reread(Err(_))) => {
+            (state, vec![AccountsEffect::Retry])
+        }
+        (state @ AccountsState::Unavailable(_), AccountsInput::Changed) => {
+            (state, vec![AccountsEffect::Reload])
+        }
         (AccountsState::Ready(ready), input) => {
             let (ready, effects) = ready_step(ready, input);
             (AccountsState::Ready(ready), effects)

@@ -11,6 +11,7 @@ mod hold_drive;
 mod link;
 mod list_view;
 mod pane_view;
+mod reload;
 mod watch;
 
 pub(crate) use adapter::OpenButton;

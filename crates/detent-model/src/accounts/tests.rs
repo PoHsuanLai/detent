@@ -80,7 +80,7 @@ fn action(key: &str, label: &str, weight: ActionWeight) -> KeySpec {
 }
 
 /// Two accounts, one with a dotted id, as accountd would describe them.
-fn described() -> Described {
+pub(super) fn described() -> Described {
     let keys = vec![
         fixed("accounts.home.label", "Account", "Home cloud"),
         fixed("accounts.home.state", "Status", "ok"),
@@ -129,7 +129,7 @@ fn described() -> Described {
     Described { keys, values }
 }
 
-fn ready() -> AccountsState {
+pub(super) fn ready() -> AccountsState {
     accounts_step(
         AccountsState::Probing,
         AccountsInput::Found(Ok(described())),
@@ -137,14 +137,14 @@ fn ready() -> AccountsState {
     .0
 }
 
-fn state_of(state: AccountsState) -> AccountsReady {
+pub(super) fn state_of(state: AccountsState) -> AccountsReady {
     match state {
         AccountsState::Ready(ready) => ready,
         other => panic!("not ready: {other:?}"),
     }
 }
 
-fn apply(
+pub(super) fn apply(
     state: AccountsState,
     inputs: impl IntoIterator<Item = AccountsInput>,
 ) -> (AccountsState, Vec<AccountsEffect>) {
@@ -393,13 +393,12 @@ fn a_change_the_module_announces_reads_it_again() {
 }
 
 #[test]
-fn a_module_that_is_not_there_is_unavailable_and_asks_for_nothing() {
+fn a_module_that_is_not_there_is_unavailable_and_ignores_the_person() {
     let (state, effects) = apply(
         AccountsState::Probing,
         [
             AccountsInput::Found(Err(Absence::NotRunning)),
             AccountsInput::Open(AccountKey("home".to_owned())),
-            AccountsInput::Changed,
         ],
     );
     assert_eq!(state, AccountsState::Unavailable(Absence::NotRunning));

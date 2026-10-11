@@ -2,10 +2,9 @@
 
 use super::bus::BusSource;
 use super::daemon::Daemon;
-use detent_model::{Absence, Described};
+use detent_model::Absence;
 use ds_settings::live::{Changes, LiveClient, LiveError};
-use ds_settings::schema::{KeyKind, KeyPath};
-use std::collections::BTreeMap;
+use ds_settings::schema::KeyPath;
 use zbus::Connection;
 use zbus::fdo::{DBusProxy, NameOwnerChangedStream};
 use zbus::names::BusName;
@@ -14,7 +13,7 @@ fn failed(why: impl ToString) -> Absence {
     Absence::Failed(why.to_string())
 }
 
-fn absence_of(error: LiveError) -> Absence {
+pub(super) fn absence_of(error: LiveError) -> Absence {
     match error {
         LiveError::NotPermitted(_) => Absence::NotPermitted,
         other => failed(other),
@@ -71,21 +70,6 @@ pub(super) async fn open(connection: &Connection, daemon: &Daemon) -> Result<Liv
     LiveClient::new(connection, daemon.name, &daemon.path)
         .await
         .map_err(absence_of)
-}
-
-/// The module's rows and the value of each row `valued` picks out.
-pub(super) async fn read(
-    client: &LiveClient,
-    valued: fn(&KeyKind) -> bool,
-) -> Result<Described, Absence> {
-    let keys = client.describe().await.map_err(absence_of)?.key;
-    let mut values = BTreeMap::new();
-    for spec in keys.iter().filter(|spec| valued(&spec.kind)) {
-        if let Some(word) = client.get(&spec.path).await.map_err(absence_of)?.as_str() {
-            values.insert(spec.path.clone(), word.to_owned());
-        }
-    }
-    Ok(Described { keys, values })
 }
 
 /// The next change the module announces, as a row and its value.
