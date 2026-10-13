@@ -5,7 +5,12 @@
 #
 # usage: scripts/install.sh
 # environment:
-#   PREFIX       where it goes (default /usr)
+#   PREFIX       where it goes (default /usr). A PREFIX under $HOME (for example ~/.local) puts the
+#                systemd user unit and the D-Bus service file in the per-user data directory,
+#                ${XDG_DATA_HOME:-$HOME/.local/share}/systemd/user and .../dbus-1/services, because
+#                systemd and the session bus search those and not $PREFIX/lib/systemd/user or
+#                $PREFIX/share/dbus-1/services. Any other prefix (the default /usr)
+#                keeps $PREFIX/lib/systemd/user and $PREFIX/share/dbus-1/services.
 #   DESTDIR      a staging root the whole tree is put under (default none)
 #   DETENT_BIN   the binary to install (default target/release/detent beside this repository)
 set -euo pipefail
@@ -14,17 +19,29 @@ prefix=${PREFIX:-/usr}
 dest=${DESTDIR:-}
 bin=${DETENT_BIN:-$repo/target/release/detent}
 share=$dest$prefix/share
+# Where systemd and the session bus look: for a prefix under $HOME, the per-user data directory.
+case $prefix/ in
+  "$HOME"/*)
+    userdata=${XDG_DATA_HOME:-$HOME/.local/share}
+    unitdir=$dest$userdata/systemd/user
+    servicedir=$dest$userdata/dbus-1/services
+    ;;
+  *)
+    unitdir=$dest$prefix/lib/systemd/user
+    servicedir=$share/dbus-1/services
+    ;;
+esac
 
 install -Dm755 "$bin" "$dest$prefix/bin/detent"
 install -Dm644 "$repo/dist/org.quire.Settings.desktop" "$share/applications/org.quire.Settings.desktop"
 # `$XDG_DATA_DIRS/quire/intents/<AppName>.toml`: what intentd reads (docket actions.md section 3.3).
 install -Dm644 "$repo/dist/intents/org.quire.Settings.toml" "$share/quire/intents/org.quire.Settings.toml"
 # `dbus-1/services/<AppName>.service` beside it, with the binary's installed path.
-mkdir -p "$share/dbus-1/services"
+mkdir -p "$servicedir"
 sed "s|^Exec=.*|Exec=$prefix/bin/detent|" "$repo/dist/dbus-1/services/org.quire.Settings.service" \
-  >"$share/dbus-1/services/org.quire.Settings.service"
-chmod 644 "$share/dbus-1/services/org.quire.Settings.service"
+  >"$servicedir/org.quire.Settings.service"
+chmod 644 "$servicedir/org.quire.Settings.service"
 # The user unit the D-Bus file names (`SystemdService=`): porter gives Settings its role only to this
 # unit's main process.
-install -Dm644 "$repo/dist/systemd/org.quire.Settings.service" "$dest$prefix/lib/systemd/user/org.quire.Settings.service"
-sed -i "s|^ExecStart=.*|ExecStart=$prefix/bin/detent|" "$dest$prefix/lib/systemd/user/org.quire.Settings.service"
+install -Dm644 "$repo/dist/systemd/org.quire.Settings.service" "$unitdir/org.quire.Settings.service"
+sed -i "s|^ExecStart=.*|ExecStart=$prefix/bin/detent|" "$unitdir/org.quire.Settings.service"
