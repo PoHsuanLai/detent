@@ -18,6 +18,7 @@ mod outside;
 mod page;
 mod picker;
 mod range;
+mod reads;
 mod reason;
 mod rows;
 mod search;
@@ -66,6 +67,7 @@ pub use picker::{
     PickerState, Ready, loading_text, step,
 };
 pub use range::{Number, Range};
+pub use reads::modules_read;
 pub use reason::Reason;
 pub use rows::{Columns, cell_fits};
 pub use search::{Found, Hit, Rank, Search, search};

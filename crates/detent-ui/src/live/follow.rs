@@ -1,5 +1,5 @@
 //! Following a daemon: look for it when its pane appears and again each time its bus name
-//! changes hands, never starting it.
+//! changes hands, never starting it (`activate::start` does that, once per page visit).
 
 use super::bus::BusSource;
 use super::daemon::Daemon;

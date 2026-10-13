@@ -55,7 +55,9 @@ pub(crate) async fn next_owner(owners: &mut NameOwnerChangedStream) -> Option<()
 }
 
 /// A client of the daemon's module, only when the daemon is already on the bus: asking for the
-/// module of a daemon that is not running would start it, and opening Settings must not.
+/// module of a daemon that is not running would start it, and opening Settings must not. The
+/// daemons a page reads are started when the page is shown (`activate::start`), by name, so
+/// this stays a look.
 pub(super) async fn open(connection: &Connection, daemon: &Daemon) -> Result<LiveClient, Absence> {
     let name = BusName::try_from(daemon.name).map_err(failed)?;
     let running = DBusProxy::new(connection)

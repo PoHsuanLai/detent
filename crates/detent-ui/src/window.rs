@@ -78,7 +78,7 @@ pub fn Window(
                 div { class: "content",
                     match (&view.current, view.searching) {
                         (Some(slug), _) => rsx! {
-                            PageView { slug: slug.clone(), hits, files, onedit }
+                            PageView { key: "{slug.0}", slug: slug.clone(), hits, files, onedit }
                         },
                         (None, Searching::Yes) => rsx! {
                             EmptyState {

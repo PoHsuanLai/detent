@@ -3,6 +3,7 @@
 
 mod account_notice;
 mod accounts;
+mod activation;
 mod assistants;
 mod behaviour;
 mod coherence;
