@@ -20,9 +20,10 @@ dest=${DESTDIR:-}
 bin=${DETENT_BIN:-$repo/target/release/detent}
 share=$dest$prefix/share
 # Where systemd and the session bus look: for a prefix under $HOME, the per-user data directory.
+home=${HOME:-}
 case $prefix/ in
-  "$HOME"/*)
-    userdata=${XDG_DATA_HOME:-$HOME/.local/share}
+  "${home:-/nonexistent}"/*)
+    userdata=${XDG_DATA_HOME:-$home/.local/share}
     unitdir=$dest$userdata/systemd/user
     servicedir=$dest$userdata/dbus-1/services
     ;;
