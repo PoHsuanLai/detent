@@ -48,8 +48,16 @@
   gap: var(--s-6);
 }
 
-.advanced {
-  padding: 0 var(--s-4);
+.advanced-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-10);
+  padding: var(--s-14);
+}
+
+.advanced-sheet-buttons {
+  display: flex;
+  align-self: flex-end;
 }
 
 .picker {

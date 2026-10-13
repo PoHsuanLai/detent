@@ -38,7 +38,7 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 | Concept | Home |
 | --- | --- |
 | Which schemas exist, which are stale | `detent-model::discover` |
-| Pages, sections, order; Basic sections, and the page's one Advanced group | `detent-model::Catalogue` |
+| Pages, sections, order; Basic sections, and the page's advanced sections, each one sheet row | `detent-model::Catalogue` |
 | Which control draws a key, which values it admits; whether two words are a switch | `detent-model::Control`, `TogglePair::of` |
 | What a search finds, which pages stay in the sidebar | `detent-model::search`, `visible_pages`, `landing` |
 | Reading and writing a settings file | `detent-files::{load, save}` |
@@ -75,6 +75,11 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 **A key kind gets a component.** Add the `Control` variant in `detent-model/src/control.rs` (the
 match on `KeyKind` is total, so the compiler lists what is missing), add `controls/<name>.rs` in
 `detent-ui` with one quire component, and one arm in `controls/mod.rs`.
+
+**Advanced keys.** A page's advanced keys are not drawn on the page. Each advanced section is one row
+("Limits...") in the page's last group (`detent-ui/src/advanced_view.rs`); the row opens a quire
+`Sheet` titled with the section, holding its rows with the same controls. Edits write live and the
+sheet's one Done button (Return) closes it. A search hit marks the section's row; it opens nothing.
 
 **A page appears.** Nothing to do: a program ships a schema naming the page, `Catalogue` groups it.
 A new fixed page is a variant of `ds_settings::schema::Page` (quire first), then a row in

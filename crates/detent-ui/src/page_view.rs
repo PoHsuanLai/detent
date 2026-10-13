@@ -1,4 +1,4 @@
-//! One page: its sections, each a card of rows, and one "Advanced" disclosure at the end.
+//! One page: its sections, each a card of rows, and the sheet rows of its advanced keys at the end.
 
 use crate::accounts::AccountsPane;
 use crate::advanced_view::AdvancedView;

@@ -98,7 +98,7 @@ fn the_sections_follow_design_order_whatever_order_the_programs_were_read_in() {
             "Memory",
             "Computer use",
             "Assistant",
-            "Advanced",
+            "Limits\u{2026}",
         ],
     );
 }

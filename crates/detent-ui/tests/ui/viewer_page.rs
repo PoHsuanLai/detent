@@ -114,7 +114,7 @@ fn the_viewer_page_draws_anyviews_keys_under_its_sections() {
     for words in [
         "Keep history",
         "Hide controls after",
-        "Zoom step",
+        "Zoom\u{2026}",
         "History",
         "Controls",
     ] {
@@ -127,9 +127,9 @@ fn the_viewer_page_draws_anyviews_keys_under_its_sections() {
         "on, its default"
     );
     assert_eq!(
-        harness.count(".ds-disclosure"),
+        harness.count(".advanced .ds-field-row"),
         1,
-        "the advanced zoom step is behind the page's one disclosure"
+        "the advanced zoom step is behind one sheet row"
     );
 }
 

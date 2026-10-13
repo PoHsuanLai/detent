@@ -141,29 +141,22 @@ fn typing_the_start_of_a_page_name_keeps_that_page_and_shows_it() {
 }
 
 #[test]
-fn a_hit_among_the_advanced_keys_opens_its_disclosure() {
+fn a_hit_among_the_advanced_keys_marks_the_row_of_its_section() {
     let sandbox = Sandbox::new("search-advanced");
     let mut harness = sandbox.harness(opening("dock"));
-    let closed = ".ds-disclosure[*|data-shown=hidden] .ds-field-row";
-    let hidden_rows = harness.count(closed);
-    assert!(
-        hidden_rows > 0,
-        "before the search the advanced rows are behind closed disclosures"
+    assert_eq!(
+        harness.count(".advanced .key-hit"),
+        0,
+        "before the search no advanced row is marked"
     );
     search_for(&mut harness, "magnified size");
     assert_eq!(page_of(&harness).as_deref(), Some("dock"));
-    let row = harness.text_of(".key-hit").expect("a highlighted row");
-    assert!(row.contains("Magnified size"), "{row}");
     assert_eq!(
-        harness.count(".ds-disclosure[*|data-shown=visible] .key-hit"),
+        harness.count(".advanced .key-hit"),
         1,
-        "the row sits in a disclosure the search opened"
+        "the section holding the key is marked, and no sheet is opened for it"
     );
-    assert_eq!(
-        harness.count(".ds-disclosure[*|data-shown=hidden] .key-hit"),
-        0,
-        "and in none that is closed"
-    );
+    assert_eq!(harness.count(".ds-sheet"), 0);
 }
 
 #[test]
@@ -310,24 +303,26 @@ fn a_two_word_choice_that_is_not_on_and_off_is_two_segments() {
 }
 
 #[test]
-fn a_page_has_one_advanced_disclosure_at_its_end_grouped_by_section() {
+fn a_page_ends_with_one_group_of_sheet_rows_one_per_advanced_section() {
     let sandbox = Sandbox::new("one-advanced");
     for page in ["appearance", "dock", "mouse_and_gestures"] {
         let harness = sandbox.harness(opening(page));
-        assert_eq!(harness.count(".ds-disclosure"), 1, "{page}: one disclosure");
+        assert_eq!(harness.count(".ds-disclosure"), 0, "{page}: no disclosure");
         assert_eq!(
-            harness.count(".advanced .ds-field-group[*|aria-label]"),
             harness.count(".advanced .ds-field-group"),
-            "{page}: each group inside it is titled by its section"
+            1,
+            "{page}: one group"
         );
         assert!(
-            harness.count(".advanced .ds-field-group") > 1,
-            "{page}: several sections share the one disclosure"
+            harness.count(".advanced .ds-field-row") > 1,
+            "{page}: a row for each advanced section"
         );
+        assert_eq!(harness.count(".ds-sheet"), 0, "{page}: sheets start closed");
         let html = harness.html();
         let last_section = html.rfind("class=\"section\"").expect("a section");
-        let advanced = html.find("class=\"advanced\"").expect("the disclosure");
-        assert!(last_section < advanced, "{page}: the disclosure is last");
+        let advanced = html.find("class=\"advanced\"").expect("the group");
+        assert!(last_section < advanced, "{page}: the group is last");
+        assert!(html.contains('\u{2026}'), "{page}: rows end in an ellipsis");
     }
 }
 

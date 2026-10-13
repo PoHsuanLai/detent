@@ -1,5 +1,5 @@
 //! The Intelligence page over the schemas docket, almanac and cua ship: each row in the section
-//! its own `section` names, the Advanced ones behind the disclosure, a write in the program's own
+//! its own `section` names, the Advanced ones as sheet rows, a write in the program's own
 //! file, and cua's list of apps edited as rows.
 
 use crate::support::Sandbox;
@@ -18,10 +18,10 @@ fn intelligence() -> Opening {
 }
 
 /// The page's markup with entities for an apostrophe read back, cut where the Advanced
-/// disclosure starts: what is drawn before it, and what is drawn in it.
+/// group starts: what is drawn before it, and what it holds.
 fn basic_and_advanced(harness: &Harness) -> (String, String) {
     let html = harness.html().replace("&#39;", "'");
-    let cut = html.find("class=\"advanced\"").expect("the disclosure");
+    let cut = html.find("class=\"advanced\"").expect("the advanced group");
     (html[..cut].to_owned(), html[cut..].to_owned())
 }
 
@@ -62,18 +62,8 @@ const BASIC: &[(&str, &[&str])] = &[
     ),
 ];
 
-/// `(section, a row in it)` for the rows the Advanced disclosure holds.
-const ADVANCED: &[(&str, &str)] = &[
-    ("Limits", "Quick check time"),
-    ("Limits", "Careful check time"),
-    ("Limits", "Actions per task"),
-    ("Limits", "Approval length"),
-    ("History", "Search history"),
-    ("History", "Task history"),
-    ("Run limits", "Steps per run"),
-    ("Timing", "Quiet before it looks"),
-    ("Window detail", "Window detail"),
-];
+/// The sections the advanced rows are grouped into: each is one sheet row, "<Section>...".
+const ADVANCED: &[&str] = &["Limits", "History", "Run limits", "Timing", "Window detail"];
 
 #[test]
 fn each_basic_row_is_drawn_in_the_section_its_schema_names() {
@@ -90,31 +80,21 @@ fn each_basic_row_is_drawn_in_the_section_its_schema_names() {
 }
 
 #[test]
-fn the_advanced_rows_sit_in_the_one_disclosure_and_not_among_the_basic_ones() {
+fn the_advanced_sections_are_sheet_rows_and_their_keys_are_not_among_the_basic_ones() {
     let sandbox = Sandbox::new("programs-advanced");
     let harness = sandbox.harness(intelligence());
+    assert_eq!(harness.count(".ds-disclosure"), 0, "no disclosure");
     assert_eq!(
-        harness.count(".advanced .ds-disclosure"),
-        1,
-        "one disclosure"
+        harness.count(".advanced .ds-field-row"),
+        ADVANCED.len(),
+        "one row per advanced section"
     );
-    assert_eq!(
-        harness.count(".advanced .ds-disclosure[*|data-shown=hidden]"),
-        1,
-        "closed until opened"
-    );
+    assert_eq!(harness.count(".ds-sheet"), 0, "closed until opened");
     let (basic, advanced) = basic_and_advanced(&harness);
-    for (section, row) in ADVANCED {
-        for text in [section, row] {
-            assert!(
-                advanced.contains(&format!(">{text}<")),
-                "{text:?} is in the disclosure"
-            );
-            assert!(
-                !basic.contains(&format!(">{text}<")),
-                "{text:?} is not among the basic rows"
-            );
-        }
+    for section in ADVANCED {
+        let row = format!(">{section}\u{2026}<");
+        assert!(advanced.contains(&row), "{row:?} is a sheet row");
+        assert!(!basic.contains(&row), "{row:?} is not among the basic rows");
     }
 }
 
@@ -198,12 +178,10 @@ fn lending_this_computers_models_is_off_until_the_switch_is_flipped() {
 fn an_advanced_row_writes_its_own_file_too() {
     let sandbox = Sandbox::new("programs-advanced-write");
     let mut harness = sandbox.harness(intelligence());
-    scroll_into_view(&mut harness, ".advanced .ds-disclosure-trigger");
-    click(&mut harness, ".advanced .ds-disclosure-trigger");
-    assert_eq!(
-        harness.count(".advanced .ds-disclosure[*|data-shown=visible]"),
-        1
-    );
+    let opener = ".advanced [aria-label=\"Open Run limits\"]";
+    scroll_into_view(&mut harness, opener);
+    click(&mut harness, opener);
+    assert_eq!(harness.count(".ds-sheet"), 1, "the section's sheet is up");
     let slider = "[aria-label=\"Steps per run\"] .ds-slider";
     scroll_into_view(&mut harness, slider);
     let at = harness.centre(slider).expect("the slider");
