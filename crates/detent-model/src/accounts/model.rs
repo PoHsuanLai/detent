@@ -31,7 +31,7 @@ const SYNC_LEAVES: [&str; 2] = ["files", "photos"];
 const USED_BY: &str = ".used_by.";
 
 /// The path of syncd's row that starts "Continue as" for a new account.
-const SYNC_ADD: &str = "sync.add";
+const SYNC_ADD: &str = "accounts.sync.add";
 
 /// Before an id in the key of an account that is syncd's: an id never holds a `/`, so the same
 /// id in two modules is two accounts.

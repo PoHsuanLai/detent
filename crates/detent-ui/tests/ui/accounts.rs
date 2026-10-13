@@ -357,7 +357,7 @@ fn continue_as_runs_syncds_row_on_one_press() {
     settle(&mut w.harness, "the action", |_| !w.syncd.sets().is_empty());
     assert_eq!(
         w.syncd.sets(),
-        [("sync.add".to_owned(), toml::Value::Boolean(true))]
+        [("accounts.sync.add".to_owned(), toml::Value::Boolean(true))]
     );
     assert!(w.accountd.sets().is_empty() && w.inferd.sets().is_empty());
 }

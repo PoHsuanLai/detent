@@ -163,7 +163,7 @@ pub struct Accountd {
     pub sets: Arc<Mutex<Vec<(String, toml::Value)>>>,
     policy: Policy,
     module: Module,
-    /// Whether the module has syncd's `sync.add` row.
+    /// Whether the module has syncd's `accounts.sync.add` row.
     continue_as: bool,
 }
 
@@ -184,7 +184,7 @@ impl Accountd {
         }
     }
 
-    /// Gives the module syncd's `sync.add` row.
+    /// Gives the module syncd's `accounts.sync.add` row.
     pub fn continuing_as(mut self) -> Accountd {
         self.continue_as = true;
         self
@@ -386,7 +386,7 @@ impl LiveModule for Accountd {
             .collect();
         if self.continue_as {
             key.push(spec(
-                "sync.add".to_owned(),
+                "accounts.sync.add".to_owned(),
                 "Sync",
                 "Continue as",
                 action("Continue as\u{2026}", ActionWeight::Plain),

@@ -98,7 +98,7 @@ fn syncd() -> Described {
             fixed("accounts.me.label", "Me (sync)"),
             toggle("accounts.me.sync.files"),
             action("accounts.me.remove", "Remove account"),
-            action("sync.add", "Continue as\u{2026}"),
+            action("accounts.sync.add", "Continue as\u{2026}"),
         ],
         &[("accounts.me.sync.files", "off")],
     )
