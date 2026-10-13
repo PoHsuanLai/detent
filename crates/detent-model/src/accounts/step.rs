@@ -5,18 +5,18 @@ use super::model::{
     AccountKey, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, ClientEntry,
     LocalFiles, RemovalQuestion, SignInClient, toggle_word,
 };
+use super::module::{ModuleId, ModuleRow, Sources};
 use super::reauth_end::ReauthEnd;
 use super::sign_out::SignOutEnd;
 use crate::picker::{Absence, Described};
-use ds_settings::schema::KeyPath;
 
 /// What happened to the pane.
 #[derive(Debug, Clone, PartialEq)]
 pub enum AccountsInput {
-    /// The module was found: the first time it was read, or when it came back.
-    Found(Result<Described, Absence>),
-    /// The module was read again after a change; a failed read keeps what is shown.
-    Reread(Result<Described, Absence>),
+    /// A module was found: the first time it was read, or when it came back; or it is not there.
+    Found(ModuleId, Result<Described, Absence>),
+    /// A module was read again after a change; a failed read keeps what is shown.
+    Reread(ModuleId, Result<Described, Absence>),
     /// The person opened an account.
     Open(AccountKey),
     /// The person chose an account in the list.
@@ -26,16 +26,16 @@ pub enum AccountsInput {
     /// The person turned a service on or off.
     Switched {
         /// The service's row.
-        path: KeyPath,
+        row: ModuleRow,
         /// What it is now.
         on: bool,
     },
     /// The person pressed a permission's action or Sign in again.
-    Ran(KeyPath),
+    Ran(ModuleRow),
     /// The person asked to remove an account.
-    AskRemove(KeyPath),
+    AskRemove(ModuleRow),
     /// The person asked to sign a assistant's account out.
-    AskSignOut(KeyPath),
+    AskSignOut(ModuleRow),
     /// The person answered the question: no.
     Keep,
     /// The person answered the question: yes.
@@ -43,36 +43,38 @@ pub enum AccountsInput {
     /// The person finished a sign-in client id.
     ClientEdited {
         /// The row.
-        path: KeyPath,
+        row: ModuleRow,
         /// What the field holds.
         text: String,
     },
     /// The module did what was asked at `path`.
-    Done(KeyPath),
+    Done(ModuleRow),
     /// The module refused what was asked at `path`.
     Failed {
         /// The row.
-        path: KeyPath,
+        row: ModuleRow,
         /// What the module said.
         why: String,
     },
     /// The person pressed Add Account….
     AddAccount,
-    /// The add sheet ended.
-    AddEnded(AddEnd),
+    /// The person pressed Add AI Key….
+    AddAiKey,
+    /// The add sheet ended; it was the one of `module`.
+    AddEnded(ModuleId, AddEnd),
     /// The module says something changed.
-    Changed,
+    Changed(ModuleId),
     /// The module says how the sign-in the person started at `path` ended.
     SignedIn {
         /// The account's reauth row.
-        path: KeyPath,
+        row: ModuleRow,
         /// How it ended.
         end: ReauthEnd,
     },
     /// The module says how an assistant's sign-out at `path` ended.
     SignedOut {
         /// The account's sign-out row.
-        path: KeyPath,
+        row: ModuleRow,
         /// How it ended.
         end: SignOutEnd,
     },
@@ -84,18 +86,20 @@ pub enum AccountsEffect {
     /// Call `Set(path, value)` on the module.
     Set {
         /// The row.
-        path: KeyPath,
+        row: ModuleRow,
         /// The value.
         value: toml::Value,
     },
-    /// Run the action at `path`.
-    Invoke(KeyPath),
-    /// Open the account service's add sheet and tell how it ended as `AddEnded`.
+    /// Run the action at the row.
+    Invoke(ModuleRow),
+    /// Open the add sheet for an identity and tell how it ended as `AddEnded`.
     OpenAddSheet,
+    /// Open the add sheet for an AI key and tell how it ended as `AddEnded`.
+    OpenAiKeySheet,
     /// Read the module again.
-    Reload,
+    Reload(ModuleId),
     /// Read the module again after a short wait: the last read failed.
-    Retry,
+    Retry(ModuleId),
     /// Open the account with this key once the rows are read again.
     Show(AccountKey),
     /// Tell the person something went wrong.
@@ -107,47 +111,82 @@ pub fn accounts_step(
     state: AccountsState,
     input: AccountsInput,
 ) -> (AccountsState, Vec<AccountsEffect>) {
-    match (state, input) {
-        (
-            AccountsState::Ready(ready),
-            AccountsInput::Found(Ok(described)) | AccountsInput::Reread(Ok(described)),
-        ) => (AccountsState::Ready(refreshed(ready, &described)), vec![]),
-        (_, AccountsInput::Found(Ok(described)) | AccountsInput::Reread(Ok(described))) => (
-            AccountsState::Ready(AccountsReady::new(AccountsPane::of(&described))),
-            vec![],
-        ),
-        (_, AccountsInput::Found(Err(absence))) => (AccountsState::Unavailable(absence), vec![]),
-        // A read that fails while the list shows keeps the list; the module moved under it.
-        (state @ AccountsState::Ready(_), AccountsInput::Reread(Err(_))) => {
-            (state, vec![AccountsEffect::Retry])
+    match input {
+        AccountsInput::Found(module, found) => (hear(state, module, found), vec![]),
+        AccountsInput::Reread(module, Ok(described)) => {
+            (hear(state, module, Ok(described)), vec![])
         }
-        (state @ AccountsState::Unavailable(_), AccountsInput::Changed) => {
-            (state, vec![AccountsEffect::Reload])
+        // A read that fails while the module's rows are shown keeps them; the module moved
+        // under it.
+        AccountsInput::Reread(module, Err(_)) => {
+            let shown = sources_of(&state).has_read(module);
+            let effects = if shown {
+                vec![AccountsEffect::Retry(module)]
+            } else {
+                vec![]
+            };
+            (state, effects)
         }
-        (AccountsState::Ready(ready), input) => {
-            let (ready, effects) = ready_step(ready, input);
-            (AccountsState::Ready(ready), effects)
+        AccountsInput::Changed(module) if matches!(state, AccountsState::Unavailable(..)) => {
+            (state, vec![AccountsEffect::Reload(module)])
         }
-        (state, _) => (state, vec![]),
+        input => match state {
+            AccountsState::Ready(ready) => {
+                let (ready, effects) = ready_step(*ready, input);
+                (AccountsState::Ready(Box::new(ready)), effects)
+            }
+            state => (state, vec![]),
+        },
+    }
+}
+
+fn sources_of(state: &AccountsState) -> &Sources {
+    match state {
+        AccountsState::Probing(sources) | AccountsState::Unavailable(_, sources) => sources,
+        AccountsState::Ready(ready) => &ready.sources,
+    }
+}
+
+/// `state` once `module` has said what it found. Rows of a module that is gone are left out;
+/// the pane is unavailable only when every module is.
+fn hear(
+    state: AccountsState,
+    module: ModuleId,
+    found: Result<Described, Absence>,
+) -> AccountsState {
+    let (mut sources, ready) = match state {
+        AccountsState::Probing(sources) | AccountsState::Unavailable(_, sources) => (sources, None),
+        AccountsState::Ready(ready) => (ready.sources.clone(), Some(*ready)),
+    };
+    sources.hear(module, found);
+    match (sources.pane(), ready) {
+        (Some(pane), Some(ready)) => {
+            AccountsState::Ready(Box::new(refreshed(ready, pane, sources)))
+        }
+        (Some(pane), None) => AccountsState::Ready(Box::new(AccountsReady::new(pane, sources))),
+        (None, _) => match sources.absence() {
+            Some(absence) => AccountsState::Unavailable(absence, sources),
+            None => AccountsState::Probing(sources),
+        },
     }
 }
 
 /// `ready` over a fresh reading: the screen stays unless its account is gone.
-fn refreshed(ready: AccountsReady, described: &Described) -> AccountsReady {
-    let pane = AccountsPane::of(described);
+fn refreshed(ready: AccountsReady, pane: AccountsPane, sources: Sources) -> AccountsReady {
     let screen = match ready.screen {
         AccountsScreen::Detail(key) if pane.account(&key).is_some() => AccountsScreen::Detail(key),
         _ => AccountsScreen::List,
     };
     let confirming = ready
         .confirming
-        .filter(|asked| pane.owner(&asked.path).is_some());
+        .filter(|asked| pane.owner(&asked.row).is_some());
     let selected = ready.selected.filter(|key| pane.account(key).is_some());
     AccountsReady {
         pane,
         screen,
         selected,
         confirming,
+        sources,
         ..ready
     }
 }
@@ -169,39 +208,40 @@ fn ready_step(
             ready.screen = AccountsScreen::List;
             ready.confirming = None;
         }
-        AccountsInput::Switched { path, on } if idle => {
+        AccountsInput::Switched { row, on } if idle => {
             // A service and a sync switch are both a path and a state: the same Set.
             let switch = ready
                 .pane
                 .accounts
                 .iter_mut()
+                .filter(|account| account.module == row.module)
                 .flat_map(|account| {
                     let services = account.services.iter_mut().map(|s| (&s.path, &mut s.on));
                     services.chain(account.sync.iter_mut().map(|s| (&s.path, &mut s.on)))
                 })
-                .find(|(row, held)| **row == path && **held != on);
+                .find(|(path, held)| **path == row.path && **held != on);
             if let Some((_, held)) = switch {
                 *held = on;
                 effects.push(AccountsEffect::Set {
-                    path: path.clone(),
+                    row: row.clone(),
                     value: toml::Value::String(toggle_word(on).to_owned()),
                 });
-                ready.pending = Some(path);
+                ready.pending = Some(row);
             }
         }
-        AccountsInput::Ran(path) if idle && runs_without_asking(&ready.pane, &path) => {
-            effects.push(AccountsEffect::Invoke(path.clone()));
-            ready.pending = Some(path);
+        AccountsInput::Ran(row) if idle && runs_without_asking(&ready.pane, &row) => {
+            effects.push(AccountsEffect::Invoke(row.clone()));
+            ready.pending = Some(row);
         }
-        AccountsInput::AskRemove(path) if idle => {
-            ready.confirming = ready.pane.owner(&path).and_then(|account| {
+        AccountsInput::AskRemove(row) if idle => {
+            ready.confirming = ready.pane.owner(&row).and_then(|account| {
                 account
                     .remove
                     .as_ref()
-                    .filter(|(row, _)| *row == path)
+                    .filter(|(path, _)| *path == row.path)
                     .map(|_| RemovalQuestion {
                         ask: Ask::Remove,
-                        path,
+                        row,
                         account: account.label.clone(),
                         files: if account.sync.iter().any(|sync| sync.on) {
                             LocalFiles::Kept
@@ -211,15 +251,15 @@ fn ready_step(
                     })
             });
         }
-        AccountsInput::AskSignOut(path) if idle => {
-            ready.confirming = ready.pane.owner(&path).and_then(|account| {
+        AccountsInput::AskSignOut(row) if idle => {
+            ready.confirming = ready.pane.owner(&row).and_then(|account| {
                 account
                     .sign_out
                     .as_ref()
-                    .filter(|(row, _)| *row == path)
+                    .filter(|(path, _)| *path == row.path)
                     .map(|_| RemovalQuestion {
                         ask: Ask::SignOut,
-                        path,
+                        row,
                         account: account.label.clone(),
                         files: LocalFiles::None,
                     })
@@ -228,17 +268,15 @@ fn ready_step(
         AccountsInput::Keep => ready.confirming = None,
         AccountsInput::Remove if idle => {
             if let Some(asked) = ready.confirming.take() {
-                effects.push(AccountsEffect::Invoke(asked.path.clone()));
-                ready.pending = Some(asked.path);
+                effects.push(AccountsEffect::Invoke(asked.row.clone()));
+                ready.pending = Some(asked.row);
             }
         }
-        AccountsInput::ClientEdited { path, text } if idle => {
+        AccountsInput::ClientEdited { row, text } if idle => {
             let text = text.trim().to_owned();
-            let client = ready
-                .pane
-                .clients
-                .iter_mut()
-                .find(|client| client.path == path && client.value != text);
+            let client = ready.pane.clients.iter_mut().find(|client| {
+                client.module == row.module && client.path == row.path && client.value != text
+            });
             if let Some(SignInClient {
                 entry: ClientEntry::WaitsForKey,
                 ..
@@ -248,54 +286,58 @@ fn ready_step(
             } else if let Some(client) = client {
                 client.value.clone_from(&text);
                 effects.push(AccountsEffect::Set {
-                    path: path.clone(),
+                    row: row.clone(),
                     value: toml::Value::String(text),
                 });
-                ready.pending = Some(path);
+                ready.pending = Some(row);
             }
         }
-        AccountsInput::Done(path) => {
-            if ready.pending.as_ref() == Some(&path) {
+        AccountsInput::Done(row) => {
+            if ready.pending.as_ref() == Some(&row) {
                 ready.pending = None;
             }
-            effects.push(AccountsEffect::Reload);
+            effects.push(AccountsEffect::Reload(row.module));
         }
-        AccountsInput::Failed { path, why } => {
-            if ready.pending.as_ref() == Some(&path) {
+        AccountsInput::Failed { row, why } => {
+            if ready.pending.as_ref() == Some(&row) {
                 ready.pending = None;
             }
             effects.push(AccountsEffect::Tell(why));
-            effects.push(AccountsEffect::Reload);
+            effects.push(AccountsEffect::Reload(row.module));
         }
         AccountsInput::AddAccount if idle && ready.adding == Adding::Idle => {
             ready.adding = Adding::SheetOpen;
             effects.push(AccountsEffect::OpenAddSheet);
         }
-        AccountsInput::AddEnded(end) => {
+        AccountsInput::AddAiKey if idle && ready.adding == Adding::Idle => {
+            ready.adding = Adding::SheetOpen;
+            effects.push(AccountsEffect::OpenAiKeySheet);
+        }
+        AccountsInput::AddEnded(module, end) => {
             ready.adding = Adding::Idle;
             effects.extend(end.line().map(|line| AccountsEffect::Tell(line.to_owned())));
-            effects.push(AccountsEffect::Reload);
+            effects.push(AccountsEffect::Reload(module));
             if let AddEnd::AlreadyThere(key) = end {
                 effects.push(AccountsEffect::Show(key));
             }
         }
-        AccountsInput::Changed => effects.push(AccountsEffect::Reload),
-        AccountsInput::SignedIn { path, end } => {
+        AccountsInput::Changed(module) => effects.push(AccountsEffect::Reload(module)),
+        AccountsInput::SignedIn { row, end } => {
             let label = ready
                 .pane
-                .owner(&path)
+                .owner(&row)
                 .map_or("this account", |account| account.label.as_str());
             effects.push(AccountsEffect::Tell(end.line(label)));
-            effects.push(AccountsEffect::Reload);
+            effects.push(AccountsEffect::Reload(row.module));
         }
-        AccountsInput::SignedOut { path, end } => {
+        AccountsInput::SignedOut { row, end } => {
             let label = ready
                 .pane
-                .owner(&path)
+                .owner(&row)
                 .map_or("this account", |account| account.label.as_str());
             effects.push(AccountsEffect::Tell(end.line(label)));
             if end.settles() {
-                effects.push(AccountsEffect::Reload);
+                effects.push(AccountsEffect::Reload(row.module));
             }
         }
         _ => {}
@@ -303,11 +345,21 @@ fn ready_step(
     (ready, effects)
 }
 
-/// Whether `path` is an action that may run on one press: a permission's or Sign in again.
-/// Removing an account and signing an agent out are asked about first, so it is not one.
-fn runs_without_asking(pane: &AccountsPane, path: &KeyPath) -> bool {
-    pane.accounts.iter().any(|account| {
-        account.permissions.iter().any(|p| &p.path == path)
-            || account.reauth.as_ref().is_some_and(|(row, _)| row == path)
-    })
+/// Whether `row` is an action that may run on one press: a permission's, Sign in again, or
+/// syncd's "Continue as". Removing an account and signing an agent out are asked about first,
+/// so they are not one.
+fn runs_without_asking(pane: &AccountsPane, row: &ModuleRow) -> bool {
+    let continues = pane.sync_add.as_ref().is_some_and(|add| add.row() == *row);
+    continues
+        || pane
+            .accounts
+            .iter()
+            .filter(|a| a.module == row.module)
+            .any(|account| {
+                account.permissions.iter().any(|p| p.path == row.path)
+                    || account
+                        .reauth
+                        .as_ref()
+                        .is_some_and(|(path, _)| *path == row.path)
+            })
 }

@@ -12,6 +12,11 @@ fn path(text: &str) -> KeyPath {
     KeyPath(text.to_owned())
 }
 
+/// The row at `text` of accountd's module.
+fn row(text: &str) -> ModuleRow {
+    ModuleRow::new(ModuleId::Accountd, path(text))
+}
+
 fn spec(key: &str, label: &str, kind: KeyKind) -> KeySpec {
     KeySpec {
         path: path(key),
@@ -131,15 +136,15 @@ pub(super) fn described() -> Described {
 
 pub(super) fn ready() -> AccountsState {
     accounts_step(
-        AccountsState::Probing,
-        AccountsInput::Found(Ok(described())),
+        AccountsState::default(),
+        AccountsInput::Found(ModuleId::Accountd, Ok(described())),
     )
     .0
 }
 
 pub(super) fn state_of(state: AccountsState) -> AccountsReady {
     match state {
-        AccountsState::Ready(ready) => ready,
+        AccountsState::Ready(ready) => *ready,
         other => panic!("not ready: {other:?}"),
     }
 }
@@ -159,7 +164,7 @@ pub(super) fn apply(
 
 #[test]
 fn rows_are_read_as_accounts_with_dotted_ids_kept_whole() {
-    let pane = AccountsPane::of(&described());
+    let pane = AccountsPane::of(ModuleId::Accountd, &described());
     let labels: Vec<&str> = pane.accounts.iter().map(|a| a.label.as_str()).collect();
     assert_eq!(labels, ["Home cloud", "Work mail"]);
     let work = &pane.accounts[1];
@@ -173,7 +178,7 @@ fn rows_are_read_as_accounts_with_dotted_ids_kept_whole() {
 
 #[test]
 fn an_account_lists_its_services_permissions_and_actions() {
-    let pane = AccountsPane::of(&described());
+    let pane = AccountsPane::of(ModuleId::Accountd, &described());
     let home = &pane.accounts[0];
     let services: Vec<(String, bool)> = home.services.iter().map(|s| (s.label(), s.on)).collect();
     assert_eq!(
@@ -187,7 +192,7 @@ fn an_account_lists_its_services_permissions_and_actions() {
 
 #[test]
 fn the_sign_in_client_ids_are_text_rows_held_apart_from_the_accounts() {
-    let pane = AccountsPane::of(&described());
+    let pane = AccountsPane::of(ModuleId::Accountd, &described());
     assert_eq!(pane.accounts.len(), 2);
     assert_eq!(pane.clients.len(), 1);
     assert_eq!(pane.clients[0].value, "abc");
@@ -217,18 +222,18 @@ fn an_account_nobody_listed_does_not_open() {
 
 #[test]
 fn a_switch_sets_the_word_at_once_and_waits_for_the_answer() {
-    let storage = path("accounts.home.service.storage");
+    let storage = row("accounts.home.service.storage");
     let (state, effects) = apply(
         ready(),
         [AccountsInput::Switched {
-            path: storage.clone(),
+            row: storage.clone(),
             on: false,
         }],
     );
     assert_eq!(
         effects,
         [AccountsEffect::Set {
-            path: storage.clone(),
+            row: storage.clone(),
             value: toml::Value::String("off".to_owned()),
         }]
     );
@@ -239,34 +244,38 @@ fn a_switch_sets_the_word_at_once_and_waits_for_the_answer() {
     let (_, again) = apply(
         state.clone(),
         [AccountsInput::Switched {
-            path: path("accounts.home.service.calendar"),
+            row: row("accounts.home.service.calendar"),
             on: true,
         }],
     );
     assert!(again.is_empty());
     // the answer frees the pane and the rows are read again
     let (state, effects) = apply(state, [AccountsInput::Done(storage)]);
-    assert_eq!(effects, [AccountsEffect::Reload]);
+    assert_eq!(effects, [AccountsEffect::Reload(ModuleId::Accountd)]);
     assert_eq!(state_of(state).pending, None);
 }
 
 #[test]
 fn a_refused_set_says_why_and_reads_the_module_again() {
-    let storage = path("accounts.home.service.storage");
+    let storage = row("accounts.home.service.storage");
     let (state, effects) = apply(
         ready(),
         [
             AccountsInput::Switched {
-                path: storage.clone(),
+                row: storage.clone(),
                 on: false,
             },
             AccountsInput::Failed {
-                path: storage,
+                row: storage,
                 why: "refused".to_owned(),
             },
         ],
     );
-    assert_eq!(effects.last(), Some(&AccountsEffect::Reload), "{effects:?}");
+    assert_eq!(
+        effects.last(),
+        Some(&AccountsEffect::Reload(ModuleId::Accountd)),
+        "{effects:?}"
+    );
     assert!(effects.contains(&AccountsEffect::Tell("refused".to_owned())));
     assert_eq!(state_of(state).pending, None);
 }
@@ -274,15 +283,15 @@ fn a_refused_set_says_why_and_reads_the_module_again() {
 #[test]
 fn revoke_and_sign_in_again_run_on_one_press() {
     for key in ["accounts.home.grant.g1", "accounts.home.reauth"] {
-        let (state, effects) = apply(ready(), [AccountsInput::Ran(path(key))]);
-        assert_eq!(effects, [AccountsEffect::Invoke(path(key))], "{key}");
-        assert_eq!(state_of(state).pending, Some(path(key)));
+        let (state, effects) = apply(ready(), [AccountsInput::Ran(row(key))]);
+        assert_eq!(effects, [AccountsEffect::Invoke(row(key))], "{key}");
+        assert_eq!(state_of(state).pending, Some(row(key)));
     }
 }
 
 #[test]
 fn removing_an_account_is_never_run_without_the_question_answered() {
-    let remove = path("accounts.home.remove");
+    let remove = row("accounts.home.remove");
     let (state, effects) = apply(ready(), [AccountsInput::Ran(remove.clone())]);
     assert!(effects.is_empty(), "a press of Remove alone does nothing");
     assert_eq!(state_of(state).pending, None);
@@ -293,7 +302,7 @@ fn removing_an_account_is_never_run_without_the_question_answered() {
         state_of(asked.clone()).confirming,
         Some(RemovalQuestion {
             ask: Ask::Remove,
-            path: remove.clone(),
+            row: remove.clone(),
             account: "Home cloud".to_owned(),
             files: LocalFiles::Kept,
         })
@@ -318,14 +327,14 @@ fn an_answer_with_no_question_removes_nothing() {
 fn only_a_removal_row_is_asked_about() {
     let (state, _) = apply(
         ready(),
-        [AccountsInput::AskRemove(path("accounts.home.reauth"))],
+        [AccountsInput::AskRemove(row("accounts.home.reauth"))],
     );
     assert_eq!(state_of(state).confirming, None);
 }
 
 #[test]
 fn a_removed_account_takes_the_pane_back_to_the_list() {
-    let remove = path("accounts.home.remove");
+    let remove = row("accounts.home.remove");
     let (state, _) = apply(
         ready(),
         [
@@ -338,7 +347,7 @@ fn a_removed_account_takes_the_pane_back_to_the_list() {
     let mut rest = described();
     rest.keys
         .retain(|spec| !spec.path.0.starts_with("accounts.home."));
-    let (state, _) = apply(state, [AccountsInput::Found(Ok(rest))]);
+    let (state, _) = apply(state, [AccountsInput::Found(ModuleId::Accountd, Ok(rest))]);
     let up = state_of(state);
     assert_eq!(up.screen, AccountsScreen::List);
     assert_eq!(up.pane.accounts.len(), 1);
@@ -350,7 +359,7 @@ fn a_reading_keeps_the_screen_when_its_account_is_still_there() {
         ready(),
         [
             AccountsInput::Open(AccountKey("work.example".to_owned())),
-            AccountsInput::Found(Ok(described())),
+            AccountsInput::Found(ModuleId::Accountd, Ok(described())),
         ],
     );
     assert_eq!(
@@ -361,11 +370,11 @@ fn a_reading_keeps_the_screen_when_its_account_is_still_there() {
 
 #[test]
 fn a_client_id_is_set_trimmed_and_only_when_it_changed() {
-    let microsoft = path("accounts.clients.microsoft");
+    let microsoft = row("accounts.clients.microsoft");
     let (_, same) = apply(
         ready(),
         [AccountsInput::ClientEdited {
-            path: microsoft.clone(),
+            row: microsoft.clone(),
             text: " abc ".to_owned(),
         }],
     );
@@ -373,14 +382,14 @@ fn a_client_id_is_set_trimmed_and_only_when_it_changed() {
     let (_, changed) = apply(
         ready(),
         [AccountsInput::ClientEdited {
-            path: microsoft.clone(),
+            row: microsoft.clone(),
             text: " xyz ".to_owned(),
         }],
     );
     assert_eq!(
         changed,
         [AccountsEffect::Set {
-            path: microsoft,
+            row: microsoft,
             value: toml::Value::String("xyz".to_owned())
         }]
     );
@@ -388,20 +397,26 @@ fn a_client_id_is_set_trimmed_and_only_when_it_changed() {
 
 #[test]
 fn a_change_the_module_announces_reads_it_again() {
-    let (_, effects) = apply(ready(), [AccountsInput::Changed]);
-    assert_eq!(effects, [AccountsEffect::Reload]);
+    let (_, effects) = apply(ready(), [AccountsInput::Changed(ModuleId::Accountd)]);
+    assert_eq!(effects, [AccountsEffect::Reload(ModuleId::Accountd)]);
 }
 
 #[test]
-fn a_module_that_is_not_there_is_unavailable_and_ignores_the_person() {
+fn the_pane_is_unavailable_only_when_every_module_is_not_there_and_ignores_the_person() {
+    let gone = |module| AccountsInput::Found(module, Err(Absence::NotRunning));
     let (state, effects) = apply(
-        AccountsState::Probing,
+        AccountsState::default(),
         [
-            AccountsInput::Found(Err(Absence::NotRunning)),
+            gone(ModuleId::Accountd),
+            gone(ModuleId::Inferd),
+            gone(ModuleId::Syncd),
             AccountsInput::Open(AccountKey("home".to_owned())),
         ],
     );
-    assert_eq!(state, AccountsState::Unavailable(Absence::NotRunning));
+    assert!(matches!(
+        state,
+        AccountsState::Unavailable(Absence::NotRunning, _)
+    ));
     assert!(effects.is_empty());
 }
 
@@ -431,7 +446,7 @@ fn with_runtimes() -> Described {
 
 #[test]
 fn local_runtimes_are_the_llm_accounts_whose_place_is_this_computer_running_or_not() {
-    let pane = AccountsPane::of(&with_runtimes());
+    let pane = AccountsPane::of(ModuleId::Accountd, &with_runtimes());
     let runtimes: Vec<(&str, &AccountStatus)> = pane
         .local_runtimes()
         .map(|a| (a.key.0.as_str(), &a.status))
@@ -443,13 +458,13 @@ fn local_runtimes_are_the_llm_accounts_whose_place_is_this_computer_running_or_n
             ("lm-studio", &AccountStatus::Offline)
         ]
     );
-    let none = AccountsPane::of(&described());
+    let none = AccountsPane::of(ModuleId::Accountd, &described());
     assert_eq!(none.local_runtimes().count(), 0, "no place row, no runtime");
 }
 
 #[test]
 fn a_service_sent_once_per_model_is_one_switch() {
-    let pane = AccountsPane::of(&with_runtimes());
+    let pane = AccountsPane::of(ModuleId::Accountd, &with_runtimes());
     let ollama = pane
         .account(&AccountKey("ollama".to_owned()))
         .expect("ollama");
@@ -459,7 +474,7 @@ fn a_service_sent_once_per_model_is_one_switch() {
 /// Which row a toggle at `key` is, as a word: the table's left side is the path's shape.
 fn row_word(key: &str) -> Option<&'static str> {
     let spec = toggle(key, "x");
-    match classify(&spec, &described())? {
+    match classify(ModuleId::Accountd, &spec, &described())? {
         (_, Row::AccountService(..)) => Some("service"),
         (_, Row::Sync(_)) => Some("sync"),
         _ => Some("other"),
@@ -482,7 +497,7 @@ fn classify_tells_a_service_from_a_sync_switch_and_drops_an_unknown_leaf() {
 
 #[test]
 fn an_account_carries_the_modules_label_for_each_sync_switch() {
-    let pane = AccountsPane::of(&described());
+    let pane = AccountsPane::of(ModuleId::Accountd, &described());
     let sync: Vec<(&str, bool)> = pane.accounts[0]
         .sync
         .iter()
@@ -499,26 +514,6 @@ fn an_account_carries_the_modules_label_for_each_sync_switch() {
         ]
     );
     assert!(pane.accounts[1].sync.is_empty());
-}
-
-#[test]
-fn a_sync_switch_sets_its_word_like_a_service() {
-    let files = path("accounts.home.sync.files");
-    let (state, effects) = apply(
-        ready(),
-        [AccountsInput::Switched {
-            path: files.clone(),
-            on: true,
-        }],
-    );
-    assert_eq!(
-        effects,
-        [AccountsEffect::Set {
-            path: files.clone(),
-            value: toml::Value::String("on".to_owned()),
-        }]
-    );
-    assert!(state_of(state).pane.accounts[0].sync[0].on);
 }
 
 /// A coding-agent account as accountd describes it: signed in inside the agent, so its only
@@ -541,7 +536,7 @@ fn agent_described() -> Described {
 
 #[test]
 fn an_agent_account_shows_its_sign_out_row_and_signs_out_only_when_confirmed() {
-    let pane = AccountsPane::of(&agent_described());
+    let pane = AccountsPane::of(ModuleId::Accountd, &agent_described());
     let agent = &pane.accounts[0];
     assert_eq!(agent.status, AccountStatus::Ok);
     assert_eq!(agent.status.label(), "Signed in");
@@ -552,10 +547,10 @@ fn an_agent_account_shows_its_sign_out_row_and_signs_out_only_when_confirmed() {
     assert!(agent.reauth.is_none());
 
     let (state, _) = accounts_step(
-        AccountsState::Probing,
-        AccountsInput::Found(Ok(agent_described())),
+        AccountsState::default(),
+        AccountsInput::Found(ModuleId::Accountd, Ok(agent_described())),
     );
-    let sign_out = path("accounts.agent.sign_out");
+    let sign_out = row("accounts.agent.sign_out");
     // A bare press of the row runs nothing.
     let (state, effects) = apply(state, [AccountsInput::Ran(sign_out.clone())]);
     assert!(effects.is_empty());
@@ -566,7 +561,7 @@ fn an_agent_account_shows_its_sign_out_row_and_signs_out_only_when_confirmed() {
         state_of(asked.clone()).confirming,
         Some(RemovalQuestion {
             ask: Ask::SignOut,
-            path: sign_out.clone(),
+            row: sign_out.clone(),
             account: "Claude Code".to_owned(),
             files: LocalFiles::None,
         })
@@ -587,12 +582,16 @@ fn an_agent_account_shows_its_sign_out_row_and_signs_out_only_when_confirmed() {
 #[test]
 fn a_sign_out_end_is_told_in_words_and_settled_ends_read_again() {
     let (state, _) = accounts_step(
-        AccountsState::Probing,
-        AccountsInput::Found(Ok(agent_described())),
+        AccountsState::default(),
+        AccountsInput::Found(ModuleId::Accountd, Ok(agent_described())),
     );
-    let sign_out = path("accounts.agent.sign_out");
+    let sign_out = row("accounts.agent.sign_out");
     let told = |word: &str| {
-        let heard = AccountsInput::heard(sign_out.clone(), &toml::Value::String(word.to_owned()));
+        let heard = AccountsInput::heard(
+            ModuleId::Accountd,
+            sign_out.path.clone(),
+            &toml::Value::String(word.to_owned()),
+        );
         accounts_step(state.clone(), heard).1
     };
     let tell = |text: &str| AccountsEffect::Tell(text.to_owned());
@@ -620,7 +619,7 @@ fn a_sign_out_end_is_told_in_words_and_settled_ends_read_again() {
     for (word, line, reloads) in cases {
         let mut want = vec![tell(line)];
         if reloads {
-            want.push(AccountsEffect::Reload);
+            want.push(AccountsEffect::Reload(ModuleId::Accountd));
         }
         assert_eq!(told(word), want, "{word}");
     }
@@ -636,10 +635,13 @@ fn the_expiry_row_is_read_with_the_modules_label_help_and_words() {
     expires.help = Help("Google ends the sign-ins of an app that is not verified yet.".to_owned());
     let mut keys = described().keys;
     keys.push(expires);
-    let pane = AccountsPane::of(&Described {
-        keys,
-        ..described()
-    });
+    let pane = AccountsPane::of(
+        ModuleId::Accountd,
+        &Described {
+            keys,
+            ..described()
+        },
+    );
     let home = pane.account(&AccountKey("home".to_owned())).expect("home");
     assert_eq!(
         home.expires,
@@ -658,8 +660,8 @@ fn a_session_grant_announced_or_gone_reads_the_module_again() {
     for word in ["added", "removed"] {
         let said = toml::Value::String(word.to_owned());
         assert_eq!(
-            AccountsInput::heard(row.clone(), &said),
-            AccountsInput::Changed
+            AccountsInput::heard(ModuleId::Accountd, row.clone(), &said),
+            AccountsInput::Changed(ModuleId::Accountd)
         );
     }
 }
@@ -668,10 +670,16 @@ fn a_session_grant_announced_or_gone_reads_the_module_again() {
 fn a_change_that_is_no_sign_out_word_just_reads_again() {
     let on = toml::Value::String("on".to_owned());
     let other = path("accounts.agent.files");
-    assert_eq!(AccountsInput::heard(other, &on), AccountsInput::Changed);
+    assert_eq!(
+        AccountsInput::heard(ModuleId::Accountd, other, &on),
+        AccountsInput::Changed(ModuleId::Accountd)
+    );
     let unknown = toml::Value::String("shrugged".to_owned());
     let row = path("accounts.agent.sign_out");
-    assert_eq!(AccountsInput::heard(row, &unknown), AccountsInput::Changed);
+    assert_eq!(
+        AccountsInput::heard(ModuleId::Accountd, row, &unknown),
+        AccountsInput::Changed(ModuleId::Accountd)
+    );
 }
 
 fn pane_with_sign_in(word: Option<&str>) -> Account {
@@ -681,7 +689,9 @@ fn pane_with_sign_in(word: Option<&str>) -> Account {
         keys,
         ..described()
     };
-    AccountsPane::of(&described).accounts.remove(0)
+    AccountsPane::of(ModuleId::Accountd, &described)
+        .accounts
+        .remove(0)
 }
 
 #[test]

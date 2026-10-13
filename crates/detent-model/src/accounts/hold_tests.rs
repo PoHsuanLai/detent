@@ -106,6 +106,7 @@ fn a_hold_belongs_to_its_account_and_sits_on_its_sync_row() {
         let mut pane = AccountsPane::default();
         pane.accounts.push(Account {
             key: AccountKey("work.example".to_owned()),
+            module: crate::accounts::ModuleId::Accountd,
             label: "Work".to_owned(),
             status: AccountStatus::Ok,
             place: Place::Elsewhere,
@@ -119,6 +120,7 @@ fn a_hold_belongs_to_its_account_and_sits_on_its_sync_row() {
             reauth: None,
             sign_out: None,
             remove: None,
+            used_by: Vec::new(),
         });
         pane.accounts.remove(0)
     };

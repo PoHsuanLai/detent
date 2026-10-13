@@ -76,7 +76,7 @@ impl SyncHold {
 /// The id as the sync service writes it in a dataset's name.
 pub(super) fn segment_of(account: &AccountKey) -> String {
     account
-        .0
+        .id()
         .chars()
         .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
         .collect()

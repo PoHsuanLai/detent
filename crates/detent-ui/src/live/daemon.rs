@@ -1,9 +1,13 @@
 //! Which daemon a live module belongs to.
 
+use detent_model::ModuleId;
 use porter_dbus::names::{
     ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH, SYNC_BUS,
     SYNC_PATH,
 };
+
+/// The object path of syncd's settings module.
+const SYNC_SETTINGS_PATH: &str = "/org/quire/Sync1/settings";
 
 /// A daemon on the bus: its name and its object path (for a live settings module, the module's).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,6 +32,24 @@ impl Daemon {
         Daemon {
             name: ACCOUNTS_BUS,
             path: ACCOUNTS_SETTINGS_PATH.to_owned(),
+        }
+    }
+
+    /// The settings module of `module`: the three the Accounts pane reads.
+    pub fn of(module: ModuleId) -> Daemon {
+        match module {
+            ModuleId::Accountd => Daemon::accountd(),
+            ModuleId::Inferd => Daemon::inferd(),
+            ModuleId::Syncd => Daemon::syncd_settings(),
+        }
+    }
+
+    /// syncd's settings module: its accounts and their sync switches. The module is at the
+    /// path below the one syncd tells deletions on.
+    pub fn syncd_settings() -> Daemon {
+        Daemon {
+            name: SYNC_BUS,
+            path: SYNC_SETTINGS_PATH.to_owned(),
         }
     }
 

@@ -1,8 +1,12 @@
 //! The list of accounts, and the sign-in client ids under it.
 
-use super::adapter::{AddAccountButton, ClientField, OpenButton, RemoveAccountButton};
+use super::adapter::{
+    ActionButton, AddAccountButton, AddKeyButton, ClientField, OpenButton, RemoveAccountButton,
+};
 use crate::marks::ProviderMarks;
-use detent_model::{Account, AccountKey, AccountsPane as Pane, Adding, ClientEntry};
+use detent_model::{
+    Account, AccountKey, AccountsPane as Pane, Adding, ClientEntry, ModuleId, ModuleRow,
+};
 use dioxus::prelude::*;
 use ds::base::vocab::RowState;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -13,7 +17,7 @@ use ds::components::overlays::empty_state::EmptyState;
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
-use ds_settings::schema::KeyPath;
+use ds_settings::schema::ActionWeight;
 use porter_core::sheet::ProviderGroup;
 
 /// What the list's foot does: add an account, or remove the one the list rests on.
@@ -21,6 +25,10 @@ use porter_core::sheet::ProviderGroup;
 pub(super) struct FootHandlers {
     /// The plus was pressed.
     pub add: EventHandler<()>,
+    /// Add AI Key was pressed.
+    pub add_key: EventHandler<()>,
+    /// The sync service's row that continues as a new account was pressed.
+    pub continue_as: EventHandler<ModuleRow>,
     /// The minus was pressed.
     pub remove: EventHandler<()>,
 }
@@ -42,7 +50,11 @@ fn ListFoot(
     }
 }
 
-/// The account group's rows as list items: a heading, then a row each.
+/// The heading over the accounts the sync service holds.
+const SYNC_HEADING: &str = "Sync";
+
+/// The account group's rows as list items: a heading, then a row each; the sync service's
+/// accounts come last under a heading of their own.
 fn items_of(
     pane: &Pane,
     selected: Option<&AccountKey>,
@@ -50,22 +62,37 @@ fn items_of(
     onselect: EventHandler<AccountKey>,
     onopen: EventHandler<AccountKey>,
 ) -> Vec<ListItem<String>> {
-    ProviderGroup::ALL
+    let grouped = ProviderGroup::ALL.into_iter().flat_map(|group| {
+        let accounts: Vec<&Account> = pane
+            .in_group(group)
+            .filter(|account| account.module != ModuleId::Syncd)
+            .collect();
+        let heading = (!accounts.is_empty()).then(|| {
+            ListItem::heading(
+                format!("group:{}", group.slug()),
+                rsx! { SectionHeader { title: group.display_name().to_owned() } },
+            )
+        });
+        let rows = accounts
+            .into_iter()
+            .map(|account| account_item(account, selected, marks, onselect, onopen));
+        heading.into_iter().chain(rows).collect::<Vec<_>>()
+    });
+    let synced: Vec<&Account> = pane
+        .accounts
+        .iter()
+        .filter(|account| account.module == ModuleId::Syncd)
+        .collect();
+    let heading = (!synced.is_empty()).then(|| {
+        ListItem::heading(
+            "group:sync".to_owned(),
+            rsx! { SectionHeader { title: SYNC_HEADING.to_owned() } },
+        )
+    });
+    let sync_rows = synced
         .into_iter()
-        .flat_map(|group| {
-            let accounts: Vec<&Account> = pane.in_group(group).collect();
-            let heading = (!accounts.is_empty()).then(|| {
-                ListItem::heading(
-                    format!("group:{}", group.slug()),
-                    rsx! { SectionHeader { title: group.display_name().to_owned() } },
-                )
-            });
-            let rows = accounts
-                .into_iter()
-                .map(|account| account_item(account, selected, marks, onselect, onopen));
-            heading.into_iter().chain(rows).collect::<Vec<_>>()
-        })
-        .collect()
+        .map(|account| account_item(account, selected, marks, onselect, onopen));
+    grouped.chain(heading).chain(sync_rows).collect::<Vec<_>>()
 }
 
 fn account_item(
@@ -156,6 +183,7 @@ pub(super) fn AccountList(
                 }
             }
             ListFoot { adding, availability, removal, on }
+            MoreRows { pane, adding, availability, on }
         };
     }
     let items = items_of(&pane, selected.as_ref(), &marks, onselect, onopen);
@@ -170,6 +198,48 @@ pub(super) fn AccountList(
                 onpick: move |id: String| onopen.call(AccountKey(id)),
             }
             ListFoot { adding, availability, removal, on }
+            MoreRows { pane: pane.clone(), adding, availability, on }
+        }
+    }
+}
+
+/// The rows under the list that add what the foot's plus does not: an AI key (when the key
+/// service is there) and, for sync, a new account to continue as (when the sync service offers
+/// one).
+#[component]
+fn MoreRows(pane: Pane, adding: Adding, availability: Availability, on: FootHandlers) -> Element {
+    let key_row = pane.has(ModuleId::Inferd);
+    let continue_row = pane.sync_add.clone();
+    if !key_row && continue_row.is_none() {
+        return rsx! {};
+    }
+    rsx! {
+        div { class: "accounts-more", "data-accounts": "more",
+            FieldGroup {
+                if key_row {
+                    FieldRow {
+                        label: TextLine::from("AI keys"),
+                        help: Some(TextLine::from("Add a key, or sign in to an assistant.")),
+                        AddKeyButton { adding, availability, onpress: move |()| on.add_key.call(()) }
+                    }
+                }
+                if let Some(add) = continue_row {
+                    FieldRow {
+                        label: TextLine::from("Sync"),
+                        help: Some(TextLine::from("Choose an account to sync.")),
+                        ActionButton {
+                            label: add.name.clone(),
+                            subject: String::new(),
+                            weight: ActionWeight::Plain,
+                            availability,
+                            onpress: {
+                                let row = add.row();
+                                move |()| on.continue_as.call(row.clone())
+                            },
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -177,7 +247,7 @@ pub(super) fn AccountList(
 /// The bring-your-own client ids, under a disclosure of their own (the page's Advanced one holds
 /// the file's keys); nothing when the account service lists none.
 #[component]
-pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(KeyPath, String)>) -> Element {
+pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(ModuleRow, String)>) -> Element {
     let mut opened = use_signal(|| Shown::Hidden);
     if pane.clients.is_empty() {
         return rsx! {};
@@ -204,8 +274,8 @@ pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(KeyPath, String)>) -> 
                                     ClientEntry::WaitsForKey => Availability::Disabled,
                                 },
                                 onchange: {
-                                    let path = client.path.clone();
-                                    move |text| onedit.call((path.clone(), text))
+                                    let row = ModuleRow::new(client.module, client.path.clone());
+                                    move |text| onedit.call((row.clone(), text))
                                 },
                             }
                         }

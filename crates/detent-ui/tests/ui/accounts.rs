@@ -1,25 +1,33 @@
-//! The Accounts page over a fake accountd on a private bus: the list, one account's switches and
-//! actions, the question before a removal, and the page without accountd.
+//! The Accounts page over three fake modules on a private bus (identities, AI keys, sync): the
+//! list, one account's switches and actions, the question before a removal, and the page when
+//! a module or all of them are missing.
 
 use crate::support::Sandbox;
-use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::accountd::{Accountd, Held, Module, Policy};
 use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::Scheme;
 use ds_harness::{Backdrop, Driver, Harness, Query};
+use ds_settings::live::Served;
+use ds_settings::schema::KeyPath;
 use std::time::Duration;
 
 const HOME: &str = "[aria-label=\"Manage Home cloud\"]";
-const STORAGE: &str = "[aria-label=\"Storage\"] .ds-toggle";
+const KEY: &str = "[aria-label=\"Manage Claude key\"]";
+const SYNC: &str = "[aria-label=\"Manage Home sync\"]";
+const WORK: &str = "[aria-label=\"Manage Work mail\"]";
+const LLM: &str = "[aria-label=\"Llm\"] .ds-toggle";
 const KEEP_FILES: &str = "[aria-label=\"Keep this account's files on this computer\"] .ds-toggle";
 const UPLOAD_PHOTOS: &str =
     "[aria-label=\"Upload new photos from a folder on this computer to Google Photos\"] .ds-toggle";
-const REVOKE: &str = "[aria-label=\"Photos allowed: storage\"] .ds-button";
+const REVOKE: &str = "[aria-label=\"Photos allowed: llm\"] .ds-button";
 const SIGN_IN: &str = "[aria-label=\"Sign in again\"] .ds-button";
 const REMOVE: &str = "[aria-label=\"Remove account\"] .ds-button";
 const BACK: &str = ".accounts-back .ds-button";
+const CONTINUE_AS: &str = ".accounts-more [aria-label=\"Continue as\u{2026}\"]";
+const ADD_KEY: &str = ".accounts-more [aria-label=\"Add AI Key\u{2026}\"]";
 
 fn accounts() -> Opening {
     Opening {
@@ -49,25 +57,39 @@ fn runtime() -> tokio::runtime::Runtime {
         .expect("a runtime for the fake daemon")
 }
 
-fn held() -> Vec<Held> {
+/// accountd's identities: one that two apps use, one whose sign-in expires.
+fn identities() -> Vec<Held> {
     vec![
-        Held::new("home", "Home cloud", "ok", &["storage", "calendar"])
-            .syncing()
-            .granting("g1", "Photos allowed: storage"),
-        Held::new("work.example", "Work mail", "needs_reauth", &["mail"])
+        Held::new("home", "Home cloud", "ok", &[]).used_by(&["Photos", "Mail"]),
+        Held::new("work.example", "Work mail", "needs_reauth", &[])
             .expiring("Signed out by Google on 2026-10-14")
             .signing_in("browser"),
     ]
 }
 
-/// The page up over a fake accountd holding `held()`, showing the list.
+/// inferd's AI key, with one permit.
+fn keys() -> Vec<Held> {
+    vec![
+        Held::new("claude-key", "Claude key", "ok", &["llm"])
+            .in_group("intelligence")
+            .granting("g1", "Photos allowed: llm"),
+    ]
+}
+
+/// syncd's account, with both switches off.
+fn syncing() -> Vec<Held> {
+    vec![Held::new("home", "Home sync", "ok", &[]).syncing()]
+}
+
+/// The page up over fake modules, showing the list.
 struct World {
-    fake: Accountd,
+    accountd: Accountd,
+    inferd: Accountd,
+    syncd: Accountd,
     harness: Harness,
-    _rt: tokio::runtime::Runtime,
+    rt: tokio::runtime::Runtime,
     _bus: PrivateBus,
-    _daemon: zbus::Connection,
-    served: ds_settings::live::Served,
+    daemons: Vec<(Module, zbus::Connection, Served)>,
 }
 
 fn world(name: &str) -> World {
@@ -75,65 +97,168 @@ fn world(name: &str) -> World {
 }
 
 fn world_in(name: &str, scheme: Scheme) -> World {
-    world_of(name, held(), scheme)
+    start(
+        name,
+        scheme,
+        identities(),
+        &[Module::Accountd, Module::Inferd, Module::Syncd],
+    )
 }
 
+/// Only accountd, holding `rows`.
 fn world_of(name: &str, rows: Vec<Held>, scheme: Scheme) -> World {
+    start(name, scheme, rows, &[Module::Accountd])
+}
+
+/// The page with the modules in `served` running; the others are not on the bus.
+fn start(name: &str, scheme: Scheme, rows: Vec<Held>, served: &[Module]) -> World {
     let rt = runtime();
     let bus = PrivateBus::start(name);
-    let fake = Accountd::new(Policy::Allow, rows);
-    let (daemon, served) = rt.block_on(fake.serve_announcing(&bus));
+    let held = |module: Module, count: usize| if served.contains(&module) { count } else { 0 };
+    let expected = held(Module::Accountd, rows.len())
+        + held(Module::Inferd, keys().len())
+        + held(Module::Syncd, syncing().len());
+    let accountd = Accountd::new(Policy::Allow, rows);
+    let inferd = Accountd::on(Module::Inferd, Policy::Allow, keys());
+    let syncd = Accountd::on(Module::Syncd, Policy::Allow, syncing()).continuing_as();
+    let mut daemons = Vec::new();
+    for module in served {
+        let fake = match module {
+            Module::Accountd => &accountd,
+            Module::Inferd => &inferd,
+            Module::Syncd => &syncd,
+        };
+        let (connection, announcer) = rt.block_on(fake.serve_announcing(&bus));
+        daemons.push((*module, connection, announcer));
+    }
     let sandbox = Sandbox::new(name).on_bus(&bus.address);
     let mut harness = sandbox.harness_in(accounts(), scheme);
-    settle(&mut harness, "the list", |h| h.count(".accounts-list") == 1);
+    settle(&mut harness, "the list", |h| {
+        h.count(".accounts-list") == 1 || h.count(".accounts-empty") == 1
+    });
+    // Each module answers on its own; the list is whole once every served one has.
+    settle(&mut harness, "every module's rows", |h| {
+        expected == 0 || h.count(".account-row") >= expected
+    });
     World {
-        fake,
+        accountd,
+        inferd,
+        syncd,
         harness,
-        _rt: rt,
+        rt,
         _bus: bus,
-        _daemon: daemon,
-        served,
+        daemons,
     }
 }
 
-fn detail(w: &mut World) {
-    click(&mut w.harness, HOME);
+impl World {
+    /// Announces, as `module`, that the row at `path` changed to `word`.
+    fn announce(&self, module: Module, path: &str, word: &str) {
+        let (_, _, served) = self
+            .daemons
+            .iter()
+            .find(|(served, ..)| *served == module)
+            .expect("the module runs");
+        self.rt
+            .block_on(served.changed(
+                &KeyPath(path.to_owned()),
+                &toml::Value::String(word.to_owned()),
+            ))
+            .expect("announced");
+    }
+
+    /// The module goes off the bus, as when its service stops.
+    fn stop(&mut self, module: Module) {
+        let at = self
+            .daemons
+            .iter()
+            .position(|(served, ..)| *served == module)
+            .expect("the module runs");
+        let (_, connection, _) = self.daemons.remove(at);
+        self.rt
+            .block_on(connection.release_name(module.bus()))
+            .expect("the name is released");
+    }
+}
+
+fn open(w: &mut World, button: &str) {
+    click(&mut w.harness, button);
     settle(&mut w.harness, "the account", |h| {
         h.count(".accounts-detail") == 1
     });
 }
 
+fn detail(w: &mut World) {
+    open(w, HOME);
+}
+
 #[test]
-fn the_list_has_a_row_per_account_with_its_state() {
+fn the_list_has_a_row_per_account_of_every_module_with_its_state() {
     let w = world("accounts-list");
     let html = w.harness.html();
-    for text in ["Home cloud", "Work mail", "Signed in", "Needs sign-in"] {
+    for text in [
+        "Home cloud",
+        "Work mail",
+        "Claude key",
+        "Home sync",
+        "Signed in",
+        "Needs sign-in",
+    ] {
         assert!(html.contains(text), "{text}");
     }
-    assert_eq!(w.harness.count(".account-row"), 2);
+    assert_eq!(w.harness.count(".account-row"), 4);
     assert!(
         html.contains("Sign-in keys"),
         "the client ids have a disclosure"
     );
+    assert_eq!(w.harness.count(ADD_KEY), 1);
+    assert_eq!(w.harness.count(CONTINUE_AS), 1);
 }
 
 #[test]
-fn an_account_opens_to_its_services_and_apps_and_goes_back() {
+fn a_pane_with_only_accountd_shows_identities_and_no_ai_or_sync_part() {
+    let w = world_of("accounts-only-accountd", identities(), Scheme::Light);
+    let html = w.harness.html();
+    assert_eq!(w.harness.count(".account-row"), 2);
+    for text in ["Home cloud", "Work mail"] {
+        assert!(html.contains(text), "{text}");
+    }
+    for text in ["Claude key", "Home sync"] {
+        assert!(!html.contains(text), "{text}");
+    }
+    assert!(
+        !headings(&w).iter().any(|heading| heading == "Intelligence"),
+        "no AI part in the list"
+    );
+    assert_eq!(w.harness.count(ADD_KEY), 0);
+    assert_eq!(w.harness.count(CONTINUE_AS), 0);
+    assert_eq!(w.harness.count(".accounts[data-accounts=\"ready\"]"), 1);
+}
+
+#[test]
+fn an_identity_lists_the_apps_using_it_read_only_and_goes_back() {
     let mut w = world("accounts-detail");
     detail(&mut w);
     let html = w.harness.html();
     for text in [
-        "Storage",
-        "Calendar",
-        "Photos allowed: storage",
+        "Apps using this identity",
+        "Photos",
+        "Mail",
         "Sign in again",
         "Remove account",
     ] {
         assert!(html.contains(text), "{text}");
     }
     assert_eq!(
-        w.harness.attr(STORAGE, "aria-checked").as_deref(),
-        Some("true")
+        w.harness.count("[aria-label^=\"Revoke\"]"),
+        0,
+        "an identity has no Revoke rows"
+    );
+    assert_eq!(
+        w.harness
+            .count("[aria-label=\"App\"] .ds-button, [aria-label=\"App\"] .ds-toggle"),
+        0,
+        "the apps are a plain list"
     );
     click(&mut w.harness, BACK);
     assert_eq!(w.harness.count(".accounts-list"), 1);
@@ -141,33 +266,56 @@ fn an_account_opens_to_its_services_and_apps_and_goes_back() {
 }
 
 #[test]
-fn a_switch_sets_the_service_and_the_answer_stays_on_screen() {
-    let mut w = world("accounts-switch");
-    detail(&mut w);
-    click(&mut w.harness, STORAGE);
-    settle(&mut w.harness, "the set", |_| !w.fake.sets().is_empty());
+fn an_ai_key_shows_inferds_permits_with_revoke_and_revoking_goes_to_inferd() {
+    let mut w = world("accounts-permit");
+    open(&mut w, KEY);
+    let html = w.harness.html();
+    assert!(html.contains("Photos allowed: llm"), "{html}");
     assert_eq!(
-        w.fake.sets(),
+        w.harness.attr(REVOKE, "aria-label").as_deref(),
+        Some("Revoke Photos allowed: llm")
+    );
+    click(&mut w.harness, REVOKE);
+    settle(&mut w.harness, "the revoke", |_| {
+        !w.inferd.sets().is_empty()
+    });
+    assert_eq!(
+        w.inferd.sets(),
         [(
-            "accounts.home.service.storage".to_owned(),
-            toml::Value::String("off".to_owned())
+            "accounts.claude-key.grant.g1".to_owned(),
+            toml::Value::Boolean(true)
         )]
     );
-    settle(&mut w.harness, "the switch to read off", |h| {
-        h.attr(STORAGE, "aria-checked").as_deref() == Some("false")
+    assert!(w.accountd.sets().is_empty() && w.syncd.sets().is_empty());
+    settle(&mut w.harness, "the permit to leave the page", |h| {
+        !h.html().contains("Photos allowed: llm")
     });
 }
 
 #[test]
-fn the_sync_switches_sit_under_the_services_and_set_on_and_off() {
+fn a_switch_sets_the_service_in_inferd_and_the_answer_stays_on_screen() {
+    let mut w = world("accounts-switch");
+    open(&mut w, KEY);
+    assert_eq!(w.harness.attr(LLM, "aria-checked").as_deref(), Some("true"));
+    click(&mut w.harness, LLM);
+    settle(&mut w.harness, "the set", |_| !w.inferd.sets().is_empty());
+    assert_eq!(
+        w.inferd.sets(),
+        [(
+            "accounts.claude-key.service.llm".to_owned(),
+            toml::Value::String("off".to_owned())
+        )]
+    );
+    settle(&mut w.harness, "the switch to read off", |h| {
+        h.attr(LLM, "aria-checked").as_deref() == Some("false")
+    });
+}
+
+#[test]
+fn the_sync_switches_are_syncds_and_set_on_and_off_in_syncds_module() {
     let mut w = world("accounts-sync");
-    detail(&mut w);
+    open(&mut w, SYNC);
     let html = w.harness.html();
-    let services = html.find("Services").expect("services");
-    let sync = html
-        .find("Keep this account's files on this computer")
-        .expect("sync");
-    assert!(services < sync, "the sync switches come after the services");
     assert!(html.contains("Upload new photos from a folder on this computer to Google Photos"));
     assert!(
         html.contains("never reads or deletes anything else"),
@@ -186,25 +334,53 @@ fn the_sync_switches_sit_under_the_services_and_set_on_and_off() {
     });
     click(&mut w.harness, KEEP_FILES);
     settle(&mut w.harness, "the second set", |_| {
-        w.fake.sets().len() == 2
+        w.syncd.sets().len() == 2
     });
-    let sets: Vec<(String, toml::Value)> = w.fake.sets();
     let want = |word: &str| {
         (
             "accounts.home.sync.files".to_owned(),
             toml::Value::String(word.to_owned()),
         )
     };
-    assert_eq!(sets, [want("on"), want("off")]);
+    assert_eq!(w.syncd.sets(), [want("on"), want("off")]);
+    assert!(
+        w.accountd.sets().is_empty(),
+        "accountd, which has an account of the same id, heard nothing"
+    );
+}
+
+#[test]
+fn continue_as_runs_syncds_row_on_one_press() {
+    let mut w = world("accounts-continue-as");
+    click(&mut w.harness, CONTINUE_AS);
+    settle(&mut w.harness, "the action", |_| !w.syncd.sets().is_empty());
+    assert_eq!(
+        w.syncd.sets(),
+        [("sync.add".to_owned(), toml::Value::Boolean(true))]
+    );
+    assert!(w.accountd.sets().is_empty() && w.inferd.sets().is_empty());
+}
+
+#[test]
+fn one_module_vanishing_leaves_the_others_shown() {
+    let mut w = world("accounts-vanish");
+    assert_eq!(w.harness.count(".account-row"), 4);
+    w.stop(Module::Syncd);
+    settle(&mut w.harness, "sync to leave the list", |h| {
+        !h.html().contains("Home sync")
+    });
+    let html = w.harness.html();
+    for text in ["Home cloud", "Work mail", "Claude key"] {
+        assert!(html.contains(text), "{text}");
+    }
+    assert_eq!(w.harness.count(CONTINUE_AS), 0);
+    assert_eq!(w.harness.count(".accounts[data-accounts=\"ready\"]"), 1);
 }
 
 #[test]
 fn the_expiry_is_a_read_only_line_in_the_modules_words() {
     let mut w = world("accounts-expires");
-    click(&mut w.harness, "[aria-label=\"Manage Work mail\"]");
-    settle(&mut w.harness, "the account", |h| {
-        h.count(".accounts-detail") == 1
-    });
+    open(&mut w, WORK);
     let row = "[aria-label=\"Sign-in\"]";
     assert_eq!(w.harness.count(row), 1, "{}", w.harness.html());
     let html = w.harness.html();
@@ -224,75 +400,57 @@ fn the_expiry_is_a_read_only_line_in_the_modules_words() {
 }
 
 #[test]
-fn a_session_grant_row_comes_and_goes_with_the_announcement() {
+fn a_session_permit_row_comes_and_goes_with_inferds_announcement() {
     let mut w = world("accounts-session-grant");
-    detail(&mut w);
+    open(&mut w, KEY);
     let sentence = "Claude Code can use Llm (this session)";
-    let (grant, path) = ("s1", "accounts.home.grant.s1");
-    w.fake
+    let (grant, path) = ("s1", "accounts.claude-key.grant.s1");
+    w.inferd
         .accounts
         .lock()
         .expect("accounts")
         .iter_mut()
-        .filter(|held| held.id == "home")
         .for_each(|held| held.grants.push((grant.to_owned(), sentence.to_owned())));
-    let announce = |w: &World, word: &str| {
-        w._rt
-            .block_on(w.served.changed(
-                &ds_settings::schema::KeyPath(path.to_owned()),
-                &toml::Value::String(word.to_owned()),
-            ))
-            .expect("announced");
-    };
-    announce(&w, "added");
+    w.announce(Module::Inferd, path, "added");
     settle(&mut w.harness, "the session row", |h| {
         h.html().contains(sentence)
     });
-    w.fake
+    w.inferd
         .accounts
         .lock()
         .expect("accounts")
         .iter_mut()
         .for_each(|held| held.grants.retain(|(g, _)| g != grant));
-    announce(&w, "removed");
+    w.announce(Module::Inferd, path, "removed");
     settle(&mut w.harness, "the session row to go", |h| {
         !h.html().contains(sentence)
     });
 }
 
 #[test]
-fn an_account_without_the_toggles_shows_no_sync_rows() {
+fn an_identity_shows_no_sync_rows() {
     let mut w = world("accounts-no-sync");
-    click(&mut w.harness, "[aria-label=\"Manage Work mail\"]");
-    settle(&mut w.harness, "the account", |h| {
-        h.count(".accounts-detail") == 1
-    });
+    open(&mut w, WORK);
     let html = w.harness.html();
     assert!(!html.contains("Upload new photos from a folder on this computer to Google Photos"));
     assert!(!html.contains("on this computer"));
 }
 
 #[test]
-fn revoke_and_sign_in_again_run_the_action_at_once() {
+fn sign_in_again_runs_the_action_in_accountd_at_once() {
     let mut w = world("accounts-run");
     detail(&mut w);
     click(&mut w.harness, SIGN_IN);
-    settle(&mut w.harness, "the action", |_| !w.fake.sets().is_empty());
+    settle(&mut w.harness, "the action", |_| {
+        !w.accountd.sets().is_empty()
+    });
     assert_eq!(
-        w.fake.sets(),
+        w.accountd.sets(),
         [(
             "accounts.home.reauth".to_owned(),
             toml::Value::Boolean(true)
         )]
     );
-    settle(&mut w.harness, "the pane to be free", |h| {
-        h.attr(REVOKE, "data-availability").as_deref() == Some("enabled")
-    });
-    click(&mut w.harness, REVOKE);
-    settle(&mut w.harness, "the revoke", |_| w.fake.sets().len() == 2);
-    settle(&mut w.harness, "the grant to leave the page", |h| {
-        !h.html().contains("Photos allowed: storage")
-    });
 }
 
 #[test]
@@ -303,7 +461,10 @@ fn removing_an_account_asks_first_and_keeping_it_does_nothing() {
     settle(&mut w.harness, "the question", |h| {
         h.html().contains("Remove account Home cloud?")
     });
-    assert!(w.fake.sets().is_empty(), "the press alone removes nothing");
+    assert!(
+        w.accountd.sets().is_empty(),
+        "the press alone removes nothing"
+    );
     click(
         &mut w.harness,
         ".ds-alert [data-role=\"normal\"], .ds-alert .ds-button",
@@ -311,8 +472,8 @@ fn removing_an_account_asks_first_and_keeping_it_does_nothing() {
     settle(&mut w.harness, "the question to go", |h| {
         !h.html().contains("Remove account Home cloud?")
     });
-    assert!(w.fake.sets().is_empty());
-    assert_eq!(w.fake.accounts.lock().expect("accounts").len(), 2);
+    assert!(w.accountd.sets().is_empty());
+    assert_eq!(w.accountd.accounts.lock().expect("accounts").len(), 2);
 }
 
 #[test]
@@ -328,10 +489,10 @@ fn confirming_the_removal_removes_the_account_and_returns_to_the_list() {
         ".ds-alert .ds-button[data-role=\"destructive\"]",
     );
     settle(&mut w.harness, "the removal", |_| {
-        w.fake.accounts.lock().expect("accounts").len() == 1
+        w.accountd.accounts.lock().expect("accounts").len() == 1
     });
     assert_eq!(
-        w.fake.sets(),
+        w.accountd.sets(),
         [(
             "accounts.home.remove".to_owned(),
             toml::Value::Boolean(true)
@@ -341,18 +502,29 @@ fn confirming_the_removal_removes_the_account_and_returns_to_the_list() {
         h.count(".accounts-list") == 1 && !h.html().contains("Home cloud")
     });
     assert!(w.harness.html().contains("Work mail"));
+    assert!(
+        w.harness.html().contains("Home sync"),
+        "syncd's account of the same id stays"
+    );
 }
 
 #[test]
-fn an_account_with_a_dotted_id_opens_and_switches_by_its_whole_id() {
+fn an_account_with_a_dotted_id_opens_and_removes_by_its_whole_id() {
     let mut w = world("accounts-dotted");
-    click(&mut w.harness, "[aria-label=\"Manage Work mail\"]");
+    click(&mut w.harness, WORK);
     settle(&mut w.harness, "the account", |h| {
         h.attr(".accounts-detail", "data-account").as_deref() == Some("work.example")
     });
-    click(&mut w.harness, "[aria-label=\"Mail\"] .ds-toggle");
-    settle(&mut w.harness, "the set", |_| !w.fake.sets().is_empty());
-    assert_eq!(w.fake.sets()[0].0, "accounts.work.example.service.mail");
+    click(&mut w.harness, REMOVE);
+    settle(&mut w.harness, "the question", |h| {
+        h.html().contains("Remove account Work mail?")
+    });
+    click(
+        &mut w.harness,
+        ".ds-alert .ds-button[data-role=\"destructive\"]",
+    );
+    settle(&mut w.harness, "the set", |_| !w.accountd.sets().is_empty());
+    assert_eq!(w.accountd.sets()[0].0, "accounts.work.example.remove");
 }
 
 #[test]
@@ -367,7 +539,7 @@ fn no_bus_says_so_and_blocks_nothing_else_on_the_window() {
 }
 
 #[test]
-fn a_bus_with_no_accountd_says_accountd_is_not_running() {
+fn a_bus_with_none_of_the_three_says_the_service_is_not_running() {
     let rt = runtime();
     let bus = PrivateBus::start("accounts-none");
     let mut harness = Sandbox::new("accounts-none")
@@ -383,7 +555,7 @@ fn a_bus_with_no_accountd_says_accountd_is_not_running() {
 fn accountd_refusing_settings_is_said_in_its_own_words() {
     let rt = runtime();
     let bus = PrivateBus::start("accounts-refused");
-    let fake = Accountd::new(Policy::Refuse, held());
+    let fake = Accountd::new(Policy::Refuse, identities());
     let _daemon = rt.block_on(fake.serve_on(&bus));
     let mut harness = Sandbox::new("accounts-refused")
         .on_bus(&bus.address)
@@ -410,9 +582,9 @@ fn a_client_id_is_set_when_the_field_is_left() {
     }
     w.harness
         .send(ds_harness::Input::key(ds::prelude::ShortcutKey::Enter));
-    settle(&mut w.harness, "the set", |_| !w.fake.sets().is_empty());
+    settle(&mut w.harness, "the set", |_| !w.accountd.sets().is_empty());
     assert_eq!(
-        w.fake.sets(),
+        w.accountd.sets(),
         [(
             "accounts.clients.microsoft".to_owned(),
             toml::Value::String("abc".to_owned())
@@ -444,7 +616,7 @@ fn assert_no_developer_words(harness: &Harness) {
 }
 
 #[test]
-fn the_absence_texts_use_plain_words() {
+fn the_pane_says_no_developer_words_with_the_modules_up_or_gone() {
     let sandbox = Sandbox::new("accounts-plain-no-bus");
     assert_no_developer_words(&sandbox.harness(accounts()));
     let rt = runtime();
@@ -457,6 +629,8 @@ fn the_absence_texts_use_plain_words() {
     });
     assert_no_developer_words(&harness);
     drop(rt);
+    let w = world("accounts-plain-up");
+    assert_no_developer_words(&w.harness);
 }
 
 const ADD: &str = ".accounts-add [aria-label=\"Add Account\u{2026}\"]";
@@ -490,13 +664,8 @@ fn the_list_has_an_add_account_button_and_a_refused_ask_is_told_calmly() {
 fn a_sign_in_that_ends_is_told_in_a_calm_line_and_the_rows_are_read_again() {
     let mut w = world("accounts-reauth-end");
     detail(&mut w);
-    w.fake.stop("home", "needs_reauth");
-    w._rt
-        .block_on(w.served.changed(
-            &ds_settings::schema::KeyPath("accounts.home.reauth".to_owned()),
-            &toml::Value::String("failed".to_owned()),
-        ))
-        .expect("announced");
+    w.accountd.stop("home", "needs_reauth");
+    w.announce(Module::Accountd, "accounts.home.reauth", "failed");
     settle(&mut w.harness, "the line", |h| {
         h.html()
             .contains("Could not sign in to Home cloud. Try again later.")
@@ -509,10 +678,10 @@ fn a_sign_in_that_ends_is_told_in_a_calm_line_and_the_rows_are_read_again() {
 #[test]
 fn the_remove_question_adds_a_clause_about_kept_files_only_when_a_sync_row_is_on() {
     let mut w = world("accounts-remove-files");
-    detail(&mut w);
+    open(&mut w, SYNC);
     click(&mut w.harness, REMOVE);
     settle(&mut w.harness, "the question", |h| {
-        h.html().contains("Remove account Home cloud?")
+        h.html().contains("Remove account Home sync?")
     });
     assert!(!w.harness.html().contains("Files kept on this computer"));
     click(
@@ -520,7 +689,7 @@ fn the_remove_question_adds_a_clause_about_kept_files_only_when_a_sync_row_is_on
         ".ds-alert .ds-button:not([data-role=\"destructive\"])",
     );
     settle(&mut w.harness, "the question to go", |h| {
-        !h.html().contains("Remove account Home cloud?")
+        !h.html().contains("Remove account Home sync?")
     });
     click(&mut w.harness, KEEP_FILES);
     settle(&mut w.harness, "the switch on", |h| {
@@ -651,7 +820,12 @@ fn the_remove_answer_is_legible_in_light_and_dark() {
 #[test]
 fn every_button_says_which_account_or_app_it_is_for() {
     let mut w = world("accounts-names");
-    for name in ["Manage Home cloud", "Manage Work mail"] {
+    for name in [
+        "Manage Home cloud",
+        "Manage Work mail",
+        "Manage Claude key",
+        "Manage Home sync",
+    ] {
         let selector = format!(".account-row [aria-label=\"{name}\"]");
         assert_eq!(w.harness.count(&selector), 1, "{name}");
     }
@@ -662,7 +836,6 @@ fn every_button_says_which_account_or_app_it_is_for() {
     );
     detail(&mut w);
     for (selector, name) in [
-        (REVOKE, "Revoke Photos allowed: storage"),
         (SIGN_IN, "Sign in again Home cloud"),
         (REMOVE, "Remove account Home cloud"),
     ] {
@@ -671,6 +844,12 @@ fn every_button_says_which_account_or_app_it_is_for() {
             Some(name)
         );
     }
+    click(&mut w.harness, BACK);
+    open(&mut w, KEY);
+    assert_eq!(
+        w.harness.attr(REVOKE, "aria-label").as_deref(),
+        Some("Revoke Photos allowed: llm")
+    );
     assert_eq!(
         w.harness.count("[aria-label=\"Revoke\"]"),
         0,
@@ -689,10 +868,7 @@ fn sign_in_again_says_a_browser_only_for_an_account_whose_row_says_browser() {
     settle(&mut w.harness, "the list", |h| {
         h.count(".accounts-list") == 1
     });
-    click(&mut w.harness, "[aria-label=\"Manage Work mail\"]");
-    settle(&mut w.harness, "the account", |h| {
-        h.count(".accounts-detail") == 1
-    });
+    open(&mut w, WORK);
     assert!(
         w.harness
             .html()
@@ -773,24 +949,28 @@ fn the_minus_waits_for_a_selection_then_asks_before_removing_the_selected_accoun
     settle(&mut w.harness, "the question", |h| {
         h.html().contains("Remove account Work mail?")
     });
-    assert!(w.fake.sets().is_empty(), "the press alone removes nothing");
+    assert!(
+        w.accountd.sets().is_empty(),
+        "the press alone removes nothing"
+    );
 }
 
 #[test]
-fn a_permission_says_since_when_and_for_how_long_from_the_rows_keyed_by_its_grant() {
-    let rows = vec![
-        Held::new("home", "Home cloud", "ok", &["storage"])
-            .granting("g1", "Photos allowed: storage")
+fn a_permit_says_since_when_and_for_how_long_from_the_rows_keyed_by_its_grant() {
+    let mut w = world("accounts-grant-facts");
+    {
+        let mut held = w.inferd.accounts.lock().expect("accounts");
+        let key = held.first_mut().expect("the key");
+        *key = key
+            .clone()
             .granted_on("g1", "2026-10-08", "always")
-            .granting("g2", "Mail allowed: storage")
-            .granted_on("g2", "2026-10-09", "session"),
-    ];
-    let mut w = world_of("accounts-grant-facts", rows, Scheme::Light);
-    detail(&mut w);
-    let html = w.harness.html();
-    assert!(html.contains("Since 2026-10-08. Always"), "{html}");
-    assert!(
-        html.contains("Since 2026-10-09. This session only"),
-        "{html}"
-    );
+            .granting("g2", "Mail allowed: llm")
+            .granted_on("g2", "2026-10-09", "session");
+    }
+    w.announce(Module::Inferd, "accounts.claude-key.grant.g2", "added");
+    open(&mut w, KEY);
+    settle(&mut w.harness, "the second permit", |h| {
+        h.html().contains("Since 2026-10-09. This session only")
+    });
+    assert!(w.harness.html().contains("Since 2026-10-08. Always"));
 }

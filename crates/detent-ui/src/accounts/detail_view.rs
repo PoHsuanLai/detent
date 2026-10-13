@@ -4,15 +4,15 @@ use super::adapter::{ActionButton, BackButton, HoldBanner};
 use super::list_view::Note;
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Account, AccountKey, AccountService, AccountSync, DatasetName, HoldInput, Holds, SyncHold,
-    reauth_help,
+    Account, AccountKey, AccountService, AccountSync, DatasetName, HoldInput, Holds, ModuleId,
+    ModuleRow, SyncHold, reauth_help,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 use ds::style::tokens::control_size::ControlSize;
-use ds_settings::schema::{ActionWeight, KeyPath};
+use ds_settings::schema::ActionWeight;
 
 /// What the detail screen reports to the pane.
 #[derive(Clone, Copy, PartialEq)]
@@ -20,13 +20,13 @@ pub(super) struct Handlers {
     /// Back to the list.
     pub back: EventHandler<()>,
     /// A service was switched.
-    pub switched: EventHandler<(KeyPath, bool)>,
+    pub switched: EventHandler<(ModuleRow, bool)>,
     /// A permission's action or Sign in again was pressed.
-    pub ran: EventHandler<KeyPath>,
+    pub ran: EventHandler<ModuleRow>,
     /// Remove was pressed.
-    pub remove: EventHandler<KeyPath>,
+    pub remove: EventHandler<ModuleRow>,
     /// Sign out was pressed.
-    pub sign_out: EventHandler<KeyPath>,
+    pub sign_out: EventHandler<ModuleRow>,
     /// Keep or Remove was pressed on a held deletion.
     pub hold: EventHandler<HoldInput>,
     /// Sync now was pressed on a sync row.
@@ -90,7 +90,10 @@ pub(super) fn AccountDetail(
                             subject: account.label.clone(),
                             weight: ActionWeight::Plain,
                             availability,
-                            onpress: move |()| on.ran.call(path.clone()),
+                            onpress: {
+                                let row = account.row(&path);
+                                move |()| on.ran.call(row.clone())
+                            },
                         }
                     }
                 }
@@ -102,7 +105,10 @@ pub(super) fn AccountDetail(
                             subject: account.label.clone(),
                             weight: ActionWeight::Plain,
                             availability,
-                            onpress: move |()| on.sign_out.call(path.clone()),
+                            onpress: {
+                                let row = account.row(&path);
+                                move |()| on.sign_out.call(row.clone())
+                            },
                         }
                     }
                 }
@@ -110,7 +116,7 @@ pub(super) fn AccountDetail(
             if !account.services.is_empty() {
                 FieldGroup { title: Some("Services".to_owned()),
                     for service in account.services.iter().cloned() {
-                        ServiceRow { key: "{service.path.0}", service, availability, on }
+                        ServiceRow { key: "{service.path.0}", module: account.module, service, availability, on }
                     }
                 }
                 Note { text: "Whether apps may use each service of the account." }
@@ -118,7 +124,7 @@ pub(super) fn AccountDetail(
             if !account.sync.is_empty() || holds.any_of(&account) {
                 FieldGroup { title: Some("Sync".to_owned()),
                     for sync in account.sync.iter().cloned() {
-                        SyncRow { key: "{sync.path.0}", sync: sync.clone(), availability, on }
+                        SyncRow { key: "{sync.path.0}", module: account.module, sync: sync.clone(), availability, on }
                         if sync.on {
                             SyncNowRow { key: "now-{sync.path.0}", account: account.key.clone(), sync: sync.clone(), availability, on }
                         }
@@ -144,14 +150,23 @@ pub(super) fn AccountDetail(
                                 weight: ActionWeight::Plain,
                                 availability,
                                 onpress: {
-                                    let path = permission.path.clone();
-                                    move |()| on.ran.call(path.clone())
+                                    let row = account.row(&permission.path);
+                                    move |()| on.ran.call(row.clone())
                                 },
                             }
                         }
                     }
                 }
                 Note { text: "Revoking asks the app again the next time it needs the account." }
+            }
+            if !account.used_by.is_empty() {
+                FieldGroup { title: Some("Apps using this identity".to_owned()),
+                    for (at, app) in account.used_by.iter().cloned().enumerate() {
+                        FieldRow { key: "used-{at}", label: TextLine::from("App"),
+                            Label { text: app, role: LabelRole::Secondary }
+                        }
+                    }
+                }
             }
             if let Some((path, name)) = account.remove.clone() {
                 FieldGroup {
@@ -162,7 +177,10 @@ pub(super) fn AccountDetail(
                             subject: account.label.clone(),
                             weight: ActionWeight::Destructive,
                             availability,
-                            onpress: move |()| on.remove.call(path.clone()),
+                            onpress: {
+                                let row = account.row(&path);
+                                move |()| on.remove.call(row.clone())
+                            },
                         }
                     }
                 }
@@ -173,16 +191,21 @@ pub(super) fn AccountDetail(
 
 /// A service's switch.
 #[component]
-fn ServiceRow(service: AccountService, availability: Availability, on: Handlers) -> Element {
+fn ServiceRow(
+    module: ModuleId,
+    service: AccountService,
+    availability: Availability,
+    on: Handlers,
+) -> Element {
     let label = service.label();
-    let path = service.path.clone();
+    let row = ModuleRow::new(module, service.path.clone());
     rsx! {
         FieldRow { label: TextLine::from(label.clone()), availability,
             Toggle {
                 label,
                 value: if service.on { Check::On } else { Check::Off },
                 availability,
-                onchange: move |next| on.switched.call((path.clone(), next == Check::On)),
+                onchange: move |next| on.switched.call((row.clone(), next == Check::On)),
             }
         }
     }
@@ -190,8 +213,13 @@ fn ServiceRow(service: AccountService, availability: Availability, on: Handlers)
 
 /// A sync switch, in the module's own words.
 #[component]
-fn SyncRow(sync: AccountSync, availability: Availability, on: Handlers) -> Element {
-    let path = sync.path.clone();
+fn SyncRow(
+    module: ModuleId,
+    sync: AccountSync,
+    availability: Availability,
+    on: Handlers,
+) -> Element {
+    let row = ModuleRow::new(module, sync.path.clone());
     rsx! {
         FieldRow {
             label: TextLine::from(sync.label.clone()),
@@ -201,7 +229,7 @@ fn SyncRow(sync: AccountSync, availability: Availability, on: Handlers) -> Eleme
                 label: sync.label.clone(),
                 value: if sync.on { Check::On } else { Check::Off },
                 availability,
-                onchange: move |next| on.switched.call((path.clone(), next == Check::On)),
+                onchange: move |next| on.switched.call((row.clone(), next == Check::On)),
             }
         }
     }

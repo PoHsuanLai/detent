@@ -75,13 +75,15 @@ fn account_in(state: &str, extra: Vec<KeySpec>) -> Account {
         fixed("accounts.a.state", state),
     ];
     keys.extend(extra);
-    AccountsPane::of(&described(keys, &[])).accounts.remove(0)
+    AccountsPane::of(ModuleId::Accountd, &described(keys, &[]))
+        .accounts
+        .remove(0)
 }
 
 fn ready_with(keys: Vec<KeySpec>, values: &[(&str, &str)]) -> AccountsState {
     accounts_step(
-        AccountsState::Probing,
-        AccountsInput::Found(Ok(described(keys, values))),
+        AccountsState::default(),
+        AccountsInput::Found(ModuleId::Accountd, Ok(described(keys, values))),
     )
     .0
 }
@@ -105,29 +107,38 @@ fn each_sign_in_outcome_has_a_calm_line_and_reads_the_rows_again() {
         ("failed", "Could not sign in to Work mail. Try again later."),
     ];
     for (word, line) in lines {
-        let input = AccountsInput::heard(row.clone(), &toml::Value::String(word.to_owned()));
+        let input = AccountsInput::heard(
+            ModuleId::Accountd,
+            row.clone(),
+            &toml::Value::String(word.to_owned()),
+        );
         let (_, effects) = accounts_step(state.clone(), input);
         assert_eq!(
             effects,
             [
                 AccountsEffect::Tell(line.to_owned()),
-                AccountsEffect::Reload
+                AccountsEffect::Reload(ModuleId::Accountd)
             ],
             "{word}"
         );
     }
     // A word nobody knows is just a change.
-    let odd = AccountsInput::heard(row, &toml::Value::String("later".to_owned()));
-    assert_eq!(odd, AccountsInput::Changed);
+    let odd = AccountsInput::heard(
+        ModuleId::Accountd,
+        row,
+        &toml::Value::String("later".to_owned()),
+    );
+    assert_eq!(odd, AccountsInput::Changed(ModuleId::Accountd));
 }
 
 #[test]
 fn a_state_change_reads_the_rows_again() {
     let heard = AccountsInput::heard(
+        ModuleId::Accountd,
         KeyPath("accounts.a.state".to_owned()),
         &toml::Value::String("needs_login".to_owned()),
     );
-    assert_eq!(heard, AccountsInput::Changed);
+    assert_eq!(heard, AccountsInput::Changed(ModuleId::Accountd));
 }
 
 #[test]
@@ -200,7 +211,7 @@ fn a_secret_waits_for_its_key_and_says_so() {
     let (after, effects) = accounts_step(
         state,
         AccountsInput::ClientEdited {
-            path: secret.clone(),
+            row: ModuleRow::new(ModuleId::Accountd, secret.clone()),
             text: "s3cret".to_owned(),
         },
     );
@@ -220,14 +231,14 @@ fn a_secret_waits_for_its_key_and_says_so() {
     let (_, effects) = accounts_step(
         keyed,
         AccountsInput::ClientEdited {
-            path: secret.clone(),
+            row: ModuleRow::new(ModuleId::Accountd, secret.clone()),
             text: "s3cret".to_owned(),
         },
     );
     assert_eq!(
         effects,
         [AccountsEffect::Set {
-            path: secret,
+            row: ModuleRow::new(ModuleId::Accountd, secret),
             value: toml::Value::String("s3cret".to_owned())
         }]
     );
@@ -235,7 +246,7 @@ fn a_secret_waits_for_its_key_and_says_so() {
 
 fn state_of(state: AccountsState) -> AccountsReady {
     match state {
-        AccountsState::Ready(ready) => ready,
+        AccountsState::Ready(ready) => *ready,
         other => panic!("not ready: {other:?}"),
     }
 }
@@ -249,22 +260,31 @@ fn add_account_opens_the_sheet_once_and_each_end_is_told_calmly() {
     // A second press while the sheet is open does nothing.
     let (_, effects) = accounts_step(open.clone(), AccountsInput::AddAccount);
     assert!(effects.is_empty());
-    let (done, effects) = accounts_step(open.clone(), AccountsInput::AddEnded(AddEnd::Closed));
-    assert_eq!(effects, [AccountsEffect::Reload]);
+    let (done, effects) = accounts_step(
+        open.clone(),
+        AccountsInput::AddEnded(ModuleId::Accountd, AddEnd::Closed),
+    );
+    assert_eq!(effects, [AccountsEffect::Reload(ModuleId::Accountd)]);
     assert_eq!(state_of(done).adding, Adding::Idle);
     let (_, effects) = accounts_step(
         open.clone(),
-        AccountsInput::AddEnded(AddEnd::AlreadyThere(AccountKey("a".to_owned()))),
+        AccountsInput::AddEnded(
+            ModuleId::Accountd,
+            AddEnd::AlreadyThere(AccountKey("a".to_owned())),
+        ),
     );
     assert_eq!(
         effects,
         [
             AccountsEffect::Tell("This account is already added.".to_owned()),
-            AccountsEffect::Reload,
+            AccountsEffect::Reload(ModuleId::Accountd),
             AccountsEffect::Show(AccountKey("a".to_owned())),
         ]
     );
-    let (_, effects) = accounts_step(open, AccountsInput::AddEnded(AddEnd::Failed));
+    let (_, effects) = accounts_step(
+        open,
+        AccountsInput::AddEnded(ModuleId::Accountd, AddEnd::Failed),
+    );
     assert_eq!(
         effects[0],
         AccountsEffect::Tell("Could not add an account. Try again later.".to_owned())
@@ -278,7 +298,7 @@ fn the_remove_question_says_kept_files_go_too_only_when_a_sync_row_is_on() {
         toggle("accounts.a.sync.files"),
         action("accounts.a.remove", "Remove account"),
     ];
-    let remove = KeyPath("accounts.a.remove".to_owned());
+    let remove = ModuleRow::new(ModuleId::Accountd, KeyPath("accounts.a.remove".to_owned()));
     for (word, files) in [("on", LocalFiles::Kept), ("off", LocalFiles::None)] {
         let state = ready_with(keys.clone(), &[("accounts.a.sync.files", word)]);
         let (asked, _) = accounts_step(state, AccountsInput::AskRemove(remove.clone()));

@@ -8,6 +8,7 @@ mod heard;
 mod hold;
 mod hold_step;
 mod model;
+mod module;
 mod reads;
 mod reauth_end;
 mod sign_in_help;
@@ -23,8 +24,9 @@ pub use hold_step::{HoldEffect, HoldInput, Holds, hold_step};
 pub use model::{
     Account, AccountExpiry, AccountKey, AccountProvider, AccountService, AccountStatus,
     AccountSync, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, ClientEntry,
-    LocalFiles, Place, RemovalQuestion, SignInClient,
+    LocalFiles, Place, RemovalQuestion, SignInClient, SyncAdd,
 };
+pub use module::{ModuleId, ModuleRow, Source, Sources};
 pub use reads::{ReadTurn, Reads};
 pub use reauth_end::ReauthEnd;
 pub use sign_in_help::reauth_help;
@@ -37,6 +39,8 @@ pub use target::{AccountSegment, AccountTarget};
 mod flow_tests;
 #[cfg(test)]
 mod hold_tests;
+#[cfg(test)]
+mod modules_tests;
 #[cfg(test)]
 mod reread_tests;
 #[cfg(test)]

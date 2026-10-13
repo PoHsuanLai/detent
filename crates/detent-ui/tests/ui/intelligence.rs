@@ -77,7 +77,7 @@ fn model(name: &str) -> ModelRef {
 #[test]
 fn the_sections_follow_design_order_whatever_order_the_programs_were_read_in() {
     let sandbox = Sandbox::new("intelligence-order");
-    // Memory and Computer use come from almanac's and cua's own schemas, Privacy from docket's;
+    // Memory and Computer use come from almanac's and cua's own schemas, Assistant from docket's;
     // only sill's Companion section has no schema yet, so a stand-in names it.
     sandbox.add_schema(
         "sill-companion",
@@ -97,7 +97,7 @@ fn the_sections_follow_design_order_whatever_order_the_programs_were_read_in() {
             "Model choice",
             "Memory",
             "Computer use",
-            "Privacy",
+            "Assistant",
             "Advanced",
         ],
     );
@@ -108,11 +108,7 @@ fn the_page_shows_inferds_and_dockets_file_rows_with_no_inferd_running() {
     let sandbox = Sandbox::new("intelligence-absent");
     let harness = sandbox.harness(intelligence());
     let html = harness.html();
-    for row in [
-        "Keep AI on this computer",
-        "Mail",
-        "Let other apps use my apps&#39; actions (MCP)",
-    ] {
+    for row in ["Keep AI on this computer", "Mail", "Other apps"] {
         assert!(
             html.contains(row) || html.contains(&row.replace("&#39;", "'")),
             "{row}"

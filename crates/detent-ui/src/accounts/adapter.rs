@@ -25,7 +25,11 @@ fn role_of(weight: ActionWeight) -> ButtonRole {
 /// storage". Several rows carry the same visible word; this says which one it is.
 fn spoken(label: &str, subject: &str) -> Common {
     Common {
-        aria_label: Some(format!("{label} {subject}")),
+        aria_label: Some(if subject.is_empty() {
+            label.to_owned()
+        } else {
+            format!("{label} {subject}")
+        }),
         ..Common::default()
     }
 }
@@ -167,6 +171,29 @@ pub(super) fn AddAccountButton(
             title: Some("Add Account".to_owned()),
             icon: Some(Icon::Plus),
             image: ImagePosition::Only,
+            size: ControlSize::Small,
+            availability,
+            onclick: move |_| onpress.call(()),
+        }
+    }
+}
+
+/// The button on the AI keys' row, which opens the key service's add sheet; it waits while a
+/// sheet is open or a change is in flight.
+#[component]
+pub(super) fn AddKeyButton(
+    adding: Adding,
+    availability: Availability,
+    onpress: EventHandler<()>,
+) -> Element {
+    let availability = match adding {
+        Adding::Idle => availability,
+        Adding::SheetOpen => Availability::Disabled,
+    };
+    rsx! {
+        Button {
+            common: spoken("Add AI Key\u{2026}", ""),
+            label: "Add AI Key\u{2026}",
             size: ControlSize::Small,
             availability,
             onclick: move |_| onpress.call(()),

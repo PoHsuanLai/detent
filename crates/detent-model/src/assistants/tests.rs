@@ -213,6 +213,7 @@ mod offers {
         let mut pane = AccountsPane::default();
         pane.accounts.push(Account {
             key: AccountKey("acme".to_owned()),
+            module: crate::accounts::ModuleId::Accountd,
             label: "me@acme.example".to_owned(),
             status: AccountStatus::Ok,
             place: Place::Elsewhere,
@@ -226,6 +227,7 @@ mod offers {
             reauth: None,
             sign_out: None,
             remove: None,
+            used_by: Vec::new(),
         });
         pane
     }

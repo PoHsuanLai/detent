@@ -46,7 +46,7 @@ const BASIC: &[(&str, &[&str])] = &[
             "Let my other computers use this computer's models",
         ],
     ),
-    ("Memory", &["Keep memory files", "Tidy memory"]),
+    ("Memory", &["Memory files", "Tidy memory"]),
     (
         "Computer use",
         &[
@@ -57,23 +57,19 @@ const BASIC: &[(&str, &[&str])] = &[
         ],
     ),
     (
-        "Privacy",
-        &[
-            "How much the assistant asks first",
-            "Let other apps use my apps' actions (MCP)",
-            "Keep undo for",
-        ],
+        "Assistant",
+        &["Asks first", "Other apps", "Coding helpers", "Undo history"],
     ),
 ];
 
 /// `(section, a row in it)` for the rows the Advanced disclosure holds.
 const ADVANCED: &[(&str, &str)] = &[
-    ("Review time", "Quick review time"),
-    ("Review time", "Careful review time"),
-    ("Session budgets", "Calls per session"),
-    ("Task approvals", "Longest task approval"),
-    ("Retention", "Keep searches for"),
-    ("Retention", "Keep sessions for"),
+    ("Limits", "Quick check time"),
+    ("Limits", "Careful check time"),
+    ("Limits", "Actions per task"),
+    ("Limits", "Approval length"),
+    ("History", "Search history"),
+    ("History", "Task history"),
     ("Run limits", "Steps per run"),
     ("Timing", "Quiet before it looks"),
     ("Window detail", "Window detail"),
@@ -158,7 +154,7 @@ fn a_write_lands_in_the_file_of_the_program_that_owns_the_row() {
     assert!(!cua.contains("when"), "{cua}");
     assert_eq!(sandbox.read("docket/settings.toml"), None);
 
-    flip(&mut harness, "Let other apps use my apps' actions (MCP)");
+    flip(&mut harness, "Other apps");
     let docket = sandbox.read("docket/settings.toml").expect("docket's file");
     assert!(docket.contains("expose = \"on\""), "{docket}");
     assert!(

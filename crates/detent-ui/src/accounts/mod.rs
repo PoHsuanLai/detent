@@ -7,6 +7,8 @@ mod adapter;
 mod add_io;
 mod detail_view;
 mod drive;
+mod feeds;
+mod follow_module;
 mod hold_drive;
 mod link;
 mod list_view;

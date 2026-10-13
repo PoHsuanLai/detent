@@ -82,6 +82,15 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
         basic,
         [
             (
+                "Assistant",
+                vec![
+                    "agent.strictness",
+                    "agent.mcp.expose",
+                    "agent.acp.agents",
+                    "agent.undo.keep_h"
+                ]
+            ),
+            (
                 "Computer use",
                 vec![
                     "cua.enabled",
@@ -92,15 +101,7 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
             ),
             (
                 "Memory",
-                vec![
-                    "memory.files.at_rest",
-                    "memory.consolidation.when",
-                    "memory.consolidation.apply"
-                ]
-            ),
-            (
-                "Privacy",
-                vec!["agent.strictness", "agent.mcp.expose", "agent.undo.keep_h"]
+                vec!["memory.files.at_rest", "memory.consolidation.when"]
             ),
         ]
     );
@@ -109,10 +110,10 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
     assert_eq!(advanced_keys, 18 + 6 + 10, "docket 18, almanac 6, cua 10");
     let names: Vec<&str> = advanced.iter().map(|(title, _)| *title).collect();
     for section in [
-        "Review time",
-        "Session budgets",
-        "Task approvals",
-        "Retention",
+        "Assistant",
+        "Limits",
+        "Memory",
+        "History",
         "Run limits",
         "Timing",
         "Window detail",

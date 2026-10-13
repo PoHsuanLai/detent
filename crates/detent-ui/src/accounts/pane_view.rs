@@ -2,21 +2,23 @@
 
 use super::adapter::RemoveAlert;
 use super::detail_view::{AccountDetail, Handlers};
-use super::drive::{drive, is_valued};
+use super::drive::drive;
+use super::feeds::Feeds;
+use super::follow_module::follow_module;
 use super::hold_drive::{drive_holds, drive_sync_now};
 use super::link::AccountLink;
 use super::list_view::{AccountList, ClientIds, FootHandlers};
 use crate::env::Env;
-use crate::live::{Daemon, Followed, follow, follow_holds};
+use crate::live::follow_holds;
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds, Reads,
+    Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds, ModuleId,
+    ModuleRow,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
-use ds_settings::live::LiveClient;
 
 /// The accounts as a list and a detail screen, or one row that says the account service is not
 /// there.
@@ -25,10 +27,8 @@ pub fn AccountsPane() -> Element {
     let env = use_context::<Env>();
     let toasts = use_toasts();
     let state = use_signal(AccountsState::default);
-    let client = use_signal(|| None::<LiveClient>);
-    let mut set_client = client;
+    let feeds = Feeds::new();
     let holds = use_signal(Holds::default);
-    let reads = use_signal(Reads::default);
 
     // The sync service's held deletions are told apart from the accounts' rows.
     use_future({
@@ -44,37 +44,24 @@ pub fn AccountsPane() -> Element {
         }
     });
 
+    // Each module is followed on its own: one that is not there leaves only its part out.
     use_future({
         let bus = env.bus.clone();
-        move || {
-            let bus = bus.clone();
-            async move {
-                follow(&bus, &Daemon::accountd(), is_valued, |followed| {
-                    let run =
-                        |input| spawn(drive(state, client, reads, bus.clone(), toasts, input));
-                    match followed {
-                        Followed::Opened(opened, described) => {
-                            set_client.set(Some(opened));
-                            run(AccountsInput::Found(Ok(described)));
-                        }
-                        Followed::Gone(absence) => {
-                            set_client.set(None);
-                            run(AccountsInput::Found(Err(absence)));
-                        }
-                        Followed::Changed(path, value) => {
-                            run(AccountsInput::heard(path, &value));
-                        }
-                    }
-                })
-                .await;
-            }
-        }
+        move || follow_module(ModuleId::Accountd, bus.clone(), state, feeds, toasts)
+    });
+    use_future({
+        let bus = env.bus.clone();
+        move || follow_module(ModuleId::Inferd, bus.clone(), state, feeds, toasts)
+    });
+    use_future({
+        let bus = env.bus.clone();
+        move || follow_module(ModuleId::Syncd, bus.clone(), state, feeds, toasts)
     });
 
     let send = EventHandler::new({
         let bus = env.bus.clone();
         move |input: AccountsInput| {
-            spawn(drive(state, client, reads, bus.clone(), toasts, input));
+            spawn(drive(state, feeds, bus.clone(), toasts, input));
         }
     });
     let send_hold = EventHandler::new({
@@ -101,10 +88,10 @@ pub fn AccountsPane() -> Element {
     });
 
     match state() {
-        AccountsState::Probing => rsx! {},
-        AccountsState::Unavailable(absence) => rsx! { Unavailable { absence } },
+        AccountsState::Probing(_) => rsx! {},
+        AccountsState::Unavailable(absence, _) => rsx! { Unavailable { absence } },
         AccountsState::Ready(ready) => rsx! {
-            Ready { ready, holds: holds(), marks: env.marks.clone(), send, send_hold, send_sync }
+            Ready { ready: *ready, holds: holds(), marks: env.marks.clone(), send, send_hold, send_sync }
         },
     }
 }
@@ -126,19 +113,19 @@ fn Ready(
     };
     let on = Handlers {
         back: EventHandler::new(move |()| send.call(AccountsInput::Back)),
-        switched: EventHandler::new(move |(path, on)| {
-            send.call(AccountsInput::Switched { path, on });
+        switched: EventHandler::new(move |(row, on)| {
+            send.call(AccountsInput::Switched { row, on });
         }),
-        ran: EventHandler::new(move |path| send.call(AccountsInput::Ran(path))),
-        remove: EventHandler::new(move |path| send.call(AccountsInput::AskRemove(path))),
-        sign_out: EventHandler::new(move |path| send.call(AccountsInput::AskSignOut(path))),
+        ran: EventHandler::new(move |row| send.call(AccountsInput::Ran(row))),
+        remove: EventHandler::new(move |row| send.call(AccountsInput::AskRemove(row))),
+        sign_out: EventHandler::new(move |row| send.call(AccountsInput::AskSignOut(row))),
         hold: send_hold,
         sync_now: send_sync,
     };
     let asked = ready.confirming.clone();
     let remove_name = asked
         .as_ref()
-        .and_then(|question| ready.pane.owner(&question.path))
+        .and_then(|question| ready.pane.owner(&question.row))
         .and_then(|account| account.remove.clone())
         .map(|(_, name)| name)
         .unwrap_or_default();
@@ -147,8 +134,12 @@ fn Ready(
         .selected
         .as_ref()
         .and_then(|key| ready.pane.account(key))
-        .and_then(|account| account.remove.as_ref())
-        .map(|(path, _)| path.clone());
+        .and_then(|account| {
+            account
+                .remove
+                .as_ref()
+                .map(|(path, _)| ModuleRow::new(account.module, path.clone()))
+        });
     rsx! {
         div { class: "accounts", "data-accounts": "ready",
             if let Some(account) = ready.open().cloned() {
@@ -164,16 +155,18 @@ fn Ready(
                     onopen: move |key| send.call(AccountsInput::Open(key)),
                     on: FootHandlers {
                         add: EventHandler::new(move |()| send.call(AccountsInput::AddAccount)),
+                        add_key: EventHandler::new(move |()| send.call(AccountsInput::AddAiKey)),
+                        continue_as: EventHandler::new(move |row| send.call(AccountsInput::Ran(row))),
                         remove: EventHandler::new(move |()| {
-                            if let Some(path) = removal_row.clone() {
-                                send.call(AccountsInput::AskRemove(path));
+                            if let Some(row) = removal_row.clone() {
+                                send.call(AccountsInput::AskRemove(row));
                             }
                         }),
                     },
                 }
                 ClientIds {
                     pane: ready.pane.clone(),
-                    onedit: move |(path, text)| send.call(AccountsInput::ClientEdited { path, text }),
+                    onedit: move |(row, text)| send.call(AccountsInput::ClientEdited { row, text }),
                 }
             }
             if let Some(question) = asked {

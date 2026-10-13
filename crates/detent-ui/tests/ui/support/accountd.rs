@@ -1,5 +1,5 @@
-//! A fake accountd: `org.quire.SettingsModule1` at accountd's path on a private bus, with the
-//! rows the real module describes (`accounts.<id>.service.<kind>`, `.grant.<grant>`, `.sync.<leaf>`, `.reauth`,
+//! A fake accounts module: `org.quire.SettingsModule1` at accountd's, inferd's or syncd's path on a
+//! private bus, with the rows the real modules describe (`accounts.<id>.service.<kind>`, `.grant.<grant>`, `.sync.<leaf>`, `.reauth`,
 //! `.remove`, `accounts.clients.<issuer>`). A removed account and a revoked grant leave the rows.
 #![allow(dead_code)]
 
@@ -11,8 +11,36 @@ use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Page, Section,
 };
-use porter_dbus::names::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
+use porter_dbus::names::{
+    ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH, SYNC_BUS,
+};
 use std::sync::{Arc, Mutex};
+
+/// Which daemon's module the fake is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Module {
+    Accountd,
+    Inferd,
+    Syncd,
+}
+
+impl Module {
+    pub fn bus(self) -> &'static str {
+        match self {
+            Module::Accountd => ACCOUNTS_BUS,
+            Module::Inferd => INFERENCE_BUS,
+            Module::Syncd => SYNC_BUS,
+        }
+    }
+
+    fn path(self) -> &'static str {
+        match self {
+            Module::Accountd => ACCOUNTS_SETTINGS_PATH,
+            Module::Inferd => INFERENCE_SETTINGS_PATH,
+            Module::Syncd => "/org/quire/Sync1/settings",
+        }
+    }
+}
 
 /// What the fake does with a caller.
 #[derive(Clone, Copy)]
@@ -45,6 +73,8 @@ pub struct Held {
     pub group: Option<String>,
     /// Each grant's read-only `since` day and `scope` word: `(grant, since, scope)`.
     pub grant_facts: Vec<(String, String, String)>,
+    /// The names of the apps using the identity: the read-only `used_by` rows.
+    pub used_by: Vec<String>,
 }
 
 impl Held {
@@ -62,7 +92,14 @@ impl Held {
             provider: None,
             group: None,
             grant_facts: Vec::new(),
+            used_by: Vec::new(),
         }
+    }
+
+    /// The apps using the identity, by name.
+    pub fn used_by(mut self, apps: &[&str]) -> Held {
+        self.used_by = apps.iter().map(|a| (*a).to_owned()).collect();
+        self
     }
 
     /// A language-model runtime on this computer: probed, no sign-in.
@@ -125,11 +162,21 @@ pub struct Accountd {
     /// Every `Set` that arrived, in order.
     pub sets: Arc<Mutex<Vec<(String, toml::Value)>>>,
     policy: Policy,
+    module: Module,
+    /// Whether the module has syncd's `sync.add` row.
+    continue_as: bool,
 }
 
 impl Accountd {
     pub fn new(policy: Policy, accounts: Vec<Held>) -> Accountd {
+        Accountd::on(Module::Accountd, policy, accounts)
+    }
+
+    /// The module of `module`'s daemon.
+    pub fn on(module: Module, policy: Policy, accounts: Vec<Held>) -> Accountd {
         Accountd {
+            module,
+            continue_as: false,
             accounts: Arc::new(Mutex::new(accounts)),
             client: Arc::default(),
             sets: Arc::default(),
@@ -137,7 +184,13 @@ impl Accountd {
         }
     }
 
-    /// Serves the module on `bus`, owning accountd's bus name; the connection must be kept alive.
+    /// Gives the module syncd's `sync.add` row.
+    pub fn continuing_as(mut self) -> Accountd {
+        self.continue_as = true;
+        self
+    }
+
+    /// Serves the module on `bus`, owning its daemon's bus name; the connection must be kept alive.
     pub async fn serve_on(&self, bus: &PrivateBus) -> zbus::Connection {
         self.serve_announcing(bus).await.0
     }
@@ -145,10 +198,13 @@ impl Accountd {
     /// The same, with the means to announce a change the module did not get through `Set`.
     pub async fn serve_announcing(&self, bus: &PrivateBus) -> (zbus::Connection, Served) {
         let connection = bus.connect().await;
-        let served = serve(&connection, ACCOUNTS_SETTINGS_PATH, self.clone())
+        let served = serve(&connection, self.module.path(), self.clone())
             .await
             .expect("serves");
-        connection.request_name(ACCOUNTS_BUS).await.expect("name");
+        connection
+            .request_name(self.module.bus())
+            .await
+            .expect("name");
         (connection, served)
     }
 
@@ -279,6 +335,9 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
         }
         rows.push(row);
     }
+    for (n, app) in held.used_by.iter().enumerate() {
+        rows.push(fixed(&format!("used_by.{n}"), "Used by", app));
+    }
     for (grant, what) in &held.grants {
         rows.push(spec(
             format!("accounts.{id}.grant.{grant}"),
@@ -325,6 +384,15 @@ impl LiveModule for Accountd {
             .iter()
             .flat_map(rows_of)
             .collect();
+        if self.continue_as {
+            key.push(spec(
+                "sync.add".to_owned(),
+                "Sync",
+                "Continue as",
+                action("Continue as\u{2026}", ActionWeight::Plain),
+                toml::Value::Boolean(false),
+            ));
+        }
         let mut client = spec(
             "accounts.clients.microsoft".to_owned(),
             "Sign-in clients",
@@ -333,7 +401,9 @@ impl LiveModule for Accountd {
             toml::Value::String(String::new()),
         );
         client.exposure = Exposure::Advanced;
-        key.push(client);
+        if matches!(self.module, Module::Accountd) {
+            key.push(client);
+        }
         LiveSchema { version: 1, key }
     }
 

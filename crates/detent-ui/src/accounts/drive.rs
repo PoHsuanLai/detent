@@ -1,15 +1,16 @@
-//! Running the pane's effects against accountd: the one place the pane calls the bus.
+//! Running the pane's effects against the three modules: the one place the pane calls the bus.
+//! A row's effect goes to the module the row came from.
 
-use super::add_io::add_account;
+use super::add_io::{add_account, add_ai_key};
+use super::feeds::Feeds;
 use super::reload::{reload, reload_later};
 use crate::live::{BusSource, Daemon};
 use detent_model::{
-    Absence, AccountsEffect, AccountsInput, AccountsPane as Pane, AccountsState, Reads,
-    accounts_step,
+    Absence, AccountsEffect, AccountsInput, AccountsPane as Pane, AccountsState, ModuleId,
+    ModuleRow, Sources, accounts_step,
 };
 use dioxus::prelude::*;
 use ds::stack::toast_hub::ToastHub;
-use ds_settings::live::LiveClient;
 use ds_settings::schema::KeyKind;
 use std::collections::VecDeque;
 
@@ -18,20 +19,27 @@ pub(crate) fn is_valued(kind: &KeyKind) -> bool {
     matches!(kind, KeyKind::Toggle { .. } | KeyKind::Text)
 }
 
-/// The accounts accountd lists now, read once: what the intents provider answers from. Never
-/// starts accountd.
+/// The accounts the modules list now, read once: what the intents provider answers from. Never
+/// starts a daemon. A module that is not there leaves its part out; the answer is an absence
+/// only when none is there.
 pub async fn read_accounts(bus: &BusSource) -> Result<Pane, Absence> {
-    let described = crate::live::read_once(bus, &Daemon::accountd(), is_valued).await?;
-    Ok(Pane::of(&described))
+    let mut sources = Sources::default();
+    for module in ModuleId::ALL {
+        let found = crate::live::read_once(bus, &Daemon::of(module), is_valued).await;
+        sources.hear(module, found);
+    }
+    match sources.pane() {
+        Some(pane) => Ok(pane),
+        None => Err(sources.absence().unwrap_or(Absence::NotRunning)),
+    }
 }
 
 /// Applies `first` to the pane, then every input its effects lead to, until nothing is left to
-/// do. The calls to accountd wait here, so a caller spawns this and returns. Reads of accountd
-/// go through `reads`, one at a time.
+/// do. The calls to the modules wait here, so a caller spawns this and returns. Reads of a
+/// module go through its own `reads`, one at a time.
 pub(super) async fn drive(
     mut state: Signal<AccountsState>,
-    client: Signal<Option<LiveClient>>,
-    reads: Signal<Reads>,
+    feeds: Feeds,
     bus: BusSource,
     toasts: ToastHub,
     first: AccountsInput,
@@ -40,42 +48,53 @@ pub(super) async fn drive(
     while let Some(input) = queue.pop_front() {
         let (next, effects) = accounts_step(state.peek().clone(), input);
         state.set(next);
-        let opened = client.peek().clone();
         for effect in effects {
-            match (effect, &opened) {
-                (AccountsEffect::Tell(text), _) => toasts.push(text, None),
-                (AccountsEffect::OpenAddSheet, _) => {
-                    queue.push_back(AccountsInput::AddEnded(add_account(&bus).await));
+            let opened = |module: ModuleId| feeds.of(module).client.peek().clone();
+            match effect {
+                AccountsEffect::Tell(text) => toasts.push(text, None),
+                AccountsEffect::OpenAddSheet => {
+                    let end = add_account(&bus).await;
+                    queue.push_back(AccountsInput::AddEnded(ModuleId::Accountd, end));
                 }
-                (AccountsEffect::Show(key), _) => queue.push_back(AccountsInput::Open(key)),
-                (AccountsEffect::Reload, Some(opened)) => {
-                    let found = reload(reads, opened).await;
-                    queue.extend(found.map(AccountsInput::Reread));
+                AccountsEffect::OpenAiKeySheet => {
+                    let end = add_ai_key(&bus).await;
+                    queue.push_back(AccountsInput::AddEnded(ModuleId::Inferd, end));
                 }
-                (AccountsEffect::Retry, Some(opened)) => {
-                    let found = reload_later(reads, opened).await;
-                    queue.extend(found.map(AccountsInput::Reread));
+                AccountsEffect::Show(key) => queue.push_back(AccountsInput::Open(key)),
+                AccountsEffect::Reload(module) => {
+                    if let Some(client) = opened(module) {
+                        let found = reload(feeds.of(module).reads, &client).await;
+                        queue.extend(found.map(|found| AccountsInput::Reread(module, found)));
+                    }
                 }
-                (AccountsEffect::Set { path, value }, Some(opened)) => {
-                    queue.push_back(answer(path.clone(), opened.set(&path, &value).await));
+                AccountsEffect::Retry(module) => {
+                    if let Some(client) = opened(module) {
+                        let found = reload_later(feeds.of(module).reads, &client).await;
+                        queue.extend(found.map(|found| AccountsInput::Reread(module, found)));
+                    }
                 }
-                (AccountsEffect::Invoke(path), Some(opened)) => {
-                    queue.push_back(answer(path.clone(), opened.invoke(&path).await));
+                AccountsEffect::Set { row, value } => {
+                    if let Some(client) = opened(row.module) {
+                        let result = client.set(&row.path, &value).await;
+                        queue.push_back(answer(row, result));
+                    }
                 }
-                (_, None) => {}
+                AccountsEffect::Invoke(row) => {
+                    if let Some(client) = opened(row.module) {
+                        let result = client.invoke(&row.path).await;
+                        queue.push_back(answer(row, result));
+                    }
+                }
             }
         }
     }
 }
 
-fn answer(
-    path: ds_settings::schema::KeyPath,
-    result: Result<(), ds_settings::live::LiveError>,
-) -> AccountsInput {
+fn answer(row: ModuleRow, result: Result<(), ds_settings::live::LiveError>) -> AccountsInput {
     match result {
-        Ok(()) => AccountsInput::Done(path),
+        Ok(()) => AccountsInput::Done(row),
         Err(error) => AccountsInput::Failed {
-            path,
+            row,
             why: error.to_string(),
         },
     }

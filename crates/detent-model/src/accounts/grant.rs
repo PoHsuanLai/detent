@@ -85,5 +85,5 @@ impl AccountPermission {
 
 /// The permission's row for grant `grant` of `account`: `accounts.<id>.grant.<grant>`.
 pub(super) fn grant_path(account: &super::model::AccountKey, grant: &str) -> KeyPath {
-    KeyPath(format!("accounts.{}.grant.{grant}", account.0))
+    KeyPath(format!("accounts.{}.grant.{grant}", account.id()))
 }

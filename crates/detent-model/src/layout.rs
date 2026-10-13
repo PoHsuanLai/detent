@@ -32,7 +32,7 @@ pub enum Block {
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
 /// program names that is not listed follows these, in the order the schemas first mention it.
 const INTELLIGENCE_SECTIONS: &[&str] =
-    &["Companion", "Models", "Memory", "Computer use", "Privacy"];
+    &["Companion", "Models", "Memory", "Computer use", "Assistant"];
 
 /// The section the local runtimes and the model picker follow.
 const PICKER_AFTER: &str = "Models";
@@ -123,7 +123,7 @@ mod tests {
         (
             "intelligence follows design/22 whatever order the schemas were read in",
             Page::Intelligence,
-            &["Privacy", "Models", "Companion", "Memory", "Computer use"],
+            &["Assistant", "Models", "Companion", "Memory", "Computer use"],
             &[
                 "Companion",
                 "<assistants>",
@@ -132,31 +132,31 @@ mod tests {
                 "<picker>",
                 "Memory",
                 "Computer use",
-                "Privacy",
+                "Assistant",
             ],
         ),
         (
             "the picker takes the place of Models when no schema has it",
             Page::Intelligence,
-            &["Privacy", "Companion"],
+            &["Assistant", "Companion"],
             &[
                 "Companion",
                 "<assistants>",
                 "<runtimes>",
                 "<picker>",
-                "Privacy",
+                "Assistant",
             ],
         ),
         (
             "a section nobody listed follows the listed ones in schema order",
             Page::Intelligence,
-            &["Zed", "Privacy", "Alpha", "Models"],
+            &["Zed", "Assistant", "Alpha", "Models"],
             &[
                 "<assistants>",
                 "Models",
                 "<runtimes>",
                 "<picker>",
-                "Privacy",
+                "Assistant",
                 "Zed",
                 "Alpha",
             ],

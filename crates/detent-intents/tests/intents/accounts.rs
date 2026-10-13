@@ -3,7 +3,7 @@
 
 use crate::support::{Listed, World, entity, key};
 use detent_model::{
-    Absence, Account, AccountKey, AccountService, AccountStatus, AccountsPane, Place,
+    Absence, Account, AccountKey, AccountService, AccountStatus, AccountsPane, ModuleId, Place,
 };
 use docket_core::{AppRefusal, Value};
 use ds_settings::schema::KeyPath;
@@ -13,6 +13,7 @@ use prov::Integrity;
 fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Account {
     Account {
         key: AccountKey(id.to_owned()),
+        module: ModuleId::Accountd,
         label: label.to_owned(),
         status,
         place: Place::Elsewhere,
@@ -39,6 +40,7 @@ fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Acco
             KeyPath(format!("accounts.{id}.remove")),
             "Remove account".to_owned(),
         )),
+        used_by: Vec::new(),
     }
 }
 
@@ -58,7 +60,7 @@ fn two_accounts() -> Listed {
                 &["mail"],
             ),
         ],
-        clients: Vec::new(),
+        ..AccountsPane::default()
     }))
 }
 

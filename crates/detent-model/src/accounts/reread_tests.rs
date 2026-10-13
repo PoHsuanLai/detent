@@ -5,7 +5,10 @@ use super::*;
 use crate::picker::Absence;
 
 fn failed() -> AccountsInput {
-    AccountsInput::Reread(Err(Absence::Failed("unknown key".to_owned())))
+    AccountsInput::Reread(
+        ModuleId::Accountd,
+        Err(Absence::Failed("unknown key".to_owned())),
+    )
 }
 
 #[test]
@@ -13,21 +16,27 @@ fn a_failed_reread_keeps_the_rows_and_tries_again() {
     let before = state_of(ready());
     let (state, effects) = apply(ready(), [failed()]);
     assert_eq!(state_of(state).pane, before.pane);
-    assert_eq!(effects, [AccountsEffect::Retry]);
+    assert_eq!(effects, [AccountsEffect::Retry(ModuleId::Accountd)]);
 }
 
 #[test]
 fn an_unavailable_pane_reads_again_on_a_change_and_shows_the_list_when_found() {
-    let gone = AccountsState::Unavailable(Absence::Failed("did not answer".to_owned()));
-    let (state, effects) = apply(gone, [AccountsInput::Changed]);
-    assert_eq!(effects, [AccountsEffect::Reload]);
-    let (state, _) = apply(state, [AccountsInput::Found(Ok(described()))]);
+    let gone = AccountsState::Unavailable(
+        Absence::Failed("did not answer".to_owned()),
+        Sources::default(),
+    );
+    let (state, effects) = apply(gone, [AccountsInput::Changed(ModuleId::Accountd)]);
+    assert_eq!(effects, [AccountsEffect::Reload(ModuleId::Accountd)]);
+    let (state, _) = apply(
+        state,
+        [AccountsInput::Found(ModuleId::Accountd, Ok(described()))],
+    );
     assert_eq!(state, ready());
 }
 
 #[test]
 fn an_unavailable_pane_stays_so_when_the_read_fails_again() {
-    let gone = AccountsState::Unavailable(Absence::NotRunning);
+    let gone = AccountsState::Unavailable(Absence::NotRunning, Sources::default());
     let (state, effects) = apply(gone.clone(), [failed()]);
     assert_eq!(state, gone);
     assert!(effects.is_empty());
