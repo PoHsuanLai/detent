@@ -22,9 +22,9 @@ const LLM: &str = "[aria-label=\"Llm\"] .ds-toggle";
 const KEEP_FILES: &str = "[aria-label=\"Keep this account's files on this computer\"] .ds-toggle";
 const UPLOAD_PHOTOS: &str =
     "[aria-label=\"Upload new photos from a folder on this computer to Google Photos\"] .ds-toggle";
-const REVOKE: &str = "[aria-label=\"Photos allowed: llm\"] .ds-button";
-const SIGN_IN: &str = "[aria-label=\"Sign in again\"] .ds-button";
-const REMOVE: &str = "[aria-label=\"Remove account\"] .ds-button";
+const REVOKE: &str = "[aria-label=\"Photos allowed: llm\"] .ds-field-row-control .ds-button";
+const SIGN_IN: &str = "[aria-label=\"Sign in again\"] .ds-field-row-control .ds-button";
+const REMOVE: &str = "[aria-label=\"Remove account\"] .ds-field-row-control .ds-button";
 const BACK: &str = ".accounts-back .ds-button";
 const CONTINUE_AS: &str = ".accounts-more [aria-label=\"Continue as\u{2026}\"]";
 const ADD_KEY: &str = ".accounts-more [aria-label=\"Add AI Key\u{2026}\"]";
@@ -255,8 +255,9 @@ fn an_identity_lists_the_apps_using_it_read_only_and_goes_back() {
         "an identity has no Revoke rows"
     );
     assert_eq!(
-        w.harness
-            .count("[aria-label=\"App\"] .ds-button, [aria-label=\"App\"] .ds-toggle"),
+        w.harness.count(
+            "[aria-label=\"App\"] .ds-field-row-control .ds-button, [aria-label=\"App\"] .ds-toggle"
+        ),
         0,
         "the apps are a plain list"
     );

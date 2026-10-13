@@ -12,8 +12,8 @@ use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
 
 const ROWS: &str = ".runtimes .ds-field-row";
-const OLLAMA: &str = ".runtimes [aria-label=\"Ollama\"] .ds-button";
-const LM_STUDIO: &str = ".runtimes [aria-label=\"LM Studio\"] .ds-button";
+const OLLAMA: &str = ".runtimes [aria-label=\"Ollama\"] .ds-field-row-control .ds-button";
+const LM_STUDIO: &str = ".runtimes [aria-label=\"LM Studio\"] .ds-field-row-control .ds-button";
 
 fn intelligence() -> Opening {
     Opening {
