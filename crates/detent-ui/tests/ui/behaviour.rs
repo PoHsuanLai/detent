@@ -174,9 +174,15 @@ fn a_kind_without_a_component_is_shown_read_only_with_a_note() {
     let mut harness = sandbox.harness(Opening::default());
     search_for(&mut harness, "control center modules");
     let row = harness.text_of(".key-hit").expect("a highlighted row");
-    assert!(row.contains("Modules"), "{row}");
-    assert!(row.contains("wifi, bluetooth"), "the value is shown: {row}");
-    assert!(row.contains("Edit in file"), "{row}");
+    assert!(row.contains("Control center"), "the section's row: {row}");
+    click(&mut harness, ".key-hit .ds-button");
+    let sheet = harness.text_of(".ds-sheet").expect("the section's sheet");
+    assert!(sheet.contains("Modules"), "{sheet}");
+    assert!(
+        sheet.contains("wifi, bluetooth"),
+        "the value is shown: {sheet}"
+    );
+    assert!(sheet.contains("Edit in file"), "{sheet}");
 }
 
 fn harness_spec(sandbox: &Sandbox) -> detent_model::FileSpec {

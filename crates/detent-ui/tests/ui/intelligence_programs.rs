@@ -63,7 +63,17 @@ const BASIC: &[(&str, &[&str])] = &[
 ];
 
 /// The sections the advanced rows are grouped into: each is one sheet row, "<Section>...".
-const ADVANCED: &[&str] = &["Limits", "History", "Run limits", "Timing", "Window detail"];
+const ADVANCED: &[&str] = &[
+    "Assistant",
+    "Limits",
+    "Memory",
+    "History",
+    "Run limits",
+    "Timing",
+    "Window detail",
+    "Automatic",
+    "Structured output",
+];
 
 #[test]
 fn each_basic_row_is_drawn_in_the_section_its_schema_names() {
@@ -83,7 +93,11 @@ fn each_basic_row_is_drawn_in_the_section_its_schema_names() {
 fn the_advanced_sections_are_sheet_rows_and_their_keys_are_not_among_the_basic_ones() {
     let sandbox = Sandbox::new("programs-advanced");
     let harness = sandbox.harness(intelligence());
-    assert_eq!(harness.count(".ds-disclosure"), 0, "no disclosure");
+    assert_eq!(
+        harness.count(".advanced .ds-disclosure"),
+        0,
+        "no disclosure"
+    );
     assert_eq!(
         harness.count(".advanced .ds-field-row"),
         ADVANCED.len(),

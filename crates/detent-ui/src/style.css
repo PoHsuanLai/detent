@@ -48,6 +48,10 @@
   gap: var(--s-6);
 }
 
+.advanced {
+  padding: 0 var(--s-4);
+}
+
 .advanced-sheet {
   display: flex;
   flex-direction: column;
