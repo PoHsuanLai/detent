@@ -1,7 +1,7 @@
 //! The schemas docket, almanac and cua install under `$XDG_DATA_DIRS/quire/settings`: found
 //! there, each key in the section it names and the file its program reads.
 
-use detent_model::{Catalogue, PageSlug, discover};
+use detent_model::{Catalogue, PageSlug, advanced_name, discover};
 use detent_testkit::{Scratch, fixture_dir};
 use std::ffi::OsString;
 use std::path::Path;
@@ -138,4 +138,32 @@ fn a_key_is_held_by_its_programs_file() {
             .unwrap_or_else(|| panic!("{path}"));
         assert_eq!(entry.file.relative(), Path::new(file), "{path}");
     }
+}
+
+#[test]
+fn an_advanced_row_that_repeats_a_basic_section_says_what_is_inside() {
+    let catalogue = catalogue("schemas-advanced-names");
+    let page = catalogue
+        .page(&PageSlug("intelligence".to_owned()))
+        .expect("the page");
+    let mut names: Vec<String> = page
+        .advanced
+        .iter()
+        .map(|section| advanced_name(section, &page.sections))
+        .collect();
+    names.sort();
+    // "Assistant" holds only Code editors and "Memory" only Apply tidying; the other sections
+    // have no basic twin and keep their titles.
+    assert_eq!(
+        names,
+        [
+            "Apply tidying",
+            "Code editors",
+            "History",
+            "Limits",
+            "Run limits",
+            "Timing",
+            "Window detail",
+        ]
+    );
 }

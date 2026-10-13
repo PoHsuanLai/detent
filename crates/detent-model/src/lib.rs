@@ -3,6 +3,7 @@
 //! [`discover`], no renderer, no runtime.
 
 mod accounts;
+mod advanced;
 mod agent;
 mod assistants;
 mod catalogue;
@@ -37,6 +38,7 @@ pub use accounts::{
     ModuleRow, Place, ReadTurn, Reads, ReauthEnd, RemovalQuestion, SignInClient, SignOutEnd,
     Source, Sources, SyncAdd, SyncHold, SyncNowEnd, accounts_step, hold_step, reauth_help,
 };
+pub use advanced::advanced_name;
 pub use agent::AgentSetting;
 pub use assistants::{
     Confirm, ModelOffer, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, offers_for,

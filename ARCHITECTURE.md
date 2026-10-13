@@ -58,6 +58,7 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 | The local runtimes of the Intelligence page; the link from one to its account | `detent-model::AccountsPane::local_runtimes`, `detent-ui/src/inference/runtimes_view.rs`, `detent-ui/src/accounts/link.rs` (`AccountLink`: the page switches and the pane opens the account) |
 | The first-run window, and whether it ran | `detent-model::{FirstRun, first_run_step}`, `detent-ui/src/first_run/` (the writes go through `files::apply` and inferd's picker), `detent-files::FirstRunMark` (`$XDG_STATE_HOME/detent/first-run`), the flag in `detent/src/cli.rs` and `main.rs` |
 | Which pieces of the pane quire's R2a changes | `detent-ui/src/accounts/adapter.rs` (nothing else names them) |
+| Which daemons a page reads, and so which are asked to start when the page is shown (once per visit, by name through the bus's `StartServiceByName`; a name with no service file stays not running) | `detent-model::modules_read` (the one typed table, per `Page`), called by `detent-ui/src/page_view.rs`; `detent-ui/src/live/activate.rs` (`start`). A new pane that reads a daemon adds its page to the table |
 | Looking for a daemon's live module, following its name and its changes | `detent-ui/src/live/` (`Daemon`, `follow`, `read_once`); `inference/` and `accounts/` only say which rows they read the values of |
 | The accounts an agent may list | `settings.accounts.list` and `detent-intents::AccountsSource` (the binary reads them with `detent-ui::read_accounts`) |
 | Where the built-in assistant may run: the places, the question before a cloud account is turned on, the models a place offers | `detent-model::{PlacesState, places_step, known_of, offers_for}` over `docket-settings`' types; the file in `detent-files::{load_places, save_places}` (one key of the `assistant` table at a time); the rows in `detent-ui/src/assistants/` |
@@ -79,7 +80,7 @@ match on `KeyKind` is total, so the compiler lists what is missing), add `contro
 **Help is on request.** A row's `help` shows behind its ⓘ button (`help_shown: HelpShown::OnRequest`, with a stable `common.id` from `key_row::row_id` where the path is known). Inline stays for the first-run window (the words are its content) and for rows whose help is an error or a live state: the unavailable-service rows, "None" local models, an account's expiry, an outside assistant's sign-in line, a lending guest's standing.
 
 **Advanced keys.** A page's advanced keys are not drawn on the page. Each advanced section is one row
-("Limits...") in the page's last group (`detent-ui/src/advanced_view.rs`); the row opens a quire
+("Limits..."; named by `detent-model::advanced_name`: the section's title, unless a basic section of the page has that title, then the one key's label or "<Title> Details") in the page's last group (`detent-ui/src/advanced_view.rs`); the row opens a quire
 `Sheet` titled with the section, holding its rows with the same controls. Edits write live and the
 sheet's one Done button (Return) closes it. A search hit marks the section's row; it opens nothing.
 

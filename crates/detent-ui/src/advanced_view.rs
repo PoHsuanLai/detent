@@ -3,7 +3,7 @@
 use crate::files::{Edit, Files};
 use crate::key_row::KeyRow;
 use crate::section_view::{is_hit, match_of};
-use detent_model::{PageSlug, SectionModel};
+use detent_model::{PageSlug, SectionModel, advanced_name};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button_model::Answers;
@@ -14,34 +14,19 @@ use ds::root::common::Common;
 use ds::root::pass_through::ExtraClass;
 use ds_settings::schema::KeyPath;
 
-/// The word for a section that has no title.
-const UNTITLED: &str = "More";
-
-/// The row's label: the section's name and an ellipsis, since the row opens a sheet.
-fn row_label(section: &SectionModel) -> String {
-    let name = if section.title.is_empty() {
-        UNTITLED
-    } else {
-        section.title.as_str()
-    };
+/// The row's label: the sheet's name and an ellipsis, since the row opens a sheet.
+fn row_label(name: &str) -> String {
     format!("{name}\u{2026}")
 }
 
-/// The sheet's title: the section's name.
-fn sheet_title(section: &SectionModel) -> String {
-    if section.title.is_empty() {
-        UNTITLED.to_owned()
-    } else {
-        section.title.clone()
-    }
-}
-
-/// The advanced `groups` of the page `slug`, one row each in a group of their own. A search hit
-/// inside a section highlights its row.
+/// The advanced `groups` of the page `slug`, one row each in a group of their own, named by
+/// [`advanced_name`] against the page's `basic` sections. A search hit inside a section
+/// highlights its row.
 #[component]
 pub fn AdvancedView(
     slug: PageSlug,
     groups: Vec<SectionModel>,
+    basic: Vec<SectionModel>,
     hits: Vec<KeyPath>,
     files: Signal<Files>,
     onedit: EventHandler<Edit>,
@@ -50,7 +35,7 @@ pub fn AdvancedView(
         div { class: "advanced", "data-page-advanced": "{slug.0}",
             FieldGroup {
                 for group in groups.iter().cloned() {
-                    SheetRow { key: "{group.title}", section: group, hits: hits.clone(), files, onedit }
+                    SheetRow { key: "{group.title}", name: advanced_name(&group, &basic), section: group, hits: hits.clone(), files, onedit }
                 }
             }
         }
@@ -60,14 +45,15 @@ pub fn AdvancedView(
 /// One section's row and, while open, its sheet.
 #[component]
 fn SheetRow(
+    name: String,
     section: SectionModel,
     hits: Vec<KeyPath>,
     files: Signal<Files>,
     onedit: EventHandler<Edit>,
 ) -> Element {
     let mut opened = use_signal(|| Shown::Hidden);
-    let label = row_label(&section);
-    let title = sheet_title(&section);
+    let label = row_label(&name);
+    let title = name;
     let found = section.keys.iter().any(|entry| is_hit(entry, &hits));
     let class = found.then(|| ExtraClass::parse("key-hit").ok()).flatten();
     let close = EventHandler::new(move |()| opened.set(Shown::Hidden));
