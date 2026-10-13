@@ -1,11 +1,13 @@
 //! One place the built-in assistant may run: its name and switch, and under an Advanced
 //! disclosure its model and, for a cloud account, "Ask me each time".
 
+use crate::key_row::row_id;
 use detent_model::ModelOffer;
 use dioxus::prelude::*;
 use docket_settings::ModelChoice;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::disclosure::Disclosure;
+use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::components::menus::pop_up_button::PopUpButton;
 use ds::prelude::*;
@@ -100,6 +102,8 @@ pub(crate) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
         FieldRow {
             label: TextLine::from(view.name.clone()),
             help: view.detail.clone().map(TextLine::from),
+            help_shown: HelpShown::OnRequest,
+            common: Common { id: Some(row_id("place", &view.name)), ..Common::default() },
             match view.switch {
                 Switch::Always => rsx! {
                     Label { text: "Always on", role: LabelRole::Secondary, style: LabelStyle::Footnote }
@@ -147,6 +151,8 @@ pub(crate) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
                     FieldRow {
                         label: TextLine::from("Ask me each time"),
                         help: Some(TextLine::from("The assistant asks before it uses this account.")),
+                        help_shown: HelpShown::OnRequest,
+                        common: Common { id: Some(row_id("ask", &view.name)), ..Common::default() },
                         Toggle {
                             label: "Ask me each time",
                             value,

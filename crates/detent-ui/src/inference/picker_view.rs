@@ -4,12 +4,14 @@
 use super::{is_menu, set};
 use crate::env::Env;
 use crate::files::{Files, value_of};
+use crate::key_row::row_id;
 use crate::live::{Daemon, Followed, follow};
 use detent_model::{
     Absence, KindRows, ModelRow, PickerEffect, PickerInput, PickerState, Reason, loading_text, step,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
+use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::components::menus::pop_up_button::PopUpButton;
 use ds::prelude::*;
@@ -239,8 +241,9 @@ fn TierRow(
         FieldRow {
             label: TextLine::from(row.label.clone()),
             help: if row.help.is_empty() { None } else { Some(TextLine::from(row.help.clone())) },
+            help_shown: HelpShown::OnRequest,
             availability,
-            common: Common { id: None, ..Common::default() },
+            common: Common { id: Some(row_id("picker", &row.path.0)), ..Common::default() },
             if let Some(text) = loading {
                 Label { text, role: LabelRole::Secondary, common: Common { extra_class: ds::root::pass_through::ExtraClass::parse("picker-loading").ok(), ..Common::default() } }
             }

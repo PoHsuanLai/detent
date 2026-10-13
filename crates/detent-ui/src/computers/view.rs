@@ -11,6 +11,7 @@ use detent_model::{
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
+use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 use ds::root::common::Common;
@@ -255,7 +256,7 @@ fn CandidateLine(candidate: ComputerCandidate, feed: EventHandler<ComputersInput
     };
     let node = candidate.node.clone();
     rsx! {
-        FieldRow { label: TextLine::from(candidate.name.clone()), help: Some(TextLine::from(help)),
+        FieldRow { label: TextLine::from(candidate.name.clone()), help: Some(TextLine::from(help)), help_shown: HelpShown::OnRequest,
             Button {
                 common: Common { aria_label: Some(format!("Add {}", candidate.name)), ..Common::default() },
                 label: "Add",

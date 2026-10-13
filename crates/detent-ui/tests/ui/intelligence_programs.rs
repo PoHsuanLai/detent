@@ -320,3 +320,27 @@ fn rows_that_do_not_fit_are_shown_as_written_and_never_rewritten() {
     assert!(harness.html().contains("Edit in file"));
     assert_eq!(sandbox.read("cua/settings.toml").as_deref(), Some(written));
 }
+
+#[test]
+fn a_rows_help_is_behind_its_info_button_and_escape_closes_it() {
+    let sandbox = Sandbox::new("programs-help");
+    let mut harness = sandbox.harness(intelligence());
+    let about = "[aria-label=\"About Asks first\"]";
+    let card = ".ds-field-help-card";
+    scroll_into_view(&mut harness, about);
+    assert_eq!(
+        harness.count(card),
+        0,
+        "the help is not drawn until asked for"
+    );
+    click(&mut harness, about);
+    assert_eq!(harness.count(card), 1, "pressing the button shows the help");
+    let shown = harness.text_of(card).unwrap_or_default();
+    assert!(
+        shown.contains("Choose how often the assistant checks with you"),
+        "the card holds that row's help: {shown:?}"
+    );
+    harness.send(Input::key(ShortcutKey::Escape));
+    harness.advance(Duration::from_millis(400));
+    assert_eq!(harness.count(card), 0, "Escape closes it");
+}

@@ -201,7 +201,7 @@ fn the_picker_lists_a_group_per_kind_and_a_row_per_tier_in_design_words() {
     );
     assert_eq!(
         harness
-            .text_of(".picker-kind .ds-field-row:nth-child(2) .ds-button-label")
+            .text_of(".picker-kind .ds-field-row:nth-child(2) .ds-popup .ds-button-label")
             .as_deref()
             .map(str::trim),
         Some("qwen"),

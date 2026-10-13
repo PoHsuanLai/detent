@@ -76,6 +76,8 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 match on `KeyKind` is total, so the compiler lists what is missing), add `controls/<name>.rs` in
 `detent-ui` with one quire component, and one arm in `controls/mod.rs`.
 
+**Help is on request.** A row's `help` shows behind its ⓘ button (`help_shown: HelpShown::OnRequest`, with a stable `common.id` from `key_row::row_id` where the path is known). Inline stays for the first-run window (the words are its content) and for rows whose help is an error or a live state: the unavailable-service rows, "None" local models, an account's expiry, an outside assistant's sign-in line, a lending guest's standing.
+
 **Advanced keys.** A page's advanced keys are not drawn on the page. Each advanced section is one row
 ("Limits...") in the page's last group (`detent-ui/src/advanced_view.rs`); the row opens a quire
 `Sheet` titled with the section, holding its rows with the same controls. Edits write live and the

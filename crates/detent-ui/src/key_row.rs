@@ -4,6 +4,7 @@ use crate::controls::{Control, FileOnlyControl};
 use crate::files::{Edit, Files, value_of, written_value};
 use detent_model::KeyEntry;
 use dioxus::prelude::*;
+use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::FieldRow;
 use ds::prelude::*;
 use ds::root::common::Common;
@@ -18,11 +19,28 @@ pub enum Match {
     Miss,
 }
 
+/// A row's stable `id`: `scope`, then `text` with every run of other characters as one `-`, so
+/// two rows with the same label keep different help ids.
+pub(crate) fn row_id(scope: &str, text: &str) -> String {
+    let slug: String = text
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect();
+    format!("{scope}-{}", slug.trim_matches('-'))
+}
+
 /// The class a highlighted row carries.
 const HIT_CLASS: &str = "key-hit";
 
-fn common_for(found: Match) -> Common {
+fn common_for(found: Match, entry: &KeyEntry) -> Common {
     Common {
+        id: Some(row_id("key", &entry.spec.path.0)),
         extra_class: match found {
             Match::Hit => ExtraClass::parse(HIT_CLASS).ok(),
             Match::Miss => None,
@@ -46,7 +64,8 @@ pub fn KeyRow(
         FieldRow {
             label: TextLine::from(entry.spec.label.0.clone()),
             help,
-            common: common_for(found),
+            help_shown: HelpShown::OnRequest,
+            common: common_for(found, &entry),
             if let Some(written) = written_value(&files(), &entry) {
                 FileOnlyControl { value: written }
             } else {

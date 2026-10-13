@@ -2,6 +2,7 @@
 
 use super::adapter::{ActionButton, BackButton, HoldBanner};
 use super::list_view::Note;
+use crate::key_row::row_id;
 use crate::marks::ProviderMarks;
 use detent_model::{
     Account, AccountKey, AccountService, AccountSync, DatasetName, HoldInput, Holds, ModuleId,
@@ -9,8 +10,10 @@ use detent_model::{
 };
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
+use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
+use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::ActionWeight;
 
@@ -85,6 +88,7 @@ pub(super) fn AccountDetail(
                     FieldRow {
                         label: TextLine::from(name.clone()),
                         help: Some(TextLine::from(reauth_help(account.sign_in))),
+                        help_shown: HelpShown::OnRequest,
                         ActionButton {
                             label: name,
                             subject: account.label.clone(),
@@ -144,6 +148,8 @@ pub(super) fn AccountDetail(
                             key: "{permission.path.0}",
                             label: TextLine::from(permission.label.clone()),
                             help: permission.detail().map(TextLine::from),
+                            help_shown: HelpShown::OnRequest,
+                            common: Common { id: Some(row_id("permission", &permission.path.0)), ..Common::default() },
                             ActionButton {
                                 label: permission.action.clone(),
                                 subject: permission.label.clone(),
@@ -224,6 +230,7 @@ fn SyncRow(
         FieldRow {
             label: TextLine::from(sync.label.clone()),
             help: (!sync.help.is_empty()).then(|| TextLine::from(sync.help.clone())),
+            help_shown: HelpShown::OnRequest,
             availability,
             Toggle {
                 label: sync.label.clone(),
@@ -248,6 +255,7 @@ fn SyncNowRow(
         FieldRow {
             label: TextLine::from("Sync now"),
             help: Some(TextLine::from(sync.label.clone())),
+            help_shown: HelpShown::OnRequest,
             availability,
             ActionButton {
                 label: "Sync now".to_owned(),
