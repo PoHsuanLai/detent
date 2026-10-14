@@ -60,7 +60,7 @@ regex = { version = "1", default-features = false, features = ["std", "perf", "u
 chordkit = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "ba094c62006c280ac53c4c5df5c0e639c1226c07" }
 
 # The desktop's keymap (chordkit's layers) and keycap's program end, `KeycapSource`: the same line as casement's.
-keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "95f41dc4b613e3557f3cabc1638e53da348a09ff" }
+keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "31e21dbb80c1b9a1b57bc4e64c39b7a892bae3f2" }
 
 # Editing a settings file in place, keeping every key, comment and spacing the edit does not touch.
 toml_edit = "0.25"
