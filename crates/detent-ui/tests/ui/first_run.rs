@@ -77,7 +77,11 @@ fn world_in(name: &str, scheme: Scheme) -> World {
     ];
     let sandbox = Sandbox::new(name).on_bus(&bus.address);
     let mut harness = sandbox.first_run_harness_in(scheme);
-    settle(&mut harness, "the window", |h| stage(h).is_some());
+    // The runtimes arrive after the first frame and add the Local model row, which moves Done
+    // down; a click aimed before they land misses. Wait for the whole window.
+    settle(&mut harness, "the window", |h| {
+        stage(h).is_some() && h.centre(MENU).is_some()
+    });
     World {
         sandbox,
         inferd,
