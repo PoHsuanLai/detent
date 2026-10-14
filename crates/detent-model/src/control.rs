@@ -214,7 +214,6 @@ mod tests {
             ("bottom", "left", None),
             ("top_right", "bottom_right", None),
             ("sheet", "popover", None),
-            ("cosmic", "shell", None),
             ("system", "editorial", None),
             ("auto", "manual", None),
             ("h24", "h12", None),

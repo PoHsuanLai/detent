@@ -2630,23 +2630,6 @@ variants = ["chosen", "space_hue"]
 kind = "spaces"
 
 [[key]]
-path = "spaces.wallpaper_drawer"
-default = "shell"
-label = "Wallpaper drawn by"
-help = "COSMIC's own background service, or the shell's wallpaper, which cross-fades with light and dark."
-section = "Desktop"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["cosmic", "shell"]
-
-[key.page]
-kind = "spaces"
-
-[[key]]
 path = "display.scale"
 default = "auto"
 label = "Choose display scale automatically"
@@ -3209,7 +3192,7 @@ kind = "keyboard_and_shortcuts"
 path = "screenshot.tool"
 default = "auto"
 label = "Screenshot program"
-help = "What `sill screenshot` runs: `auto` is COSMIC's (cosmic-screenshot), `off` runs nothing, or a command line run by `/bin/sh -c` with the kind (`area`, `window`, `screen`) as $1 and the folder as $2."
+help = "What `sill screenshot` runs: `auto` is the desktop's own, `off` runs nothing, or a command line run by `/bin/sh -c` with the kind (`area`, `window`, `screen`) as $1 and the folder as $2."
 section = "Screenshots"
 exposure = "advanced"
 
@@ -3401,27 +3384,10 @@ unit = "px"
 kind = "dock"
 
 [[key]]
-path = "idle.times"
-default = "cosmic"
-label = "Idle times from"
-help = "`cosmic` uses the times COSMIC Settings' Power page sets (one screen-off time, suspend on AC and on battery); `sill` uses the four times below instead."
-section = "Idle"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["cosmic", "sill"]
-
-[key.page]
-kind = "power"
-
-[[key]]
 path = "idle.screen_off_ac_min"
 default = 15
 label = "Turn the display off on power after"
-help = 'Minutes without input before the displays go off while on AC power; 0 never. Only with `idle.times = "sill"`.'
+help = 'Minutes without input before the displays go off while on AC power; 0 never.'
 section = "Idle"
 exposure = "advanced"
 
@@ -3440,7 +3406,7 @@ kind = "power"
 path = "idle.screen_off_battery_min"
 default = 15
 label = "Turn the display off on battery after"
-help = 'Minutes without input before the displays go off on battery; 0 never. Only with `idle.times = "sill"`.'
+help = 'Minutes without input before the displays go off on battery; 0 never.'
 section = "Idle"
 exposure = "advanced"
 
@@ -3459,7 +3425,7 @@ kind = "power"
 path = "idle.suspend_ac_min"
 default = 30
 label = "Sleep on power after"
-help = 'Minutes without input before the computer sleeps while on AC power; 0 never. Only with `idle.times = "sill"`.'
+help = 'Minutes without input before the computer sleeps while on AC power; 0 never.'
 section = "Idle"
 exposure = "advanced"
 
@@ -3478,7 +3444,7 @@ kind = "power"
 path = "idle.suspend_battery_min"
 default = 15
 label = "Sleep on battery after"
-help = 'Minutes without input before the computer sleeps on battery; 0 never. Only with `idle.times = "sill"`.'
+help = 'Minutes without input before the computer sleeps on battery; 0 never.'
 section = "Idle"
 exposure = "advanced"
 
