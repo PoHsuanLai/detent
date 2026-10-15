@@ -23,5 +23,5 @@ pub use accounts::{AccountsRead, AccountsSource};
 pub use application::{APPLICATION_INTERFACE, APPLICATION_PATH, hand_over};
 pub use manifest::{ManifestFault, manifest};
 pub use provider::SettingsProvider;
-pub use serve::{ServeFault, serve, serve_session};
+pub use serve::{ServeFault, serve, serve_session, serve_with};
 pub use window::{Window, WindowGone};

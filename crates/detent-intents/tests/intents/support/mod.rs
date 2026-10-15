@@ -5,13 +5,16 @@
 mod bus;
 
 use detent_files::ConfigHome;
-use detent_intents::{AccountsRead, AccountsSource, SettingsProvider, Window, WindowGone, serve};
+use detent_intents::{
+    AccountsRead, AccountsSource, SettingsProvider, Window, WindowGone, serve_with,
+};
 use detent_model::{Absence, AccountTarget, AccountsPane, Catalogue, PageSlug, discover};
 use detent_testkit::{Scratch, seed_schemas_settable};
 use docket_core::{
     AppRefusal, Args, CallId, EntityRef, Hit, Invocation, Origin, Outcome, ParamName, Preview,
     SuggestAsk, UndoFault, UndoToken, Value,
 };
+use docket_dbus::callers::{INTENTD, Identity, intentd_only};
 use docket_dbus::{Details, INTENTS_BUS, IntentProviderProxy};
 use prov::{Actor, EntityId, Label, Labelled, Source, SpaceId};
 use std::sync::{Arc, Mutex};
@@ -150,8 +153,18 @@ impl World {
 
         let bus = PrivateBus::start(scratch.path());
         let app = bus.connect().await;
-        serve(&app, provider).await.expect("settings serves");
+        // Every connection of a test is one process, so intentd's stand-in is introduced as the
+        // router the provider answers rather than found by its unit.
+        let who = Arc::new(Identity::on_fixture(
+            app.clone(),
+            intentd_only(),
+            scratch.join("proc"),
+        ));
+        serve_with(&app, provider, who.clone())
+            .await
+            .expect("settings serves");
         let intentd = bus.connect().await;
+        who.introduce_app(&intentd, INTENTD.app, INTENTD.role);
         intentd
             .request_name(INTENTS_BUS)
             .await

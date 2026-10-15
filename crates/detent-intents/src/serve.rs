@@ -4,8 +4,10 @@ use crate::application::APP_NAME;
 use crate::application::export_application;
 use crate::context::SettingsContext;
 use crate::provider::SettingsProvider;
-use docket_client::{TransportError, serve_on};
+use docket_client::{TransportError, serve_on, serve_on_with};
 use docket_dbus::BusConnection;
+use docket_dbus::callers::Callers;
+use std::sync::Arc;
 
 /// Exports `provider` at `/org/quire/IntentProvider1` on `connection` and claims the bus name
 /// `org.quire.Settings`. Returns once the name is ours; the connection keeps serving.
@@ -18,6 +20,18 @@ pub async fn serve(
     export_application(connection, provider.window()).await?;
     let context = SettingsContext(provider.app().clone());
     serve_on(connection, provider, context.clone(), context).await
+}
+
+/// [`serve`], answering the process `callers` names as intentd instead of intentd's unit on the
+/// system's `/proc`: a test's stand-in for the router.
+pub async fn serve_with<K: Callers>(
+    connection: &BusConnection,
+    provider: SettingsProvider,
+    callers: Arc<K>,
+) -> Result<(), TransportError> {
+    export_application(connection, provider.window()).await?;
+    let context = SettingsContext(provider.app().clone());
+    serve_on_with(connection, provider, context.clone(), context, callers).await
 }
 
 /// Why the session bus could not be served.
