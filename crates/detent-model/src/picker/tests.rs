@@ -49,6 +49,7 @@ fn described() -> Described {
             menu("ai.local_only", "not a picker row"),
         ],
         values: BTreeMap::from([(path("ai.model.llm.balanced"), "local/qwen".to_owned())]),
+        lists: BTreeMap::new(),
     }
 }
 
@@ -494,6 +495,7 @@ fn gated_text_described() -> Described {
     Described {
         keys: vec![spec],
         values: BTreeMap::from([(path("ai.model.text.balanced"), "auto".to_owned())]),
+        lists: BTreeMap::new(),
     }
 }
 
