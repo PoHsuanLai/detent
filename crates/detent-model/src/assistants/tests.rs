@@ -206,6 +206,7 @@ mod offers {
                 }],
             }],
             applying: None,
+            awaiting: None,
         }
     }
 
