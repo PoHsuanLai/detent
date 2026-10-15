@@ -197,11 +197,14 @@ fn an_unready_choice_says_what_to_do_and_nothing_chosen_says_nothing() {
     );
 }
 
+/// One pool group as the test reads it: its name and each model with whether it is in.
+type ShownGroup<'a> = (Option<&'a str>, Vec<(&'a str, PoolMembership)>);
+
 #[test]
 fn the_pool_offers_the_pickers_models_without_nothing_and_automatic() {
     let state = ready_with("auto", &["anthropic/claude"]);
     let groups = row_of(&state, ROW).pool.groups();
-    let shown: Vec<(Option<&str>, Vec<(&str, PoolMembership)>)> = groups
+    let shown: Vec<ShownGroup> = groups
         .iter()
         .map(|group| {
             let entries = group

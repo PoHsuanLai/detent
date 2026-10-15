@@ -14,5 +14,5 @@ pub(crate) use drive::{Picker, use_picker};
 pub(crate) use io::{is_choice, set, set_pool};
 pub(crate) use picker_view::{AUTOMATIC, ModelPicker, Unavailable, show_reason};
 pub use reasons::ReasonFeed;
-pub(crate) use runtimes_view::{Found, LocalRuntimes, use_runtimes};
+pub(crate) use runtimes_view::LocalRuntimes;
 pub(crate) use tier_row::TierRow;
