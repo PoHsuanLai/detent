@@ -57,10 +57,10 @@ regex = { version = "1", default-features = false, features = ["std", "perf", "u
 
 # The portable keymap core (own repo, public): the Shortcuts list reads and edits the person's keymap
 # with it. The same line as quire's pinned block, so the lock holds one copy.
-chordkit = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "55a62b2366d6ee1994d95f7cb5a195217807099c" }
+chordkit = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "934a2d71f6516bee5919ee29278003702a4ea5e1" }
 
 # The desktop's keymap (chordkit's layers) and keycap's program end, `KeycapSource`: the same line as casement's.
-keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "e4dd317c8d2ed7270d486197af6083c053298ebb" }
+keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "c1bbb675e40013d68ba0e51c58d10241f58677a6" }
 
 # Editing a settings file in place, keeping every key, comment and spacing the edit does not touch.
 toml_edit = "0.25"
