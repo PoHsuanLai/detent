@@ -192,6 +192,11 @@
   gap: var(--s-10);
 }
 
+.assistant-skip,
+.assistant-continue {
+  flex: none;
+}
+
 .space-sheet {
   display: flex;
   flex-direction: column;
