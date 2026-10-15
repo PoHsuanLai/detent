@@ -229,11 +229,12 @@ fn choosing_a_model_shows_loading_it_until_inferd_answers_then_sets_it() {
         Some("true"),
         "the click opened the menu"
     );
+    // Items: None, Automatic, Local, qwen, holo.
     let item = harness
-        .centre(".ds-menu-item:nth-child(4) .ds-menu-label")
+        .centre(".ds-menu-item:nth-child(5) .ds-menu-label")
         .expect("the menu is open");
     harness.send(Input::pointer_move(item));
-    click(&mut harness, ".ds-menu-item:nth-child(4) .ds-menu-label");
+    click(&mut harness, ".ds-menu-item:nth-child(5) .ds-menu-label");
     settle(&mut harness, "Loading holo", |h| {
         h.html().contains("Loading holo")
     });
@@ -441,9 +442,7 @@ fn grouped_choices_render_under_headers_ungrouped_first_in_first_appearance_orde
         &[
             "None",
             "Automatic",
-            "On this computer",
-            "qwen",
-            "holo",
+            "Local",
             "Anthropic",
             "claude",
             "Google",
@@ -482,10 +481,10 @@ fn an_unavailable_choice_is_greyed_with_its_reason_and_cannot_be_set() {
     let rt = runtime();
     let bus = PrivateBus::start("unavailable");
     let fake = Inferd::new(Policy::Allow).on_slots();
-    fake.gated
-        .lock()
-        .expect("gated")
-        .insert("local/holo".to_owned(), "Needs a newer version".to_owned());
+    fake.gated.lock().expect("gated").insert(
+        "google/gemini".to_owned(),
+        "Needs a newer version".to_owned(),
+    );
     let _daemon = rt.block_on(fake.serve_on(&bus));
     let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 3);
@@ -496,16 +495,17 @@ fn an_unavailable_choice_is_greyed_with_its_reason_and_cannot_be_set() {
         html.contains("Needs a newer version"),
         "the reason is under the choice:\n{html}"
     );
-    // Items: "", auto, header, qwen, holo (disabled), its reason, then the other groups.
-    let holo = ".ds-menu-item:nth-child(5)";
+    // Items: "", auto, Local, the Anthropic header, claude, the Google header, gemini (disabled),
+    // its reason.
+    let gemini = ".ds-menu-item:nth-child(7)";
     assert_eq!(
-        harness.attr(holo, "aria-disabled").as_deref(),
+        harness.attr(gemini, "aria-disabled").as_deref(),
         Some("true"),
-        "holo is greyed"
+        "gemini is greyed"
     );
-    if let Some(centre) = harness.centre(&format!("{holo} .ds-menu-label")) {
+    if let Some(centre) = harness.centre(&format!("{gemini} .ds-menu-label")) {
         harness.send(Input::pointer_move(centre));
-        click(&mut harness, &format!("{holo} .ds-menu-label"));
+        click(&mut harness, &format!("{gemini} .ds-menu-label"));
     }
     harness.advance(Duration::from_millis(300));
     assert_eq!(

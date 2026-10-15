@@ -1,5 +1,6 @@
 //! A fake inferd: `org.quire.SettingsModule1` at inferd's path on a private bus, with the rows
-//! the real module describes (`ai.model.<kind>.<tier>`, each a Menu of "", `auto` and models).
+//! the real module describes (`ai.model.<kind>.<tier>`, each a Menu of "", `auto` and models, and
+//! on slots the text slot's `ai.auto.pool.text`, the list of models Automatic chooses among).
 #![allow(dead_code)]
 
 use super::bus::PrivateBus;
@@ -50,6 +51,9 @@ const WORDS: [(&str, &str, Option<&str>); 6] = [
     ("local/holo", "holo", Some("On this computer")),
 ];
 
+/// The key of the text slot's Automatic list.
+const POOL_KEY: &str = "ai.auto.pool.text";
+
 /// Which keys the fake serves.
 #[derive(Clone, Copy)]
 pub enum Layout {
@@ -79,6 +83,10 @@ pub struct Inferd {
     pub held: Arc<Mutex<bool>>,
     /// Words no row can be set to, each with the reason: `unavailable` on every row.
     pub gated: Arc<Mutex<BTreeMap<String, String>>>,
+    /// The models in the text slot's Automatic list now.
+    pub pool: Arc<Mutex<Vec<String>>>,
+    /// Every list `Set` on the Automatic list that arrived, in order.
+    pub pool_sets: Arc<Mutex<Vec<Vec<String>>>>,
     policy: Policy,
     layout: Layout,
 }
@@ -91,6 +99,8 @@ impl Inferd {
             release: Arc::default(),
             held: Arc::default(),
             gated: Arc::default(),
+            pool: Arc::default(),
+            pool_sets: Arc::default(),
             policy,
             layout: Layout::Kinds,
         }
@@ -111,6 +121,45 @@ impl Inferd {
             .expect("serves");
         connection.request_name(INFERENCE_BUS).await.expect("name");
         connection
+    }
+
+    /// The text slot's Automatic list: the slot's models, without the empty word and Automatic.
+    fn pool_spec(&self) -> KeySpec {
+        let models = WORDS[2..].to_vec();
+        KeySpec {
+            path: KeyPath(POOL_KEY.to_owned()),
+            kind: KeyKind::List(Box::new(KeyKind::Menu {
+                variants: models
+                    .iter()
+                    .map(|(word, _, _)| (*word).to_owned())
+                    .collect(),
+            })),
+            default: toml::Value::Array(Vec::new()),
+            label: Label("Automatic chooses from".to_owned()),
+            help: Help("The models Automatic may use for this slot.".to_owned()),
+            page: Page::Intelligence,
+            section: Section("Models / Text".to_owned()),
+            exposure: Exposure::Basic,
+            labels: WordLabels(
+                models
+                    .iter()
+                    .map(|(word, text, _)| ((*word).to_owned(), (*text).to_owned()))
+                    .collect(),
+            ),
+            agent: AgentSetting::HandsOff,
+            unavailable: BTreeMap::new(),
+            groups: models
+                .iter()
+                .filter_map(|(word, _, group)| {
+                    group.map(|group| {
+                        (
+                            ChoiceWord((*word).to_owned()),
+                            ChoiceGroup(group.to_owned()),
+                        )
+                    })
+                })
+                .collect(),
+        }
     }
 
     /// One row. The old layout sends section `Models`, label `Language: Fast` and no groups;
@@ -193,11 +242,18 @@ impl LiveModule for Inferd {
             }
             .iter()
             .map(|(kind, label, tier)| self.spec(kind, label, tier))
+            .chain(matches!(self.layout, Layout::Slots).then(|| self.pool_spec()))
             .collect(),
         }
     }
 
     async fn get(&self, key: &KeyPath) -> Result<toml::Value, LiveError> {
+        if key.0 == POOL_KEY {
+            let pool = self.pool.lock().expect("pool").clone();
+            return Ok(toml::Value::Array(
+                pool.into_iter().map(toml::Value::String).collect(),
+            ));
+        }
         let values = self.values.lock().expect("values");
         Ok(toml::Value::String(
             values.get(&key.0).cloned().unwrap_or_default(),
@@ -205,6 +261,21 @@ impl LiveModule for Inferd {
     }
 
     async fn set(&self, key: &KeyPath, value: toml::Value) -> Result<(), LiveError> {
+        if key.0 == POOL_KEY {
+            let toml::Value::Array(items) = value else {
+                return Err(LiveError::BadValue("a pool is a list of models".to_owned()));
+            };
+            let words: Vec<String> = items
+                .iter()
+                .filter_map(|item| item.as_str().map(str::to_owned))
+                .collect();
+            self.pool_sets
+                .lock()
+                .expect("pool sets")
+                .push(words.clone());
+            *self.pool.lock().expect("pool") = words;
+            return Ok(());
+        }
         let toml::Value::String(word) = value else {
             return Err(LiveError::BadValue("a model is text".to_owned()));
         };

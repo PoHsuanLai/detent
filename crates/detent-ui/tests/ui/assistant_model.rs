@@ -166,7 +166,11 @@ fn a_model_nobody_chose_shows_a_prompt_and_marks_no_item_while_a_chosen_one_is_m
         .insert(ROW.to_owned(), "local/qwen".to_owned());
     let mut chosen = world("assistant-chosen", ASSISTANT_MODEL_SLUG, fake);
     ready(&mut chosen);
-    assert_eq!(shown(&chosen.harness, BUTTON).as_deref(), Some("qwen"));
+    assert_eq!(
+        shown(&chosen.harness, BUTTON).as_deref(),
+        Some("Local"),
+        "a model that runs on this computer is the Local choice"
+    );
     assert_eq!(
         open_and_count_marked(&mut chosen.harness, BUTTON),
         1,
@@ -183,14 +187,14 @@ fn picking_a_model_sets_the_assistants_row_and_no_other() {
     );
     ready(&mut world);
     open_and_count_marked(&mut world.harness, BUTTON);
-    // Items: None, Automatic, the "On this computer" header, then qwen.
-    pick(&mut world.harness, 4);
+    // Items: None, Automatic, Local, the Anthropic header, then claude.
+    pick(&mut world.harness, 5);
     settle(&mut world.harness, "the set", |h| {
-        shown(h, BUTTON).as_deref() == Some("qwen")
+        shown(h, BUTTON).as_deref() == Some("claude")
     });
     assert_eq!(
         *world.fake.sets.lock().expect("sets"),
-        [(ROW.to_owned(), "local/qwen".to_owned())]
+        [(ROW.to_owned(), "anthropic/claude".to_owned())]
     );
 }
 
@@ -204,14 +208,14 @@ fn a_model_that_needs_an_account_stays_pickable_and_offers_to_add_one_instead_of
     let mut world = world("assistant-account", ASSISTANT_MODEL_SLUG, fake);
     ready(&mut world);
     open_and_count_marked(&mut world.harness, BUTTON);
-    // Items: None, Automatic, header, qwen, holo, the Anthropic header, then claude.
-    let claude = ".ds-menu-item:nth-child(7)";
+    // Items: None, Automatic, Local, the Anthropic header, then claude.
+    let claude = ".ds-menu-item:nth-child(5)";
     assert_ne!(
         world.harness.attr(claude, "aria-disabled").as_deref(),
         Some("true"),
         "the choice is not greyed"
     );
-    pick(&mut world.harness, 7);
+    pick(&mut world.harness, 5);
     // No account service is on the bus, so the add sheet cannot open; the person is told calmly.
     settle(&mut world.harness, "the line", |h| {
         h.html()
@@ -263,7 +267,7 @@ fn the_first_run_step_has_no_sidebar_and_continue_waits_for_a_choice() {
     );
 
     open_and_count_marked(&mut world.harness, SETUP_BUTTON);
-    pick(&mut world.harness, 4);
+    pick(&mut world.harness, 5);
     settle(&mut world.harness, "Continue", |h| {
         h.attr(CONTINUE, "data-availability").as_deref() != Some("disabled")
     });
@@ -306,5 +310,88 @@ fn a_page_to_open_can_be_the_first_run_step() {
         harness.attr(".scroll", "data-page").as_deref(),
         Some(ASSISTANT_MODEL_SLUG),
         "the window is back, on the page"
+    );
+}
+
+const POOL_ROW: &str = "#pool-local-qwen .ds-toggle";
+const POOL_NOTE: &str = "Pick at least one model for Automatic to choose from.";
+
+#[test]
+fn automatic_opens_its_list_and_is_not_ready_until_a_model_is_in_it() {
+    let mut world = world(
+        "assistant-automatic",
+        ASSISTANT_SETUP_SLUG,
+        Inferd::new(Policy::Allow).on_slots(),
+    );
+    ready(&mut world);
+    assert_eq!(world.harness.count("[data-pool=\"editor\"]"), 0);
+    open_and_count_marked(&mut world.harness, SETUP_BUTTON);
+    pick(&mut world.harness, 2);
+    settle(&mut world.harness, "Automatic", |h| {
+        shown(h, SETUP_BUTTON).as_deref() == Some("Automatic")
+    });
+    assert_eq!(
+        *world.fake.sets.lock().expect("sets"),
+        [(ROW.to_owned(), "auto".to_owned())]
+    );
+    assert_eq!(world.harness.count("[data-pool=\"editor\"]"), 1);
+    assert!(
+        world.harness.html().contains(POOL_NOTE),
+        "an empty list says what to do"
+    );
+    assert_eq!(
+        world.harness.attr(CONTINUE, "data-availability").as_deref(),
+        Some("disabled"),
+        "Automatic with nothing to choose from is not a choice yet"
+    );
+
+    scroll_into_view(&mut world.harness, POOL_ROW);
+    click(&mut world.harness, POOL_ROW);
+    settle(&mut world.harness, "the list", |h| {
+        !h.html().contains(POOL_NOTE)
+    });
+    assert_eq!(
+        *world.fake.pool_sets.lock().expect("pool sets"),
+        [vec!["local/qwen".to_owned()]]
+    );
+    assert_ne!(
+        world.harness.attr(CONTINUE, "data-availability").as_deref(),
+        Some("disabled"),
+        "a model to choose from makes it ready"
+    );
+}
+
+#[test]
+fn local_asks_how_it_runs_then_which_model_and_sets_only_the_model() {
+    let mut world = world(
+        "assistant-local",
+        ASSISTANT_MODEL_SLUG,
+        Inferd::new(Policy::Allow).on_slots(),
+    );
+    ready(&mut world);
+    open_and_count_marked(&mut world.harness, BUTTON);
+    pick(&mut world.harness, 3);
+    let model = "#picker-local-model-ai-model-text-balanced .ds-popup .ds-button";
+    settle(&mut world.harness, "the questions", |h| h.count(model) == 1);
+    assert_eq!(
+        world.harness.count("#picker-engine-ai-model-text-balanced"),
+        1,
+        "how it runs is asked"
+    );
+    assert!(world.harness.html().contains("Built in"));
+    assert_eq!(
+        *world.fake.sets.lock().expect("sets"),
+        Vec::<(String, String)>::new(),
+        "picking Local sets nothing"
+    );
+    scroll_into_view(&mut world.harness, model);
+    click(&mut world.harness, model);
+    pick(&mut world.harness, 1);
+    settle(&mut world.harness, "the set", |_| {
+        world.fake.sets.lock().expect("sets").len() == 1
+    });
+    assert_eq!(
+        *world.fake.sets.lock().expect("sets"),
+        [(ROW.to_owned(), "local/qwen".to_owned())]
     );
 }
