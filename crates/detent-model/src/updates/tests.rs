@@ -337,15 +337,16 @@ fn each_standing_shows_its_words_buttons_and_bar() {
     };
     let silent_failure = status(UpdatePhase::Failed);
     // `(case, the status, title, detail, bar, buttons, last checked)`.
-    let cases: Vec<(
-        &str,
+    type Case<'a> = (
+        &'a str,
         UpdateStatus,
-        &str,
-        &str,
+        &'a str,
+        &'a str,
         UpdateMeter,
         Vec<UpdateButton>,
-        Option<&str>,
-    )> = vec![
+        Option<&'a str>,
+    );
+    let cases: Vec<Case> = vec![
         (
             "up to date",
             status(UpdatePhase::Idle),
@@ -581,7 +582,7 @@ fn the_page_has_its_own_slug_label_and_place_and_draws_only_its_pane() {
         .expect("always listed");
     assert_eq!(blocks(model), [Block::SoftwareUpdate]);
 
-    let mut order = vec![
+    let mut order = [
         Page::App("zed".to_owned()),
         software_update_page(),
         Page::Viewer,
