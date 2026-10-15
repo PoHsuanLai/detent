@@ -2,6 +2,7 @@
 
 use crate::accounts::AccountsPane;
 use crate::advanced_view::AdvancedView;
+use crate::assistant_model::AssistantModelPane;
 use crate::assistants::Assistants;
 use crate::env::Env;
 use crate::files::{Edit, Files};
@@ -51,6 +52,7 @@ pub fn PageView(
                     Block::SpacesPane => rsx! { SpacesPane {} },
                     Block::Shortcuts => rsx! { ShortcutsPane {} },
                     Block::SoftwareUpdate => rsx! { SoftwareUpdatePane {} },
+                    Block::AssistantModel => rsx! { AssistantModelPane {} },
                     Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
                     Block::ModelPicker => rsx! {

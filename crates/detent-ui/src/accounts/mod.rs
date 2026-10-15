@@ -17,6 +17,7 @@ mod reload;
 mod watch;
 
 pub(crate) use adapter::OpenButton;
+pub(crate) use add_io::add_account;
 pub use drive::read_accounts;
 pub(crate) use link::AccountLink;
 pub(crate) use pane_view::AccountsPane;

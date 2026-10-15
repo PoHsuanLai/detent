@@ -5,6 +5,7 @@
 mod accounts;
 mod advanced_view;
 mod app;
+mod assistant_model;
 mod assistants;
 mod computers;
 mod controls;

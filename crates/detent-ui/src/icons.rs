@@ -1,6 +1,6 @@
 //! The glyph beside each page in the sidebar.
 
-use detent_model::is_software_update;
+use detent_model::{is_assistant_model, is_software_update};
 use ds::prelude::Icon;
 use ds_settings::schema::Page;
 
@@ -19,6 +19,7 @@ pub fn icon_of(page: &Page) -> Icon {
         Page::Intelligence => Icon::Sparkles,
         Page::Viewer => Icon::Image,
         Page::App(_) if is_software_update(page) => Icon::Download,
+        Page::App(_) if is_assistant_model(page) => Icon::Sparkles,
         Page::App(_) => Icon::Window,
     }
 }

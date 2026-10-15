@@ -1,5 +1,7 @@
 //! What the picker shows: one group per kind, one row per tier.
 
+use super::choice::NONE_LABEL;
+use crate::accounts::Adding;
 use crate::words::word_label;
 use ds_settings::schema::{ChoiceWord, KeyKind, KeyPath, KeySpec, UnavailableReason, WordLabels};
 use std::collections::BTreeMap;
@@ -46,7 +48,7 @@ pub struct ChoiceSection {
     pub words: Vec<String>,
 }
 
-/// One tier of one slot: a menu of "" (the catalogue's choice), Automatic and each model.
+/// One tier of one slot: a menu of None (the empty word), Automatic and each model.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ModelRow {
     /// The module's key, `ai.model.<slot>.<tier>`.
@@ -95,6 +97,15 @@ pub struct Applying {
     pub word: String,
 }
 
+/// A pick of a hosted model that no account reaches, waiting for the person to add an account.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AwaitingAccount {
+    /// The row picked in.
+    pub path: KeyPath,
+    /// The model picked.
+    pub word: String,
+}
+
 /// A picker that is there.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ready {
@@ -102,6 +113,9 @@ pub struct Ready {
     pub kinds: Vec<KindRows>,
     /// The set in flight, if any: one at a time.
     pub applying: Option<Applying>,
+    /// The pick that waits on an account being added, if any: while it does, no other pick is
+    /// taken.
+    pub awaiting: Option<AwaitingAccount>,
 }
 
 /// Where the picker stands.
@@ -172,8 +186,12 @@ impl ModelRow {
         self.unavailable.get(word).map(String::as_str)
     }
 
-    /// What the menu calls `word`.
+    /// What the menu calls `word`. The empty word is always "None": the module's own name for it
+    /// would claim a model is chosen for the person.
     pub fn label_of(&self, word: &str) -> String {
+        if word.is_empty() {
+            return NONE_LABEL.to_owned();
+        }
         word_label(&self.labels, word)
     }
 }
@@ -208,10 +226,33 @@ impl Ready {
         Ready {
             kinds,
             applying: None,
+            awaiting: None,
         }
     }
 
+    /// Whether the add-account sheet is open on behalf of a pick.
+    pub fn adding(&self) -> Adding {
+        if self.awaiting.is_some() {
+            Adding::SheetOpen
+        } else {
+            Adding::Idle
+        }
+    }
+
+    /// Whether a pick may be taken: no set is in flight and no account is being added.
+    pub(crate) fn is_idle(&self) -> bool {
+        self.applying.is_none() && self.awaiting.is_none()
+    }
+
     /// The row at `path`.
+    pub fn row(&self, path: &KeyPath) -> Option<&ModelRow> {
+        self.kinds
+            .iter()
+            .flat_map(|kind| kind.rows.iter())
+            .find(|row| &row.path == path)
+    }
+
+    /// The row at `path`, to change.
     pub(crate) fn row_mut(&mut self, path: &KeyPath) -> Option<&mut ModelRow> {
         self.kinds
             .iter_mut()

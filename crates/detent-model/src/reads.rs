@@ -2,10 +2,14 @@
 //! shown. A page that is not here reads files only.
 
 use crate::accounts::ModuleId;
+use crate::assistant_model::is_assistant_model;
 use ds_settings::schema::Page;
 
 /// The three daemons the Accounts pane lists accounts from, in the order it lists them.
 const ACCOUNT_MODULES: &[ModuleId] = &[ModuleId::Accountd, ModuleId::Inferd, ModuleId::Syncd];
+
+/// The one daemon the Assistant Model page reads: inferd's picker.
+const INFERD: &[ModuleId] = &[ModuleId::Inferd];
 
 /// The daemons `page` reads while it is shown, each once. The match names every page, so a new
 /// page cannot be added without deciding what it reads.
@@ -14,10 +18,12 @@ const ACCOUNT_MODULES: &[ModuleId] = &[ModuleId::Accountd, ModuleId::Inferd, Mod
 /// - Intelligence: inferd (the model picker and "Your computers"), accountd and syncd (the
 ///   accounts the local runtimes and the cloud places read).
 /// - Spaces: accountd, which keeps the registry.
+/// - Assistant Model: inferd, whose picker holds the row.
 pub fn modules_read(page: &Page) -> &'static [ModuleId] {
     match page {
         Page::Accounts | Page::Intelligence => ACCOUNT_MODULES,
         Page::Spaces => &[ModuleId::Accountd],
+        Page::App(_) if is_assistant_model(page) => INFERD,
         Page::Appearance
         | Page::Dock
         | Page::MouseAndGestures
@@ -58,6 +64,10 @@ mod tests {
         assert_eq!(modules_read(&Page::Accounts), ModuleId::ALL);
         assert_eq!(modules_read(&Page::Intelligence), ModuleId::ALL);
         assert_eq!(modules_read(&Page::Spaces), [ModuleId::Accountd]);
+        assert_eq!(
+            modules_read(&crate::assistant_model::assistant_model_page()),
+            [ModuleId::Inferd]
+        );
     }
 
     #[test]

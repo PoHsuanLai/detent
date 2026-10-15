@@ -1,6 +1,7 @@
 //! Settings' three actions, called over a private bus the way intentd calls an app.
 
 use crate::support::{Told, World, entity, key, text};
+use detent_model::ASSISTANT_MODEL_SLUG;
 use docket_core::{AppRefusal, Preview, UndoFault, Undoable, Value};
 use prov::Integrity;
 
@@ -29,8 +30,13 @@ type Case = (&'static str, Vec<(&'static str, Value)>, &'static str);
 
 #[tokio::test(flavor = "multi_thread")]
 async fn opening_a_page_tells_the_window() {
-    let cases: [Case; 3] = [
+    let cases: [Case; 4] = [
         ("settings.page.show", vec![("page", page("dock"))], "dock"),
+        (
+            "settings.page.show",
+            vec![("page", page(ASSISTANT_MODEL_SLUG))],
+            ASSISTANT_MODEL_SLUG,
+        ),
         ("settings.accounts.open", vec![], "accounts"),
         ("settings.intelligence.open", vec![], "intelligence"),
     ];

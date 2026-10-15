@@ -39,9 +39,10 @@ fn pages_come_in_the_fixed_order_and_only_when_they_have_keys() {
             "accounts",
             "power",
             "intelligence",
+            "assistant-model",
             "software-update"
         ],
-        "no schema names the Apps page, so it is not listed; inferd's and docket's name Intelligence; Accounts and Software Update are live panes and always there"
+        "no schema names the Apps page, so it is not listed; inferd's and docket's name Intelligence; Accounts, Assistant Model and Software Update are live panes and always there"
     );
 }
 

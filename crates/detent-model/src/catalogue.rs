@@ -1,6 +1,7 @@
 //! Every key of every schema, grouped by page then section (design/22 section 9.3 item 1).
 
 use crate::agent::AgentSetting;
+use crate::assistant_model::assistant_model_page;
 use crate::config_file::ConfigFile;
 use crate::discovery::ProgramSchema;
 use crate::entry::KeyEntry;
@@ -47,8 +48,8 @@ pub struct FileSpec {
 /// The whole app: pages in sidebar order, and the files behind them.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Catalogue {
-    /// Pages that have at least one key, in sidebar order, and the Accounts and Software Update
-    /// pages, which are live panes and need none.
+    /// Pages that have at least one key, in sidebar order, and the Accounts, Assistant Model and
+    /// Software Update pages, which are live panes and need none.
     pub pages: Vec<PageModel>,
     /// Every settings file the keys read and write.
     pub files: Vec<FileSpec>,
@@ -149,9 +150,13 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
         }
         pages
     });
-    // Accounts is accountd's live pane and Software Update the update service's (no file names
-    // either), so both pages are always there.
-    for live in [Page::Accounts, software_update_page()] {
+    // Accounts is accountd's live pane, Assistant Model inferd's picker row and Software Update
+    // the update service's (no file names any of them), so all three pages are always there.
+    for live in [
+        Page::Accounts,
+        assistant_model_page(),
+        software_update_page(),
+    ] {
         if !pages.iter().any(|page| page.page == live) {
             pages.push(PageModel {
                 slug: PageSlug::of(&live),

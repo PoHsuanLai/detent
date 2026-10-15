@@ -4,6 +4,7 @@
 mod account_notice;
 mod accounts;
 mod activation;
+mod assistant_model;
 mod assistants;
 mod behaviour;
 mod coherence;

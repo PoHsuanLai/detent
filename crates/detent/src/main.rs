@@ -10,7 +10,7 @@ use clap::Parser;
 use cli::Run;
 use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles};
 use detent_intents::{ServeFault, SettingsProvider, hand_over, serve_session};
-use detent_model::PageSlug;
+use detent_model::{PageSlug, is_assistant_setup};
 use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, inbox};
 use ds_blitz::{AppConfig, AppId, Decorations, LaunchError, WindowSize, enter_runtime, launch};
 use ds_settings::SystemPrefsSource;
@@ -25,6 +25,16 @@ const HEIGHT: u32 = 640;
 /// The first-run window's.
 const FIRST_RUN_WIDTH: u32 = 440;
 const FIRST_RUN_HEIGHT: u32 = 520;
+
+/// The window of the assistant's first-run step: short, like the welcome window.
+fn window_size(wanted: Option<&PageSlug>) -> WindowSize {
+    match wanted {
+        Some(slug) if is_assistant_setup(slug) => {
+            WindowSize::new(FIRST_RUN_WIDTH, FIRST_RUN_HEIGHT)
+        }
+        Some(_) | None => WindowSize::new(WIDTH, HEIGHT),
+    }
+}
 
 fn main() -> ExitCode {
     match cli::Cli::parse().run() {
@@ -115,7 +125,7 @@ fn settings(opening: Opening) -> ExitCode {
             None
         }
     };
-    let config = AppConfig::new("Settings", WindowSize::new(WIDTH, HEIGHT))
+    let config = AppConfig::new("Settings", window_size(wanted.as_ref()))
         .with_app_id(AppId("org.quire.Settings".to_owned()))
         .with_decorations(Decorations::Client)
         .with_context(env);

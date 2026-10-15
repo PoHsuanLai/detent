@@ -2,7 +2,9 @@
 
 use crate::support::{Told, World};
 use detent_intents::{APPLICATION_INTERFACE, APPLICATION_PATH, hand_over};
-use detent_model::{AccountSegment, AccountTarget, PageSlug};
+use detent_model::{
+    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, AccountSegment, AccountTarget, PageSlug,
+};
 use std::collections::HashMap;
 use zbus::zvariant::{ObjectPath, Value};
 
@@ -74,6 +76,30 @@ async fn open_page_shows_the_page_its_slug_names_and_raises() {
         world.window.told()[2..],
         [Told::Raised(None)],
         "a page that is not named only raises the window"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn open_page_shows_the_assistants_model_page_and_its_first_run_step() {
+    let world = World::start("app-open-assistant-model", &[]).await;
+    for slug in [ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG] {
+        call(
+            &world,
+            "ActivateAction",
+            ("open-page", vec![Value::from(slug)], no_data()),
+        )
+        .await
+        .expect("answered");
+    }
+    assert_eq!(
+        world.window.told(),
+        [
+            Told::Page("assistant-model".to_owned()),
+            Told::Raised(None),
+            Told::Page("assistant-model-setup".to_owned()),
+            Told::Raised(None),
+        ],
+        "the slugs sill is told to send, each shown and the window raised"
     );
 }
 

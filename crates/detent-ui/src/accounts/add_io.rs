@@ -10,7 +10,7 @@ use porter_core::wire::{ParentWindow, ProviderHint, Refusal};
 const SHEET_OPEN: &str = "LimitsExceeded";
 
 /// Asks for the add sheet and waits for it to end.
-pub(super) async fn add_account(bus: &BusSource) -> AddEnd {
+pub(crate) async fn add_account(bus: &BusSource) -> AddEnd {
     let Ok(connection) = connect(bus).await else {
         return AddEnd::Failed;
     };

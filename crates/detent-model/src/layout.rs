@@ -1,5 +1,6 @@
 //! What a page draws, top to bottom, before its Advanced disclosure (design/22 section 5).
 
+use crate::assistant_model::is_assistant_model;
 use crate::catalogue::{PageModel, SectionModel};
 use crate::updates::is_software_update;
 use ds_settings::schema::Page;
@@ -31,6 +32,9 @@ pub enum Block {
     /// The update service's page: where the flow stands, and the buttons that move it. Not in
     /// any file.
     SoftwareUpdate,
+    /// The assistant's model: inferd's picker, reduced to the one row the assistant is routed by.
+    /// Not in any file.
+    AssistantModel,
 }
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
@@ -68,6 +72,9 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
         }
         Page::App(_) if is_software_update(&page.page) => {
             return std::iter::once(Block::SoftwareUpdate).collect();
+        }
+        Page::App(_) if is_assistant_model(&page.page) => {
+            return std::iter::once(Block::AssistantModel).collect();
         }
         Page::Intelligence => {}
         _ => return sections.collect(),
@@ -122,6 +129,7 @@ mod tests {
                 Block::SpacesPane => "<spaces>",
                 Block::Shortcuts => "<shortcuts>",
                 Block::SoftwareUpdate => "<updates>",
+                Block::AssistantModel => "<assistant>",
             })
             .collect()
     }
@@ -201,5 +209,11 @@ mod tests {
             let drawn = blocks(&page(kind.clone(), titles));
             assert_eq!(names(&drawn), *want, "{case}");
         }
+    }
+
+    #[test]
+    fn the_assistants_model_page_draws_only_its_row_of_the_picker() {
+        let drawn = blocks(&page(crate::assistant_model::assistant_model_page(), &[]));
+        assert_eq!(names(&drawn), ["<assistant>"]);
     }
 }

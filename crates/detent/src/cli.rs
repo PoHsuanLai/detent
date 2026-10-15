@@ -8,7 +8,7 @@ use detent_ui::Opening;
 #[derive(Debug, Parser)]
 #[command(name = "detent", version)]
 pub struct Cli {
-    /// Open on this page (`appearance`, `dock`, `mouse_and_gestures`, `software-update`, ...).
+    /// Open on this page (`appearance`, `dock`, `mouse_and_gestures`, `software-update`, `assistant-model`, ...); `assistant-model-setup` opens the first-run step that asks for the assistant's model.
     #[arg(long)]
     page: Option<String>,
     /// Open with this in the search field.
@@ -69,6 +69,11 @@ mod tests {
             (
                 &["detent", "--page", "software-update"],
                 Some("software-update"),
+                "",
+            ),
+            (
+                &["detent", "--page", "assistant-model-setup"],
+                Some("assistant-model-setup"),
                 "",
             ),
         ];

@@ -1,19 +1,16 @@
 //! Which row of inferd's picker a runtime chosen at first run is written to, and with which word.
 
 use crate::accounts::AccountKey;
+use crate::assistant_model::ASSISTANT_ROWS;
 use crate::picker::Described;
 use ds_settings::schema::{KeyKind, KeyPath};
-
-/// The row the first run chooses a runtime for: the text slot's Balanced tier, under the name
-/// the module gives it now and the one an older module still gives it.
-const TEXT_ROWS: [&str; 2] = ["ai.model.text.balanced", "ai.model.llm.balanced"];
 
 /// The row to set and the model word to set it to: the first model of `runtime` the module offers
 /// for the text slot that can be picked now. `None` when the module has no such row, or lists no
 /// model of that runtime (an `account/model` word names the account before its slash).
 pub fn runtime_choice(described: &Described, runtime: &AccountKey) -> Option<(KeyPath, String)> {
     let prefix = format!("{}/", runtime.0);
-    TEXT_ROWS.iter().find_map(|row| {
+    ASSISTANT_ROWS.iter().find_map(|row| {
         let spec = described.keys.iter().find(|spec| spec.path.0 == *row)?;
         let KeyKind::Menu { variants } = &spec.kind else {
             return None;

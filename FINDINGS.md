@@ -287,6 +287,55 @@ Open items, each with its closing condition:
 - **A second `detent --page X` navigates the running window** (`ActivateAction("open-page", [slug])`, then
   a raise), so the notification's button lands on the page whether or not Settings was open.
 
+## Assistant Model (`detent-model/src/assistant_model/`, `detent-ui/src/assistant_model/`)
+
+Owner decision: the assistant (the planner) has no default model. Nothing is preselected or
+recommended; the person chooses, or skips and is asked when a turn needs one.
+
+- **The page and the step.** The page `assistant-model` ("Assistant Model") is listed after
+  Intelligence and draws only the assistant's row of inferd's picker. The step `assistant-model-setup`
+  is the same row as a short dialogue (heading, one sentence, Skip, Continue; no sidebar). Both open
+  through `open-page` (`ActivateAction("open-page", [slug])`) and `detent --page <slug>`; the setup
+  step is not a page of the catalogue, so the intents action `settings.page.show` refuses it as an
+  unknown page. Like Software Update the page is `Page::App("Assistant Model")`, with the same
+  closing condition (quire adding a variant).
+- **Which row: the text slot at the balanced tier** (`ai.model.text.balanced`, an older module's
+  `ai.model.llm.balanced`). `docket-planner`'s `PlannerModel::new` asks for `Tier::Balanced` ("the
+  companion's is Balanced"), and the planner's need is text. One constant, `ASSISTANT_ROWS`, names it
+  for the page, the step and the welcome window's runtime choice. Question for docket: if the companion
+  ever asks for another tier (`with_tier`), that constant changes with it; nothing tells detent.
+- **How sill should know the step was offered once.** Recommend the shell keeps the mark, in its own
+  state directory, written when it opens the step (not when a button is pressed, so closing the window
+  with its own close button still counts). detent cannot know why the shell opened it; inferd's file
+  must not hold it, because an unset model is the very signal that asks again, and `FirstRunMark`
+  (`$XDG_STATE_HOME/detent/first-run`) means "the welcome window ran". Recommend sill opens the step
+  for both the first run and a turn that needs a model with none set or the chosen one unavailable
+  (the one dialogue), and the page only for browsing. Question for the owner if the second should be
+  the page instead.
+- **Skip and Continue write nothing.** A pick writes at once, as everywhere in Settings (Continue
+  waits until the row holds a model or Automatic and no write is in flight). Skip after a pick leaves
+  the pick in force; "leaves it unset" holds when nothing was picked. Both call `AppHandle::quit`, so
+  when the step is opened in a Settings window that was already running, the whole window closes. The
+  harness has no app handle, so the closing itself is unchecked by tests (manual check below).
+- **The empty word reads "None", never the module's name for it.** inferd labels it "Catalogue
+  default"; detent shows "None" in the menu whatever the module says, shows the button as "Choose..."
+  with no item marked while the row holds it, and puts no badge or ordering on any model. Every tier of
+  every slot is shown this way, though for the other slots the empty word still means the catalogue's
+  choice. Closes when inferd labels the empty word itself (then `NONE_LABEL` goes).
+- **Automatic stays a choice** and counts as chosen. Question for the owner: should the assistant's
+  menu offer it at all, as it is a rule and not a model.
+- **A model that needs an account stays pickable.** Picking it opens the Add Account sheet (accountd's,
+  through porter's client) instead of setting; when an account was added the rows are read again and
+  the pick is made if the model can now be picked, else dropped. The test for "needs an account" is the
+  module's reason text compared whole (`NEEDS_ACCOUNT`, inferd's `cloud::picker::NEEDS_ACCOUNT`).
+  Closes when porter-infer exports that text or a typed reason, so detent stops copying it.
+- **The welcome window (`detent --first-run`) still has a "Local model" row** that leaves the text slot
+  to "Automatic" when untouched. It is a second place that picks the assistant's model and its
+  default wording claims one. Recommend removing the row (keeping the local-only switch) once sill
+  opens the step; left alone here because the welcome window is another flow with its own tests.
+- **The running window does not resize.** `detent --page assistant-model-setup` starts at the step's
+  size (440 by 520); a Settings window already open keeps its size and centres the step in it.
+
 ## Not in v1
 
 - **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): only inferd's
@@ -314,3 +363,6 @@ Open items, each with its closing condition:
 - The Software Update page against the real slipway service: Check for Updates, Update Now through the
   download and the install, "Log Out..." opening the shell's power menu, and the notification's button
   opening this page in a running Settings. The tests use a stand-in service and a counted log-out only.
+- The assistant's first-run step on a real session: `detent --page assistant-model-setup` closes the
+  window on Skip and on Continue, and the same slug sent to a running Settings through `open-page`
+  shows the step. The tests have no window to close.

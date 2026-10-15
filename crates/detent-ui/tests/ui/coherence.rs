@@ -65,3 +65,20 @@ fn the_markup_lint_is_clean_on_every_page() {
         assert!(offences.is_empty(), "{}: {offences:#?}", page.0);
     }
 }
+
+/// The assistant's first-run step is no page of the sidebar, so it is rendered by its slug.
+#[test]
+fn the_markup_lint_is_clean_on_the_assistants_first_run_step() {
+    let sandbox = Sandbox::new("coherence-assistant-setup");
+    let opening = Opening {
+        page: Some(PageSlug(detent_model::ASSISTANT_SETUP_SLUG.to_owned())),
+        query: String::new(),
+    };
+    let html = render(sandbox.env(opening, ds::prelude::Scheme::Light));
+    assert!(
+        html.contains("assistant-setup"),
+        "the step was not rendered, so there is nothing to lint: {html}"
+    );
+    let offences = markup(&html, &css(), &LintConfig::new(&ds::kits()));
+    assert!(offences.is_empty(), "{offences:#?}");
+}

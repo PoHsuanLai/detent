@@ -5,6 +5,7 @@
 mod accounts;
 mod advanced;
 mod agent;
+mod assistant_model;
 mod assistants;
 mod catalogue;
 mod computers;
@@ -41,6 +42,10 @@ pub use accounts::{
 };
 pub use advanced::advanced_name;
 pub use agent::AgentSetting;
+pub use assistant_model::{
+    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Pressable, SetupButton, assistant_model_page,
+    assistant_of, is_assistant_model, is_assistant_setup, setup_button,
+};
 pub use assistants::{
     Confirm, ModelOffer, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, offers_for,
     places_step,
@@ -66,8 +71,8 @@ pub use outside::{
 };
 pub use page::PageSlug;
 pub use picker::{
-    Absence, Applying, ChoiceSection, Described, KindRows, ModelRow, PickerEffect, PickerInput,
-    PickerState, Ready, loading_text, step,
+    Absence, Applying, AwaitingAccount, Choice, ChoiceSection, Described, Gate, KindRows, ModelRow,
+    PickerEffect, PickerInput, PickerState, Ready, loading_text, step,
 };
 pub use range::{Number, Range};
 pub use reads::modules_read;

@@ -439,7 +439,7 @@ fn grouped_choices_render_under_headers_ungrouped_first_in_first_appearance_orde
     in_order(
         &harness.html(),
         &[
-            "Catalogue default",
+            "None",
             "Automatic",
             "On this computer",
             "qwen",
@@ -485,7 +485,7 @@ fn an_unavailable_choice_is_greyed_with_its_reason_and_cannot_be_set() {
     fake.gated
         .lock()
         .expect("gated")
-        .insert("local/holo".to_owned(), "Add an account to use".to_owned());
+        .insert("local/holo".to_owned(), "Needs a newer version".to_owned());
     let _daemon = rt.block_on(fake.serve_on(&bus));
     let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 3);
@@ -493,7 +493,7 @@ fn an_unavailable_choice_is_greyed_with_its_reason_and_cannot_be_set() {
 
     let html = harness.html();
     assert!(
-        html.contains("Add an account to use"),
+        html.contains("Needs a newer version"),
         "the reason is under the choice:\n{html}"
     );
     // Items: "", auto, header, qwen, holo (disabled), its reason, then the other groups.
