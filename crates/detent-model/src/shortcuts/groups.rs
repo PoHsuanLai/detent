@@ -9,6 +9,8 @@ pub enum ShortcutGroup {
     Launcher,
     /// Switching between, hiding and closing apps and windows.
     Windows,
+    /// Tiling, filling and centring the window.
+    Tiling,
     /// Moving between Spaces.
     Spaces,
     /// Capturing the screen.
@@ -38,6 +40,19 @@ const WINDOWS: &[A] = &[
     A::Quit,
     A::FullScreen,
     A::ForceQuit,
+];
+const TILING: &[A] = &[
+    A::TileLeft,
+    A::TileRight,
+    A::TileTop,
+    A::TileBottom,
+    A::TileTopLeft,
+    A::TileTopRight,
+    A::TileBottomLeft,
+    A::TileBottomRight,
+    A::Fill,
+    A::Center,
+    A::ReturnToPreviousSize,
 ];
 const SPACES: &[A] = &[A::MissionControl, A::SpaceLeft, A::SpaceRight];
 const SCREENSHOTS: &[A] = &[
@@ -88,9 +103,10 @@ const SYSTEM: &[A] = &[A::LockScreen, A::LogOut];
 
 impl ShortcutGroup {
     /// Every group, in the order the list draws them.
-    pub const ALL: [ShortcutGroup; 8] = [
+    pub const ALL: [ShortcutGroup; 9] = [
         ShortcutGroup::Launcher,
         ShortcutGroup::Windows,
+        ShortcutGroup::Tiling,
         ShortcutGroup::Spaces,
         ShortcutGroup::Screenshots,
         ShortcutGroup::Input,
@@ -104,6 +120,7 @@ impl ShortcutGroup {
         match self {
             ShortcutGroup::Launcher => "Launcher",
             ShortcutGroup::Windows => "Apps and windows",
+            ShortcutGroup::Tiling => "Window tiling",
             ShortcutGroup::Spaces => "Spaces",
             ShortcutGroup::Screenshots => "Screenshots",
             ShortcutGroup::Input => "Input",
@@ -118,6 +135,7 @@ impl ShortcutGroup {
         let fixed = match self {
             ShortcutGroup::Launcher => LAUNCHER,
             ShortcutGroup::Windows => WINDOWS,
+            ShortcutGroup::Tiling => TILING,
             ShortcutGroup::Spaces => SPACES,
             ShortcutGroup::Screenshots => SCREENSHOTS,
             ShortcutGroup::Input => INPUT,
