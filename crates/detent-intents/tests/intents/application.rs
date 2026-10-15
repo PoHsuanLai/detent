@@ -1,8 +1,8 @@
 //! `org.freedesktop.Application` on `org.quire.Settings`, called the way sill calls it.
 
 use crate::support::{Told, World};
-use detent_intents::{APPLICATION_INTERFACE, APPLICATION_PATH};
-use detent_model::{AccountSegment, AccountTarget};
+use detent_intents::{APPLICATION_INTERFACE, APPLICATION_PATH, hand_over};
+use detent_model::{AccountSegment, AccountTarget, PageSlug};
 use std::collections::HashMap;
 use zbus::zvariant::{ObjectPath, Value};
 
@@ -47,6 +47,58 @@ async fn open_account_moves_to_that_accounts_detail() {
     .expect("answered");
     assert_eq!(world.window.told()[0], detail("work_example"));
     assert!(matches!(world.window.told()[1], Told::Raised(None)));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn open_page_shows_the_page_its_slug_names_and_raises() {
+    let world = World::start("app-open-page", &[]).await;
+    call(
+        &world,
+        "ActivateAction",
+        ("open-page", vec![Value::from("software-update")], no_data()),
+    )
+    .await
+    .expect("answered");
+    assert_eq!(
+        world.window.told(),
+        [Told::Page("software-update".to_owned()), Told::Raised(None)]
+    );
+    call(
+        &world,
+        "ActivateAction",
+        ("open-page", Vec::<Value<'_>>::new(), no_data()),
+    )
+    .await
+    .expect("answered");
+    assert_eq!(
+        world.window.told()[2..],
+        [Told::Raised(None)],
+        "a page that is not named only raises the window"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_second_detent_hands_over_the_page_it_was_asked_for() {
+    let world = World::start("app-hand-over", &[]).await;
+    let launcher = world.launcher().await;
+    hand_over(
+        &launcher,
+        None,
+        Some(PageSlug("software-update".to_owned())),
+    )
+    .await
+    .expect("answered");
+    hand_over(&launcher, Some("tok-2".to_owned()), None)
+        .await
+        .expect("answered");
+    assert_eq!(
+        world.window.told(),
+        [
+            Told::Page("software-update".to_owned()),
+            Told::Raised(None),
+            Told::Raised(Some("tok-2".to_owned())),
+        ]
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]

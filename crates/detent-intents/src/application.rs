@@ -3,7 +3,7 @@
 //! account. A second `detent` hands over through the same `Activate`.
 
 use crate::window::Window;
-use detent_model::AccountTarget;
+use detent_model::{AccountTarget, PageSlug};
 use std::collections::HashMap;
 use std::sync::Arc;
 use zbus::fdo;
@@ -15,8 +15,10 @@ pub const APPLICATION_INTERFACE: &str = "org.freedesktop.Application";
 pub const APPLICATION_PATH: &str = "/org/quire/Settings";
 pub(crate) const APP_NAME: &str = "org.quire.Settings";
 
-/// The one action Settings offers over activation.
+/// The action that shows the Accounts page at an account.
 const OPEN_ACCOUNT: &str = "open-account";
+/// The action that shows a page, named by its slug.
+const OPEN_PAGE: &str = "open-page";
 /// The platform-data key that carries the xdg-activation token.
 const TOKEN_KEY: &str = "activation-token";
 
@@ -46,6 +48,14 @@ fn target_of(parameter: &[OwnedValue]) -> AccountTarget {
     AccountTarget::of_path(&text)
 }
 
+/// The page an action's first parameter names by its slug; none when it names nothing.
+fn page_of(parameter: &[OwnedValue]) -> Option<PageSlug> {
+    match parameter.first().map(|value| &**value) {
+        Some(Value::Str(slug)) if !slug.is_empty() => Some(PageSlug(slug.to_string())),
+        _ => None,
+    }
+}
+
 fn gone() -> fdo::Error {
     fdo::Error::Failed("the Settings window has gone".to_owned())
 }
@@ -66,21 +76,29 @@ impl Application {
         ))
     }
 
-    /// `open-account` shows the Accounts page at the account named; an unknown action is
-    /// logged and does nothing.
+    /// `open-account` shows the Accounts page at the account named, `open-page` the page whose
+    /// slug is named; an unknown action is logged and does nothing.
     async fn activate_action(
         &self,
         action_name: String,
         parameter: Vec<OwnedValue>,
         platform_data: PlatformData,
     ) -> fdo::Result<()> {
-        if action_name != OPEN_ACCOUNT {
-            eprintln!("detent: no action {action_name:?}, ignored");
-            return Ok(());
+        match action_name.as_str() {
+            OPEN_ACCOUNT => self
+                .window
+                .open_account(target_of(&parameter))
+                .map_err(|_| gone())?,
+            OPEN_PAGE => {
+                if let Some(page) = page_of(&parameter) {
+                    self.window.open_page(page).map_err(|_| gone())?;
+                }
+            }
+            _ => {
+                eprintln!("detent: no action {action_name:?}, ignored");
+                return Ok(());
+            }
         }
-        self.window
-            .open_account(target_of(&parameter))
-            .map_err(|_| gone())?;
         self.window
             .raise(token_of(&platform_data))
             .map_err(|_| gone())
@@ -101,20 +119,40 @@ pub(crate) async fn export_application(
 }
 
 /// Asks the running Settings to show itself: what a second `detent` does instead of opening a
-/// second window. `token` is the xdg-activation token this process was started with, if any.
-pub async fn hand_over(connection: &zbus::Connection, token: Option<String>) -> zbus::Result<()> {
+/// second window. `token` is the xdg-activation token this process was started with, if any;
+/// `page` is the page the second `detent` was asked to open, if any.
+pub async fn hand_over(
+    connection: &zbus::Connection,
+    token: Option<String>,
+    page: Option<PageSlug>,
+) -> zbus::Result<()> {
     let mut platform_data: HashMap<&str, Value<'_>> = HashMap::new();
     if let Some(token) = &token {
         platform_data.insert(TOKEN_KEY, Value::from(token.as_str()));
     }
-    connection
-        .call_method(
-            Some(APP_NAME),
-            APPLICATION_PATH,
-            Some(APPLICATION_INTERFACE),
-            "Activate",
-            &(platform_data,),
-        )
-        .await
-        .map(|_| ())
+    match page {
+        None => {
+            connection
+                .call_method(
+                    Some(APP_NAME),
+                    APPLICATION_PATH,
+                    Some(APPLICATION_INTERFACE),
+                    "Activate",
+                    &(platform_data,),
+                )
+                .await
+        }
+        Some(page) => {
+            connection
+                .call_method(
+                    Some(APP_NAME),
+                    APPLICATION_PATH,
+                    Some(APPLICATION_INTERFACE),
+                    "ActivateAction",
+                    &(OPEN_PAGE, vec![Value::from(page.0.as_str())], platform_data),
+                )
+                .await
+        }
+    }
+    .map(|_| ())
 }

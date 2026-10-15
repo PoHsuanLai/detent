@@ -10,6 +10,7 @@ use clap::Parser;
 use cli::Run;
 use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles};
 use detent_intents::{ServeFault, SettingsProvider, hand_over, serve_session};
+use detent_model::PageSlug;
 use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, inbox};
 use ds_blitz::{AppConfig, AppId, Decorations, LaunchError, WindowSize, enter_runtime, launch};
 use ds_settings::SystemPrefsSource;
@@ -83,6 +84,7 @@ fn first_run() -> ExitCode {
 }
 
 fn settings(opening: Opening) -> ExitCode {
+    let wanted = opening.page.clone();
     let env = match environment(opening) {
         Ok(env) => env,
         Err(code) => return code,
@@ -102,7 +104,7 @@ fn settings(opening: Opening) -> ExitCode {
     let _service = match provider {
         Ok(provider) => match enter_runtime_block(serve_session(provider)) {
             Ok(connection) => Some(connection),
-            Err(ServeFault::Running) => return hand_over_to_running(),
+            Err(ServeFault::Running) => return hand_over_to_running(wanted),
             Err(fault) => {
                 eprintln!("detent: no intents service: {fault}");
                 None
@@ -137,14 +139,15 @@ fn enter_runtime_block<T>(future: impl std::future::Future<Output = T>) -> T {
 }
 
 /// Another Settings is running: ask it to show itself (with the activation token this process
-/// was started with) and leave, so there is never a second window.
-fn hand_over_to_running() -> ExitCode {
+/// was started with) and leave, so there is never a second window. `page` is the page this
+/// process was asked to open, which the running Settings shows.
+fn hand_over_to_running(page: Option<PageSlug>) -> ExitCode {
     let token = std::env::var("XDG_ACTIVATION_TOKEN")
         .ok()
         .filter(|token| !token.is_empty());
     let handed = enter_runtime_block(async {
         let connection = zbus::connection::Builder::session()?.build().await?;
-        hand_over(&connection, token).await
+        hand_over(&connection, token, page).await
     });
     match handed {
         Ok(()) => ExitCode::SUCCESS,

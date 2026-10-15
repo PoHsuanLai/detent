@@ -8,7 +8,7 @@ use detent_ui::Opening;
 #[derive(Debug, Parser)]
 #[command(name = "detent", version)]
 pub struct Cli {
-    /// Open on this page (`appearance`, `dock`, `mouse_and_gestures`, ...).
+    /// Open on this page (`appearance`, `dock`, `mouse_and_gestures`, `software-update`, ...).
     #[arg(long)]
     page: Option<String>,
     /// Open with this in the search field.
@@ -66,6 +66,11 @@ mod tests {
                 "magnification",
             ),
             (&["detent"], None, ""),
+            (
+                &["detent", "--page", "software-update"],
+                Some("software-update"),
+                "",
+            ),
         ];
         for (args, page, query) in OPENINGS {
             let opening = opening(args);
