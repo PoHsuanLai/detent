@@ -1,17 +1,19 @@
-//! The first-run window: a hero mark, one sentence, the switch, the runtime menu, Done.
+//! The first-run window: a hero mark, one sentence, the switch, the assistant's model, Done.
 
 use super::io::save;
+use crate::assistant_model::AssistantPicker;
 use crate::env::Env;
-use crate::inference::{Found, use_runtimes};
+use crate::inference::{Picker, use_picker};
+use crate::live::start;
 use detent_model::{
-    AccountKey, FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
+    FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, PickerInput, PickerState, Stage,
+    assistant_model_page, first_run_step, modules_read,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button::Button;
 use ds::components::controls::button_model::Answers;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
-use ds::components::menus::pop_up_button::PopUpButton;
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::root::pass_through::ExtraClass;
@@ -22,8 +24,9 @@ use ds_blitz::{AppHandle, TokioSpawner, use_app_handle};
 use ds_settings::{AppName, ConfigRoot, Store, use_environment};
 use std::sync::Arc;
 
-/// The menu word that leaves the text slot to Automatic.
-const AUTOMATIC: &str = "";
+/// What the model is for, and that nothing is chosen for the person.
+const MODEL_NOTE: &str = "Your assistant uses a model to understand what you ask and to answer. \
+    Choose one below, or press Done and choose later in Settings.";
 
 fn send(state: &mut Signal<FirstRun>, input: FirstRunInput) -> Vec<FirstRunEffect> {
     let (next, effects) = first_run_step(state.peek().clone(), input);
@@ -59,45 +62,39 @@ pub fn FirstRunApp() -> Element {
 }
 
 /// The window under the frame (the toasts that report a failed write mount in the frame): what
-/// accountd lists, what the person chose, and the writes Done makes.
+/// the person chose, the assistant's model row, and the write Done makes.
 #[component]
 fn FirstRunWindow() -> Element {
     let env = use_context::<Env>();
     let toasts = use_toasts();
     let app = use_app_handle();
     let mut state = use_signal(FirstRun::default);
-    let found = use_runtimes();
-
-    use_effect(move || {
-        if let Found::Runtimes(runtimes) = found() {
-            send(&mut state, FirstRunInput::Found(runtimes));
+    let Picker { state: picker, ask } = use_picker();
+    use_future({
+        let bus = env.bus.clone();
+        move || {
+            let bus = bus.clone();
+            async move { start(&bus, modules_read(&assistant_model_page())).await }
         }
     });
 
     let apply = EventHandler::new(move |input: FirstRunInput| {
         for effect in send(&mut state, input) {
             match effect {
-                FirstRunEffect::Save {
-                    local_only,
-                    runtime,
-                } => {
-                    let env = env.clone();
-                    let app = app.clone();
-                    spawn(async move {
-                        let answer = match save(&env, local_only, runtime).await {
-                            Ok(()) => FirstRunInput::Saved,
-                            Err(why) => FirstRunInput::Failed(why),
-                        };
-                        for effect in send(&mut state, answer) {
-                            react(effect, toasts, app.as_ref());
-                        }
-                    });
+                FirstRunEffect::Save { local_only } => {
+                    let answer = match save(&env, local_only) {
+                        Ok(()) => FirstRunInput::Saved,
+                        Err(why) => FirstRunInput::Failed(why),
+                    };
+                    for effect in send(&mut state, answer) {
+                        react(effect, toasts, app.as_ref());
+                    }
                 }
                 other => react(other, toasts, app.as_ref()),
             }
         }
     });
-    rsx! { Welcome { state: state(), onchange: apply } }
+    rsx! { Welcome { state: state(), picker: picker(), onchange: apply, onask: ask } }
 }
 
 /// What the window does for an effect that is not a write. `app` is the running app, absent in
@@ -116,7 +113,12 @@ fn react(effect: FirstRunEffect, toasts: ToastHub, app: Option<&AppHandle>) {
 }
 
 #[component]
-fn Welcome(state: FirstRun, onchange: EventHandler<FirstRunInput>) -> Element {
+fn Welcome(
+    state: FirstRun,
+    picker: PickerState,
+    onchange: EventHandler<FirstRunInput>,
+    onask: EventHandler<PickerInput>,
+) -> Element {
     let busy = if state.stage == Stage::Asking {
         Availability::Enabled
     } else {
@@ -157,24 +159,9 @@ fn Welcome(state: FirstRun, onchange: EventHandler<FirstRunInput>) -> Element {
                         },
                     }
                 }
-                if !state.runtimes.is_empty() {
-                    FieldRow {
-                        label: TextLine::from("Local model"),
-                        help: Some(TextLine::from("Used for text. Automatic picks a model for each request.")),
-                        availability: busy,
-                        PopUpButton::<String> {
-                            items: runtime_items(&state.runtimes),
-                            value: Some(state.picked.as_ref().map_or_else(|| AUTOMATIC.to_owned(), |key| key.0.clone())),
-                            size: ControlSize::Small,
-                            availability: busy,
-                            onpick: move |word: String| {
-                                let key = (!word.is_empty()).then_some(AccountKey(word));
-                                onchange.call(FirstRunInput::Picked(key));
-                            },
-                        }
-                    }
-                }
             }
+            Label { text: MODEL_NOTE, role: LabelRole::Secondary }
+            AssistantPicker { state: picker, onask }
             Button {
                 label: "Done",
                 answers: Answers::Return,
@@ -184,18 +171,4 @@ fn Welcome(state: FirstRun, onchange: EventHandler<FirstRunInput>) -> Element {
             }
         }
     }
-}
-
-/// Automatic, then each runtime found; one that is not running is greyed.
-fn runtime_items(runtimes: &[Runtime]) -> Vec<MenuItem<String>> {
-    std::iter::once(MenuItem::new(AUTOMATIC.to_owned(), "Automatic".to_owned()))
-        .chain(runtimes.iter().map(|runtime| {
-            let item = MenuItem::new(runtime.key.0.clone(), runtime.label.clone());
-            if runtime.is_running() {
-                item
-            } else {
-                item.with_availability(Availability::Disabled)
-            }
-        }))
-        .collect()
 }

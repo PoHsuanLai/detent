@@ -1,9 +1,8 @@
-//! The first-run window over a fake inferd and a fake accountd on a private bus: AI stays on this
-//! computer by default, a runtime found can be picked, Done writes through the Intelligence page's
-//! own settings path and records that the first run happened.
+//! The first-run window over a fake inferd on a private bus: AI stays on this computer by default,
+//! the assistant's model is the picker's row with nothing chosen, Done writes through the
+//! Intelligence page's own settings path and records that the first run happened.
 
 use crate::support::Sandbox;
-use crate::support::accountd::{Accountd, Held, Policy as AccountPolicy};
 use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
 use crate::support::inferd::{Inferd, Policy as InferPolicy};
@@ -15,6 +14,7 @@ use std::time::Duration;
 const LOCAL_ONLY: &str = ".first-run [aria-label=\"Keep AI on this computer\"] .ds-toggle";
 const DONE: &str = ".first-run > .ds-button";
 const MENU: &str = ".first-run .ds-popup .ds-button";
+const POOL_NOTE: &str = "Pick at least one model for Automatic to choose from.";
 
 fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
     // The fake daemons answer on real threads; a loaded machine running every test at once can
@@ -45,15 +45,14 @@ fn mark(sandbox: &Sandbox) -> FirstRunStanding {
     FirstRunMark::under(&sandbox.state_home()).standing()
 }
 
-/// Everything a first run meets: inferd and accountd on one private bus, `local` a runtime on
-/// this computer that is up and `lm-studio` one that is not.
+/// Everything a first run meets: inferd on a private bus, serving the text slot.
 struct World {
     sandbox: Sandbox,
     inferd: Inferd,
     harness: Harness,
     _rt: tokio::runtime::Runtime,
     _bus: PrivateBus,
-    _daemons: Vec<zbus::Connection>,
+    _daemon: zbus::Connection,
 }
 
 fn world(name: &str) -> World {
@@ -64,23 +63,13 @@ fn world_in(name: &str, scheme: Scheme) -> World {
     let rt = runtime();
     let bus = PrivateBus::start(name);
     let inferd = Inferd::new(InferPolicy::Allow).on_slots();
-    let accountd = Accountd::new(
-        AccountPolicy::Allow,
-        vec![
-            Held::runtime("local", "Local", "ok"),
-            Held::runtime("lm-studio", "LM Studio", "offline"),
-        ],
-    );
-    let daemons = vec![
-        rt.block_on(inferd.serve_on(&bus)),
-        rt.block_on(accountd.serve_on(&bus)),
-    ];
+    let daemon = rt.block_on(inferd.serve_on(&bus));
     let sandbox = Sandbox::new(name).on_bus(&bus.address);
     let mut harness = sandbox.first_run_harness_in(scheme);
-    // The runtimes arrive after the first frame and add the Local model row, which moves Done
-    // down; a click aimed before they land misses. Wait for the whole window.
+    // The model row arrives after the first frame and moves Done down; a click aimed before it
+    // lands misses. Wait for the whole window.
     settle(&mut harness, "the window", |h| {
-        stage(h).is_some() && h.centre(MENU).is_some()
+        h.attr(".picker", "data-picker").as_deref() == Some("ready")
     });
     World {
         sandbox,
@@ -88,7 +77,7 @@ fn world_in(name: &str, scheme: Scheme) -> World {
         harness,
         _rt: rt,
         _bus: bus,
-        _daemons: daemons,
+        _daemon: daemon,
     }
 }
 
@@ -117,7 +106,78 @@ fn ai_stays_on_this_computer_by_default_and_done_writes_it_and_remembers() {
     assert_eq!(
         *w.inferd.sets.lock().expect("sets"),
         [],
-        "no runtime picked, no model set"
+        "nothing chosen, no model set"
+    );
+}
+
+/// Opens the model menu and returns how many items are marked chosen.
+fn open_and_count_marked(w: &mut World) -> usize {
+    click(&mut w.harness, MENU);
+    assert_eq!(
+        w.harness.attr(MENU, "aria-expanded").as_deref(),
+        Some("true")
+    );
+    w.harness.count(".ds-menu-item[aria-checked=\"true\"]")
+}
+
+/// Clicks the menu item `nth` (from 1), the way a person points at it first.
+fn pick(w: &mut World, nth: usize) {
+    let label = format!(".ds-menu-item:nth-child({nth}) .ds-menu-label");
+    let at = w.harness.centre(&label).expect("the menu is open");
+    w.harness.send(Input::pointer_move(at));
+    click(&mut w.harness, &label);
+}
+
+#[test]
+fn the_model_is_nothing_chosen_until_the_person_chooses() {
+    let mut w = world("first-run-nothing");
+    assert_eq!(
+        w.harness
+            .text_of(&format!("{MENU} .ds-button-label"))
+            .as_deref()
+            .map(str::trim),
+        Some("Choose\u{2026}")
+    );
+    assert_eq!(open_and_count_marked(&mut w), 0, "no item is marked");
+    assert!(
+        !w.harness.html().contains(POOL_NOTE),
+        "Automatic is not opened"
+    );
+}
+
+#[test]
+fn automatic_opens_its_list_and_local_asks_how_it_runs_then_which_model() {
+    let mut w = world("first-run-modes");
+    open_and_count_marked(&mut w);
+    // Items: None, Automatic, Local, the Anthropic header, claude, the Google header, gemini.
+    pick(&mut w, 2);
+    settle(&mut w.harness, "Automatic", |h| {
+        h.html().contains(POOL_NOTE)
+    });
+    assert_eq!(
+        *w.inferd.sets.lock().expect("sets"),
+        [("ai.model.text.balanced".to_owned(), "auto".to_owned())]
+    );
+    assert_eq!(w.harness.count("[data-pool=\"editor\"]"), 1);
+
+    click(&mut w.harness, MENU);
+    pick(&mut w, 3);
+    let model = "#picker-local-model-ai-model-text-balanced .ds-popup .ds-button";
+    settle(&mut w.harness, "the questions", |h| h.count(model) == 1);
+    assert!(w.harness.html().contains("Built in"));
+    assert_eq!(
+        w.inferd.sets.lock().expect("sets").len(),
+        1,
+        "picking Local sets nothing"
+    );
+    click(&mut w.harness, model);
+    pick(&mut w, 1);
+    settle(&mut w.harness, "the set", |_| {
+        w.inferd.sets.lock().expect("sets").len() == 2
+    });
+    assert_eq!(
+        w.inferd.sets.lock().expect("sets")[1],
+        ("ai.model.text.balanced".to_owned(), "local/qwen".to_owned())
     );
 }
 
@@ -137,46 +197,8 @@ fn switching_it_off_writes_off() {
 }
 
 #[test]
-fn a_runtime_that_is_up_can_be_picked_and_a_stopped_one_cannot() {
-    let mut w = world("first-run-pick");
-    settle(&mut w.harness, "the runtime menu", |h| h.count(MENU) == 1);
-    click(&mut w.harness, MENU);
-    assert_eq!(
-        w.harness.attr(MENU, "aria-expanded").as_deref(),
-        Some("true")
-    );
-    let labels = w.harness.html();
-    for text in ["Automatic", "Local", "LM Studio"] {
-        assert!(labels.contains(text), "{text}");
-    }
-    assert_eq!(
-        w.harness
-            .attr(".ds-menu-item:nth-child(3)", "aria-disabled")
-            .as_deref(),
-        Some("true"),
-        "LM Studio is stopped"
-    );
-    let item = w
-        .harness
-        .centre(".ds-menu-item:nth-child(2) .ds-menu-label")
-        .expect("the menu is open");
-    w.harness.send(Input::pointer_move(item));
-    click(&mut w.harness, ".ds-menu-item:nth-child(2) .ds-menu-label");
-    click(&mut w.harness, DONE);
-    settle(&mut w.harness, "the save", |h| {
-        stage(h).as_deref() == Some("done")
-    });
-    assert_eq!(
-        *w.inferd.sets.lock().expect("sets"),
-        [("ai.model.text.balanced".to_owned(), "local/qwen".to_owned())],
-        "the runtime's first model, in the text slot's Balanced row"
-    );
-    assert_eq!(mark(&w.sandbox), FirstRunStanding::Done);
-}
-
-#[test]
-fn without_a_runtime_found_there_is_no_menu_and_done_still_finishes() {
-    let sandbox = Sandbox::new("first-run-no-runtime");
+fn without_a_bus_there_is_no_model_menu_and_done_still_finishes() {
+    let sandbox = Sandbox::new("first-run-no-bus");
     let mut harness = sandbox.first_run_harness();
     settle(&mut harness, "the window", |h| stage(h).is_some());
     assert_eq!(harness.count(MENU), 0);
@@ -186,34 +208,6 @@ fn without_a_runtime_found_there_is_no_menu_and_done_still_finishes() {
     });
     assert!(written(&sandbox).contains("local_only = \"on\""));
     assert_eq!(mark(&sandbox), FirstRunStanding::Done);
-}
-
-#[test]
-fn a_runtime_that_cannot_be_chosen_keeps_the_window_open_and_is_not_remembered() {
-    // accountd lists a runtime but there is no inferd to choose its model at.
-    let name = "first-run-no-inferd";
-    let rt = runtime();
-    let bus = PrivateBus::start(name);
-    let accountd = Accountd::new(
-        AccountPolicy::Allow,
-        vec![Held::runtime("local", "Local", "ok")],
-    );
-    let _daemon = rt.block_on(accountd.serve_on(&bus));
-    let sandbox = Sandbox::new(name).on_bus(&bus.address);
-    let mut harness = sandbox.first_run_harness();
-    settle(&mut harness, "the runtime menu", |h| h.count(MENU) == 1);
-    click(&mut harness, MENU);
-    click(&mut harness, ".ds-menu-item:nth-child(2) .ds-menu-label");
-    click(&mut harness, DONE);
-    settle(&mut harness, "the refusal", |h| {
-        h.html().contains("could not be chosen")
-    });
-    assert_eq!(
-        stage(&harness).as_deref(),
-        Some("asking"),
-        "Done can be pressed again"
-    );
-    assert_eq!(mark(&sandbox), FirstRunStanding::Pending);
 }
 
 #[test]

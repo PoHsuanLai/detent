@@ -13,7 +13,7 @@ const ROW_LABEL: &str = "Model";
 
 /// The row, or why it is not there. `state` is the picker's.
 #[component]
-pub(super) fn AssistantPicker(state: PickerState, onask: EventHandler<PickerInput>) -> Element {
+pub(crate) fn AssistantPicker(state: PickerState, onask: EventHandler<PickerInput>) -> Element {
     let ready = match &state {
         PickerState::Ready(ready) => ready,
         PickerState::Unavailable(absence) => {

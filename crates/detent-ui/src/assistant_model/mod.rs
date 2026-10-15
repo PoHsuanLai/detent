@@ -7,4 +7,5 @@ mod picker;
 mod setup;
 
 pub(crate) use pane::AssistantModelPane;
+pub(crate) use picker::AssistantPicker;
 pub(crate) use setup::AssistantSetup;

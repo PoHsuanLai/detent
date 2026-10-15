@@ -1,22 +1,16 @@
-//! What Done writes: `ai.local_only` through the page's own write, the runtime through inferd's
-//! picker module, then the mark that the first run happened.
+//! What Done writes: `ai.local_only` through the page's own write, then the mark that the first
+//! run happened. The assistant's model is written as it is chosen, by the picker.
 
 use crate::env::Env;
 use crate::files::{Edit, Files, apply};
-use crate::inference::{is_choice, set};
-use crate::live::{Daemon, open_once};
-use detent_model::{AccountKey, LocalOnly, runtime_choice};
+use detent_model::LocalOnly;
 
 /// inferd's row that keeps AI on this computer.
 const LOCAL_ONLY: &str = "ai.local_only";
 
 /// Writes what the person chose. The first thing that fails is the answer: nothing after it runs,
 /// and the mark is made only when everything before it was written.
-pub(super) async fn save(
-    env: &Env,
-    local_only: LocalOnly,
-    runtime: Option<AccountKey>,
-) -> Result<(), String> {
+pub(super) fn save(env: &Env, local_only: LocalOnly) -> Result<(), String> {
     let entry = env
         .catalogue
         .entries()
@@ -29,20 +23,7 @@ pub(super) async fn save(
         value: toml::Value::String(local_only.word().to_owned()),
     };
     apply(env, &Files::new(), &edit).map_err(|error| error.to_string())?;
-    if let Some(runtime) = runtime {
-        choose(env, &runtime).await?;
-    }
     env.first_run
         .record()
         .map_err(|error| format!("Could not remember this: {error}"))
-}
-
-/// Makes `runtime` the text slot's choice at inferd's picker.
-async fn choose(env: &Env, runtime: &AccountKey) -> Result<(), String> {
-    let (client, described) = open_once(&env.bus, &Daemon::inferd(), is_choice)
-        .await
-        .map_err(|absence| format!("The model could not be chosen: {absence}."))?;
-    let (path, word) = runtime_choice(&described, runtime)
-        .ok_or_else(|| format!("There is no model on {} to choose.", runtime.0))?;
-    set(&client, &path, &word).await
 }

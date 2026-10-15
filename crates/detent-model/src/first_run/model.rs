@@ -79,10 +79,6 @@ pub enum Stage {
 pub struct FirstRun {
     /// Whether AI stays on this computer; on until the person says otherwise.
     pub local_only: LocalOnly,
-    /// The local runtimes found, in the order accountd lists them.
-    pub runtimes: Vec<Runtime>,
-    /// The runtime chosen for the text slot; none leaves it to Automatic.
-    pub picked: Option<AccountKey>,
     /// Where it is.
     pub stage: Stage,
 }
@@ -91,8 +87,6 @@ impl Default for FirstRun {
     fn default() -> Self {
         FirstRun {
             local_only: LocalOnly::On,
-            runtimes: Vec::new(),
-            picked: None,
             stage: Stage::Asking,
         }
     }

@@ -61,7 +61,6 @@ pub use discovery::{Discovery, ProgramSchema, discover};
 pub use entry::KeyEntry;
 pub use first_run::{
     FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
-    runtime_choice,
 };
 pub use layout::{Block, blocks};
 pub use navigation::{landing, visible_pages};
