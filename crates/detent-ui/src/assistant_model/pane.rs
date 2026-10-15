@@ -13,13 +13,13 @@ const PURPOSE: &str = "Your assistant uses this model to understand what you ask
 /// The page: the purpose, then the picker's row.
 #[component]
 pub(crate) fn AssistantModelPane() -> Element {
-    let Picker { state, choose } = use_picker();
+    let Picker { state, ask } = use_picker();
     rsx! {
         div { class: "assistant-model", "data-assistant": "page",
             div { class: "picker-auto",
                 Label { text: PURPOSE, role: LabelRole::Secondary, style: LabelStyle::Footnote }
             }
-            AssistantPicker { state: state(), onchoose: choose }
+            AssistantPicker { state: state(), onask: ask }
         }
     }
 }

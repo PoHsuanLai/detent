@@ -1,9 +1,15 @@
 //! The picker's one transition: `(state, input) -> (state, effects)`.
 
-use super::choice::Gate;
-use super::model::{Absence, Applying, AwaitingAccount, Described, PickerState, Ready};
+use super::absence::Absence;
+use super::choice::{Choice, Gate};
+use super::local::{LOCAL_ITEM, LocalAsk};
+use super::model::{Applying, AwaitingAccount, Described, PickerState, Ready};
+use super::pool::PoolWrite;
 use crate::accounts::AddEnd;
 use ds_settings::schema::KeyPath;
+
+/// What the person is told when the module refuses a change to Automatic's list.
+const POOL_REFUSED: &str = "Automatic could not use that model, so its list is unchanged.";
 
 /// What happened to the picker.
 #[derive(Debug, Clone, PartialEq)]
@@ -16,6 +22,34 @@ pub enum PickerInput {
         path: KeyPath,
         /// The word.
         word: String,
+    },
+    /// The person chose the engine `account` for Local in the row at `path`.
+    Engine {
+        /// The row.
+        path: KeyPath,
+        /// The engine's account.
+        account: String,
+    },
+    /// The person asked to add an account that runs models on this computer, from the row at
+    /// `path`.
+    SetUpEngine(KeyPath),
+    /// The person turned the model `word` in or out of the pool at `path`.
+    PoolToggled {
+        /// The pool.
+        path: KeyPath,
+        /// The model.
+        word: String,
+    },
+    /// The module took the write to the pool at `path`.
+    PoolApplied(KeyPath),
+    /// The module refused the write to the pool at `path`.
+    PoolRefused(KeyPath),
+    /// The module says the pool at `path` now holds `words`.
+    PoolChanged {
+        /// The pool.
+        path: KeyPath,
+        /// Its models.
+        words: Vec<String>,
     },
     /// The module took the set at `path`.
     Applied(KeyPath),
@@ -49,6 +83,13 @@ pub enum PickerEffect {
         /// The word.
         word: String,
     },
+    /// Call `Set(path, words)` on the module's pool.
+    SetPool {
+        /// The pool.
+        path: KeyPath,
+        /// The models it is to hold.
+        words: Vec<String>,
+    },
     /// Open the add-account sheet and answer with `AccountSheetEnded`.
     AddAccount,
     /// Read the module's rows again and answer with `Reread`.
@@ -75,6 +116,26 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerE
         PickerInput::Chose { path, word } if ready.is_idle() => {
             effects.extend(choose(&mut ready, path, word));
         }
+        PickerInput::Engine { path, account } if ready.is_idle() => {
+            choose_engine(&mut ready, &path, account);
+        }
+        PickerInput::SetUpEngine(path) if ready.is_idle() => {
+            ready.awaiting = Some(AwaitingAccount { path, word: None });
+            effects.push(PickerEffect::AddAccount);
+        }
+        PickerInput::PoolToggled { path, word } if ready.is_idle() => {
+            effects.extend(toggle_pool(&mut ready, path, word));
+        }
+        PickerInput::PoolApplied(path) => {
+            if let Some(write) = take_pooling(&mut ready, &path) {
+                ready.set_pool(&path, &write.words);
+            }
+        }
+        PickerInput::PoolRefused(path) => {
+            take_pooling(&mut ready, &path);
+            effects.push(PickerEffect::Tell(POOL_REFUSED.to_owned()));
+        }
+        PickerInput::PoolChanged { path, words } => ready.set_pool(&path, &words),
         PickerInput::Applied(path) => {
             if let Some(Applying { word, .. }) = take_applying(&mut ready, &path) {
                 set_value(&mut ready, &path, word);
@@ -99,6 +160,9 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerE
             effects.extend(awaiting.and_then(|pick| pick_again(&mut ready, pick)));
         }
         PickerInput::Chose { .. }
+        | PickerInput::Engine { .. }
+        | PickerInput::SetUpEngine(_)
+        | PickerInput::PoolToggled { .. }
         | PickerInput::Found(_)
         | PickerInput::AccountSheetEnded(_)
         | PickerInput::Reread(_) => {}
@@ -108,17 +172,29 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerE
 
 /// What picking `word` in the row at `path` asks: the set, the add-account sheet (the pick then
 /// waits for it), the reason the word cannot be picked, or nothing when the row already has it.
+/// Picking Local sets nothing: it opens Local's questions, and a model answers them.
 fn choose(ready: &mut Ready, path: KeyPath, word: String) -> Option<PickerEffect> {
+    if word == LOCAL_ITEM {
+        open_local(ready, &path);
+        return None;
+    }
     let row = ready.row(&path)?;
     let unchanged = row.value == word;
     match row.gate(&word) {
         Gate::NeedsAccount => {
-            ready.awaiting = Some(AwaitingAccount { path, word });
+            ready.awaiting = Some(AwaitingAccount {
+                path,
+                word: Some(word),
+            });
             Some(PickerEffect::AddAccount)
         }
         Gate::Blocked(reason) => Some(PickerEffect::Tell(reason)),
-        Gate::Open if unchanged => None,
+        Gate::Open if unchanged => {
+            ready.row_mut(&path)?.local = LocalAsk::Closed;
+            None
+        }
         Gate::Open => {
+            ready.row_mut(&path)?.local = LocalAsk::Closed;
             ready.applying = Some(Applying {
                 path: path.clone(),
                 word: word.clone(),
@@ -129,13 +205,18 @@ fn choose(ready: &mut Ready, path: KeyPath, word: String) -> Option<PickerEffect
 }
 
 /// The pick that waited on an account, once the rows are read again: made if its model can be
-/// picked now, dropped if the account did not reach it.
+/// picked now, dropped if the account did not reach it. An engine asked for reopens Local.
 fn pick_again(ready: &mut Ready, pick: AwaitingAccount) -> Option<PickerEffect> {
+    let AwaitingAccount { path, word } = pick;
+    let Some(word) = word else {
+        open_local(ready, &path);
+        return None;
+    };
     let open = ready
-        .row(&pick.path)
-        .is_some_and(|row| row.gate(&pick.word) == Gate::Open);
+        .row(&path)
+        .is_some_and(|row| row.gate(&word) == Gate::Open);
     if open {
-        choose(ready, pick.path, pick.word)
+        choose(ready, path, word)
     } else {
         None
     }
@@ -152,8 +233,61 @@ fn take_applying(ready: &mut Ready, path: &KeyPath) -> Option<Applying> {
     }
 }
 
+/// Local was picked in the row at `path`: its questions open, and the stored word stays until a
+/// model is chosen. A row that already runs a local model keeps it.
+fn open_local(ready: &mut Ready, path: &KeyPath) {
+    if let Some(row) = ready.row_mut(path)
+        && !matches!(row.choice(), Choice::Local { .. })
+    {
+        row.local = LocalAsk::Open { engine: None };
+    }
+}
+
+/// The engine `account` was chosen for Local in the row at `path`; one the row does not list, or
+/// the one it already runs, changes nothing.
+fn choose_engine(ready: &mut Ready, path: &KeyPath, account: String) {
+    let Some(row) = ready.row_mut(path) else {
+        return;
+    };
+    let listed = row.engines().iter().any(|engine| engine.account == account);
+    let current = matches!(row.choice(), Choice::Local { engine: Some(own), .. } if own == account);
+    if listed && !current {
+        row.local = LocalAsk::Open {
+            engine: Some(account),
+        };
+    }
+}
+
+/// What turning `word` in or out of the pool at `path` asks: the write, or the reason the model
+/// cannot be added.
+fn toggle_pool(ready: &mut Ready, path: KeyPath, word: String) -> Option<PickerEffect> {
+    let pool = ready.pool_at(&path)?;
+    let member = pool.chosen.contains(&word);
+    let words = pool.toggled(&word);
+    if let (Gate::Blocked(reason), false) = (pool.gate(&word), member) {
+        return Some(PickerEffect::Tell(reason));
+    }
+    ready.pooling = Some(PoolWrite {
+        path: path.clone(),
+        words: words.clone(),
+    });
+    Some(PickerEffect::SetPool { path, words })
+}
+
+/// The pool write in flight, if it is the one at `path`.
+fn take_pooling(ready: &mut Ready, path: &KeyPath) -> Option<PoolWrite> {
+    match ready.pooling.take() {
+        Some(write) if &write.path == path => Some(write),
+        other => {
+            ready.pooling = other;
+            None
+        }
+    }
+}
+
 fn set_value(ready: &mut Ready, path: &KeyPath, word: String) {
     if let Some(row) = ready.row_mut(path) {
         row.value = word;
+        row.local = LocalAsk::Closed;
     }
 }

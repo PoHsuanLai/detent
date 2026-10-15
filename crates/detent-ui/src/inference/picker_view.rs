@@ -5,20 +5,19 @@ use super::drive::{Picker, use_picker};
 use super::tier_row::TierRow;
 use crate::env::Env;
 use crate::files::{Files, value_of};
-use detent_model::{Absence, Adding, KindRows, PickerState, Reason};
+use detent_model::{Absence, Adding, KindRows, PickerInput, PickerState, Reason};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
-use ds_settings::schema::KeyPath;
 
 /// The row that turns the footer on.
 const SHOW_REASON: &str = "ai.auto.show_reason";
 
 /// What the "Automatic" choice of every row does.
-pub(crate) const AUTOMATIC: &str = "Automatic uses a model that's already running on this computer when it \
-    can handle the request. Otherwise it loads one that can, or uses an online model where your \
-    privacy settings allow it.";
+pub(crate) const AUTOMATIC: &str = "Automatic chooses from the models you pick for it. It uses one that's \
+    already running on this computer when it can handle the request, and otherwise one that can \
+    load, or an online model where your privacy settings allow it.";
 
 /// Whether the footer is shown: `ai.auto.show_reason`, on when no schema or file says otherwise
 /// (inferd's own default).
@@ -36,7 +35,7 @@ pub(crate) fn show_reason(env: &Env, files: &Files) -> Shown {
 #[component]
 pub fn ModelPicker(reasons: Shown) -> Element {
     let env = use_context::<Env>();
-    let Picker { state, choose } = use_picker();
+    let Picker { state, ask } = use_picker();
     let mut reason = use_signal(|| None::<Reason>);
 
     let feed = env.reasons.clone();
@@ -67,7 +66,7 @@ pub fn ModelPicker(reasons: Shown) -> Element {
                             kind,
                             applying: applying.clone(),
                             adding,
-                            onchoose: choose,
+                            onask: ask,
                         }
                     }
                     div { class: "picker-auto",
@@ -130,7 +129,7 @@ fn KindCard(
     titled: bool,
     applying: Option<detent_model::Applying>,
     adding: Adding,
-    onchoose: EventHandler<(KeyPath, String)>,
+    onask: EventHandler<PickerInput>,
 ) -> Element {
     let area = kind.area.clone().filter(|_| titled);
     rsx! {
@@ -140,7 +139,7 @@ fn KindCard(
         div { class: "picker-kind",
             FieldGroup { title: Some(kind.label.clone()),
                 for row in kind.rows.iter().cloned() {
-                    TierRow { key: "{row.path.0}", applying: applying.clone(), adding, row, onchoose }
+                    TierRow { key: "{row.path.0}", applying: applying.clone(), adding, row, onask }
                 }
             }
         }

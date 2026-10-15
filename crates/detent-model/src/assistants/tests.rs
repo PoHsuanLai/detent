@@ -203,10 +203,13 @@ mod offers {
                     ),
                     unavailable: BTreeMap::new(),
                     value: String::new(),
+                    pool: Default::default(),
+                    local: Default::default(),
                 }],
             }],
             applying: None,
             awaiting: None,
+            pooling: None,
         }
     }
 

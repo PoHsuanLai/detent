@@ -35,7 +35,7 @@ const SKIPPING: &str = "If you skip, you will be asked to choose when your assis
 pub(crate) fn AssistantSetup() -> Element {
     let env = use_context::<Env>();
     let app = use_app_handle();
-    let Picker { state, choose } = use_picker();
+    let Picker { state, ask } = use_picker();
     use_future({
         let bus = env.bus.clone();
         move || {
@@ -57,7 +57,7 @@ pub(crate) fn AssistantSetup() -> Element {
             Label { text: HEADING, role: LabelRole::Primary, style: LabelStyle::Title }
             Label { text: EXPLANATION, role: LabelRole::Secondary }
             div { class: "assistant-setup-card",
-                AssistantPicker { state: now, onchoose: choose }
+                AssistantPicker { state: now, onask: ask }
             }
             Label { text: SKIPPING, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
             div { class: "assistant-setup-buttons",

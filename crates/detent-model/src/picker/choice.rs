@@ -1,6 +1,8 @@
-//! What a stored word means to the person choosing, and whether the word can be chosen.
+//! What a row has chosen, whether that is enough to use, and whether a menu word can be picked.
 
+use super::local::{LOCAL_ITEM, LocalAsk, account_of};
 use super::model::{AUTO, ModelRow};
+use super::pool::AutoPool;
 
 /// What the menu calls the empty word, whatever the module calls it.
 pub(super) const NONE_LABEL: &str = "None";
@@ -9,33 +11,89 @@ pub(super) const NONE_LABEL: &str = "None";
 /// offers the way to add an account instead of setting it.
 pub(super) const NEEDS_ACCOUNT: &str = "Add an account to use";
 
-/// What a row's stored word stands for.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// What a row has chosen.
+#[derive(Debug, Clone, PartialEq)]
 pub enum Choice {
     /// The empty word: no model is chosen, and the row shows no selection.
     Nothing,
-    /// The word `auto`: the person asked for Automatic.
-    Automatic,
-    /// A model, as `account/model`.
+    /// The word `auto`: the person asked for Automatic, which chooses among the models in `pool`.
+    Automatic {
+        /// The models Automatic may use.
+        pool: AutoPool,
+    },
+    /// Local: a model that runs on this computer, as far as the person has answered.
+    Local {
+        /// The way to run it (an account), once chosen.
+        engine: Option<String>,
+        /// The model (`account/model`), once chosen.
+        model: Option<String>,
+    },
+    /// A model of any other kind, as `account/model`.
     Model(String),
 }
 
-impl Choice {
-    /// The choice `word` stores.
-    pub fn of(word: &str) -> Choice {
-        match word {
-            "" => Choice::Nothing,
-            AUTO => Choice::Automatic,
-            model => Choice::Model(model.to_owned()),
+/// What is still needed before a choice can be used.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChoiceGap {
+    /// Nothing is chosen.
+    Choice,
+    /// Automatic has no model to choose from.
+    PoolEmpty,
+    /// Every model Automatic was given has gone.
+    PoolGone,
+    /// Local was picked and nothing on this computer can run a model.
+    NoLocalEngine,
+    /// Local was picked and no way to run it is chosen.
+    LocalEngine,
+    /// Local was picked and no model of it is chosen.
+    LocalModel,
+}
+
+impl ChoiceGap {
+    /// The sentence that tells the person what to do next.
+    pub fn sentence(self) -> &'static str {
+        match self {
+            ChoiceGap::Choice => "Choose a model.",
+            ChoiceGap::PoolEmpty => "Pick at least one model for Automatic to choose from.",
+            ChoiceGap::PoolGone => {
+                "The models picked for Automatic are not available now. Pick another."
+            }
+            ChoiceGap::NoLocalEngine => "Nothing on this computer is set up to run models yet.",
+            ChoiceGap::LocalEngine => "Choose how models run on this computer.",
+            ChoiceGap::LocalModel => "Choose a model to run on this computer.",
         }
     }
+}
 
+/// Whether a choice can be used.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChoiceReadiness {
+    /// It can.
+    Ready,
+    /// It cannot yet.
+    Missing(ChoiceGap),
+}
+
+impl Choice {
     /// The menu word to mark as chosen; `None` when nothing is chosen, so no item is marked.
     pub fn selected(&self) -> Option<String> {
         match self {
             Choice::Nothing => None,
-            Choice::Automatic => Some(AUTO.to_owned()),
+            Choice::Automatic { .. } => Some(AUTO.to_owned()),
+            Choice::Local { .. } => Some(LOCAL_ITEM.to_owned()),
             Choice::Model(word) => Some(word.clone()),
+        }
+    }
+
+    /// Whether the choice can be used. A model is as soon as it is chosen; Automatic needs a
+    /// model to choose from, and Local the way to run it and the model.
+    pub fn readiness(&self) -> ChoiceReadiness {
+        match self {
+            Choice::Nothing => ChoiceReadiness::Missing(ChoiceGap::Choice),
+            Choice::Automatic { pool } => pool.readiness(),
+            Choice::Local { engine: None, .. } => ChoiceReadiness::Missing(ChoiceGap::LocalEngine),
+            Choice::Local { model: None, .. } => ChoiceReadiness::Missing(ChoiceGap::LocalModel),
+            Choice::Local { .. } | Choice::Model(_) => ChoiceReadiness::Ready,
         }
     }
 }
@@ -51,18 +109,80 @@ pub enum Gate {
     Blocked(String),
 }
 
+impl Gate {
+    /// The line shown under the word when it cannot be picked as it is.
+    pub fn note(&self) -> Option<&str> {
+        match self {
+            Gate::Open => None,
+            Gate::NeedsAccount => Some(NEEDS_ACCOUNT),
+            Gate::Blocked(reason) => Some(reason),
+        }
+    }
+}
+
+/// The gate a module's reason for a word makes.
+pub(super) fn gate_of(reason: Option<&str>) -> Gate {
+    match reason {
+        None => Gate::Open,
+        Some(NEEDS_ACCOUNT) => Gate::NeedsAccount,
+        Some(reason) => Gate::Blocked(reason.to_owned()),
+    }
+}
+
 impl ModelRow {
-    /// What the row has chosen now.
+    /// What the row has chosen now. Local picked and not yet answered counts as chosen: the
+    /// stored word changes only when its model is.
     pub fn choice(&self) -> Choice {
-        Choice::of(&self.value)
+        if let LocalAsk::Open { engine } = &self.local {
+            return Choice::Local {
+                engine: engine.clone().or_else(|| self.sole_engine()),
+                model: None,
+            };
+        }
+        match self.value.as_str() {
+            "" => Choice::Nothing,
+            AUTO => Choice::Automatic {
+                pool: self.pool.clone(),
+            },
+            word if self.is_local(word) => Choice::Local {
+                engine: Some(account_of(word).to_owned()),
+                model: Some(word.to_owned()),
+            },
+            word => Choice::Model(word.to_owned()),
+        }
+    }
+
+    /// What the row would have chosen if `word` were stored.
+    pub fn choice_when(&self, word: &str) -> Choice {
+        ModelRow {
+            value: word.to_owned(),
+            local: LocalAsk::Closed,
+            ..self.clone()
+        }
+        .choice()
+    }
+
+    /// Whether the row's choice can be used.
+    pub fn readiness(&self) -> ChoiceReadiness {
+        match self.choice() {
+            Choice::Local { engine: None, .. } if self.engines().is_empty() => {
+                ChoiceReadiness::Missing(ChoiceGap::NoLocalEngine)
+            }
+            choice => choice.readiness(),
+        }
+    }
+
+    /// The sentence under the row when what it has chosen cannot be used yet; none when nothing
+    /// is chosen (the button already asks) or the choice is ready.
+    pub fn unready_note(&self) -> Option<&'static str> {
+        match (self.choice(), self.readiness()) {
+            (Choice::Nothing, _) | (_, ChoiceReadiness::Ready) => None,
+            (_, ChoiceReadiness::Missing(missing)) => Some(missing.sentence()),
+        }
     }
 
     /// Whether `word` can be picked.
     pub fn gate(&self, word: &str) -> Gate {
-        match self.unavailable_reason(word) {
-            None => Gate::Open,
-            Some(NEEDS_ACCOUNT) => Gate::NeedsAccount,
-            Some(reason) => Gate::Blocked(reason.to_owned()),
-        }
+        gate_of(self.unavailable_reason(word))
     }
 }

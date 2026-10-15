@@ -131,7 +131,11 @@ pub(super) fn described() -> Described {
     .into_iter()
     .map(|(key, word)| (path(key), word.to_owned()))
     .collect();
-    Described { keys, values }
+    Described {
+        keys,
+        values,
+        ..Default::default()
+    }
 }
 
 pub(super) fn ready() -> AccountsState {
@@ -531,6 +535,7 @@ fn agent_described() -> Described {
             ),
         ],
         values: BTreeMap::new(),
+        ..Default::default()
     }
 }
 

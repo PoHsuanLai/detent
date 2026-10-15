@@ -3,7 +3,7 @@
 
 use crate::env::Env;
 use crate::files::{Edit, Files, apply};
-use crate::inference::{is_menu, set};
+use crate::inference::{is_choice, set};
 use crate::live::{Daemon, open_once};
 use detent_model::{AccountKey, LocalOnly, runtime_choice};
 
@@ -39,7 +39,7 @@ pub(super) async fn save(
 
 /// Makes `runtime` the text slot's choice at inferd's picker.
 async fn choose(env: &Env, runtime: &AccountKey) -> Result<(), String> {
-    let (client, described) = open_once(&env.bus, &Daemon::inferd(), is_menu)
+    let (client, described) = open_once(&env.bus, &Daemon::inferd(), is_choice)
         .await
         .map_err(|absence| format!("The model could not be chosen: {absence}."))?;
     let (path, word) = runtime_choice(&described, runtime)

@@ -57,7 +57,24 @@ fn picker(value: &str) -> PickerState {
             (path("ai.model.text.fast"), "local/qwen".to_owned()),
             (path("ai.model.text.balanced"), value.to_owned()),
         ]),
+        ..Default::default()
     };
+    step(PickerState::Probing, PickerInput::Found(Ok(described))).0
+}
+
+/// `picker`, with the text slot's Automatic list holding `held`.
+fn picker_with_pool(value: &str, held: &[&str]) -> PickerState {
+    let mut pool = row("ai.auto.pool.text", &[]);
+    pool.kind = KeyKind::List(Box::new(pool.kind));
+    let mut described = Described {
+        keys: vec![row("ai.model.text.balanced", &[]), pool],
+        values: BTreeMap::from([(path("ai.model.text.balanced"), value.to_owned())]),
+        ..Default::default()
+    };
+    described.lists.insert(
+        path("ai.auto.pool.text"),
+        held.iter().map(|word| (*word).to_owned()).collect(),
+    );
     step(PickerState::Probing, PickerInput::Found(Ok(described))).0
 }
 
@@ -85,6 +102,7 @@ fn the_assistants_row_is_the_text_slots_balanced_tier() {
         PickerInput::Found(Ok(Described {
             keys: vec![row("ai.model.llm.balanced", &[])],
             values: BTreeMap::new(),
+            ..Default::default()
         })),
     )
     .0;
@@ -98,6 +116,7 @@ fn the_assistants_row_is_the_text_slots_balanced_tier() {
         PickerInput::Found(Ok(Described {
             keys: vec![row("ai.model.text.fast", &[])],
             values: BTreeMap::new(),
+            ..Default::default()
         })),
     )
     .0;
@@ -122,6 +141,7 @@ fn the_setup_buttons_follow_what_is_chosen() {
         PickerInput::Found(Ok(Described {
             keys: vec![row("ai.model.text.fast", &[])],
             values: BTreeMap::new(),
+            ..Default::default()
         })),
     )
     .0;
@@ -146,8 +166,14 @@ fn the_setup_buttons_follow_what_is_chosen() {
             Pressable::NotYet,
         ),
         (
-            "Automatic is a choice",
+            "Automatic with no model to choose from",
             picker("auto"),
+            Pressable::Now,
+            Pressable::NotYet,
+        ),
+        (
+            "Automatic with a model to choose from",
+            picker_with_pool("auto", &["local/qwen"]),
             Pressable::Now,
             Pressable::Now,
         ),
@@ -254,5 +280,25 @@ fn the_page_has_its_own_slug_label_and_place_and_the_setup_step_is_never_listed(
     assert_eq!(
         listed,
         ["accounts", ASSISTANT_MODEL_SLUG, "software-update"]
+    );
+}
+
+#[test]
+fn opening_local_writes_nothing_so_skipping_leaves_the_model_unset() {
+    let (open, effects) = step(
+        picker(""),
+        PickerInput::Chose {
+            path: path("ai.model.text.balanced"),
+            word: "on-this-computer".to_owned(),
+        },
+    );
+    assert_eq!(effects, [], "Local is a question, not a model");
+    let row = assistant_of(&open).expect("the assistant's row");
+    assert_eq!(row.value, "", "still unset");
+    assert_eq!(setup_button(&open, SetupButton::Skip), Pressable::Now);
+    assert_eq!(
+        setup_button(&open, SetupButton::Continue),
+        Pressable::NotYet,
+        "Local is not a model until one is chosen"
     );
 }

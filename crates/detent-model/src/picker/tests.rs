@@ -242,6 +242,7 @@ fn ready_of(keys: Vec<KeySpec>) -> Ready {
     let described = Described {
         keys,
         values: BTreeMap::new(),
+        ..Default::default()
     };
     let PickerState::Ready(ready) = step(PickerState::Probing, PickerInput::Found(Ok(described))).0
     else {
@@ -410,6 +411,7 @@ fn an_unavailable_choice_carries_its_reason_and_choosing_it_sets_nothing() {
         PickerInput::Found(Ok(Described {
             keys: vec![gated],
             values: BTreeMap::new(),
+            ..Default::default()
         })),
     );
     let PickerState::Ready(ready) = &state else {
@@ -446,7 +448,13 @@ fn a_stored_word_is_nothing_automatic_or_a_model_and_only_nothing_marks_no_item(
     // `(stored word, what it stands for, the menu word marked)`.
     let cases: [(&str, Choice, Option<&str>); 3] = [
         ("", Choice::Nothing, None),
-        ("auto", Choice::Automatic, Some("auto")),
+        (
+            "auto",
+            Choice::Automatic {
+                pool: Default::default(),
+            },
+            Some("auto"),
+        ),
         (
             "local/qwen",
             Choice::Model("local/qwen".to_owned()),
@@ -454,7 +462,9 @@ fn a_stored_word_is_nothing_automatic_or_a_model_and_only_nothing_marks_no_item(
         ),
     ];
     for (word, choice, marked) in cases {
-        assert_eq!(Choice::of(word), choice, "{word:?}");
+        let ready = ready_of(vec![menu("ai.model.text.balanced", "Balanced")]);
+        let row = &ready.kinds[0].rows[0];
+        assert_eq!(row.choice_when(word), choice, "{word:?}");
         assert_eq!(choice.selected().as_deref(), marked, "{word:?}");
     }
 }
@@ -516,7 +526,7 @@ fn a_model_that_needs_an_account_offers_the_sheet_and_waits_without_setting() {
         ready.awaiting,
         Some(AwaitingAccount {
             path: path("ai.model.text.balanced"),
-            word: "local/holo".to_owned()
+            word: Some("local/holo".to_owned())
         })
     );
     assert_eq!(ready.applying, None, "nothing is written yet");
@@ -575,6 +585,7 @@ fn an_account_that_reaches_the_model_makes_the_pick_and_one_that_does_not_drops_
     let reached = Described {
         keys: vec![menu("ai.model.text.balanced", "Balanced")],
         values: BTreeMap::from([(path("ai.model.text.balanced"), "auto".to_owned())]),
+        ..Default::default()
     };
     let (state, effects) = step(waiting.clone(), PickerInput::Reread(reached));
     assert_eq!(

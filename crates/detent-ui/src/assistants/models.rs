@@ -1,7 +1,7 @@
 //! The models inferd lists, read where a place offers them to choose from.
 
 use crate::env::Env;
-use crate::inference::is_menu;
+use crate::inference::is_choice;
 use crate::live::{Daemon, Followed, follow};
 use detent_model::Ready;
 use dioxus::prelude::*;
@@ -16,7 +16,7 @@ pub(super) fn use_picker() -> Signal<Option<Ready>> {
             follow(
                 &bus,
                 &Daemon::inferd(),
-                is_menu,
+                is_choice,
                 |followed| match followed {
                     Followed::Opened(_, described) => ready.set(Some(Ready::of(&described))),
                     Followed::Gone(_) => ready.set(None),

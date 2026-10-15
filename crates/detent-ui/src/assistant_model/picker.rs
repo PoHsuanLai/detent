@@ -2,22 +2,18 @@
 //! draws for the text slot's balanced tier.
 
 use crate::inference::{AUTOMATIC, TierRow, Unavailable};
-use detent_model::{ModelRow, PickerState, assistant_of};
+use detent_model::{ModelRow, PickerInput, PickerState, assistant_of};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
-use ds_settings::schema::KeyPath;
 
 /// What the row is called here; the picker's own name for it is the tier.
 const ROW_LABEL: &str = "Model";
 
 /// The row, or why it is not there. `state` is the picker's.
 #[component]
-pub(super) fn AssistantPicker(
-    state: PickerState,
-    onchoose: EventHandler<(KeyPath, String)>,
-) -> Element {
+pub(super) fn AssistantPicker(state: PickerState, onask: EventHandler<PickerInput>) -> Element {
     let ready = match &state {
         PickerState::Ready(ready) => ready,
         PickerState::Unavailable(absence) => {
@@ -36,7 +32,7 @@ pub(super) fn AssistantPicker(
     rsx! {
         div { class: "picker", "data-picker": "ready",
             FieldGroup {
-                TierRow { row, applying: ready.applying.clone(), adding: ready.adding(), onchoose }
+                TierRow { row, applying: ready.applying.clone(), adding: ready.adding(), onask }
             }
             div { class: "picker-auto",
                 Label { text: AUTOMATIC, role: LabelRole::Tertiary, style: LabelStyle::Footnote }

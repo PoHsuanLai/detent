@@ -1,7 +1,7 @@
 //! The first-run step's two buttons: Skip always, Continue once a model is chosen.
 
 use super::row::assistant_of;
-use crate::picker::{Choice, PickerState};
+use crate::picker::{ChoiceReadiness, PickerState};
 
 /// A button of the step.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,8 +21,9 @@ pub enum Pressable {
     NotYet,
 }
 
-/// Whether `button` can be pressed. Continue waits until the assistant's row holds a model or
-/// Automatic, and while a pick is being written or waits on an account; Skip never waits.
+/// Whether `button` can be pressed. Continue waits until the assistant's row can be used (a
+/// model, Local with its model, Automatic with a model to choose from), and while a pick is being
+/// written or waits on an account; Skip never waits.
 pub fn setup_button(state: &PickerState, button: SetupButton) -> Pressable {
     match button {
         SetupButton::Skip => Pressable::Now,
@@ -34,8 +35,8 @@ fn continue_now(state: &PickerState) -> Pressable {
     let PickerState::Ready(ready) = state else {
         return Pressable::NotYet;
     };
-    let chosen = assistant_of(state).is_some_and(|row| row.choice() != Choice::Nothing);
-    if chosen && ready.is_idle() {
+    let usable = assistant_of(state).is_some_and(|row| row.readiness() == ChoiceReadiness::Ready);
+    if usable && ready.is_idle() {
         Pressable::Now
     } else {
         Pressable::NotYet

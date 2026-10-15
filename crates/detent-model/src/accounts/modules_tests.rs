@@ -63,6 +63,7 @@ fn module(keys: Vec<KeySpec>, values: &[(&str, &str)]) -> Described {
             .iter()
             .map(|(k, v)| (KeyPath((*k).to_owned()), (*v).to_owned()))
             .collect::<BTreeMap<_, _>>(),
+        ..Default::default()
     }
 }
 

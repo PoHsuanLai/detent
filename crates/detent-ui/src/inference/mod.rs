@@ -3,13 +3,15 @@
 
 mod drive;
 mod io;
+mod local_rows;
 mod picker_view;
+mod pool_editor;
 mod reasons;
 mod runtimes_view;
 mod tier_row;
 
 pub(crate) use drive::{Picker, use_picker};
-pub(crate) use io::{is_menu, set};
+pub(crate) use io::{is_choice, set, set_pool};
 pub(crate) use picker_view::{AUTOMATIC, ModelPicker, Unavailable, show_reason};
 pub use reasons::ReasonFeed;
 pub(crate) use runtimes_view::{Found, LocalRuntimes, use_runtimes};

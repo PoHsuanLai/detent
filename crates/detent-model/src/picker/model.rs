@@ -1,6 +1,9 @@
 //! What the picker shows: one group per kind, one row per tier.
 
+use super::absence::Absence;
 use super::choice::NONE_LABEL;
+use super::local::LocalAsk;
+use super::pool::{AutoPool, PoolWrite, is_pool};
 use crate::accounts::Adding;
 use crate::words::word_label;
 use ds_settings::schema::{ChoiceWord, KeyKind, KeyPath, KeySpec, UnavailableReason, WordLabels};
@@ -14,30 +17,6 @@ const PREFIX: &str = "ai.model.";
 
 /// What separates the area from the slot in a row's section: `Models / Text`.
 const SECTION_SPLIT: &str = " / ";
-
-/// Why a live pane (the model picker, the Accounts pane) is not there.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Absence {
-    /// The window was started without a bus to look on.
-    NoBus,
-    /// Nothing serves the module: the daemon is not running.
-    NotRunning,
-    /// The daemon refused this caller: it does not list Settings in its callers.
-    NotPermitted,
-    /// Anything else the module or the bus said.
-    Failed(String),
-}
-
-impl std::fmt::Display for Absence {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Absence::NoBus => f.write_str("Settings is not connected to the desktop"),
-            Absence::NotRunning => f.write_str("the service is not running"),
-            Absence::NotPermitted => f.write_str("Settings was not opened from the desktop"),
-            Absence::Failed(_) => f.write_str("the service did not answer"),
-        }
-    }
-}
 
 /// One run of a row's choices: the ungrouped ones, or one group's.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,6 +44,10 @@ pub struct ModelRow {
     pub unavailable: BTreeMap<String, String>,
     /// The word chosen now: "", `auto` or `account/model`.
     pub value: String,
+    /// The models Automatic chooses among for this row's slot; empty when the module lists none.
+    pub pool: AutoPool,
+    /// Whether the person is answering what Local asks, before a model of it is chosen.
+    pub local: LocalAsk,
 }
 
 /// The rows of one slot, as the schema's section and labels name them.
@@ -80,12 +63,14 @@ pub struct KindRows {
 }
 
 /// What `Describe` and `Get` returned: the keys and each one's value.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Described {
     /// The module's keys.
     pub keys: Vec<KeySpec>,
-    /// The value of each key the module answered for.
+    /// The value of each key the module answered for with a word.
     pub values: BTreeMap<KeyPath, String>,
+    /// The value of each key the module answered for with a list of words.
+    pub lists: BTreeMap<KeyPath, Vec<String>>,
 }
 
 /// A set that is in flight.
@@ -97,13 +82,14 @@ pub struct Applying {
     pub word: String,
 }
 
-/// A pick of a hosted model that no account reaches, waiting for the person to add an account.
+/// A pick that waits for the person to add an account: of a hosted model that no account
+/// reaches, or of an engine to run models on this computer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AwaitingAccount {
     /// The row picked in.
     pub path: KeyPath,
-    /// The model picked.
-    pub word: String,
+    /// The model picked; none when the account asked for is an engine for Local.
+    pub word: Option<String>,
 }
 
 /// A picker that is there.
@@ -116,6 +102,8 @@ pub struct Ready {
     /// The pick that waits on an account being added, if any: while it does, no other pick is
     /// taken.
     pub awaiting: Option<AwaitingAccount>,
+    /// The pool write in flight, if any: one at a time, and no pick is taken meanwhile.
+    pub pooling: Option<PoolWrite>,
 }
 
 /// Where the picker stands.
@@ -128,6 +116,14 @@ pub enum PickerState {
     Unavailable(Absence),
     /// The module answered.
     Ready(Ready),
+}
+
+/// The slot segment of an `ai.model.<slot>.<tier>` path.
+pub(super) fn slot_of(path: &KeyPath) -> Option<&str> {
+    path.0
+        .strip_prefix(PREFIX)
+        .and_then(|rest| rest.split_once('.'))
+        .map(|(slot, _)| slot)
 }
 
 /// Whether `path` is `ai.model.<slot>.<tier>`.
@@ -167,17 +163,12 @@ impl ModelRow {
             path: spec.path.clone(),
             label,
             help: spec.help.0.clone(),
-            sections: spec
-                .grouped_choices()
-                .into_iter()
-                .map(|section| ChoiceSection {
-                    group: section.group.map(|group| group.0.clone()),
-                    words: section.choices.into_iter().map(str::to_owned).collect(),
-                })
-                .collect(),
+            sections: sections_of(spec),
             labels: spec.labels.clone(),
             unavailable: unavailable_of(&spec.unavailable),
             value,
+            pool: AutoPool::default(),
+            local: LocalAsk::Closed,
         })
     }
 
@@ -223,10 +214,17 @@ impl Ready {
                 }),
             }
         }
+        for spec in described.keys.iter().filter(|spec| is_pool(spec)) {
+            let words = described.lists.get(&spec.path).cloned().unwrap_or_default();
+            if let Some(pool) = AutoPool::of(spec, words) {
+                give_pool(&mut kinds, pool);
+            }
+        }
         Ready {
             kinds,
             applying: None,
             awaiting: None,
+            pooling: None,
         }
     }
 
@@ -241,7 +239,7 @@ impl Ready {
 
     /// Whether a pick may be taken: no set is in flight and no account is being added.
     pub(crate) fn is_idle(&self) -> bool {
-        self.applying.is_none() && self.awaiting.is_none()
+        self.applying.is_none() && self.awaiting.is_none() && self.pooling.is_none()
     }
 
     /// The row at `path`.
@@ -261,8 +259,30 @@ impl Ready {
     }
 }
 
+/// The choices of a menu key as sections: the ungrouped ones first, then one per group.
+pub(super) fn sections_of(spec: &KeySpec) -> Vec<ChoiceSection> {
+    spec.grouped_choices()
+        .into_iter()
+        .map(|section| ChoiceSection {
+            group: section.group.map(|group| group.0.clone()),
+            words: section.choices.into_iter().map(str::to_owned).collect(),
+        })
+        .collect()
+}
+
+/// Hands `pool` to every row of the slot it belongs to.
+fn give_pool(kinds: &mut [KindRows], pool: AutoPool) {
+    let rows = kinds
+        .iter_mut()
+        .flat_map(|kind| kind.rows.iter_mut())
+        .filter(|row| pool.is_for(&row.path));
+    for row in rows {
+        row.pool = pool.clone();
+    }
+}
+
 /// The module's unavailable choices as plain words and reasons.
-fn unavailable_of(
+pub(super) fn unavailable_of(
     unavailable: &BTreeMap<ChoiceWord, UnavailableReason>,
 ) -> BTreeMap<String, String> {
     unavailable

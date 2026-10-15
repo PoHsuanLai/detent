@@ -43,10 +43,29 @@ pub(crate) async fn read(
 async fn pass(module: &impl Rows, valued: fn(&KeyKind) -> bool) -> Result<Described, LiveError> {
     let keys = module.describe().await?;
     let mut values = BTreeMap::new();
+    let mut lists = BTreeMap::new();
     for spec in keys.iter().filter(|spec| valued(&spec.kind)) {
-        if let Some(word) = module.get(&spec.path).await?.as_str() {
-            values.insert(spec.path.clone(), word.to_owned());
+        match module.get(&spec.path).await? {
+            toml::Value::String(word) => {
+                values.insert(spec.path.clone(), word);
+            }
+            toml::Value::Array(items) => {
+                lists.insert(spec.path.clone(), words_of(&items));
+            }
+            _ => {}
         }
     }
-    Ok(Described { keys, values })
+    Ok(Described {
+        keys,
+        values,
+        lists,
+    })
+}
+
+/// The words of a list value; an item that is not a word is left out.
+pub(crate) fn words_of(items: &[toml::Value]) -> Vec<String> {
+    items
+        .iter()
+        .filter_map(|item| item.as_str().map(str::to_owned))
+        .collect()
 }

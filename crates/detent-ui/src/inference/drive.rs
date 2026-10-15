@@ -1,25 +1,25 @@
 //! Following inferd's model picker and carrying out what its steps ask: the one place the picker
 //! calls the bus. Every page that draws a part of the picker uses this hook, so they agree.
 
-use super::{is_menu, set};
+use super::{is_choice, set, set_pool};
 use crate::accounts::add_account;
 use crate::env::Env;
-use crate::live::{BusSource, Daemon, Followed, follow, reread};
+use crate::live::{BusSource, Daemon, Followed, follow, reread, words_of};
 use detent_model::{PickerEffect, PickerInput, PickerState, step};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;
 use ds_settings::live::LiveClient;
-use ds_settings::schema::KeyPath;
 use std::collections::VecDeque;
 
-/// The picker a page draws: where inferd's rows stand, and what a pick does.
+/// The picker a page draws: where inferd's rows stand, and what the person's asks do.
 #[derive(Clone, Copy)]
 pub(crate) struct Picker {
     /// Where the picker stands.
     pub state: Signal<PickerState>,
-    /// A pick of a word for the row at a path.
-    pub choose: EventHandler<(KeyPath, String)>,
+    /// What the person asked of a row: a pick, an engine for Local, a model in or out of
+    /// Automatic's list.
+    pub ask: EventHandler<PickerInput>,
 }
 
 /// Applies `input` to the picker and returns the effects it asks for.
@@ -44,7 +44,7 @@ pub(crate) fn use_picker() -> Picker {
             follow(
                 &bus,
                 &Daemon::inferd(),
-                is_menu,
+                is_choice,
                 |followed| match followed {
                     Followed::Opened(opened, described) => {
                         send(&mut state, PickerInput::Found(Ok(described)));
@@ -54,17 +54,16 @@ pub(crate) fn use_picker() -> Picker {
                         send(&mut state, PickerInput::Found(Err(absence)));
                         client.set(None);
                     }
-                    Followed::Changed(path, value) => {
-                        if let Some(word) = value.as_str() {
-                            send(
-                                &mut state,
-                                PickerInput::Changed {
-                                    path,
-                                    word: word.to_owned(),
-                                },
-                            );
+                    Followed::Changed(path, value) => match value {
+                        toml::Value::String(word) => {
+                            send(&mut state, PickerInput::Changed { path, word });
                         }
-                    }
+                        toml::Value::Array(items) => {
+                            let words = words_of(&items);
+                            send(&mut state, PickerInput::PoolChanged { path, words });
+                        }
+                        _ => {}
+                    },
                 },
             )
             .await;
@@ -72,16 +71,10 @@ pub(crate) fn use_picker() -> Picker {
     });
 
     let bus = env.bus.clone();
-    let choose = EventHandler::new(move |(path, word): (KeyPath, String)| {
-        spawn(drive(
-            state,
-            client,
-            bus.clone(),
-            toasts,
-            PickerInput::Chose { path, word },
-        ));
+    let ask = EventHandler::new(move |input: PickerInput| {
+        spawn(drive(state, client, bus.clone(), toasts, input));
     });
-    Picker { state, choose }
+    Picker { state, ask }
 }
 
 /// Applies `first` to the picker, then every input its effects lead to, until nothing is left to
@@ -107,6 +100,15 @@ async fn drive(
                         Err(why) => PickerInput::Refused { path, why },
                     });
                 }
+                PickerEffect::SetPool { path, words } => {
+                    let Some(opened) = client.peek().clone() else {
+                        continue;
+                    };
+                    queue.push_back(match set_pool(&opened, &path, &words).await {
+                        Ok(()) => PickerInput::PoolApplied(path),
+                        Err(_) => PickerInput::PoolRefused(path),
+                    });
+                }
                 PickerEffect::AddAccount => {
                     queue.push_back(PickerInput::AccountSheetEnded(add_account(&bus).await));
                 }
@@ -114,7 +116,7 @@ async fn drive(
                     let Some(opened) = client.peek().clone() else {
                         continue;
                     };
-                    queue.push_back(match reread(&opened, is_menu).await {
+                    queue.push_back(match reread(&opened, is_choice).await {
                         Ok(described) => PickerInput::Reread(described),
                         Err(absence) => PickerInput::Found(Err(absence)),
                     });

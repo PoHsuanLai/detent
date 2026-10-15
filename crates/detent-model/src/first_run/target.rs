@@ -68,6 +68,7 @@ mod tests {
         Described {
             keys,
             values: BTreeMap::new(),
+            ..Default::default()
         }
     }
 

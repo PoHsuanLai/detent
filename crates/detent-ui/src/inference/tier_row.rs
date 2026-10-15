@@ -1,19 +1,22 @@
-//! One tier's menu: the row every part of the picker is made of.
+//! One tier's menu: the row every part of the picker is made of, and what opens under it when
+//! the choice asks more (Local's engine and model, Automatic's list).
 
+use super::local_rows::LocalRows;
+use super::pool_editor::PoolEditor;
 use crate::key_row::row_id;
-use detent_model::{Adding, Applying, Choice, Gate, ModelRow, loading_text};
+use detent_model::{Adding, Applying, Choice, Gate, MenuLine, ModelRow, PickerInput, loading_text};
 use dioxus::prelude::*;
-use ds::components::content::label::LabelRole;
+use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::FieldRow;
 use ds::components::menus::pop_up_button::PopUpButton;
 use ds::prelude::*;
 use ds::root::common::Common;
+use ds::root::pass_through::ExtraClass;
 use ds::style::tokens::control_size::ControlSize;
-use ds_settings::schema::KeyPath;
 
 /// What the button says while nothing is chosen.
-const NOTHING_CHOSEN: &str = "Choose\u{2026}";
+pub(super) const NOTHING_CHOSEN: &str = "Choose\u{2026}";
 
 /// One tier's menu; while a set applies the row says "Loading <model>" and takes no input, and
 /// while the add-account sheet is open no row does. A row that has chosen nothing shows no
@@ -23,7 +26,7 @@ pub(crate) fn TierRow(
     row: ModelRow,
     applying: Option<Applying>,
     adding: Adding,
-    onchoose: EventHandler<(KeyPath, String)>,
+    onask: EventHandler<PickerInput>,
 ) -> Element {
     let here = applying.as_ref().filter(|set| set.path == row.path);
     let availability = match (&applying, here, adding) {
@@ -32,9 +35,16 @@ pub(crate) fn TierRow(
         (None, None, Adding::Idle) => Availability::Enabled,
     };
     let loading = here.map(|set| loading_text(&row, &set.word));
-    let shown = here.map_or_else(|| row.choice(), |set| Choice::of(&set.word));
+    let shown = here.map_or_else(|| row.choice(), |set| row.choice_when(&set.word));
+    let calm = if availability == Availability::Enabled {
+        Availability::Enabled
+    } else {
+        Availability::Disabled
+    };
     let items = menu_items(&row);
     let path = row.path.clone();
+    let local = row.local_view();
+    let note = row.unready_note().filter(|_| local.is_none());
     rsx! {
         FieldRow {
             label: TextLine::from(row.label.clone()),
@@ -43,15 +53,26 @@ pub(crate) fn TierRow(
             availability,
             common: Common { id: Some(row_id("picker", &row.path.0)), ..Common::default() },
             if let Some(text) = loading {
-                Label { text, role: LabelRole::Secondary, common: Common { extra_class: ds::root::pass_through::ExtraClass::parse("picker-loading").ok(), ..Common::default() } }
+                Label { text, role: LabelRole::Secondary, common: Common { extra_class: ExtraClass::parse("picker-loading").ok(), ..Common::default() } }
             }
             PopUpButton::<String> {
                 items,
                 value: shown.selected(),
                 title: Some(NOTHING_CHOSEN.to_owned()),
                 size: ControlSize::Small,
-                availability: if availability == Availability::Enabled { Availability::Enabled } else { Availability::Disabled },
-                onpick: move |word| onchoose.call((path.clone(), word)),
+                availability: calm,
+                onpick: move |word| onask.call(PickerInput::Chose { path: path.clone(), word }),
+            }
+        }
+        if let Some(view) = local {
+            LocalRows { path: row.path.clone(), view, availability: calm, onask }
+        }
+        if let Choice::Automatic { pool } = &shown {
+            PoolEditor { pool: pool.clone(), availability: calm, onask }
+            if let Some(text) = note {
+                div { class: "picker-auto", "data-note": "unready",
+                    Label { text, role: LabelRole::Secondary, style: LabelStyle::Footnote }
+                }
             }
         }
     }
@@ -59,15 +80,11 @@ pub(crate) fn TierRow(
 
 /// The row's menu: the ungrouped choices first, then a header per group over its choices.
 fn menu_items(row: &ModelRow) -> Vec<MenuItem<String>> {
-    row.sections
-        .iter()
-        .flat_map(|section| {
-            let header = section.group.clone().map(MenuItem::Header);
-            let items = section
-                .words
-                .iter()
-                .flat_map(|word| choice_items(row, word));
-            header.into_iter().chain(items)
+    row.menu()
+        .into_iter()
+        .flat_map(|line| match line {
+            MenuLine::Header(name) => vec![MenuItem::Header(name)],
+            MenuLine::Pick { word, label, gate } => pick_items(&word, &label, &gate),
         })
         .collect()
 }
@@ -75,18 +92,15 @@ fn menu_items(row: &ModelRow) -> Vec<MenuItem<String>> {
 /// The menu lines for `word`: the choice, and when it cannot be picked as it is, its reason in a
 /// status line right under it. A model that needs an account stays pickable (picking it offers
 /// to add one); any other reason greys the choice.
-fn choice_items(row: &ModelRow, word: &str) -> Vec<MenuItem<String>> {
-    let item = MenuItem::new(word.to_owned(), row.label_of(word));
+pub(super) fn pick_items(word: &str, label: &str, gate: &Gate) -> Vec<MenuItem<String>> {
+    let item = MenuItem::new(word.to_owned(), label.to_owned());
     let info = |reason: &str| MenuItem::Info {
         title: reason.to_owned(),
         detail: None,
     };
-    match row.gate(word) {
+    match gate {
         Gate::Open => vec![item],
-        Gate::NeedsAccount => vec![item, info(row.unavailable_reason(word).unwrap_or_default())],
-        Gate::Blocked(reason) => vec![
-            item.with_availability(Availability::Disabled),
-            info(&reason),
-        ],
+        Gate::NeedsAccount => vec![item, info(gate.note().unwrap_or_default())],
+        Gate::Blocked(reason) => vec![item.with_availability(Availability::Disabled), info(reason)],
     }
 }

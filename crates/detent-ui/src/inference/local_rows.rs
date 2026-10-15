@@ -1,0 +1,104 @@
+//! What Local asks under its row: how models run on this computer, then which model of that
+//! way. With nothing set up it says so and offers to add an account that would run them.
+
+use super::tier_row::{NOTHING_CHOSEN, pick_items};
+use crate::key_row::row_id;
+use detent_model::{ChoiceGap, LocalView, PickerInput};
+use dioxus::prelude::*;
+use ds::components::controls::button::Button;
+use ds::components::fields::field_row::FieldRow;
+use ds::components::menus::pop_up_button::PopUpButton;
+use ds::prelude::*;
+use ds::root::common::Common;
+use ds::style::tokens::control_size::ControlSize;
+use ds_settings::schema::KeyPath;
+
+/// What the first question is called.
+const ENGINE_LABEL: &str = "Runs with";
+
+/// What the second question is called.
+const MODEL_LABEL: &str = "Model";
+
+/// What the row is called when nothing on this computer can run a model.
+const NO_ENGINE_LABEL: &str = "Local";
+
+/// The button that opens the way to add what would run models here.
+const ADD: &str = "Add Account\u{2026}";
+
+/// The questions under the row at `path`: the engine, then, once there is one, its model.
+#[component]
+pub(super) fn LocalRows(
+    path: KeyPath,
+    view: LocalView,
+    availability: Availability,
+    onask: EventHandler<PickerInput>,
+) -> Element {
+    if view.engines.is_empty() {
+        return rsx! { NoEngine { path, availability, onask } };
+    }
+    let engines: Vec<MenuItem<String>> = view
+        .engines
+        .iter()
+        .map(|engine| MenuItem::new(engine.account.clone(), engine.label.clone()))
+        .collect();
+    let models: Vec<MenuItem<String>> = view
+        .models()
+        .iter()
+        .flat_map(|model| pick_items(&model.word, &model.label, &model.gate))
+        .collect();
+    let (engine_at, model_at) = (path.clone(), path.clone());
+    rsx! {
+        FieldRow {
+            label: TextLine::from(ENGINE_LABEL),
+            availability,
+            common: Common { id: Some(row_id("picker-engine", &path.0)), ..Common::default() },
+            PopUpButton::<String> {
+                items: engines,
+                value: view.engine.clone(),
+                title: Some(NOTHING_CHOSEN.to_owned()),
+                size: ControlSize::Small,
+                availability,
+                onpick: move |account| onask.call(PickerInput::Engine { path: engine_at.clone(), account }),
+            }
+        }
+        if view.engine.is_some() {
+            FieldRow {
+                label: TextLine::from(MODEL_LABEL),
+                availability,
+                common: Common { id: Some(row_id("picker-local-model", &path.0)), ..Common::default() },
+                PopUpButton::<String> {
+                    items: models,
+                    value: view.model.clone(),
+                    title: Some(NOTHING_CHOSEN.to_owned()),
+                    size: ControlSize::Small,
+                    availability,
+                    onpick: move |word| onask.call(PickerInput::Chose { path: model_at.clone(), word }),
+                }
+            }
+        }
+    }
+}
+
+/// Nothing on this computer is set up to run models: the row says so and adds the way in.
+#[component]
+fn NoEngine(
+    path: KeyPath,
+    availability: Availability,
+    onask: EventHandler<PickerInput>,
+) -> Element {
+    let set_up = path.clone();
+    rsx! {
+        FieldRow {
+            label: TextLine::from(NO_ENGINE_LABEL),
+            help: Some(TextLine::from(ChoiceGap::NoLocalEngine.sentence())),
+            availability,
+            common: Common { id: Some(row_id("picker-no-engine", &path.0)), ..Common::default() },
+            Button {
+                label: ADD,
+                size: ControlSize::Small,
+                availability,
+                onclick: move |_| onask.call(PickerInput::SetUpEngine(set_up.clone())),
+            }
+        }
+    }
+}
