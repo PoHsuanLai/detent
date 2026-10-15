@@ -5,6 +5,7 @@ use crate::config_file::ConfigFile;
 use crate::discovery::ProgramSchema;
 use crate::entry::KeyEntry;
 use crate::page::{PageSlug, sidebar_order};
+use crate::updates::software_update_page;
 use ds_settings::schema::{Exposure, ForeignTables, KeyPath, KeySpec, Page};
 
 /// The keys of one section that share an exposure, in schema order.
@@ -46,8 +47,8 @@ pub struct FileSpec {
 /// The whole app: pages in sidebar order, and the files behind them.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Catalogue {
-    /// Pages that have at least one key, in sidebar order, and the Accounts page, which is accountd's
-    /// live pane and needs none.
+    /// Pages that have at least one key, in sidebar order, and the Accounts and Software Update
+    /// pages, which are live panes and need none.
     pub pages: Vec<PageModel>,
     /// Every settings file the keys read and write.
     pub files: Vec<FileSpec>,
@@ -148,14 +149,17 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
         }
         pages
     });
-    // Accounts is accountd's live pane (no file names it), so the page is always there.
-    if !pages.iter().any(|page| page.page == Page::Accounts) {
-        pages.push(PageModel {
-            page: Page::Accounts,
-            slug: PageSlug::of(&Page::Accounts),
-            sections: Vec::new(),
-            advanced: Vec::new(),
-        });
+    // Accounts is accountd's live pane and Software Update the update service's (no file names
+    // either), so both pages are always there.
+    for live in [Page::Accounts, software_update_page()] {
+        if !pages.iter().any(|page| page.page == live) {
+            pages.push(PageModel {
+                slug: PageSlug::of(&live),
+                page: live,
+                sections: Vec::new(),
+                advanced: Vec::new(),
+            });
+        }
     }
     pages.sort_by(|a, b| sidebar_order(&a.page, &b.page));
     pages

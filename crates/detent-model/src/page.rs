@@ -1,5 +1,6 @@
 //! The fixed page order and each page's slug (design/22 section 9.3).
 
+use crate::updates::{SLUG as SOFTWARE_UPDATE, is_software_update};
 use ds_settings::schema::Page;
 use std::cmp::Ordering;
 
@@ -23,13 +24,14 @@ impl PageSlug {
             Page::Apps => "apps".to_owned(),
             Page::Intelligence => "intelligence".to_owned(),
             Page::Viewer => "viewer".to_owned(),
+            Page::App(_) if is_software_update(page) => SOFTWARE_UPDATE.to_owned(),
             Page::App(id) => format!("app:{id}"),
         })
     }
 }
 
-/// Where `page` sits in the sidebar: the fixed pages in section 9.3's order, then every
-/// third-party page by app id.
+/// Where `page` sits in the sidebar: the fixed pages in section 9.3's order, Software Update, then
+/// every third-party page by app id.
 fn place(page: &Page) -> (u8, &str) {
     match page {
         Page::Appearance => (0, ""),
@@ -43,7 +45,8 @@ fn place(page: &Page) -> (u8, &str) {
         Page::Apps => (8, ""),
         Page::Intelligence => (9, ""),
         Page::Viewer => (10, ""),
-        Page::App(id) => (11, id),
+        Page::App(_) if is_software_update(page) => (11, ""),
+        Page::App(id) => (12, id),
     }
 }
 

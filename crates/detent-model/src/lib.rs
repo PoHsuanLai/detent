@@ -27,6 +27,7 @@ mod sharing;
 mod shortcuts;
 mod spaces;
 mod text_form;
+mod updates;
 mod warning;
 mod words;
 
@@ -87,5 +88,11 @@ pub use spaces::{
     SpacesInput, SpacesReady, SpacesState, spaces_step,
 };
 pub use text_form::{TextFault, show_value};
+pub use updates::{
+    ButtonActivity, ByteCount, NotesSheet, NotesState, Permille, UPDATES_NOT_AVAILABLE,
+    UnixSeconds, UpdateButton, UpdateMeter, UpdateOffer, UpdatePhase, UpdateStatus, UpdateWire,
+    UpdatesEffect, UpdatesInput, UpdatesPage, UpdatesReady, UpdatesShown, UpdatesState,
+    is_software_update, updates_shown, updates_step,
+};
 pub use warning::{StaleReason, Warning};
 pub use words::{humanize, word_label};

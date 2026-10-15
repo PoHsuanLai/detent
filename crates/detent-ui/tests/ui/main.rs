@@ -16,6 +16,7 @@ mod local_runtimes;
 mod notices;
 mod shortcuts;
 mod snapshots;
+mod software_update;
 mod spaces;
 mod support;
 mod viewer_page;

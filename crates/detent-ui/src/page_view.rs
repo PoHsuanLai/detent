@@ -10,6 +10,7 @@ use crate::live::start;
 use crate::section_view::SectionView;
 use crate::shortcuts::ShortcutsPane;
 use crate::spaces::SpacesPane;
+use crate::updates::SoftwareUpdatePane;
 use detent_model::{Block, PageSlug, blocks, modules_read};
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
@@ -49,6 +50,7 @@ pub fn PageView(
                     Block::AccountsPane => rsx! { AccountsPane {} },
                     Block::SpacesPane => rsx! { SpacesPane {} },
                     Block::Shortcuts => rsx! { ShortcutsPane {} },
+                    Block::SoftwareUpdate => rsx! { SoftwareUpdatePane {} },
                     Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
                     Block::ModelPicker => rsx! {

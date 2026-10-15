@@ -260,6 +260,33 @@ Open items, each with its closing condition:
 - Actions of apps are not listed; a change to one in the person's file is kept as it is.
 - The page is listed only while some schema names it (sill's does); like Spaces it is not forced.
 
+## Software Update (`detent-model/src/updates/`, `detent-ui/src/updates/`)
+
+- **Not a fixed page of quire.** `ds_settings::schema::Page` has no Software Update variant, and detent
+  does not edit quire. The catalogue holds the page as `Page::App("Software Update")`
+  (`detent-model/src/updates/page.rs` is the only place that knows): its label is that name, its slug is
+  `software-update` (hyphenated because slipway's notification runs `detent --page software-update`; the
+  fixed pages use underscores), it is always listed (no file names it, like Accounts) and sits after
+  Viewer. Closes when quire adds `Page::SoftwareUpdate`: delete that file's sentinel and the three
+  guards on `Page::App` (`page.rs`, `layout.rs`, `icons.rs`).
+- **No "General" group.** macOS has General > Software Update; detent's sidebar is flat, so the page is a
+  sidebar row of its own. Closes when the sidebar has groups.
+- **Wire words are parsed by hand.** `UpdatePhase::of_word` is a hand-written match: `detent-model` has no
+  `ds-core` (the `Word` derive) and gaining it is a Cargo change. Closes with that dependency.
+- **The service is looked for, never started.** slipway ships no D-Bus activation file, so the page reads
+  `NameHasOwner` first; a service that starts later is followed (name changes and
+  `PropertiesChanged` tick a re-read). The page says plainly that updates are not available when it is
+  not there.
+- **Log Out opens the shell's power menu** (`sill power-menu open`, which asks before it logs out). There
+  is no bus method for logging out in detent or sill. When the command is missing or fails, a toast says
+  to use the power menu of the desktop. Closes if sill offers a bus call for it.
+- **"Last checked" is not ticked.** It is worked out when the page draws (on each service change and each
+  visit), so "5 minutes ago" does not turn into "6 minutes ago" on its own while the page sits idle.
+- **Rollback and the automatic-update options are not on the page** (owner: check daily, ask to install;
+  the page states the daily check and has no switch).
+- **A second `detent --page X` navigates the running window** (`ActivateAction("open-page", [slug])`, then
+  a raise), so the notification's button lands on the page whether or not Settings was open.
+
 ## Not in v1
 
 - **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): only inferd's
@@ -284,3 +311,6 @@ Open items, each with its closing condition:
   `~/.config/sill/settings.toml` and sill's dock reacts. Only the harness has run the window: a
   launch of the binary on scratch directories reached window creation and stopped with "no
   adapter found" (the build sandbox had no Vulkan device), so the real window is unchecked.
+- The Software Update page against the real slipway service: Check for Updates, Update Now through the
+  download and the install, "Log Out..." opening the shell's power menu, and the notification's button
+  opening this page in a running Settings. The tests use a stand-in service and a counted log-out only.

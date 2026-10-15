@@ -11,16 +11,20 @@ pub mod inferd;
 pub mod lending;
 pub mod spaces;
 pub mod syncd;
+pub mod updates;
 
 use detent_files::{ConfigHome, DataHome, StateHome};
 use detent_testkit::{Scratch, seed_schemas};
-use detent_ui::{App, BusSource, Env, FirstRunApp, Lender, Opening, Outbox, ReasonFeed, inbox};
+use detent_ui::{
+    App, BusSource, Env, FirstRunApp, Lender, LogOut, Opening, Outbox, ReasonFeed, Updater, inbox,
+};
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
 use ds_settings::SystemPrefsSource;
 use ds_settings::schema::Schema;
 use lending::Units;
 use porter_client::LendingConfig;
+use updates::{Leaves, Service};
 
 pub const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
@@ -37,6 +41,8 @@ pub struct Sandbox {
     bus: BusSource,
     reasons: ReasonFeed,
     units: Units,
+    updates: Service,
+    leaves: Leaves,
 }
 
 impl Sandbox {
@@ -52,6 +58,8 @@ impl Sandbox {
             bus: BusSource::Absent,
             reasons: ReasonFeed::default(),
             units: Units::default(),
+            updates: Service::absent(),
+            leaves: Leaves::default(),
         }
     }
 
@@ -66,6 +74,16 @@ impl Sandbox {
     /// This world with the reason footer reading `reasons`.
     pub fn with_reasons(self, reasons: ReasonFeed) -> Sandbox {
         Sandbox { reasons, ..self }
+    }
+
+    /// This world with the update service in this standing.
+    pub fn with_service(self, updates: Service) -> Sandbox {
+        Sandbox { updates, ..self }
+    }
+
+    /// The log-out the Software Update page starts, to read how often it was asked.
+    pub fn leaves(&self) -> Leaves {
+        self.leaves.clone()
     }
 
     /// Installs one more program's schema as text, as a program would under `$XDG_DATA_DIRS`.
@@ -124,6 +142,8 @@ impl Sandbox {
         )
         .with_reasons(self.reasons.clone())
         .with_lender(self.lender())
+        .with_updates(Updater::over(self.updates.clone()))
+        .with_log_out(LogOut::over(self.leaves.clone()))
     }
 
     /// The lending switch over the scratch folders and the recording manager: never the real

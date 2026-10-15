@@ -140,9 +140,9 @@ fn the_viewer_sits_after_the_fixed_pages_and_edits_anyviews_own_file() {
     let mut harness = sandbox.harness(opening("viewer"));
     let rows = harness.count(".ds-sidebar .ds-row");
     assert_eq!(
-        harness.text_of(&format!(".ds-list-item:nth-child({rows}) .ds-row")),
+        harness.text_of(&format!(".ds-list-item:nth-child({}) .ds-row", rows - 1)),
         Some("Viewer".to_owned()),
-        "the last of the pages the schemas make"
+        "the last of the pages the schemas make, before the Software Update page"
     );
 
     assert_eq!(sandbox.read(FILE), None, "looking writes nothing");

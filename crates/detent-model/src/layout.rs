@@ -1,6 +1,7 @@
 //! What a page draws, top to bottom, before its Advanced disclosure (design/22 section 5).
 
 use crate::catalogue::{PageModel, SectionModel};
+use crate::updates::is_software_update;
 use ds_settings::schema::Page;
 
 /// One thing a page draws.
@@ -27,6 +28,9 @@ pub enum Block {
     /// The desktop's shortcuts, grouped, each with its chord and who set it: the Keyboard
     /// page's rows that are in no schema.
     Shortcuts,
+    /// The update service's page: where the flow stands, and the buttons that move it. Not in
+    /// any file.
+    SoftwareUpdate,
 }
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
@@ -61,6 +65,9 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
         }
         Page::KeyboardAndShortcuts => {
             return sections.chain(std::iter::once(Block::Shortcuts)).collect();
+        }
+        Page::App(_) if is_software_update(&page.page) => {
+            return std::iter::once(Block::SoftwareUpdate).collect();
         }
         Page::Intelligence => {}
         _ => return sections.collect(),
@@ -114,6 +121,7 @@ mod tests {
                 Block::Assistants => "<assistants>",
                 Block::SpacesPane => "<spaces>",
                 Block::Shortcuts => "<shortcuts>",
+                Block::SoftwareUpdate => "<updates>",
             })
             .collect()
     }

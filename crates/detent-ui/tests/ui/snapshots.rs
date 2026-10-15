@@ -1,4 +1,4 @@
-//! Pictures of the Appearance, Dock and Mouse & Gestures pages, light and dark, built from the
+//! Pictures of the Appearance, Dock, Mouse & Gestures and Software Update pages, light and dark, built from the
 //! real schemas. They are written to `$DETENT_SHOTS` (else the target directory's `tmp/shots`).
 
 use crate::support::{Sandbox, TMP, VIEW};
@@ -44,7 +44,12 @@ fn shoot(page: &str, scheme: Scheme, name: &str) -> usize {
 
 #[test]
 fn each_page_is_drawn_in_light_and_dark() {
-    for page in ["appearance", "dock", "mouse_and_gestures"] {
+    for page in [
+        "appearance",
+        "dock",
+        "mouse_and_gestures",
+        "software-update",
+    ] {
         let light = shoot(page, Scheme::Light, &format!("shot-{page}-light"));
         let dark = shoot(page, Scheme::Dark, &format!("shot-{page}-dark"));
         assert!(

@@ -7,6 +7,7 @@ use crate::inference::ReasonFeed;
 use crate::lender::Lender;
 use crate::live::BusSource;
 use crate::marks::ProviderMarks;
+use crate::updates::{LogOut, Updater};
 use detent_files::{ConfigHome, DataHome, FirstRunMark, KeymapFiles, StateHome};
 use detent_model::{Catalogue, PageSlug, Warning, discover};
 use ds_settings::SystemPrefsSource;
@@ -52,6 +53,10 @@ pub struct Env {
     pub lender: Lender,
     /// The keymap files the Shortcuts list reads, and the one it writes: the person's own.
     pub keymap: KeymapFiles,
+    /// The update service the Software Update page follows, looked for on `bus`.
+    pub updates: Updater,
+    /// How the Software Update page logs the person out once an update is installed.
+    pub log_out: LogOut,
 }
 
 impl Env {
@@ -67,6 +72,7 @@ impl Env {
     ) -> Env {
         let found = discover(schema_dirs);
         let keymap = KeymapFiles::under(&config_home);
+        let updates = Updater::on(bus.clone());
         Env {
             catalogue: Arc::new(Catalogue::build(&found.programs)),
             warnings: found.warnings,
@@ -81,6 +87,8 @@ impl Env {
             marks: ProviderMarks::shipped(),
             lender: Lender::from_env(),
             keymap,
+            updates,
+            log_out: LogOut::power_menu(),
         }
     }
 
@@ -92,6 +100,16 @@ impl Env {
     /// This environment with the Shortcuts list over `keymap`.
     pub fn with_keymap(self, keymap: KeymapFiles) -> Env {
         Env { keymap, ..self }
+    }
+
+    /// This environment with the Software Update page following `updates`.
+    pub fn with_updates(self, updates: Updater) -> Env {
+        Env { updates, ..self }
+    }
+
+    /// This environment with the Software Update page logging out through `log_out`.
+    pub fn with_log_out(self, log_out: LogOut) -> Env {
+        Env { log_out, ..self }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.
