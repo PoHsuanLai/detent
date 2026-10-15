@@ -66,6 +66,7 @@ const TEXT: &[A] = &[
     A::ShowColors,
     A::Bigger,
     A::Smaller,
+    A::ActualSize,
 ];
 const DOCUMENTS: &[A] = &[
     A::New,

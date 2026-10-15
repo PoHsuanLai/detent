@@ -17,6 +17,7 @@ const WORDED: &[(StandardAction, &str)] = &[
     (StandardAction::LockScreen, "Lock the screen"),
     (StandardAction::Bigger, "Make bigger"),
     (StandardAction::Smaller, "Make smaller"),
+    (StandardAction::ActualSize, "Actual size"),
     (StandardAction::ToggleToolbar, "Show or hide the toolbar"),
     (StandardAction::ToggleSidebar, "Show or hide the sidebar"),
     (StandardAction::ToggleDock, "Show or hide the dock"),
