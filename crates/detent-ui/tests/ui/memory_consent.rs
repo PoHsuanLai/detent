@@ -9,7 +9,7 @@ use crate::support::drive::{click, scroll_into_view};
 use crate::support::memory::{Fake, serve};
 use detent_model::{PageSlug, Trouble};
 use detent_ui::Opening;
-use ds_harness::{Harness, Query};
+use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
 
 const PLAIN: &str =
