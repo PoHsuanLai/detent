@@ -2,6 +2,7 @@
 
 mod accounts;
 mod cli;
+mod dev_callers;
 mod dirs;
 mod link;
 
@@ -37,7 +38,11 @@ fn window_size(wanted: Option<&PageSlug>) -> WindowSize {
 }
 
 fn main() -> ExitCode {
-    match cli::Cli::parse().run() {
+    let cli = cli::Cli::parse();
+    if let Err(code) = dev_callers::take_up(cli.dev_callers()) {
+        return code;
+    }
+    match cli.run() {
         Run::Settings(opening) => settings(opening),
         Run::FirstRun => first_run(),
     }

@@ -10,6 +10,7 @@ publish.workspace = true
 
 [dependencies]
 clap = { workspace = true }
+detent-callers = { workspace = true, optional = true }
 detent-files = { workspace = true }
 detent-intents = { workspace = true }
 detent-model = { workspace = true }
@@ -17,6 +18,13 @@ detent-ui = { workspace = true }
 ds-blitz = { workspace = true }
 ds-settings = { workspace = true }
 tokio = { workspace = true }
+
+[features]
+# `detent --dev-callers FILE`: the stand-ins a checkout built, named in the person's own rows file,
+# are let in as the desktop's services (accountd, inferd, syncd, the compositor, the shell) at a
+# standing below every real proof. Off by default; the desktop's test jail builds with it, a
+# release build never does.
+dev-callers = ["dep:detent-callers", "detent-callers/dev-callers"]
 
 [dev-dependencies]
 detent-testkit = { workspace = true }

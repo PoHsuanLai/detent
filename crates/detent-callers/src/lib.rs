@@ -7,13 +7,19 @@
 //! show itself (`detent-intents`). Everything here is peephole's: this crate names the roles and
 //! the proof each question needs, and decides nothing about a process itself.
 
+mod allow;
 mod check;
+#[cfg(feature = "dev-callers")]
+mod dev;
 mod peers;
 mod services;
 #[cfg(feature = "testing")]
 mod testing;
 
+pub use allow::allowing;
 pub use check::RoleCheck;
+#[cfg(feature = "dev-callers")]
+pub use dev::{DevRowsFault, load_dev_rows, use_dev_rows};
 pub use peephole_bus::peephole_core::{Proof, Refused, Requirement, RoleName, roles};
 pub use peephole_bus::{BusPeers, access_denied};
 pub use peers::desktop_peers;

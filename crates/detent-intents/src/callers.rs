@@ -5,23 +5,26 @@
 //! `Activate` and `ActivateAction`. A call focuses the window, opens a page, and carries an
 //! activation token, so the door admits only the callers the desktop has a reason to expect.
 
-use detent_callers::{BusPeers, Proof, Refused, Requirement, access_denied, roles};
+use detent_callers::{BusPeers, Proof, Refused, Requirement, access_denied, allowing, roles};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use zbus::fdo;
 use zbus::message::Header;
 
 /// The roles that may call `Activate` and `ActivateAction`: the shell (the launcher, a notification
 /// or a menu), another Settings (a second `detent` handing over), and the agent tier (an assistant
-/// that opens a page). All three run as units, so the proof is the unit's.
-pub(crate) fn activators() -> [Requirement; 3] {
+/// that opens a page). All three run as units, so the proof is the unit's (and, in a `dev-callers`
+/// build, a stand-in named in the person's own rows is let in as well).
+pub(crate) fn activators() -> Vec<Requirement> {
     [roles::SHELL, roles::SETTINGS, roles::AGENT_TIER]
-        .map(|role| Requirement::new(role, Proof::Full))
+        .into_iter()
+        .flat_map(|role| allowing(role, Proof::Full))
+        .collect()
 }
 
 /// The role the owner of `org.quire.Settings` must hold before a second `detent` sends it an
 /// activation token: Settings itself.
-pub(crate) fn settings_owner() -> [Requirement; 1] {
-    [Requirement::new(roles::SETTINGS, Proof::Full)]
+pub(crate) fn settings_owner() -> Vec<Requirement> {
+    allowing(roles::SETTINGS, Proof::Full)
 }
 
 /// How many refused calls the activation object has seen, so that a program that keeps calling

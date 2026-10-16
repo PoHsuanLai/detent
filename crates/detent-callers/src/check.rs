@@ -1,9 +1,9 @@
 //! The owner check quire's live client asks, answered from the desktop's caller table.
 
+use crate::allow::allowing;
 use crate::services::{SERVICE_PROOF, required_role};
 use ds_settings::live::{OwnerAnswer, OwnerCheck, SenderName, Verdict};
 use peephole_bus::BusPeers;
-use peephole_bus::peephole_core::Requirement;
 use std::fmt;
 use std::sync::Arc;
 
@@ -36,7 +36,7 @@ impl OwnerCheck for RoleCheck {
             let Some(role) = required_role(name) else {
                 return Verdict::Refuse;
             };
-            let need = [Requirement::new(role, SERVICE_PROOF)];
+            let need = allowing(role, SERVICE_PROOF);
             match self.peers.require(Some(owner.0.as_str()), &need).await {
                 Ok(_) => Verdict::Allow,
                 Err(_) => Verdict::Refuse,

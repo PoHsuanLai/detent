@@ -12,12 +12,21 @@ publish.workspace = true
 # `OwnerCheck`, `SenderName` and `Verdict`: the check this crate answers.
 ds-settings = { workspace = true, features = ["live"] }
 peephole-bus = { workspace = true }
+rustix = { workspace = true, optional = true }
+thiserror = { workspace = true, optional = true }
 zbus = { workspace = true, features = ["tokio"] }
+
+[dev-dependencies]
+detent-testkit = { workspace = true }
 
 [features]
 # Test seams: a standing introduced for a bus name's owner, and peers over an empty table. A shipped
 # binary never enables it; a dev-dependency does.
 testing = ["peephole-bus/fake"]
+# `detent --dev-callers FILE`: callers named in a person's own rows file are let in at `Proof::Dev`
+# (peephole's `dev-rows`). Off by default; only the `detent` binary's feature of the same name turns it
+# on, so no shipped build has it.
+dev-callers = ["peephole-bus/dev-rows", "dep:rustix", "dep:thiserror"]
 
 [lints]
 workspace = true

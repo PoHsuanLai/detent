@@ -551,6 +551,18 @@ fixture and its `quire/inferd.toml` test paths follow, or quire exempts it. The 
 as the Intelligence tests failing and the `every_key_of_every_schema...` file list losing
 `quire/inferd.toml`.
 
+### Stand-in services in the test jail (closed here, 2026-10-17)
+
+The jail has no `/etc/quire/desktop-callers.toml` and no units, so Settings printed "no program is
+trusted" and refused accountd, inferd and syncd as strangers. Fixed with peephole v0.1.4's developer
+rows: feature `dev-callers` on the `detent` binary, `detent --dev-callers FILE`, `Proof::Dev` accepted
+through `detent_callers::allowing` in that build only (ARCHITECTURE "Stand-in services in a test
+jail"). A release build is unchanged. Limits: not a security boundary (the person's own file names who
+is a service). Not verified here (no compile, no run): the build with the feature, the jail scripts
+end to end, and the `Cargo.lock` move to peephole v0.1.4 (plus `rustix` and `thiserror` as optional
+dependencies of `detent-callers`). The unit manager is still asked as before; a `Proof::Dev` standing
+is given before it, so a jail with no manager does not stop it (read in peephole's `judge`, not run).
+
 ## Manual checks
 
 - The llama.cpp note on a real session with llama.cpp not installed: install it with the line,

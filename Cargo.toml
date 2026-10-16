@@ -69,9 +69,14 @@ chordkit = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "934a2d71
 keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "be632d80546928860197eaae8ef4e350641b08f5" }
 
 # Which program is on the other end of a bus name (own repo, public): pinned process, unit and the
-# desktop's caller table. v0.1.3 reads another user's closed root as no sandbox; quire's ds-blitz pins its own tag, so the lock holds a second copy until quire moves. zbus runs on
-# tokio here, so `tokio` is on and the default executor is off; `desktop` is the role names.
-peephole-bus = { git = "https://github.com/PoHsuanLai/peephole", tag = "v0.1.3", default-features = false, features = ["desktop", "tokio"] }
+# desktop's caller table. v0.1.3 read another user's closed root as no sandbox; v0.1.4 added developer rows. quire's ds-blitz pins its own tag, so the lock holds a second copy until quire moves. zbus runs on
+# tokio here, so `tokio` is on and the default executor is off; `desktop` is the role names. `dev-rows` (a
+# person's own rows file, `Proof::Dev`) is only behind detent-callers' `dev-callers`, itself only behind the
+# `detent` binary's `dev-callers` feature, so no shipped build has it.
+peephole-bus = { git = "https://github.com/PoHsuanLai/peephole", tag = "v0.1.4", default-features = false, features = ["desktop", "tokio"] }
+
+# The person's own user id, to tell their rows file from someone else's (only behind `dev-callers`).
+rustix = { version = "1.1", default-features = false, features = ["std", "process"] }
 
 # Editing a settings file in place, keeping every key, comment and spacing the edit does not touch.
 toml_edit = "0.25"

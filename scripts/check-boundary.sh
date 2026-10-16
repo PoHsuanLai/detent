@@ -60,7 +60,7 @@ EDGES=(
   "detent-files: detent-model docket-agents docket-settings ds-helpers ds-settings"
   "detent-intents: detent-callers detent-files detent-model docket-client docket-core docket-dbus ds-peer ds-settings porter-core prov"
   "detent-ui: almanac-core detent-callers detent-files detent-model docket-settings ds ds-blitz ds-helpers ds-peer ds-settings porter-client porter-core porter-dbus porter-infer porter-provider"
-  "detent: detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
+  "detent: detent-callers detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
 )
 for edge in "${EDGES[@]}"; do
   crate="${edge%%:*}"

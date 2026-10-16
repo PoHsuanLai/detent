@@ -10,6 +10,9 @@ use zbus::Connection;
 ///
 /// A table that cannot be read leaves an empty one, so no program is a service and every question
 /// is refused: Settings then shows its services as unavailable instead of trusting a name.
+///
+/// A build with `dev-callers` adds the rows of the person's own file (`detent --dev-callers`) after
+/// the table; a release build has no such rows.
 pub fn desktop_peers(connection: &Connection) -> BusPeers {
     let table = TableFiles::desktop()
         .load(&RealProc::system())
@@ -17,6 +20,8 @@ pub fn desktop_peers(connection: &Connection) -> BusPeers {
             eprintln!("detent: the list of the desktop's own programs could not be read ({why}); no program is trusted");
             Table::empty()
         });
+    #[cfg(feature = "dev-callers")]
+    let table = crate::dev::with_dev_rows(table);
     let manager = ManagerCheck::Verified(Requirement::new(roles::MANAGER, Proof::Exe));
     BusPeers::new(connection.clone(), table, manager)
 }
