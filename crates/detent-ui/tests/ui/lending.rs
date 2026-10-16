@@ -58,7 +58,7 @@ fn asked(sandbox: &Sandbox) -> Harness {
 }
 
 fn serve_setting(sandbox: &Sandbox) -> Option<String> {
-    let text = sandbox.read("quire/inferd.toml")?;
+    let text = sandbox.read("inferd/inferd.toml")?;
     let table: toml::Table = text.parse().expect("toml");
     table["ai"]["tailnet"]["serve"].as_str().map(str::to_owned)
 }
@@ -148,7 +148,7 @@ fn a_different_file_is_named_in_the_question_and_replaced_on_allow() {
 #[test]
 fn turning_it_off_takes_sharing_away_without_asking() {
     let sandbox = Sandbox::new("lending-off");
-    sandbox.write("quire/inferd.toml", "[ai.tailnet]\nserve = \"on\"\n");
+    sandbox.write("inferd/inferd.toml", "[ai.tailnet]\nserve = \"on\"\n");
     sandbox.write(DROP_IN, SHIPPED);
     let mut harness = sandbox.harness(intelligence());
     scroll_into_view(&mut harness, &toggle());

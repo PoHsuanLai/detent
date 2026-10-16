@@ -83,7 +83,7 @@ fn the_sections_follow_design_order_whatever_order_the_programs_were_read_in() {
         "sill-companion",
         &stand_in(
             "sill-companion",
-            "sill/companion.toml",
+            "sill-companion/companion.toml",
             "companion.summon",
             "Companion",
         ),
@@ -127,7 +127,7 @@ fn the_page_shows_inferds_and_dockets_file_rows_with_no_inferd_running() {
 fn an_absent_inferd_blocks_nothing_on_the_page() {
     let sandbox = Sandbox::new("intelligence-absent-writes");
     let mut harness = sandbox.harness(intelligence());
-    assert_eq!(sandbox.read("quire/inferd.toml"), None);
+    assert_eq!(sandbox.read("inferd/inferd.toml"), None);
     let local_only = "[aria-label=\"Keep AI on this computer\"] .ds-toggle";
     let before = harness.attr(local_only, "aria-checked");
     assert_eq!(before.as_deref(), Some("true"), "local-only starts on");
@@ -138,7 +138,7 @@ fn an_absent_inferd_blocks_nothing_on_the_page() {
         Some("false")
     );
     let written = sandbox
-        .read("quire/inferd.toml")
+        .read("inferd/inferd.toml")
         .expect("the file row wrote");
     assert!(written.contains("local_only = \"off\""), "{written}");
 }
@@ -277,7 +277,7 @@ fn the_footer_says_why_when_it_is_on_and_is_gone_when_it_is_off() {
         let sandbox = Sandbox::new(&format!("intelligence-reason-{name}"));
         if let Some(word) = setting {
             sandbox.write(
-                "quire/inferd.toml",
+                "inferd/inferd.toml",
                 &format!("[ai.auto]\nshow_reason = \"{word}\"\n"),
             );
         }

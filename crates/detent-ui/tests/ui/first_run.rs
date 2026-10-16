@@ -85,7 +85,7 @@ fn world_with(name: &str, scheme: Scheme, inferd: Inferd) -> World {
 }
 
 fn written(sandbox: &Sandbox) -> String {
-    sandbox.read("quire/inferd.toml").unwrap_or_default()
+    sandbox.read("inferd/inferd.toml").unwrap_or_default()
 }
 
 #[test]
@@ -244,13 +244,13 @@ fn without_inferds_schema_nothing_is_written_and_nothing_is_remembered() {
         h.html().contains("The model settings are not installed")
     });
     assert_eq!(mark(&sandbox), FirstRunStanding::Pending);
-    assert_eq!(sandbox.read("quire/inferd.toml"), None);
+    assert_eq!(sandbox.read("inferd/inferd.toml"), None);
 }
 
 #[test]
 fn the_same_write_the_page_makes_leaves_every_other_key_of_the_file() {
     let sandbox = Sandbox::new("first-run-keeps-keys");
-    sandbox.write("quire/inferd.toml", "# mine\n[ai]\nfuture = 3\n");
+    sandbox.write("inferd/inferd.toml", "# mine\n[ai]\nfuture = 3\n");
     let mut harness = sandbox.first_run_harness();
     settle(&mut harness, "the window", |h| stage(h).is_some());
     click(&mut harness, DONE);

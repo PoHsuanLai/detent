@@ -157,7 +157,7 @@ fn a_write_lands_in_the_file_of_the_program_that_owns_the_row() {
         "{docket}"
     );
     assert_eq!(
-        sandbox.read("quire/inferd.toml"),
+        sandbox.read("inferd/inferd.toml"),
         None,
         "inferd's file is not touched"
     );
@@ -176,14 +176,14 @@ fn lending_this_computers_models_is_off_until_the_switch_is_flipped() {
         "off by default"
     );
     assert_eq!(
-        sandbox.read("quire/inferd.toml"),
+        sandbox.read("inferd/inferd.toml"),
         None,
         "looking writes nothing"
     );
     // Turning it on is asked about first (tests/ui/lending.rs drives the answer).
     click(&mut harness, &toggle);
     assert_eq!(
-        sandbox.read("quire/inferd.toml"),
+        sandbox.read("inferd/inferd.toml"),
         None,
         "the press alone writes nothing"
     );
