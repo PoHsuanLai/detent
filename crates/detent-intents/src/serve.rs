@@ -54,7 +54,7 @@ pub enum ServeFault {
 /// serves `provider` on it. The connection is returned: dropping it takes the service off the
 /// bus, so the caller keeps it for as long as the app runs.
 ///
-/// A bus that does not answer inside [`BUS_DEADLINE`] is [`ServeFault::Connect`]: Settings then
+/// A bus that does not answer inside the read deadline is [`ServeFault::Connect`]: Settings then
 /// opens without the service instead of never opening (audit DETENT-07).
 pub async fn serve_session(provider: SettingsProvider) -> Result<BusConnection, ServeFault> {
     within(BUS_DEADLINE, BUS_PEER, serve_unbounded(provider))

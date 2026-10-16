@@ -120,7 +120,11 @@ fn a_stale_schema_that_marks_keys_lends_nothing_to_the_valid_one() {
 #[test]
 fn a_schema_that_marks_a_never_settable_key_is_not_a_program() {
     let scratch = Scratch::under(TMP, "marks-never");
-    let text = sill_marking(MAGNIFICATION).replacen(MAGNIFICATION, "ai.magnification", 1);
+    let text = sill_marking(MAGNIFICATION).replacen(
+        &format!("path = \"{MAGNIFICATION}\""),
+        "path = \"ai.magnification\"",
+        1,
+    );
     let found = discover(&[schema_dir(&scratch, "d", &text)]);
     assert_eq!(found.programs, Vec::new());
 }
