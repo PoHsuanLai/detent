@@ -157,7 +157,7 @@ fn asking(row: &EngineRow) -> EngineSheet {
 
 /// The sheet after the engines were looked at again: a download in progress follows its row.
 fn followed(sheet: EngineSheet, rows: &[EngineRow]) -> EngineSheet {
-    let EngineSheet::Working { engine, permille } = sheet else {
+    let EngineSheet::Working { engine, .. } = sheet else {
         return sheet;
     };
     let Some(row) = rows.iter().find(|row| row.id == engine.id) else {

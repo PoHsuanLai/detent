@@ -12,9 +12,7 @@ pub use sheet::{
     EngineRef, EngineSheet, EngineSheetEffect, EngineSheetInput, EngineSheetState, Replacing,
     engine_sheet_step,
 };
-pub use words::{
-    INSTALL_FOR, Press, SheetButton, SheetWords, Waiting, sheet_words, size_words,
-};
+pub use words::{INSTALL_FOR, Press, SheetButton, SheetWords, Waiting, sheet_words, size_words};
 
 #[cfg(test)]
 mod tests;

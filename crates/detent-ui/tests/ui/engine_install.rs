@@ -10,7 +10,7 @@ use crate::support::drive::{click, scroll_into_view};
 use crate::support::inferd::{Inferd, Policy};
 use detent_model::{ASSISTANT_MODEL_SLUG, EngineStanding, InstallScope, PageSlug};
 use detent_ui::Opening;
-use ds_harness::{Harness, Input, Query};
+use ds_harness::{Driver, Harness, Input, Query};
 use std::time::Duration;
 
 const MODEL_BUTTON: &str = ".assistant-model .ds-popup .ds-button";
