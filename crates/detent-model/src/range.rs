@@ -66,9 +66,16 @@ impl Range {
         }
     }
 
+    /// The distance from the floor to the ceiling. Worked out in floating point: the bounds come
+    /// from a schema, and `max - min` of two `i64`s overflows for bounds far apart (a panic in a
+    /// debug build, a wrong number in a release one).
+    pub fn span(&self) -> f64 {
+        self.max as f64 - self.min as f64
+    }
+
     /// Where `value` stands on the slider, in thousandths (0 at the floor).
     pub fn position(&self, value: &toml::Value) -> u16 {
-        let span = (self.max - self.min) as f64;
+        let span = self.span();
         if span <= 0.0 {
             return 0;
         }
@@ -78,7 +85,7 @@ impl Range {
 
     /// The value at `position` thousandths of the travel.
     pub fn value_at(&self, position: u16) -> toml::Value {
-        let span = (self.max - self.min) as f64;
+        let span = self.span();
         let raw = self.min as f64 + span * f64::from(position.min(1000)) / FULL;
         match self.number {
             Number::Whole => toml::Value::Integer(raw.round() as i64),
@@ -138,6 +145,26 @@ mod tests {
             assert_eq!(range.position(value), *position, "{name}: position");
             assert_eq!(&range.display(value), shown, "{name}: display");
         }
+    }
+
+    #[test]
+    fn bounds_far_apart_do_not_overflow() {
+        let wide = Range {
+            min: i64::MIN,
+            max: i64::MAX,
+            unit: None,
+            number: Number::Whole,
+        };
+        assert!(wide.span() > 1.8e19);
+        assert_eq!(wide.position(&Value::Integer(i64::MIN)), 0);
+        assert_eq!(wide.position(&Value::Integer(i64::MAX)), 1000);
+        assert!(matches!(wide.value_at(500), Value::Integer(_)));
+        let backwards = Range {
+            min: 1,
+            max: i64::MIN,
+            ..wide
+        };
+        assert_eq!(backwards.position(&Value::Integer(0)), 0, "no travel");
     }
 
     #[test]

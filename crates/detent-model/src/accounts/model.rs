@@ -290,8 +290,9 @@ pub enum ClientEntry {
     WaitsForKey,
 }
 
-/// One bring-your-own sign-in key (or its secret): a text row.
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// One bring-your-own sign-in key (or its secret): a text row. Its `Debug` hides a secret's text,
+/// so a log line of the pane's state cannot print it.
+#[derive(Clone, PartialEq, Eq)]
 pub struct SignInClient {
     /// The module it is in.
     pub module: ModuleId,
@@ -313,6 +314,29 @@ const SECRET_LEAF: &str = ".secret";
 impl SignInClient {
     /// The line the person reads when they try to fill in a secret before its key.
     pub const KEY_FIRST: &'static str = "Set the sign-in key first, then its secret.";
+
+    /// Whether this row holds a secret (its path ends in `.secret`).
+    fn is_secret(&self) -> bool {
+        self.path.0.ends_with(SECRET_LEAF)
+    }
+}
+
+impl std::fmt::Debug for SignInClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let held = if self.is_secret() && !self.value.is_empty() {
+            "<hidden>"
+        } else {
+            self.value.as_str()
+        };
+        f.debug_struct("SignInClient")
+            .field("module", &self.module)
+            .field("path", &self.path)
+            .field("label", &self.label)
+            .field("help", &self.help)
+            .field("value", &held)
+            .field("entry", &self.entry)
+            .finish()
+    }
 }
 
 /// Marks each secret whose key is still empty as not yet fillable.

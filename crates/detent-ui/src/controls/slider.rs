@@ -9,7 +9,7 @@ use ds::style::tokens::control_size::ControlSize;
 /// The value's share of the slider's travel that one arrow key moves: one unit of a whole range,
 /// a hundredth of a fractional one.
 fn key_step(range: &Range) -> Fraction {
-    let span = (range.max - range.min).max(1);
+    let span = range.max.saturating_sub(range.min).max(1);
     Fraction((1000 / span.min(1000)).max(1) as u16)
 }
 

@@ -746,3 +746,20 @@ fn a_missing_or_unknown_sign_in_row_gets_the_plain_line_and_the_expiry_row_decid
         );
     }
 }
+
+#[test]
+fn a_sign_in_secret_does_not_print_in_a_debug_line() {
+    let client = |leaf: &str, value: &str| SignInClient {
+        module: ModuleId::Accountd,
+        path: path(&format!("accounts.clients.acme{leaf}")),
+        label: "Acme".to_owned(),
+        help: String::new(),
+        value: value.to_owned(),
+        entry: ClientEntry::Open,
+    };
+    let secret = format!("{:?}", client(".secret", "hunter2-hunter2"));
+    assert!(!secret.contains("hunter2"), "{secret}");
+    assert!(secret.contains("<hidden>"), "{secret}");
+    let id = format!("{:?}", client("", "client-id-123"));
+    assert!(id.contains("client-id-123"), "the id is not a secret: {id}");
+}
