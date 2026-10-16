@@ -292,8 +292,8 @@ fn the_footer_says_why_when_it_is_on_and_is_gone_when_it_is_off() {
         settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 2);
         assert_eq!(
             harness.count(".picker-reason"),
-            usize::from(shown),
-            "{name}"
+            0,
+            "{name}: no footer before a reason"
         );
 
         events.send(InferEvent::Why(Why::Warm)).expect("sent");

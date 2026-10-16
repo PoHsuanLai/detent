@@ -1,10 +1,10 @@
 //! The assistant's row of the picker: one pop-up button, the same one the Intelligence page
 //! draws for the text slot's balanced tier.
 
-use crate::inference::{AUTOMATIC, TierRow, Unavailable};
-use detent_model::{Choice, Clearing, ModelRow, PickerInput, PickerState, assistant_of};
+use crate::inference::{TierRow, Unavailable};
+use detent_model::{Clearing, ModelRow, PickerInput, PickerState, assistant_of};
 use dioxus::prelude::*;
-use ds::components::content::label::{LabelRole, LabelStyle};
+use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 
@@ -28,7 +28,6 @@ pub(crate) fn AssistantPicker(
     let Some(row) = assistant_of(&state) else {
         return rsx! { Missing {} };
     };
-    let automatic = matches!(row.choice(), Choice::Automatic { .. });
     let row = ModelRow {
         label: ROW_LABEL.to_owned(),
         help: String::new(),
@@ -38,11 +37,6 @@ pub(crate) fn AssistantPicker(
         div { class: "picker", "data-picker": "ready",
             FieldGroup {
                 TierRow { row, applying: ready.applying.clone(), adding: ready.adding(), clearing, onask }
-            }
-            if automatic {
-                div { class: "picker-auto",
-                    Label { text: AUTOMATIC, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
-                }
             }
         }
     }

@@ -24,9 +24,6 @@ use ds_blitz::{AppHandle, TokioSpawner, use_app_handle};
 use ds_settings::{AppName, ConfigRoot, Store, use_environment};
 use std::sync::Arc;
 
-/// What the model is for, and that nothing is chosen for the person.
-const MODEL_NOTE: &str = "Choose a model for your assistant, or do it later in Settings.";
-
 fn send(state: &mut Signal<FirstRun>, input: FirstRunInput) -> Vec<FirstRunEffect> {
     let (next, effects) = first_run_step(state.peek().clone(), input);
     state.set(next);
@@ -137,15 +134,11 @@ fn Welcome(
                 plate: Some(PlateFamily::Violet),
             }
             Label { text: "AI on this computer", role: LabelRole::Primary, style: LabelStyle::Title }
-            Label {
-                text: "Apps can ask a model for help. By default it runs here and nothing leaves this computer.",
-                role: LabelRole::Secondary,
-            }
             FieldGroup {
                 common: Common { extra_class: ExtraClass::parse("first-run-card").ok(), ..Common::default() },
                 FieldRow {
                     label: TextLine::from("Keep AI on this computer"),
-                    help: Some(TextLine::from("Nothing is sent to online accounts.")),
+                    help: None,
                     availability: busy,
                     Toggle {
                         label: "Keep AI on this computer",
@@ -159,7 +152,6 @@ fn Welcome(
                     }
                 }
             }
-            Label { text: MODEL_NOTE, role: LabelRole::Secondary }
             AssistantPicker { state: picker, clearing: Clearing::Withheld, onask }
             Button {
                 label: "Done",

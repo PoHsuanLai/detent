@@ -314,7 +314,6 @@ fn a_page_to_open_can_be_the_first_run_step() {
 }
 
 const POOL_ROW: &str = "#pool-local-qwen .ds-toggle";
-const AUTOMATIC_NOTE: &str = "picks a model for each request";
 const POOL_NOTE: &str = "Turn on at least one model.";
 
 #[test]
@@ -326,10 +325,6 @@ fn automatic_opens_its_list_and_is_not_ready_until_a_model_is_in_it() {
     );
     ready(&mut world);
     assert_eq!(world.harness.count("[data-pool=\"editor\"]"), 0);
-    assert!(
-        !world.harness.html().contains(AUTOMATIC_NOTE),
-        "Automatic is explained only once it is chosen"
-    );
     open_and_count_marked(&mut world.harness, SETUP_BUTTON);
     pick(&mut world.harness, 1);
     settle(&mut world.harness, "Automatic", |h| {
@@ -340,7 +335,6 @@ fn automatic_opens_its_list_and_is_not_ready_until_a_model_is_in_it() {
         [(ROW.to_owned(), "auto".to_owned())]
     );
     assert_eq!(world.harness.count("[data-pool=\"editor\"]"), 1);
-    assert!(world.harness.html().contains(AUTOMATIC_NOTE));
     assert!(
         world.harness.html().contains(POOL_NOTE),
         "an empty list says what to do"

@@ -13,7 +13,7 @@ mod tier_row;
 
 pub(crate) use drive::{Picker, use_picker};
 pub(crate) use io::{is_choice, set, set_pool};
-pub(crate) use picker_view::{AUTOMATIC, ModelPicker, Unavailable, show_reason};
+pub(crate) use picker_view::{ModelPicker, Unavailable, show_reason};
 pub use reasons::ReasonFeed;
 pub(crate) use runtimes_view::LocalRuntimes;
 pub(crate) use tier_row::TierRow;

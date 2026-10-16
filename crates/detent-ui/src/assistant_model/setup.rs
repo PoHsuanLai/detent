@@ -24,7 +24,6 @@ use ds_blitz::{AppHandle, use_app_handle};
 const HEADING: &str = "Choose a Model for Your Assistant";
 
 /// What the step asks.
-const EXPLANATION: &str = "Your assistant needs a model to answer you.";
 
 /// The step, under the frame: the picker's row and the two buttons.
 #[component]
@@ -51,7 +50,6 @@ pub(crate) fn AssistantSetup() -> Element {
                 plate: Some(PlateFamily::Violet),
             }
             Label { text: HEADING, role: LabelRole::Primary, style: LabelStyle::Title }
-            Label { text: EXPLANATION, role: LabelRole::Secondary }
             div { class: "assistant-setup-card",
                 AssistantPicker { state: now, clearing: Clearing::Withheld, onask: ask }
             }

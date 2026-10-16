@@ -14,10 +14,6 @@ use ds::prelude::*;
 /// The row that turns the footer on.
 const SHOW_REASON: &str = "ai.auto.show_reason";
 
-/// What the "Automatic" choice of every row does.
-pub(crate) const AUTOMATIC: &str =
-    "Automatic picks a model for each request from the ones you turn on.";
-
 /// Whether the footer is shown: `ai.auto.show_reason`, on when no schema or file says otherwise
 /// (inferd's own default).
 pub(crate) fn show_reason(env: &Env, files: &Files) -> Shown {
@@ -67,9 +63,6 @@ pub fn ModelPicker(reasons: Shown) -> Element {
                             adding,
                             onask: ask,
                         }
-                    }
-                    div { class: "picker-auto",
-                        Label { text: AUTOMATIC, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                     }
                     if reasons == Shown::Visible {
                         ReasonFooter { reason: reason() }
@@ -141,13 +134,13 @@ fn KindCard(
     }
 }
 
-/// The line under the picker: why the last model answered, or what the line is for.
+/// The line under the picker: why the last model answered; nothing until one has.
 #[component]
 fn ReasonFooter(reason: Option<Reason>) -> Element {
-    let text = reason.map_or_else(
-        || "Each answer says which model gave it and why.".to_owned(),
-        |reason| reason.line(),
-    );
+    let Some(reason) = reason else {
+        return rsx! {};
+    };
+    let text = reason.line();
     rsx! {
         div { class: "picker-reason",
             Label { text, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
