@@ -84,16 +84,9 @@ pub fn ModelPicker(reasons: Shown) -> Element {
 fn absence_help(absence: &Absence) -> String {
     match absence {
         Absence::NoBus => "Settings is not connected to the desktop.".to_owned(),
-        Absence::NotRunning => {
-            "The model service is not running, so there are no models to choose from.".to_owned()
-        }
-        Absence::NotPermitted => "Models can only be chosen when Settings is opened from the \
-            desktop. Close this window and open Settings again from the launcher."
-            .to_owned(),
-        Absence::Unavailable => "The model service could not be confirmed, so there are no \
-            models to choose from."
-            .to_owned(),
-        Absence::Failed(_) => "The model service did not answer. Try again in a moment.".to_owned(),
+        Absence::NotRunning | Absence::Unavailable => "Models are not available now.".to_owned(),
+        Absence::NotPermitted => "Open Settings from the desktop to choose models.".to_owned(),
+        Absence::Failed(_) => "Models did not answer. Try again in a moment.".to_owned(),
     }
 }
 

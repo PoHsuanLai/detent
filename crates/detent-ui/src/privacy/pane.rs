@@ -17,12 +17,10 @@ use std::collections::VecDeque;
 /// What the absence of the compositor says.
 fn absence_help(absence: &Absence) -> &'static str {
     match absence {
-        Absence::NoBus => "Settings is not connected to the desktop, so there is nothing to show.",
-        Absence::NotRunning => "The desktop is not running, so there is nothing to show.",
-        Absence::NotPermitted => {
-            "Privacy can only be shown when Settings is opened from the desktop."
-        }
-        Absence::Unavailable => "The desktop could not be confirmed, so there is nothing to show.",
+        Absence::NoBus => "Settings is not connected to the desktop.",
+        Absence::NotRunning => "The desktop is not running.",
+        Absence::NotPermitted => "Open Settings from the desktop to see Privacy.",
+        Absence::Unavailable => "The desktop is not available now.",
         Absence::Failed(_) => "The desktop did not answer. Try again in a moment.",
     }
 }

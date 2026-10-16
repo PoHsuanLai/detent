@@ -17,8 +17,7 @@ use ds::style::icon::url::IconUrl;
 use ds::style::tokens::control_size::ControlSize;
 
 /// The line under the list.
-const NOT_LISTED: &str =
-    "A program that is not listed asks you the first time it needs one of these.";
+const NOT_LISTED: &str = "Other programs ask the first time.";
 
 /// The programs, or the line that says none has asked.
 #[component]
@@ -38,7 +37,7 @@ pub(super) fn Listed(
             if pane.programs.is_empty() {
                 EmptyState {
                     title: "Nothing has asked yet",
-                    description: "When a program asks to see your screen, type for you or reach another of these, your answer is listed here.",
+                    description: "Programs that ask to see your screen or type for you appear here.",
                 }
             } else {
                 for program in pane.programs.iter().cloned() {
