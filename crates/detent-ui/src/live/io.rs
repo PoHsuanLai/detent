@@ -2,10 +2,12 @@
 
 use super::bus::BusSource;
 use super::daemon::Daemon;
+use super::vouch::Vouch;
 use crate::deadline::{Deadline, peer};
+use detent_callers::{RoleCheck, desktop_peers};
 use detent_model::Absence;
 use ds_peer::within;
-use ds_settings::live::{Changes, LiveClient, LiveError};
+use ds_settings::live::{Changes, LiveClient, LiveError, OwnerCheck, SenderName, Verdict};
 use ds_settings::schema::KeyPath;
 use zbus::Connection;
 use zbus::fdo::{DBusProxy, NameOwnerChangedStream};
@@ -18,6 +20,7 @@ fn failed(why: impl ToString) -> Absence {
 pub(super) fn absence_of(error: LiveError) -> Absence {
     match error {
         LiveError::NotPermitted(_) => Absence::NotPermitted,
+        LiveError::NotTheService(_) => Absence::Unavailable,
         LiveError::Timeout(words) => Absence::Failed(words),
         other => failed(plain(&other)),
     }
@@ -32,6 +35,7 @@ pub(crate) fn plain(error: &LiveError) -> String {
         | LiveError::BadValue(words)
         | LiveError::Unavailable(words)
         | LiveError::Failed(words)
+        | LiveError::NotTheService(words)
         | LiveError::Timeout(words) => words.clone(),
         _ => "The service did not answer as expected.".to_owned(),
     }
@@ -49,7 +53,7 @@ async fn dial(bus: &BusSource) -> Result<Connection, Absence> {
     match bus {
         BusSource::Absent => Err(Absence::NoBus),
         BusSource::Session => Connection::session().await.map_err(failed),
-        BusSource::Address(address) => zbus::connection::Builder::address(address.as_str())
+        BusSource::Address(address, _) => zbus::connection::Builder::address(address.as_str())
             .map_err(failed)?
             .build()
             .await
@@ -58,7 +62,7 @@ async fn dial(bus: &BusSource) -> Result<Connection, Absence> {
 }
 
 /// Whether `name` has an owner on the bus now: a look at the bus, never a start.
-pub(crate) async fn name_owned(connection: &Connection, name: &str) -> Result<bool, Absence> {
+async fn name_owned(connection: &Connection, name: &str) -> Result<bool, Absence> {
     let name = BusName::try_from(name).map_err(failed)?;
     let asked = async {
         let bus = DBusProxy::new(connection).await.map_err(failed)?;
@@ -94,17 +98,85 @@ pub(crate) async fn next_owner(owners: &mut NameOwnerChangedStream) -> Option<()
         .map(|_| ())
 }
 
+/// The check the owners of service names on `bus` are held to: the desktop's caller table on the
+/// session bus, the check a test named on a bus it made.
+fn vouch_for(bus: &BusSource, connection: &Connection) -> Vouch {
+    match bus {
+        BusSource::Address(_, vouch) => vouch.clone(),
+        BusSource::Session | BusSource::Absent => {
+            Vouch::of(RoleCheck::new(desktop_peers(connection)))
+        }
+    }
+}
+
+/// The unique name that owns `name`, none when nobody does.
+async fn owner_of(connection: &Connection, name: &str) -> Result<Option<SenderName>, Absence> {
+    let name = BusName::try_from(name).map_err(failed)?;
+    let bus = DBusProxy::new(connection).await.map_err(failed)?;
+    match bus.get_name_owner(name).await {
+        Ok(owner) => Ok(Some(SenderName(owner.as_str().to_owned()))),
+        Err(zbus::fdo::Error::NameHasNoOwner(_)) => Ok(None),
+        Err(other) => Err(failed(other)),
+    }
+}
+
+/// The owner of the service `name`, once it holds the role of that service in the desktop's
+/// caller table. `NotRunning` when nobody owns the name, `Unavailable` when its owner is not the
+/// service (a program that took the name first, or one that could not be told apart from it): a
+/// caller then sends it nothing and shows nothing from it.
+pub(crate) async fn confirmed(
+    bus: &BusSource,
+    connection: &Connection,
+    name: &str,
+) -> Result<SenderName, Absence> {
+    let looked = async {
+        let Some(owner) = owner_of(connection, name).await? else {
+            return Err(Absence::NotRunning);
+        };
+        match vouch_for(bus, connection).holds_role(name, &owner).await {
+            Verdict::Allow => Ok(owner),
+            Verdict::Refuse => Err(Absence::Unavailable),
+        }
+    };
+    within(Deadline::READ, peer::DESKTOP, looked)
+        .await
+        .map_err(failed)?
+}
+
+/// Fails only when the owner of `name` is not the service: a name nobody owns passes, for a call
+/// by name that asks the bus to start the service (the registry, memory's Space removal).
+pub(crate) async fn not_squatted(
+    bus: &BusSource,
+    connection: &Connection,
+    name: &str,
+) -> Result<(), Absence> {
+    match confirmed(bus, connection, name).await {
+        Ok(_) | Err(Absence::NotRunning) => Ok(()),
+        Err(other) => Err(other),
+    }
+}
+
 /// A client of the daemon's module, only when the daemon is already on the bus: asking for the
 /// module of a daemon that is not running would start it, and opening Settings must not. The
 /// daemons a page reads are started when the page is shown (`activate::start`), by name, so
-/// this stays a look.
-pub(super) async fn open(connection: &Connection, daemon: &Daemon) -> Result<LiveClient, Absence> {
+/// this stays a look. The client asks the owner check before its first read and again whenever
+/// the name changes hands, so a program that merely took the name is `Unavailable` and is sent
+/// nothing, a typed secret included.
+pub(super) async fn open(
+    bus: &BusSource,
+    connection: &Connection,
+    daemon: &Daemon,
+) -> Result<LiveClient, Absence> {
     if !name_owned(connection, daemon.name).await? {
         return Err(Absence::NotRunning);
     }
-    LiveClient::new(connection, daemon.name, &daemon.path)
-        .await
-        .map_err(absence_of)
+    LiveClient::new(
+        connection,
+        daemon.name,
+        &daemon.path,
+        vouch_for(bus, connection),
+    )
+    .map_err(absence_of)
 }
 
 /// The next change the module announces, as a row and its value.

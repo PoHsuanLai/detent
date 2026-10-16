@@ -4,7 +4,7 @@
 use super::link::{InstallRefusal, UpdateTicks, UpdateWork, Updater, UpdatesLink};
 use super::wire::wire_of;
 use crate::deadline::{Deadline, peer};
-use crate::live::{BusSource, connect, name_owned};
+use crate::live::{BusSource, confirmed, connect};
 use crate::ticks::{Ticker, Ticks};
 use detent_model::{Absence, UPDATES_NOT_AVAILABLE, UnixSeconds, UpdateStatus, UpdateVersion};
 use ds_peer::{NotAnswering, within};
@@ -100,14 +100,12 @@ fn refusal_of(error: &zbus::Error) -> InstallRefusal {
     }
 }
 
-/// A connection, only when the service is already on the bus.
+/// A connection, only when the service is already on the bus and its owner is the update service:
+/// a program that took the name is unavailable, and is asked and told nothing.
 async fn running(bus: &BusSource) -> Result<Connection, Absence> {
     let connection = connect(bus).await?;
-    if name_owned(&connection, BUS_NAME).await? {
-        Ok(connection)
-    } else {
-        Err(Absence::NotRunning)
-    }
+    confirmed(bus, &connection, BUS_NAME).await?;
+    Ok(connection)
 }
 
 /// The service's object, read live each time: a cached value would outlive the change.
@@ -257,5 +255,14 @@ impl Updater {
     /// The update service on `bus`, looked for and never started.
     pub fn on(bus: BusSource) -> Updater {
         Updater::over(OnBus(bus))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// The name this page calls is the one the owner check knows the role of.
+    #[test]
+    fn the_service_name_is_the_one_the_owner_check_knows() {
+        assert_eq!(super::BUS_NAME, detent_callers::UPDATES_BUS);
     }
 }

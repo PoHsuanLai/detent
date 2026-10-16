@@ -2,7 +2,8 @@
 //! service, an AI key through the key service. The Settings role may call each `AddAccount`.
 
 use crate::deadline::{Deadline, answered, peer};
-use crate::live::{BusSource, connect};
+use crate::live::{BusSource, connect, not_squatted};
+use detent_callers::{ACCOUNTS_BUS, INFERENCE_BUS};
 use detent_model::{AccountKey, AddEnd};
 use porter_client::{Accounts, AiKeys, ClientError, DbusTransport, TransportError};
 use porter_core::wire::{ParentWindow, ProviderHint, Refusal};
@@ -15,6 +16,9 @@ pub(crate) async fn add_account(bus: &BusSource) -> AddEnd {
     let Ok(connection) = connect(bus).await else {
         return AddEnd::Failed;
     };
+    if not_squatted(bus, &connection, ACCOUNTS_BUS).await.is_err() {
+        return AddEnd::Failed;
+    }
     let accounts = Accounts::over(DbusTransport::over(connection));
     let asked = answered(
         Deadline::PROMPT,
@@ -72,8 +76,11 @@ impl KeySheet for OverBus {
 
 /// Asks the key service for its add sheet and waits for it to end.
 pub(super) async fn add_ai_key(bus: &BusSource) -> AddEnd {
-    match connect(bus).await {
-        Ok(connection) => OverBus(connection).add().await,
-        Err(_) => AddEnd::Failed,
+    let Ok(connection) = connect(bus).await else {
+        return AddEnd::Failed;
+    };
+    if not_squatted(bus, &connection, INFERENCE_BUS).await.is_err() {
+        return AddEnd::Failed;
     }
+    OverBus(connection).add().await
 }

@@ -18,11 +18,13 @@ pub mod updates;
 use detent_files::{ConfigHome, DataHome, StateHome};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{
-    App, BusSource, Env, FirstRunApp, Lender, LogOut, Opening, Outbox, ReasonFeed, Updater, inbox,
+    App, BusSource, Env, FirstRunApp, Lender, LogOut, Opening, Outbox, ReasonFeed, Updater, Vouch,
+    inbox,
 };
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
 use ds_settings::SystemPrefsSource;
+use ds_settings::live::AnyOwner;
 use ds_settings::schema::Schema;
 use lending::Units;
 use porter_client::LendingConfig;
@@ -65,10 +67,17 @@ impl Sandbox {
         }
     }
 
-    /// This world with inferd looked for on the bus at `address`.
+    /// This world with inferd looked for on the bus at `address`, whose stand-ins are every one
+    /// taken for the service they play.
     pub fn on_bus(self, address: &str) -> Sandbox {
+        self.on_bus_vouched(address, Vouch::of(AnyOwner))
+    }
+
+    /// This world with inferd looked for on the bus at `address`, the owner of each service's name
+    /// judged by `vouch`.
+    pub fn on_bus_vouched(self, address: &str, vouch: Vouch) -> Sandbox {
         Sandbox {
-            bus: BusSource::Address(address.to_owned()),
+            bus: BusSource::Address(address.to_owned(), vouch),
             ..self
         }
     }

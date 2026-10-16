@@ -26,3 +26,12 @@ pub(crate) trait MemoryControl {
     #[zbus(property)]
     fn confinement(&self) -> zbus::Result<String>;
 }
+
+#[cfg(test)]
+mod tests {
+    /// The name these calls go to is the one the owner check knows the role of.
+    #[test]
+    fn the_service_name_is_the_one_the_owner_check_knows() {
+        assert_eq!(super::MEMORY_NAME, detent_callers::MEMORY_BUS);
+    }
+}

@@ -3,7 +3,7 @@
 
 use super::bus::BusSource;
 use super::daemon::Daemon;
-use super::io::{connect, name_owned, next_owner, owner_changes};
+use super::io::{confirmed, connect, next_owner, owner_changes};
 use crate::deadline::{Deadline, answered, peer};
 use detent_model::{DatasetName, HoldCounts, HoldInput, SyncNowEnd};
 use porter_dbus::names::{SYNC_ERROR_NOTHING_HELD, SYNC_ERROR_PAUSED};
@@ -34,10 +34,12 @@ fn held_in_status(status: &HashMap<String, OwnedValue>) -> Option<HoldCounts> {
     counts_of(&nested)
 }
 
-async fn syncd_is_running(connection: &Connection) -> bool {
-    name_owned(connection, Daemon::syncd().name)
+/// Whether the sync service is on the bus and its owner is the sync service: a program that took
+/// the name is not listened to and is told nothing.
+async fn syncd_is_running(bus: &BusSource, connection: &Connection) -> bool {
+    confirmed(bus, connection, Daemon::syncd().name)
         .await
-        .unwrap_or(false)
+        .is_ok()
 }
 
 /// Tells `tell` each hold the sync service starts or ends, until the bus goes away. It joins the
@@ -52,7 +54,7 @@ pub(crate) async fn follow_holds(bus: &BusSource, mut tell: impl FnMut(HoldInput
         return;
     };
     loop {
-        if syncd_is_running(&connection).await
+        if syncd_is_running(bus, &connection).await
             && watch(&connection, &mut owners, &mut tell).await.is_none()
         {
             return;
@@ -85,8 +87,10 @@ async fn watch(
             signal = std::future::poll_fn(|cx| std::pin::Pin::new(&mut signals).poll_next(cx)) => {
                 let Some(signal) = signal else { return next_owner(owners).await };
                 let Ok(args) = signal.args() else { continue };
+                // A dataset name over its bound is not one the service makes: the signal is dropped.
+                let Some(dataset) = DatasetName::bounded(args.dataset()) else { continue };
                 tell(HoldInput::Told {
-                    dataset: DatasetName(args.dataset().to_string()),
+                    dataset,
                     counts: counts_of(args.held()),
                 });
             }
@@ -100,6 +104,9 @@ async fn watch(
 pub(crate) async fn confirm_discard(bus: &BusSource, dataset: DatasetName) -> Option<HoldInput> {
     let asked = answered(Deadline::ACTION, peer::SYNC, async {
         let connection = connect(bus).await.ok()?;
+        confirmed(bus, &connection, Daemon::syncd().name)
+            .await
+            .ok()?;
         let proxy = SyncProxy::new(&connection).await.ok()?;
         Some(proxy.confirm_discard(&dataset.0).await)
     })
@@ -121,6 +128,9 @@ fn is_nothing_held(error: &BusError) -> bool {
 pub(crate) async fn hold_now(bus: &BusSource, dataset: DatasetName) -> HoldInput {
     let counts = answered(Deadline::READ, peer::SYNC, async {
         let connection = connect(bus).await.ok()?;
+        confirmed(bus, &connection, Daemon::syncd().name)
+            .await
+            .ok()?;
         let proxy = SyncProxy::new(&connection).await.ok()?;
         held_in_status(&proxy.status(&dataset.0).await.ok()?)
     })
@@ -138,6 +148,9 @@ fn is_paused(error: &BusError) -> bool {
 pub(crate) async fn sync_now(bus: &BusSource, dataset: DatasetName) -> SyncNowEnd {
     let asked = answered(Deadline::ACTION, peer::SYNC, async {
         let connection = connect(bus).await.ok()?;
+        confirmed(bus, &connection, Daemon::syncd().name)
+            .await
+            .ok()?;
         let proxy = SyncProxy::new(&connection).await.ok()?;
         Some(proxy.sync_now(&dataset.0).await)
     })

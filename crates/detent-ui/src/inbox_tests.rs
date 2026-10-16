@@ -1,9 +1,9 @@
 //! The window's inbox cannot be made to grow by whoever calls its activation object.
 
-use crate::inbox::{Notice, inbox};
+use crate::inbox::{NOTICE_INBOX, Notice, inbox};
 
 #[test]
-fn a_flood_of_notices_leaves_a_bounded_queue() {
+fn a_flood_of_notices_leaves_exactly_the_bounded_queue() {
     let (outbox, inbox) = inbox();
     for _ in 0..10_000 {
         assert!(
@@ -11,12 +11,26 @@ fn a_flood_of_notices_leaves_a_bounded_queue() {
             "a full inbox drops, it does not fail"
         );
     }
+    assert_eq!(outbox.dropped(), 10_000 - NOTICE_INBOX);
     let mut waiting = inbox.take().expect("the receiver");
     let mut count = 0;
     while waiting.try_recv().is_ok() {
         count += 1;
     }
-    assert!((1..=64).contains(&count), "{count} notices waited");
+    assert_eq!(count, NOTICE_INBOX, "the queue holds the first notices");
+}
+
+#[test]
+fn the_count_of_dropped_notices_starts_again_once_the_window_caught_up() {
+    let (outbox, inbox) = inbox();
+    for _ in 0..NOTICE_INBOX + 3 {
+        outbox.send(Notice::Reload).expect("sent");
+    }
+    assert_eq!(outbox.dropped(), 3);
+    let mut waiting = inbox.take().expect("the receiver");
+    while waiting.try_recv().is_ok() {}
+    outbox.send(Notice::Reload).expect("sent");
+    assert_eq!(outbox.dropped(), 0, "a flood that ended is forgotten");
 }
 
 #[test]

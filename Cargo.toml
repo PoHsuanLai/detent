@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/detent",
+  "crates/detent-callers",
   "crates/detent-files",
   "crates/detent-intents",
   "crates/detent-model",
@@ -19,6 +20,7 @@ repository = "https://github.com/PoHsuanLai/detent"
 publish = false
 
 [workspace.dependencies]
+detent-callers = { path = "crates/detent-callers" }
 detent-files   = { path = "crates/detent-files" }
 detent-intents = { path = "crates/detent-intents" }
 detent-model   = { path = "crates/detent-model" }
@@ -65,6 +67,11 @@ chordkit = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "934a2d71
 
 # The desktop's keymap (chordkit's layers) and keycap's program end, `KeycapSource`: the same line as casement's.
 keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "b45d4c22ec22be1117ce451dcc0b4a1f63764515" }
+
+# Which program is on the other end of a bus name (own repo, public): pinned process, unit and the
+# desktop's caller table. The same tag as quire's ds-blitz, so the lock holds one copy. zbus runs on
+# tokio here, so `tokio` is on and the default executor is off; `desktop` is the role names.
+peephole-bus = { git = "https://github.com/PoHsuanLai/peephole", tag = "v0.1.1", default-features = false, features = ["desktop", "tokio"] }
 
 # Editing a settings file in place, keeping every key, comment and spacing the edit does not touch.
 toml_edit = "0.25"

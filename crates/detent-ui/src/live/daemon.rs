@@ -61,3 +61,26 @@ impl Daemon {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Daemon;
+    use detent_callers::{ACCOUNTS_BUS, INFERENCE_BUS, SYNC_BUS, required_role};
+
+    /// The names the panes call and the names the owner check knows the roles of are one list:
+    /// a service whose name drifted would be refused as a stranger, and the page would say so.
+    #[test]
+    fn every_daemon_a_pane_reads_is_a_service_the_owner_check_knows() {
+        assert_eq!(Daemon::accountd().name, ACCOUNTS_BUS);
+        assert_eq!(Daemon::inferd().name, INFERENCE_BUS);
+        assert_eq!(Daemon::syncd().name, SYNC_BUS);
+        for daemon in [
+            Daemon::accountd(),
+            Daemon::inferd(),
+            Daemon::syncd(),
+            Daemon::syncd_settings(),
+        ] {
+            assert!(required_role(daemon.name).is_some(), "{}", daemon.name);
+        }
+    }
+}

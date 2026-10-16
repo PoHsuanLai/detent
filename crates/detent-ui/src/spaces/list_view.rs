@@ -27,6 +27,9 @@ fn absence_help(absence: &Absence) -> &'static str {
         Absence::NotPermitted => {
             "Spaces can only be managed when Settings is opened from the desktop."
         }
+        Absence::Unavailable => {
+            "The accounts service could not be confirmed, so there are no Spaces to show."
+        }
         Absence::Failed(_) => "The accounts service did not answer. Try again in a moment.",
     }
 }

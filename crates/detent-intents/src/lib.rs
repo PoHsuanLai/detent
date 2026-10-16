@@ -12,6 +12,7 @@ mod accounts;
 mod answer;
 mod application;
 mod ask;
+mod callers;
 mod context;
 mod journal;
 mod limits;
@@ -21,7 +22,9 @@ mod serve;
 mod window;
 
 pub use accounts::{AccountsRead, AccountsSource};
-pub use application::{APPLICATION_INTERFACE, APPLICATION_PATH, hand_over, hand_over_session};
+pub use application::{
+    APPLICATION_INTERFACE, APPLICATION_PATH, HandOverFault, hand_over, hand_over_session,
+};
 pub use manifest::{ManifestFault, manifest};
 pub use provider::SettingsProvider;
 pub use serve::{ServeFault, serve, serve_session, serve_with};

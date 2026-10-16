@@ -164,3 +164,43 @@ fn a_hold_belongs_to_its_account_and_sits_on_its_sync_row() {
         "a dataset no row controls is shown after the rows"
     );
 }
+
+#[test]
+fn a_service_that_tells_too_many_holds_is_not_believed() {
+    use super::hold_step::HOLDS_MAX;
+    let mut holds = Holds::default();
+    for number in 0..HOLDS_MAX + 20 {
+        let (next, _) = step(holds, told(&files(&format!("account{number}")), 1, 2));
+        holds = next;
+    }
+    assert_eq!(holds.0.len(), HOLDS_MAX, "the banners stop at the bound");
+    // A hold already kept still follows the service: updated, then ended.
+    let kept = files("account0");
+    let (holds, _) = step(holds, told(&kept, 2, 2));
+    assert_eq!(holds.0.len(), HOLDS_MAX);
+    assert!(
+        holds
+            .0
+            .iter()
+            .any(|hold| hold.dataset == kept && hold.counts.discard == 2)
+    );
+    let (holds, _) = step(
+        holds,
+        HoldInput::Told {
+            dataset: kept,
+            counts: None,
+        },
+    );
+    assert_eq!(holds.0.len(), HOLDS_MAX - 1);
+}
+
+#[test]
+fn a_dataset_name_over_its_bound_is_not_taken() {
+    use super::hold::DATASET_NAME_MAX;
+    let longest = "a".repeat(DATASET_NAME_MAX);
+    assert_eq!(
+        DatasetName::bounded(&longest),
+        Some(DatasetName(longest.clone()))
+    );
+    assert_eq!(DatasetName::bounded(&format!("{longest}a")), None);
+}

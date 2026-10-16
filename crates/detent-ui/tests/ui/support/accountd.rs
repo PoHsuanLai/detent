@@ -161,6 +161,8 @@ pub struct Accountd {
     pub client: Arc<Mutex<String>>,
     /// Every `Set` that arrived, in order.
     pub sets: Arc<Mutex<Vec<(String, toml::Value)>>>,
+    /// How many calls (reads and sets) the module was asked to permit: what reached it at all.
+    pub calls: Arc<Mutex<usize>>,
     policy: Policy,
     module: Module,
     /// Whether the module has syncd's `accounts.sync.add` row.
@@ -180,6 +182,7 @@ impl Accountd {
             accounts: Arc::new(Mutex::new(accounts)),
             client: Arc::default(),
             sets: Arc::default(),
+            calls: Arc::default(),
             policy,
         }
     }
@@ -219,6 +222,11 @@ impl Accountd {
 
     pub fn sets(&self) -> Vec<(String, toml::Value)> {
         self.sets.lock().expect("sets").clone()
+    }
+
+    /// How many calls reached the module, of any kind.
+    pub fn calls(&self) -> usize {
+        *self.calls.lock().expect("calls")
     }
 }
 
@@ -372,6 +380,7 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
 
 impl LiveModule for Accountd {
     async fn permit(&self, _caller: &Caller, _access: Access) -> Verdict {
+        *self.calls.lock().expect("calls") += 1;
         match self.policy {
             Policy::Allow => Verdict::Allow,
             Policy::Refuse => Verdict::Refuse,

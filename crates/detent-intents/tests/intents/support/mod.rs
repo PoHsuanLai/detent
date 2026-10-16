@@ -4,6 +4,7 @@
 
 mod bus;
 
+use detent_callers::{BusPeers, RoleName, introduce_service, private_peers, roles};
 use detent_files::ConfigHome;
 use detent_intents::{
     AccountsRead, AccountsSource, SettingsProvider, Window, WindowGone, serve_with,
@@ -79,6 +80,8 @@ pub struct World {
     _bus: PrivateBus,
     _app: zbus::Connection,
     _intentd: zbus::Connection,
+    /// What the activation object judges its callers with: nobody is anyone until a test says so.
+    peers: Arc<BusPeers>,
 }
 
 pub fn entity(kind: &str, key: &str) -> EntityId {
@@ -160,7 +163,8 @@ impl World {
             intentd_only(),
             scratch.join("proc"),
         ));
-        serve_with(&app, provider, who.clone())
+        let peers = Arc::new(private_peers(&app));
+        serve_with(&app, provider, who.clone(), peers.clone())
             .await
             .expect("settings serves");
         let intentd = bus.connect().await;
@@ -182,12 +186,30 @@ impl World {
             _bus: bus,
             _app: app,
             _intentd: intentd,
+            peers,
         }
     }
 
-    /// A connection to the bus, as the launcher (sill) has: it calls the app by name.
+    /// A connection to the bus, as the launcher (sill) has: the shell, which calls the app by name.
     pub async fn launcher(&self) -> zbus::Connection {
+        self.caller(roles::SHELL).await
+    }
+
+    /// A connection to the bus that the desktop's caller table would know as `role`.
+    pub async fn caller(&self, role: RoleName) -> zbus::Connection {
+        let connection = self.stranger().await;
+        introduce_service(&self.peers, &unique(&connection), &role);
+        connection
+    }
+
+    /// A connection to the bus that is in no row of the caller table: any program of the person's.
+    pub async fn stranger(&self) -> zbus::Connection {
         self._bus.connect().await
+    }
+
+    /// The unique name of the connection that serves Settings.
+    pub fn owner(&self) -> String {
+        unique(&self._app)
     }
 
     pub fn config_home(&self) -> ConfigHome {
@@ -263,4 +285,20 @@ impl World {
         let answer = self.proxy.preview(&json).await.expect("the bus call");
         serde_json::from_str(&answer).expect("a Preview")
     }
+}
+
+/// The unique bus name of `connection`.
+pub fn unique(connection: &zbus::Connection) -> String {
+    connection
+        .unique_name()
+        .expect("a connection to a bus has a unique name")
+        .to_string()
+}
+
+/// Peers on `connection` that know the connection named `owner` as `role`: what a program on
+/// that connection judges the owner of a name with.
+pub fn peers_knowing(connection: &zbus::Connection, owner: &str, role: &RoleName) -> BusPeers {
+    let peers = private_peers(connection);
+    introduce_service(&peers, owner, role);
+    peers
 }

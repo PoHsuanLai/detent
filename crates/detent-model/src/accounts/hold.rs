@@ -10,7 +10,17 @@ use ds_settings::schema::KeyPath;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DatasetName(pub String);
 
+/// The longest dataset name taken from the sync service, in bytes. The names are an account's id
+/// and a dataset's kind; a signal with more is not the service's, and is dropped.
+pub const DATASET_NAME_MAX: usize = 256;
+
 impl DatasetName {
+    /// The name `text`, when it is no longer than [`DATASET_NAME_MAX`]: the one way a name the sync
+    /// service sent becomes a dataset name.
+    pub fn bounded(text: &str) -> Option<DatasetName> {
+        (text.len() <= DATASET_NAME_MAX).then(|| DatasetName(text.to_owned()))
+    }
+
     fn parts(&self) -> (&str, &str) {
         self.0.split_once('/').unwrap_or((self.0.as_str(), ""))
     }

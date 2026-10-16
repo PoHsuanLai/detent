@@ -4,6 +4,7 @@ use crate::application::APP_NAME;
 use crate::application::export_application;
 use crate::context::SettingsContext;
 use crate::provider::SettingsProvider;
+use detent_callers::{BusPeers, desktop_peers};
 use docket_client::{TransportError, serve_on, serve_on_with};
 use docket_dbus::BusConnection;
 use docket_dbus::callers::Callers;
@@ -18,19 +19,22 @@ pub async fn serve(
 ) -> Result<(), TransportError> {
     // The activation object goes up before the name is claimed: a caller that was waiting for
     // the name finds it answering.
-    export_application(connection, provider.window()).await?;
+    let peers = Arc::new(desktop_peers(connection));
+    export_application(connection, provider.window(), peers).await?;
     let context = SettingsContext(provider.app().clone());
     serve_on(connection, provider, context.clone(), context).await
 }
 
 /// [`serve`], answering the process `callers` names as intentd instead of intentd's unit on the
-/// system's `/proc`: a test's stand-in for the router.
+/// system's `/proc`, and judging who may activate the window with `peers` instead of the desktop's
+/// caller table: a test's stand-ins for the router and the shell.
 pub async fn serve_with<K: Callers>(
     connection: &BusConnection,
     provider: SettingsProvider,
     callers: Arc<K>,
+    peers: Arc<BusPeers>,
 ) -> Result<(), TransportError> {
-    export_application(connection, provider.window()).await?;
+    export_application(connection, provider.window(), peers).await?;
     let context = SettingsContext(provider.app().clone());
     serve_on_with(connection, provider, context.clone(), context, callers).await
 }

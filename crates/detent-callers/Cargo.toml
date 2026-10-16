@@ -1,0 +1,23 @@
+[package]
+name = "detent-callers"
+description = "Which program is on the other end of a bus name: the desktop's caller table over peephole, as the owner check the live client asks and the peers the activation object judges its callers with."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+# `OwnerCheck`, `SenderName` and `Verdict`: the check this crate answers.
+ds-settings = { workspace = true, features = ["live"] }
+peephole-bus = { workspace = true }
+zbus = { workspace = true, features = ["tokio"] }
+
+[features]
+# Test seams: a standing introduced for a bus name's owner, and peers over an empty table. A shipped
+# binary never enables it; a dev-dependency does.
+testing = ["peephole-bus/fake"]
+
+[lints]
+workspace = true

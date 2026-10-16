@@ -2,7 +2,7 @@
 //! guests and the changes. The engines signal (a computer answering or not) comes from its proxy.
 
 use crate::deadline::{Deadline, answered, peer};
-use crate::live::{BusSource, connect, name_owned};
+use crate::live::{BusSource, confirmed, connect};
 use crate::ticks::{Ticker, Ticks};
 use detent_model::{Absence, ComputerRow, ComputersFound};
 use ds_peer::within;
@@ -67,11 +67,8 @@ fn sentence_of(error: &ClientError) -> String {
 /// Settings must not.
 pub(crate) async fn inferd(bus: &BusSource) -> Result<Connection, Absence> {
     let connection = connect(bus).await?;
-    if name_owned(&connection, INFERENCE_BUS).await? {
-        Ok(connection)
-    } else {
-        Err(Absence::NotRunning)
-    }
+    confirmed(bus, &connection, INFERENCE_BUS).await?;
+    Ok(connection)
 }
 
 fn accounts(connection: &Connection) -> Accounts<DbusTransport> {

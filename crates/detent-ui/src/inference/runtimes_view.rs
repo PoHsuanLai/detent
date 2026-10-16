@@ -104,6 +104,9 @@ fn absence_help(absence: &Absence) -> String {
         Absence::NotPermitted => "Models on this computer can only be listed when Settings is \
             opened from the desktop. Close this window and open Settings again from the launcher."
             .to_owned(),
+        Absence::Unavailable => "The accounts service could not be confirmed, so nothing on this \
+            computer can be listed."
+            .to_owned(),
         Absence::Failed(_) => {
             "The accounts service did not answer. Try again in a moment.".to_owned()
         }

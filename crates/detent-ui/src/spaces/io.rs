@@ -1,9 +1,10 @@
 //! The Spaces list and its removal, over accountd's registry and memory's controls.
 
 use crate::deadline::{Deadline, answered, peer};
-use crate::live::{BusSource, connect};
+use crate::live::{BusSource, connect, not_squatted};
 use crate::memory::MemoryControlProxy;
 use almanac_core::Removal;
+use detent_callers::{ACCOUNTS_BUS, MEMORY_BUS};
 use detent_model::{Absence, SpaceKey, SpaceRow};
 use ds_peer::within;
 use porter_client::{DbusTransport, SpacesError};
@@ -23,6 +24,7 @@ fn absence_of(error: SpacesError) -> Absence {
 /// The desktop-wide Spaces, in the order they were made.
 pub(super) async fn list(bus: &BusSource) -> Result<Vec<SpaceRow>, Absence> {
     let connection = connect(bus).await?;
+    not_squatted(bus, &connection, ACCOUNTS_BUS).await?;
     let asked = async {
         let spaces = DbusTransport::over(connection)
             .spaces()
@@ -54,6 +56,14 @@ pub(super) async fn remove(
         .await
         .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
     let wire = serde_json::to_string(removal).map_err(|_| COULD_NOT_REMOVE.to_owned())?;
+    // A program that took memory's or the registry's name is told nothing; a name nobody owns is
+    // still asked by name, which may start the service.
+    not_squatted(bus, &connection, MEMORY_BUS)
+        .await
+        .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
+    not_squatted(bus, &connection, ACCOUNTS_BUS)
+        .await
+        .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
     let memory = MemoryControlProxy::new(&connection)
         .await
         .map_err(|_| COULD_NOT_REMOVE.to_owned())?;

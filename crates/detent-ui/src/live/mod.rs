@@ -11,11 +11,13 @@ mod io;
 mod read;
 #[cfg(test)]
 mod read_tests;
+mod vouch;
 
 pub(crate) use activate::start;
 pub use bus::BusSource;
 pub(crate) use daemon::Daemon;
 pub(crate) use follow::{Followed, follow, read_once, reread};
 pub(crate) use holds::{confirm_discard, follow_holds, hold_now, sync_now};
-pub(crate) use io::{connect, name_owned, next_owner, owner_changes, plain};
+pub(crate) use io::{confirmed, connect, next_owner, not_squatted, owner_changes, plain};
 pub(crate) use read::words_of;
+pub use vouch::Vouch;

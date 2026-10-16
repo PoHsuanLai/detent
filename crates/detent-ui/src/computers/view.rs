@@ -45,6 +45,9 @@ fn absence_help(absence: &Absence) -> &'static str {
         Absence::NotPermitted => {
             "Your computers can only be managed when Settings is opened from the desktop."
         }
+        Absence::Unavailable => {
+            "The assistant could not be confirmed, so your computers cannot be listed."
+        }
         Absence::Failed(_) => "The assistant did not answer. Try again in a moment.",
     }
 }

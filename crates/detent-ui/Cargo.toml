@@ -11,6 +11,7 @@ publish.workspace = true
 [dependencies]
 almanac-core = { workspace = true }
 chordkit = { workspace = true }
+detent-callers = { workspace = true }
 detent-files = { workspace = true }
 detent-model = { workspace = true }
 docket-settings = { workspace = true }
@@ -31,7 +32,11 @@ toml = { workspace = true }
 zbus = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
+# A stand-in service on a test's private bus is vouched for by `AnyOwner`, or by the role check over
+# peers that a test introduces owners to (the squatter test).
+detent-callers = { workspace = true, features = ["testing"] }
 detent-testkit = { workspace = true }
+ds-settings = { workspace = true, features = ["testing"] }
 dioxus-ssr = { workspace = true }
 ds-harness = { workspace = true }
 ds-lint = { workspace = true }

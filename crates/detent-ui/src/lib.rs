@@ -47,7 +47,7 @@ pub use first_run::FirstRunApp;
 pub use inbox::{Inbox, Notice, Outbox, inbox};
 pub use inference::ReasonFeed;
 pub use lender::Lender;
-pub use live::BusSource;
+pub use live::{BusSource, Vouch};
 pub use marks::ProviderMarks;
 pub use ticks::{Gone, Ticker, Ticks};
 pub use updates::{

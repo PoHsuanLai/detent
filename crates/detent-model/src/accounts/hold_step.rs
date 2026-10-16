@@ -4,6 +4,11 @@ use super::hold::{DatasetName, HoldCounts, SyncHold};
 use super::model::Account;
 use ds_settings::schema::KeyPath;
 
+/// The most deletions kept at once. A person syncs a handful of datasets; a sync service (or a
+/// program posing as one) that tells more is not believed, so the banners cannot grow with its
+/// signals. A hold already kept is still updated or ended.
+pub const HOLDS_MAX: usize = 64;
+
 /// The deletions waiting for the person, kept apart from the accounts' rows: they come from the
 /// sync service, not from the accounts module, and may be told before the rows are read.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -76,7 +81,7 @@ pub fn hold_step(holds: Holds, input: HoldInput) -> (Holds, Vec<HoldEffect>) {
     match input {
         HoldInput::Told { dataset, counts } => {
             list.retain(|hold| hold.dataset != dataset);
-            if let Some(counts) = counts {
+            if let Some(counts) = counts.filter(|_| list.len() < HOLDS_MAX) {
                 list.push(SyncHold { dataset, counts });
             }
         }

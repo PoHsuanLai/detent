@@ -6,9 +6,11 @@ use crate::support::accountd::{Accountd, Held, Policy};
 use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
 use crate::support::syncd::Syncd;
+use detent_callers::{RoleCheck, introduce_service, private_peers, roles};
 use detent_model::PageSlug;
-use detent_ui::Opening;
+use detent_ui::{Opening, Vouch};
 use ds_harness::{Driver, Harness, Query};
+use ds_settings::live::AnyOwner;
 use std::time::Duration;
 
 const HOME: &str = "[aria-label=\"Manage Home cloud\"]";
@@ -41,8 +43,21 @@ struct World {
     _fake: Accountd,
 }
 
+/// Who the window takes the services' programs to be.
+enum Trust {
+    /// Every one of them is the service it plays.
+    Everyone,
+    /// Only accountd is; the program that owns the sync service's name is nobody the table knows.
+    AccountsOnly,
+}
+
 /// The Accounts page over the fakes, with `before` holds already on when the window opens.
 fn world(name: &str, before: &[(&str, u64, u64)]) -> World {
+    world_trusting(name, before, Trust::Everyone)
+}
+
+/// The same, the window taking the services for what `trust` says.
+fn world_trusting(name: &str, before: &[(&str, u64, u64)], trust: Trust) -> World {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()
@@ -63,7 +78,19 @@ fn world(name: &str, before: &[(&str, u64, u64)]) -> World {
         page: Some(PageSlug("accounts".to_owned())),
         query: String::new(),
     };
-    let mut harness = Sandbox::new(name).on_bus(&bus.address).harness(opening);
+    let vouch = match trust {
+        Trust::Everyone => Vouch::of(AnyOwner),
+        Trust::AccountsOnly => {
+            let watcher = rt.block_on(bus.connect());
+            let peers = private_peers(&watcher);
+            let accountd = accounts.unique_name().expect("a unique name").to_string();
+            introduce_service(&peers, &accountd, &roles::ACCOUNTS);
+            Vouch::of(RoleCheck::new(peers))
+        }
+    };
+    let mut harness = Sandbox::new(name)
+        .on_bus_vouched(&bus.address, vouch)
+        .harness(opening);
     settle(&mut harness, "the list", |h| h.count(".accounts-list") == 1);
     click(&mut harness, HOME);
     settle(&mut harness, "the account", |h| {
@@ -103,6 +130,27 @@ fn a_hold_told_after_the_window_opened_shows_on_the_sync_row_with_keep_as_the_de
     let row = html.find(KEEP_FILES).expect("the sync row");
     let banner = html.find("30 of 40").expect("the banner");
     assert!(row < banner, "the banner is under the row it is about");
+}
+
+#[test]
+fn a_program_that_took_the_sync_name_is_not_listened_to_and_is_never_told_to_discard() {
+    let mut w = world_trusting(
+        "holds-squatter",
+        &[("home/files", 5, 5)],
+        Trust::AccountsOnly,
+    );
+    // Time enough for a banner to show if the squatter's hold were believed.
+    for _ in 0..60 {
+        w.harness.advance(Duration::from_millis(50));
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(w.harness.count(BANNER), 0, "its hold is not shown");
+    assert_eq!(
+        *w.sync.watched.lock().expect("watched"),
+        0,
+        "it was not joined"
+    );
+    assert!(w.sync.confirmed().is_empty(), "nothing was confirmed to it");
 }
 
 #[test]

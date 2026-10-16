@@ -22,11 +22,12 @@ pub(crate) enum Followed {
 }
 
 async fn attach(
+    bus: &BusSource,
     connection: &Connection,
     daemon: &Daemon,
     valued: fn(&KeyKind) -> bool,
 ) -> Result<(LiveClient, Described), Absence> {
-    let client = open(connection, daemon).await?;
+    let client = open(bus, connection, daemon).await?;
     let described = read(&client, valued).await?;
     Ok((client, described))
 }
@@ -34,11 +35,12 @@ async fn attach(
 /// Like [`attach`], listening for changes first, so none falls between the reading and the
 /// listening: what changes during the reading is heard after it.
 async fn attach_listening(
+    bus: &BusSource,
     connection: &Connection,
     daemon: &Daemon,
     valued: fn(&KeyKind) -> bool,
 ) -> Result<(LiveClient, Described, Changes), Absence> {
-    let client = open(connection, daemon).await?;
+    let client = open(bus, connection, daemon).await?;
     let changes = client.changes().await.map_err(absence_of)?;
     let described = read(&client, valued).await?;
     Ok((client, described, changes))
@@ -52,7 +54,7 @@ pub(crate) async fn open_once(
     valued: fn(&KeyKind) -> bool,
 ) -> Result<(LiveClient, Described), Absence> {
     let connection = connect(bus).await?;
-    attach(&connection, daemon, valued).await
+    attach(bus, &connection, daemon, valued).await
 }
 
 /// The rows of `daemon`'s module once, when the daemon is already on the bus: for a caller that
@@ -93,7 +95,7 @@ pub(crate) async fn follow(
         Err(absence) => return tell(Followed::Gone(absence)),
     };
     loop {
-        let still_on_bus = match attach_listening(&connection, daemon, valued).await {
+        let still_on_bus = match attach_listening(bus, &connection, daemon, valued).await {
             Ok((client, described, changes)) => {
                 tell(Followed::Opened(client, described));
                 relay_changes(changes, &mut owners, &mut tell).await

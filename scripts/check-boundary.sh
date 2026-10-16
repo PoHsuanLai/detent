@@ -19,6 +19,7 @@ PURE="dioxus dioxus-core tokio blitz-dom ds ds-blitz ds-harness ds-lint"
 RULES=(
   "detent-model: $PURE"
   "detent-files: $PURE"
+  "detent-callers: dioxus dioxus-core blitz-dom ds ds-blitz ds-harness ds-lint detent-model detent-files detent-intents detent-ui detent"
   "detent-testkit: $PURE zbus ds-settings detent-model detent-files detent-ui detent"
   "detent-ui: detent detent-intents"
   "detent-intents: dioxus dioxus-core blitz-dom ds ds-blitz ds-harness ds-lint detent-ui detent"
@@ -54,10 +55,11 @@ done
 # stays exact. Dev dependencies are outside it (a test may reach further than the crate does).
 EDGES=(
   "detent-testkit:"
+  "detent-callers: ds-settings"
   "detent-model: almanac-core docket-settings ds-helpers ds-settings porter-core porter-infer"
   "detent-files: detent-model docket-agents docket-settings ds-helpers ds-settings"
-  "detent-intents: detent-files detent-model docket-client docket-core docket-dbus ds-peer ds-settings porter-core prov"
-  "detent-ui: almanac-core detent-files detent-model docket-settings ds ds-blitz ds-helpers ds-peer ds-settings porter-client porter-core porter-dbus porter-infer porter-provider"
+  "detent-intents: detent-callers detent-files detent-model docket-client docket-core docket-dbus ds-peer ds-settings porter-core prov"
+  "detent-ui: almanac-core detent-callers detent-files detent-model docket-settings ds ds-blitz ds-helpers ds-peer ds-settings porter-client porter-core porter-dbus porter-infer porter-provider"
   "detent: detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
 )
 for edge in "${EDGES[@]}"; do

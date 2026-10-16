@@ -3,7 +3,7 @@
 
 use super::proxy::{MEMORY_NAME, MemoryControlProxy};
 use crate::deadline::{Deadline, answered, peer};
-use crate::live::{BusSource, connect, name_owned};
+use crate::live::{BusSource, confirmed, connect};
 use almanac_core::WaitingSetting;
 use detent_model::{Confinement, SettingPair, Trouble};
 use porter_dbus::{BusFailure, classify};
@@ -39,17 +39,14 @@ fn failure_of(error: &zbus::Error) -> Failure {
     }
 }
 
-/// The connection, only when memory is already on the bus.
+/// The connection, only when memory is already on the bus and its owner is memory: a program that
+/// took the name is treated as memory not running, and is asked and told nothing.
 async fn running(bus: &BusSource) -> Result<Connection, Failure> {
     let connection = connect(bus).await.map_err(|_| Failure::Absent)?;
-    let owned = name_owned(&connection, MEMORY_NAME)
+    confirmed(bus, &connection, MEMORY_NAME)
         .await
         .map_err(|_| Failure::Absent)?;
-    if owned {
-        Ok(connection)
-    } else {
-        Err(Failure::Absent)
-    }
+    Ok(connection)
 }
 
 /// The looser values the file holds that wait for the person, in key order, read fresh.
