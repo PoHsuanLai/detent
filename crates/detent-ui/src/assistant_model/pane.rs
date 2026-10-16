@@ -2,13 +2,13 @@
 
 use super::picker::AssistantPicker;
 use crate::inference::{Picker, use_picker};
+use detent_model::Clearing;
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::prelude::*;
 
 /// What the model is for.
-const PURPOSE: &str = "Your assistant uses this model to understand what you ask and to answer. \
-    Choose one that runs on this computer, or one from an online company.";
+const PURPOSE: &str = "The model your assistant uses to answer.";
 
 /// The page: the purpose, then the picker's row.
 #[component]
@@ -19,7 +19,7 @@ pub(crate) fn AssistantModelPane() -> Element {
             div { class: "picker-auto",
                 Label { text: PURPOSE, role: LabelRole::Secondary, style: LabelStyle::Footnote }
             }
-            AssistantPicker { state: state(), onask: ask }
+            AssistantPicker { state: state(), clearing: Clearing::Offered, onask: ask }
         }
     }
 }

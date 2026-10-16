@@ -160,7 +160,7 @@ fn local_gathers_the_models_this_computer_runs_by_engine() {
 #[test]
 fn the_menu_keeps_the_other_places_in_the_modules_groups_and_drops_the_local_group() {
     let lines: Vec<String> = row("", None)
-        .menu()
+        .menu(Clearing::Offered)
         .into_iter()
         .map(|line| match line {
             MenuLine::Header(name) => format!("# {name}"),
@@ -207,7 +207,7 @@ fn a_group_called_on_this_computer_means_nothing_without_the_place() {
     assert!(!row.is_local("ollama/m"));
     let engines: Vec<String> = row.engines().into_iter().map(|engine| engine.id).collect();
     assert_eq!(engines, ["llama.cpp", "vLLM"]);
-    let menu: Vec<MenuLine> = row.menu();
+    let menu: Vec<MenuLine> = row.menu(Clearing::Offered);
     let listed = |word: &str| {
         menu.iter()
             .any(|line| matches!(line, MenuLine::Pick { word: own, .. } if own == word))

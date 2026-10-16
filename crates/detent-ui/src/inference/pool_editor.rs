@@ -12,10 +12,10 @@ use ds::root::common::Common;
 use ds_settings::schema::KeyPath;
 
 /// What the list is called.
-const TITLE: &str = "Automatic chooses from";
+const TITLE: &str = "Choose from";
 
 /// Said under a model the list holds and the module no longer offers.
-const GONE: &str = "This model is not available now. Turn it off to remove it.";
+const GONE: &str = "No longer available. Turn off to remove.";
 
 /// The list, or nothing when the module offers no list for the slot.
 #[component]

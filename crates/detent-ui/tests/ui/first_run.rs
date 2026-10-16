@@ -14,7 +14,7 @@ use std::time::Duration;
 const LOCAL_ONLY: &str = ".first-run [aria-label=\"Keep AI on this computer\"] .ds-toggle";
 const DONE: &str = ".first-run > .ds-button";
 const MENU: &str = ".first-run .ds-popup .ds-button";
-const POOL_NOTE: &str = "Pick at least one model for Automatic to choose from.";
+const POOL_NOTE: &str = "Turn on at least one model.";
 
 fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
     // The fake daemons answer on real threads; a loaded machine running every test at once can
@@ -152,8 +152,8 @@ fn the_model_is_nothing_chosen_until_the_person_chooses() {
 fn automatic_opens_its_list_and_local_asks_how_it_runs_then_which_model() {
     let mut w = world("first-run-modes");
     open_and_count_marked(&mut w);
-    // Items: None, Automatic, Local, the Anthropic header, claude, the Google header, gemini.
-    pick(&mut w, 2);
+    // Items: Automatic, Local, the Anthropic header, claude, the Google header, gemini.
+    pick(&mut w, 1);
     settle(&mut w.harness, "Automatic", |h| {
         h.html().contains(POOL_NOTE)
     });
@@ -164,7 +164,7 @@ fn automatic_opens_its_list_and_local_asks_how_it_runs_then_which_model() {
     assert_eq!(w.harness.count("[data-pool=\"editor\"]"), 1);
 
     click(&mut w.harness, MENU);
-    pick(&mut w, 3);
+    pick(&mut w, 2);
     let model = "#picker-local-model-ai-model-text-balanced .ds-popup .ds-button";
     settle(&mut w.harness, "the questions", |h| h.count(model) == 1);
     assert!(w.harness.html().contains("llama.cpp"));
@@ -193,7 +193,7 @@ fn the_modules_note_shows_under_the_row_and_under_the_list_once() {
     assert_eq!((note(&w, "row"), note(&w, "pool")), (1, 0));
     assert!(w.harness.html().contains(NOTE));
     open_and_count_marked(&mut w);
-    pick(&mut w, 2);
+    pick(&mut w, 1);
     settle(&mut w.harness, "Automatic", |h| {
         h.html().contains(POOL_NOTE)
     });

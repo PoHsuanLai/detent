@@ -480,7 +480,7 @@ fn the_empty_word_reads_none_whatever_the_module_calls_it_and_claims_no_default(
     assert_eq!(row.value, "", "nothing the module answered is chosen");
     assert_eq!(row.choice(), Choice::Nothing);
     // `(word, what the menu calls it)`.
-    const CASES: &[(&str, &str)] = &[("", "None"), ("auto", "Automatic"), ("local/qwen", "qwen")];
+    const CASES: &[(&str, &str)] = &[("", "Off"), ("auto", "Automatic"), ("local/qwen", "qwen")];
     for (word, label) in CASES {
         assert_eq!(row.label_of(word), *label, "{word:?}");
     }

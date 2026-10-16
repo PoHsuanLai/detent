@@ -29,7 +29,7 @@ pub struct ChoiceSection {
     pub words: Vec<String>,
 }
 
-/// One tier of one slot: a menu of None (the empty word), Automatic and each model.
+/// One tier of one slot: a menu of Off (the empty word), Automatic and each model.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ModelRow {
     /// The module's key, `ai.model.<slot>.<tier>`.
@@ -185,7 +185,7 @@ impl ModelRow {
         self.unavailable.get(word).map(String::as_str)
     }
 
-    /// What the menu calls `word`. The empty word is always "None": the module's own name for it
+    /// What the menu calls `word`. The empty word is always "Off": the module's own name for it
     /// would claim a model is chosen for the person.
     pub fn label_of(&self, word: &str) -> String {
         if word.is_empty() {

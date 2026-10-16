@@ -199,12 +199,12 @@ fn an_unready_choice_says_what_to_do_and_nothing_chosen_says_nothing() {
     let empty = ready_with("auto", &[]);
     assert_eq!(
         row_of(&empty, ROW).unready_note(),
-        Some("Pick at least one model for Automatic to choose from.")
+        Some("Turn on at least one model.")
     );
     let gone = ready_with("auto", &["gone/model"]);
     assert_eq!(
         row_of(&gone, ROW).unready_note(),
-        Some("The models picked for Automatic are not available now. Pick another.")
+        Some("The models you turned on are not available now. Turn on another.")
     );
     assert_eq!(row_of(&ready_with("", &[]), ROW).unready_note(), None);
     assert_eq!(
@@ -396,7 +396,7 @@ fn choosing_automatic_writes_the_word_and_never_picks_a_pool_for_the_person() {
 fn the_menu_lists_local_after_automatic_and_none_of_the_models_this_computer_runs() {
     let state = ready_with("", &[]);
     let lines: Vec<String> = row_of(&state, ROW)
-        .menu()
+        .menu(Clearing::Offered)
         .into_iter()
         .map(|line| match line {
             MenuLine::Header(name) => format!("# {name}"),
@@ -406,13 +406,28 @@ fn the_menu_lists_local_after_automatic_and_none_of_the_models_this_computer_run
     assert_eq!(
         lines,
         [
-            " = None",
+            " = Off",
             "auto = Automatic",
             "on-this-computer = Local",
             "# Anthropic",
             "anthropic/claude = claude",
         ]
     );
+}
+
+#[test]
+fn a_menu_that_withholds_clearing_has_no_off() {
+    let state = ready_with("", &[]);
+    let words: Vec<String> = row_of(&state, ROW)
+        .menu(Clearing::Withheld)
+        .into_iter()
+        .filter_map(|line| match line {
+            MenuLine::Pick { word, .. } => Some(word),
+            MenuLine::Header(_) => None,
+        })
+        .collect();
+    assert_eq!(words.first().map(String::as_str), Some("auto"));
+    assert!(!words.iter().any(String::is_empty));
 }
 
 #[test]

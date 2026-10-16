@@ -5,7 +5,7 @@ use super::model::{AUTO, ModelRow};
 use super::pool::AutoPool;
 
 /// What the menu calls the empty word, whatever the module calls it.
-pub(super) const NONE_LABEL: &str = "None";
+pub(super) const NONE_LABEL: &str = "Off";
 
 /// The reason the module gives for a hosted model that no account reaches. Picking such a model
 /// offers the way to add an account instead of setting it.
@@ -54,13 +54,13 @@ impl ChoiceGap {
     pub fn sentence(self) -> &'static str {
         match self {
             ChoiceGap::Choice => "Choose a model.",
-            ChoiceGap::PoolEmpty => "Pick at least one model for Automatic to choose from.",
+            ChoiceGap::PoolEmpty => "Turn on at least one model.",
             ChoiceGap::PoolGone => {
-                "The models picked for Automatic are not available now. Pick another."
+                "The models you turned on are not available now. Turn on another."
             }
             ChoiceGap::NoLocalEngine => "Nothing on this computer is set up to run models yet.",
-            ChoiceGap::LocalEngine => "Choose how models run on this computer.",
-            ChoiceGap::LocalModel => "Choose a model to run on this computer.",
+            ChoiceGap::LocalEngine => "Choose how to run models here.",
+            ChoiceGap::LocalModel => "Choose a model to run here.",
         }
     }
 }

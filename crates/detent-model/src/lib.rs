@@ -86,7 +86,7 @@ pub use outside::{
 pub use page::PageSlug;
 pub use picker::{
     Absence, Applying, AutoPool, AwaitingAccount, Choice, ChoiceGap, ChoiceReadiness,
-    ChoiceSection, Described, Gate, KindRows, LocalAsk, LocalEngine, LocalModel, LocalView,
+    ChoiceSection, Clearing, Described, Gate, KindRows, LocalAsk, LocalEngine, LocalModel, LocalView,
     MenuLine, ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup,
     PoolMembership, PoolStanding, PoolWrite, Ready, loading_text, step,
 };

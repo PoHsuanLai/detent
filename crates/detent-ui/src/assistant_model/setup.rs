@@ -6,7 +6,9 @@ use super::picker::AssistantPicker;
 use crate::env::Env;
 use crate::inference::{Picker, use_picker};
 use crate::live::start;
-use detent_model::{Pressable, SetupButton, assistant_model_page, modules_read, setup_button};
+use detent_model::{
+    Clearing, Pressable, SetupButton, assistant_model_page, modules_read, setup_button,
+};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button::Button;
@@ -22,13 +24,7 @@ use ds_blitz::{AppHandle, use_app_handle};
 const HEADING: &str = "Choose a Model for Your Assistant";
 
 /// What the step asks.
-const EXPLANATION: &str = "Your assistant uses a model to understand what you ask and to \
-    answer. Choose one that runs on this computer, or one from an online company. You can \
-    change this at any time in Settings.";
-
-/// What skipping means.
-const SKIPPING: &str = "If you skip, you will be asked to choose when your assistant first \
-    needs a model.";
+const EXPLANATION: &str = "Your assistant needs a model to answer you.";
 
 /// The step, under the frame: the picker's row and the two buttons.
 #[component]
@@ -57,9 +53,8 @@ pub(crate) fn AssistantSetup() -> Element {
             Label { text: HEADING, role: LabelRole::Primary, style: LabelStyle::Title }
             Label { text: EXPLANATION, role: LabelRole::Secondary }
             div { class: "assistant-setup-card",
-                AssistantPicker { state: now, onask: ask }
+                AssistantPicker { state: now, clearing: Clearing::Withheld, onask: ask }
             }
-            Label { text: SKIPPING, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
             div { class: "assistant-setup-buttons",
                 Button {
                     label: "Skip",

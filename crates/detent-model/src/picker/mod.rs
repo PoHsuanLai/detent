@@ -12,7 +12,7 @@ mod step;
 pub use absence::Absence;
 pub use choice::{Choice, ChoiceGap, ChoiceReadiness, Gate};
 pub use local::{LocalAsk, LocalEngine, LocalModel, LocalView};
-pub use menu::MenuLine;
+pub use menu::{Clearing, MenuLine};
 pub use model::{
     Applying, AwaitingAccount, ChoiceSection, Described, KindRows, ModelRow, PickerState, Ready,
     loading_text,

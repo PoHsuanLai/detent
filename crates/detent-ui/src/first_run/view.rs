@@ -6,7 +6,7 @@ use crate::env::Env;
 use crate::inference::{Picker, use_picker};
 use crate::live::start;
 use detent_model::{
-    FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, PickerInput, PickerState, Stage,
+    Clearing, FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, PickerInput, PickerState, Stage,
     assistant_model_page, first_run_step, modules_read,
 };
 use dioxus::prelude::*;
@@ -25,8 +25,7 @@ use ds_settings::{AppName, ConfigRoot, Store, use_environment};
 use std::sync::Arc;
 
 /// What the model is for, and that nothing is chosen for the person.
-const MODEL_NOTE: &str = "Your assistant uses a model to understand what you ask and to answer. \
-    Choose one below, or press Done and choose later in Settings.";
+const MODEL_NOTE: &str = "Choose a model for your assistant, or do it later in Settings.";
 
 fn send(state: &mut Signal<FirstRun>, input: FirstRunInput) -> Vec<FirstRunEffect> {
     let (next, effects) = first_run_step(state.peek().clone(), input);
@@ -139,14 +138,14 @@ fn Welcome(
             }
             Label { text: "AI on this computer", role: LabelRole::Primary, style: LabelStyle::Title }
             Label {
-                text: "Apps can ask for help from a model. By default the model runs here and nothing leaves this computer. You can change this in Settings any time.",
+                text: "Apps can ask a model for help. By default it runs here and nothing leaves this computer.",
                 role: LabelRole::Secondary,
             }
             FieldGroup {
                 common: Common { extra_class: ExtraClass::parse("first-run-card").ok(), ..Common::default() },
                 FieldRow {
                     label: TextLine::from("Keep AI on this computer"),
-                    help: Some(TextLine::from("While on, no request goes to a cloud account.")),
+                    help: Some(TextLine::from("Nothing is sent to online accounts.")),
                     availability: busy,
                     Toggle {
                         label: "Keep AI on this computer",
@@ -161,7 +160,7 @@ fn Welcome(
                 }
             }
             Label { text: MODEL_NOTE, role: LabelRole::Secondary }
-            AssistantPicker { state: picker, onask }
+            AssistantPicker { state: picker, clearing: Clearing::Withheld, onask }
             Button {
                 label: "Done",
                 answers: Answers::Return,

@@ -154,7 +154,7 @@ fn a_model_nobody_chose_shows_a_prompt_and_marks_no_item_while_a_chosen_one_is_m
         "no row is selected"
     );
     let html = empty.harness.html();
-    assert!(html.contains(">None<"), "the empty word reads None");
+    assert!(html.contains(">Off<"), "the empty word reads Off");
     for banned in ["Catalogue default", "Recommended", "recommended"] {
         assert!(!html.contains(banned), "{banned} is on the page:\n{html}");
     }
@@ -187,7 +187,7 @@ fn picking_a_model_sets_the_assistants_row_and_no_other() {
     );
     ready(&mut world);
     open_and_count_marked(&mut world.harness, BUTTON);
-    // Items: None, Automatic, Local, the Anthropic header, then claude.
+    // Items: Off, Automatic, Local, the Anthropic header, then claude.
     pick(&mut world.harness, 5);
     settle(&mut world.harness, "the set", |h| {
         shown(h, BUTTON).as_deref() == Some("claude")
@@ -208,7 +208,7 @@ fn a_model_that_needs_an_account_stays_pickable_and_offers_to_add_one_instead_of
     let mut world = world("assistant-account", ASSISTANT_MODEL_SLUG, fake);
     ready(&mut world);
     open_and_count_marked(&mut world.harness, BUTTON);
-    // Items: None, Automatic, Local, the Anthropic header, then claude.
+    // Items: Off, Automatic, Local, the Anthropic header, then claude.
     let claude = ".ds-menu-item:nth-child(5)";
     assert_ne!(
         world.harness.attr(claude, "aria-disabled").as_deref(),
@@ -267,7 +267,7 @@ fn the_first_run_step_has_no_sidebar_and_continue_waits_for_a_choice() {
     );
 
     open_and_count_marked(&mut world.harness, SETUP_BUTTON);
-    pick(&mut world.harness, 5);
+    pick(&mut world.harness, 4);
     settle(&mut world.harness, "Continue", |h| {
         h.attr(CONTINUE, "data-availability").as_deref() != Some("disabled")
     });
@@ -314,7 +314,8 @@ fn a_page_to_open_can_be_the_first_run_step() {
 }
 
 const POOL_ROW: &str = "#pool-local-qwen .ds-toggle";
-const POOL_NOTE: &str = "Pick at least one model for Automatic to choose from.";
+const AUTOMATIC_NOTE: &str = "picks a model for each request";
+const POOL_NOTE: &str = "Turn on at least one model.";
 
 #[test]
 fn automatic_opens_its_list_and_is_not_ready_until_a_model_is_in_it() {
@@ -325,8 +326,12 @@ fn automatic_opens_its_list_and_is_not_ready_until_a_model_is_in_it() {
     );
     ready(&mut world);
     assert_eq!(world.harness.count("[data-pool=\"editor\"]"), 0);
+    assert!(
+        !world.harness.html().contains(AUTOMATIC_NOTE),
+        "Automatic is explained only once it is chosen"
+    );
     open_and_count_marked(&mut world.harness, SETUP_BUTTON);
-    pick(&mut world.harness, 2);
+    pick(&mut world.harness, 1);
     settle(&mut world.harness, "Automatic", |h| {
         shown(h, SETUP_BUTTON).as_deref() == Some("Automatic")
     });
@@ -335,6 +340,7 @@ fn automatic_opens_its_list_and_is_not_ready_until_a_model_is_in_it() {
         [(ROW.to_owned(), "auto".to_owned())]
     );
     assert_eq!(world.harness.count("[data-pool=\"editor\"]"), 1);
+    assert!(world.harness.html().contains(AUTOMATIC_NOTE));
     assert!(
         world.harness.html().contains(POOL_NOTE),
         "an empty list says what to do"

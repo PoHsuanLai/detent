@@ -229,7 +229,7 @@ fn choosing_a_model_shows_loading_it_until_inferd_answers_then_sets_it() {
         Some("true"),
         "the click opened the menu"
     );
-    // Items: None, Automatic, Local, qwen, holo.
+    // Items: Off, Automatic, Local, qwen, holo.
     let item = harness
         .centre(".ds-menu-item:nth-child(5) .ds-menu-label")
         .expect("the menu is open");
@@ -440,7 +440,7 @@ fn grouped_choices_render_under_headers_ungrouped_first_in_first_appearance_orde
     in_order(
         &harness.html(),
         &[
-            "None",
+            "Off",
             "Automatic",
             "Local",
             "Anthropic",

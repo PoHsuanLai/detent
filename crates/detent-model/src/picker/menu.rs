@@ -21,6 +21,15 @@ pub enum MenuLine {
     },
 }
 
+/// Whether a menu offers the way to clear the choice.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Clearing {
+    /// The menu lists "Off", the empty word.
+    Offered,
+    /// It does not: the first-run pages have a Skip of their own.
+    Withheld,
+}
+
 impl ModelRow {
     fn pick(&self, word: &str) -> MenuLine {
         MenuLine::Pick {
@@ -41,7 +50,7 @@ impl ModelRow {
     /// The row's menu: the ungrouped choices first with Local right after Automatic, then each
     /// group under its name. The models this computer runs are not listed; Local asks for them,
     /// and a group left with none of its own choices has no header.
-    pub fn menu(&self) -> Vec<MenuLine> {
+    pub fn menu(&self, clearing: Clearing) -> Vec<MenuLine> {
         let mut lines = Vec::new();
         let mut local_listed = false;
         for section in &self.sections {
@@ -49,6 +58,7 @@ impl ModelRow {
                 .words
                 .iter()
                 .filter(|word| !self.is_local(word))
+                .filter(|word| !(word.is_empty() && clearing == Clearing::Withheld))
                 .collect();
             if words.is_empty() {
                 continue;

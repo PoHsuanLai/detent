@@ -5,7 +5,9 @@ use super::local_rows::LocalRows;
 use super::note::NoteLine;
 use super::pool_editor::PoolEditor;
 use crate::key_row::row_id;
-use detent_model::{Adding, Applying, Choice, Gate, MenuLine, ModelRow, PickerInput, loading_text};
+use detent_model::{
+    Adding, Applying, Choice, Clearing, Gate, MenuLine, ModelRow, PickerInput, loading_text,
+};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_help::HelpShown;
@@ -27,6 +29,7 @@ pub(crate) fn TierRow(
     row: ModelRow,
     applying: Option<Applying>,
     adding: Adding,
+    clearing: Clearing,
     onask: EventHandler<PickerInput>,
 ) -> Element {
     let here = applying.as_ref().filter(|set| set.path == row.path);
@@ -42,7 +45,7 @@ pub(crate) fn TierRow(
     } else {
         Availability::Disabled
     };
-    let items = menu_items(&row);
+    let items = menu_items(&row, clearing);
     let path = row.path.clone();
     let local = row.local_view();
     let note = row.unready_note().filter(|_| local.is_none());
@@ -81,8 +84,8 @@ pub(crate) fn TierRow(
 }
 
 /// The row's menu: the ungrouped choices first, then a header per group over its choices.
-fn menu_items(row: &ModelRow) -> Vec<MenuItem<String>> {
-    row.menu()
+fn menu_items(row: &ModelRow, clearing: Clearing) -> Vec<MenuItem<String>> {
+    row.menu(clearing)
         .into_iter()
         .flat_map(|line| match line {
             MenuLine::Header(name) => vec![MenuItem::Header(name)],

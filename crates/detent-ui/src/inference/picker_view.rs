@@ -5,7 +5,7 @@ use super::drive::{Picker, use_picker};
 use super::tier_row::TierRow;
 use crate::env::Env;
 use crate::files::{Files, value_of};
-use detent_model::{Absence, Adding, KindRows, PickerInput, PickerState, Reason};
+use detent_model::{Absence, Adding, Clearing, KindRows, PickerInput, PickerState, Reason};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -15,9 +15,8 @@ use ds::prelude::*;
 const SHOW_REASON: &str = "ai.auto.show_reason";
 
 /// What the "Automatic" choice of every row does.
-pub(crate) const AUTOMATIC: &str = "Automatic chooses from the models you pick for it. It uses one that's \
-    already running on this computer when it can handle the request, and otherwise one that can \
-    load, or an online model where your privacy settings allow it.";
+pub(crate) const AUTOMATIC: &str =
+    "Automatic picks a model for each request from the ones you turn on.";
 
 /// Whether the footer is shown: `ai.auto.show_reason`, on when no schema or file says otherwise
 /// (inferd's own default).
@@ -142,7 +141,7 @@ fn KindCard(
         div { class: "picker-kind",
             FieldGroup { title: Some(kind.label.clone()),
                 for row in kind.rows.iter().cloned() {
-                    TierRow { key: "{row.path.0}", applying: applying.clone(), adding, row, onask }
+                    TierRow { key: "{row.path.0}", applying: applying.clone(), adding, clearing: Clearing::Offered, row, onask }
                 }
             }
         }

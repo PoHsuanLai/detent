@@ -2,7 +2,7 @@
 //! draws for the text slot's balanced tier.
 
 use crate::inference::{AUTOMATIC, TierRow, Unavailable};
-use detent_model::{ModelRow, PickerInput, PickerState, assistant_of};
+use detent_model::{Choice, Clearing, ModelRow, PickerInput, PickerState, assistant_of};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -13,7 +13,11 @@ const ROW_LABEL: &str = "Model";
 
 /// The row, or why it is not there. `state` is the picker's.
 #[component]
-pub(crate) fn AssistantPicker(state: PickerState, onask: EventHandler<PickerInput>) -> Element {
+pub(crate) fn AssistantPicker(
+    state: PickerState,
+    clearing: Clearing,
+    onask: EventHandler<PickerInput>,
+) -> Element {
     let ready = match &state {
         PickerState::Ready(ready) => ready,
         PickerState::Unavailable(absence) => {
@@ -24,6 +28,7 @@ pub(crate) fn AssistantPicker(state: PickerState, onask: EventHandler<PickerInpu
     let Some(row) = assistant_of(&state) else {
         return rsx! { Missing {} };
     };
+    let automatic = matches!(row.choice(), Choice::Automatic { .. });
     let row = ModelRow {
         label: ROW_LABEL.to_owned(),
         help: String::new(),
@@ -32,10 +37,12 @@ pub(crate) fn AssistantPicker(state: PickerState, onask: EventHandler<PickerInpu
     rsx! {
         div { class: "picker", "data-picker": "ready",
             FieldGroup {
-                TierRow { row, applying: ready.applying.clone(), adding: ready.adding(), onask }
+                TierRow { row, applying: ready.applying.clone(), adding: ready.adding(), clearing, onask }
             }
-            div { class: "picker-auto",
-                Label { text: AUTOMATIC, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
+            if automatic {
+                div { class: "picker-auto",
+                    Label { text: AUTOMATIC, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
+                }
             }
         }
     }
