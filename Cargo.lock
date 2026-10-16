@@ -1274,6 +1274,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "detent-callers"
+version = "0.1.0"
+dependencies = [
+ "ds-settings",
+ "peephole-bus",
+ "zbus",
+]
+
+[[package]]
 name = "detent-files"
 version = "0.1.0"
 dependencies = [
@@ -1294,6 +1303,7 @@ dependencies = [
 name = "detent-intents"
 version = "0.1.0"
 dependencies = [
+ "detent-callers",
  "detent-files",
  "detent-model",
  "detent-testkit",
@@ -1340,6 +1350,7 @@ version = "0.1.0"
 dependencies = [
  "almanac-core",
  "chordkit",
+ "detent-callers",
  "detent-files",
  "detent-model",
  "detent-testkit",
@@ -1909,6 +1920,7 @@ name = "ds-helpers"
 version = "0.1.0"
 dependencies = [
  "ds-peer",
+ "rustix",
  "serde",
  "thiserror 2.0.21",
  "toml",
@@ -1964,6 +1976,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.21",
  "toml",
+ "toml_edit",
  "zbus",
 ]
 
@@ -3932,6 +3945,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "peephole"
+version = "0.1.1"
+source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.1#e1b1b6adaff180516f198cf5435e85e4dc36e971"
+dependencies = [
+ "peephole-core",
+ "rustix",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "peephole-bus"
+version = "0.1.1"
+source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.1#e1b1b6adaff180516f198cf5435e85e4dc36e971"
+dependencies = [
+ "futures-timer",
+ "peephole",
+ "peephole-core",
+ "thiserror 2.0.21",
+ "tokio",
+ "zbus",
+]
+
+[[package]]
+name = "peephole-core"
+version = "0.1.1"
+source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.1#e1b1b6adaff180516f198cf5435e85e4dc36e971"
+dependencies = [
+ "serde",
+ "thiserror 2.0.21",
+ "toml",
+]
+
+[[package]]
 name = "peniko"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4197,10 +4243,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "porter-daemon"
+version = "0.1.0"
+dependencies = [
+ "notify",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "porter-dbus"
 version = "0.1.0"
 dependencies = [
  "porter-core",
+ "porter-daemon",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
