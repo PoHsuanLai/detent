@@ -168,7 +168,7 @@ fn inferd_refusing_settings_is_said_in_its_own_words() {
     settle(&mut harness, "the refusal", |h| {
         h.attr(".picker", "data-picker").as_deref() == Some("unavailable")
     });
-    assert!(harness.html().contains("opened from the desktop"));
+    assert!(harness.html().contains("Open Settings from the desktop"));
 }
 
 #[test]
