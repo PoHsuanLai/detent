@@ -87,6 +87,30 @@ async fn listing_the_accounts_gives_labels_kinds_and_state_and_trusts_none_of_it
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn a_long_accounts_list_is_cut_to_the_declared_size_on_a_character() {
+    // A label is whatever the service calls the account; these are wide characters, so a cut
+    // by bytes would land inside one.
+    let wide = "\u{3042}".repeat(60);
+    let many = Listed(Ok(AccountsPane {
+        accounts: (0..100)
+            .map(|n| account(&format!("id-{n}"), &wide, AccountStatus::Ok, &["mail"]))
+            .collect(),
+        ..AccountsPane::default()
+    }));
+    let world = World::start_listing("list-accounts-long", &[], many).await;
+    let out = world
+        .perform("settings.accounts.list", &[])
+        .await
+        .expect("listed");
+    let Value::Text(text) = out.value.expect("a value").value else {
+        panic!("text");
+    };
+    assert_eq!(text.chars().count(), 2000, "the manifest's declared size");
+    assert!(text.ends_with('\u{2026}'), "a cut says so");
+    assert!(text.starts_with(&wide), "what is kept is the start");
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn no_accountd_is_a_refusal_with_words() {
     let world =
         World::start_listing("list-no-accountd", &[], Listed(Err(Absence::NotRunning))).await;
