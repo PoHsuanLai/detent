@@ -46,7 +46,7 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 | Whether an agent may set a key | the schema's `agent = "settable"` mark: `KeySpec::agent` of the schema `ds_settings::schema::discover` admitted, read as `KeyEntry::agent()` (a key without it is hands-off; there is no second parser of the schema files) |
 | A key's value as text, and text as a value | `detent-model::{Control::from_text, show_value}` |
 | What the desktop's intents may do here | `dist/intents/org.quire.Settings.toml` (the one declaration) and `detent-intents::SettingsProvider` |
-| What the window is told while it runs | `detent-ui::{Notice, inbox}` (a page to open, files to read again, an account to show, a raise) |
+| What the window is told while it runs | `detent-ui::{Notice, inbox}` (a page to open, files to read again, an account to show, a raise; at most 64 wait, the rest are dropped) |
 | The D-Bus surface of `org.quire.Settings` | `org.quire.IntentProvider1` at `/org/quire/IntentProvider1` (`detent-intents/src/serve.rs`) and `org.freedesktop.Application` at `/org/quire/Settings` (`detent-intents/src/application.rs`: `Activate`, `Open` not supported, `ActivateAction("open-account", [path])` and `ActivateAction("open-page", [slug])`); the second launch's hand-over is `hand_over`, called by `detent/src/main.rs` |
 | Which account an object path names | `detent-model::{AccountTarget, AccountsPane::key_of}` (the path prefix is written there once; an unknown segment shows the list) |
 | Where the window opens, where files live | `detent-ui::Env` (a context; the binary fills it, a test fills it with scratch paths) |
