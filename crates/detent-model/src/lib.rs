@@ -21,6 +21,7 @@ mod origin;
 mod outside;
 mod page;
 mod picker;
+mod privacy;
 mod range;
 mod reads;
 mod reason;
@@ -88,6 +89,11 @@ pub use picker::{
     ChoiceSection, Described, Gate, KindRows, LocalAsk, LocalEngine, LocalModel, LocalView,
     MenuLine, ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup,
     PoolMembership, PoolStanding, PoolWrite, Ready, loading_text, step,
+};
+pub use privacy::{
+    CellKind, DesktopApp, PowerCell, PowerStanding, PrivacyEffect, PrivacyInput, PrivacyPane,
+    PrivacyPower, PrivacyProgram, PrivacyReady, PrivacyState, PrivacySwitch, ProgramBook,
+    ProgramLook, ProgramSubject, SET_BY_ADMINISTRATOR, SubjectKind, privacy_step,
 };
 pub use range::{Number, Range};
 pub use reads::modules_read;

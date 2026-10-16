@@ -60,6 +60,9 @@ pub struct Env {
     pub log_out: LogOut,
     /// The file that says which distro this is (`os-release`), read to word an install line.
     pub os_release: PathBuf,
+    /// The folders of desktop entries, in the order of precedence: where the Privacy page finds
+    /// the name and icon of a program. None until the launcher names them.
+    pub application_dirs: Vec<PathBuf>,
 }
 
 impl Env {
@@ -93,6 +96,7 @@ impl Env {
             updates,
             log_out: LogOut::power_menu(),
             os_release: Environment::system().os_release,
+            application_dirs: Vec::new(),
         }
     }
 
@@ -119,6 +123,14 @@ impl Env {
     /// This environment reading the distro from `os_release`.
     pub fn with_os_release(self, os_release: PathBuf) -> Env {
         Env { os_release, ..self }
+    }
+
+    /// This environment finding the programs' desktop entries in `application_dirs`.
+    pub fn with_application_dirs(self, application_dirs: Vec<PathBuf>) -> Env {
+        Env {
+            application_dirs,
+            ..self
+        }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.

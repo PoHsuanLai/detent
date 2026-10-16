@@ -1,0 +1,445 @@
+//! The page over a fake publication: the rows casement lists, as they are named and typed.
+
+use super::*;
+use crate::picker::{Absence, Described};
+use ds_settings::schema::{
+    ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
+    LiveAction, Note, Page, Section,
+};
+use std::collections::BTreeMap;
+
+const GRIM: &str = "/usr/bin/grim";
+const LOUPE: &str = "org.gnome.Loupe";
+
+fn spec(path: &str, label: &str, kind: KeyKind) -> KeySpec {
+    KeySpec {
+        path: KeyPath(path.to_owned()),
+        kind,
+        default: toml::Value::Boolean(false),
+        label: Label(label.to_owned()),
+        help: Help(String::new()),
+        page: Page::Privacy,
+        section: Section("Screen".to_owned()),
+        exposure: Exposure::Basic,
+        labels: Default::default(),
+        unavailable: Default::default(),
+        groups: Default::default(),
+        places: Default::default(),
+        note: None,
+        agent: AgentSetting::HandsOff,
+    }
+}
+
+/// What the compositor lists, row by row.
+#[derive(Default)]
+struct Publication {
+    keys: Vec<KeySpec>,
+    values: BTreeMap<KeyPath, String>,
+}
+
+impl Publication {
+    /// The person's answer for `subject`: a switch and its "ask again" action.
+    fn answered(mut self, power: &str, id: &str, subject: &str, word: &str) -> Publication {
+        let base = format!("privacy.{power}.{id}");
+        self.keys.push(spec(
+            &base,
+            subject,
+            KeyKind::Toggle {
+                variants: ["on".to_owned(), "off".to_owned()],
+            },
+        ));
+        self.keys.push(spec(
+            &format!("{base}.forget"),
+            "Ask Again",
+            KeyKind::Live {
+                action: LiveAction {
+                    label: ActionLabel("Ask Again".to_owned()),
+                    weight: ActionWeight::Plain,
+                },
+            },
+        ));
+        self.values.insert(KeyPath(base), word.to_owned());
+        self
+    }
+
+    /// An administrator's answer: a read-out that says who set it.
+    fn fixed(mut self, power: &str, id: &str, subject: &str, word: &str) -> Publication {
+        let base = format!("privacy.{power}.{id}");
+        let mut row = spec(
+            &base,
+            subject,
+            KeyKind::Fixed {
+                variant: word.to_owned(),
+            },
+        );
+        row.note = Some(Note(SET_BY_ADMINISTRATOR.to_owned()));
+        self.keys.push(row);
+        self.values.insert(KeyPath(base), word.to_owned());
+        self
+    }
+
+    /// A section nobody has asked in.
+    fn empty(mut self, power: &str) -> Publication {
+        let base = format!("privacy.{power}.none");
+        self.keys.push(spec(
+            &base,
+            "No program has asked yet.",
+            KeyKind::Fixed {
+                variant: String::new(),
+            },
+        ));
+        self.values.insert(KeyPath(base), String::new());
+        self
+    }
+
+    fn described(&self) -> Described {
+        Described {
+            keys: self.keys.clone(),
+            values: self.values.clone(),
+            ..Default::default()
+        }
+    }
+
+    fn pane(&self) -> PrivacyPane {
+        PrivacyPane::of(&self.described())
+    }
+}
+
+fn subject(text: &str) -> ProgramSubject {
+    ProgramSubject(text.to_owned())
+}
+
+fn path(text: &str) -> KeyPath {
+    KeyPath(text.to_owned())
+}
+
+fn standing(pane: &PrivacyPane, who: &str, power: PrivacyPower) -> PowerStanding {
+    pane.programs
+        .iter()
+        .find(|program| program.subject.0 == who)
+        .and_then(|program| program.cell(power))
+        .map(|cell| cell.standing)
+        .unwrap_or_else(|| panic!("{who} has a {power:?} cell"))
+}
+
+fn ready(publication: &Publication) -> PrivacyState {
+    privacy_step(
+        PrivacyState::Looking,
+        PrivacyInput::Found(Ok(publication.described())),
+    )
+    .0
+}
+
+fn pick(
+    state: PrivacyState,
+    who: &str,
+    power: PrivacyPower,
+    to: PowerStanding,
+) -> (PrivacyState, Vec<PrivacyEffect>) {
+    privacy_step(
+        state,
+        PrivacyInput::Pick {
+            subject: subject(who),
+            power,
+            standing: to,
+        },
+    )
+}
+
+fn pending(state: &PrivacyState) -> Option<(ProgramSubject, PrivacyPower)> {
+    match state {
+        PrivacyState::Ready(ready) => ready.pending.clone(),
+        other => panic!("not ready: {other:?}"),
+    }
+}
+
+#[test]
+fn the_powers_are_named_in_plain_words_in_the_pages_order() {
+    let labels: Vec<&str> = PrivacyPower::ALL
+        .iter()
+        .map(|power| power.label())
+        .collect();
+    assert_eq!(
+        labels,
+        [
+            "Screen recording",
+            "Keyboard input",
+            "Typing help",
+            "Clipboard",
+            "Screen lock",
+            "Displays",
+            "Windows"
+        ]
+    );
+    for power in PrivacyPower::ALL {
+        assert_eq!(PrivacyPower::of_word(power.word()), Some(power));
+    }
+    assert_eq!(PrivacyPower::of_word("teleport"), None);
+}
+
+#[test]
+fn rows_become_programs_with_every_power_and_the_unanswered_ones_ask() {
+    let shown = Publication::default()
+        .answered("screen", "aaa", GRIM, "on")
+        .answered("clipboard", "bbb", GRIM, "off")
+        .answered("windows", "ccc", LOUPE, "on")
+        .empty("keys")
+        .empty("lock")
+        .pane();
+    let who: Vec<&str> = shown
+        .programs
+        .iter()
+        .map(|p| p.subject.0.as_str())
+        .collect();
+    assert_eq!(who, [GRIM, LOUPE], "in the order the rows first name them");
+    assert_eq!(shown.programs[0].cells.len(), 7);
+    // `(program, power, where it stands)`.
+    const CASES: &[(&str, PrivacyPower, PowerStanding)] = &[
+        (GRIM, PrivacyPower::ScreenRecording, PowerStanding::Allowed),
+        (GRIM, PrivacyPower::Clipboard, PowerStanding::Denied),
+        (GRIM, PrivacyPower::KeyboardInput, PowerStanding::Ask),
+        (LOUPE, PrivacyPower::Windows, PowerStanding::Allowed),
+        (LOUPE, PrivacyPower::ScreenRecording, PowerStanding::Ask),
+    ];
+    for (who, power, want) in CASES {
+        assert_eq!(standing(&shown, who, *power), *want, "{who} {power:?}");
+    }
+    assert_eq!(
+        Publication::default().empty("screen").pane(),
+        PrivacyPane::default(),
+        "a section nobody asked in lists no program"
+    );
+}
+
+#[test]
+fn an_administrators_answer_is_locked_and_wins_over_the_persons() {
+    let shown = Publication::default()
+        .answered("screen", "aaa", GRIM, "on")
+        .fixed("screen", "bbb", GRIM, "off")
+        .fixed("keys", "ccc", GRIM, "on")
+        .pane();
+    let grim = &shown.programs[0];
+    let screen = grim.cell(PrivacyPower::ScreenRecording).expect("a cell");
+    assert!(screen.locked() && !screen.editable());
+    assert_eq!(
+        screen.standing,
+        PowerStanding::Denied,
+        "the floor, not the person"
+    );
+    assert!(
+        grim.cell(PrivacyPower::KeyboardInput)
+            .expect("a cell")
+            .locked()
+    );
+    let clipboard = grim.cell(PrivacyPower::Clipboard).expect("a cell");
+    assert!(
+        !clipboard.locked() && !clipboard.editable(),
+        "nobody has answered"
+    );
+}
+
+#[test]
+fn a_row_that_is_not_an_answer_is_left_out() {
+    let mut shown = Publication::default().answered("screen", "aaa", GRIM, "on");
+    // A word that is neither on nor off, a power this page does not know, an id with a dot.
+    shown
+        .keys
+        .push(spec("privacy.screen.ddd", GRIM, KeyKind::Text));
+    shown
+        .keys
+        .push(spec("privacy.teleport.eee", "/bin/x", KeyKind::Text));
+    shown
+        .keys
+        .push(spec("privacy.screen.f.g", "/bin/y", KeyKind::Text));
+    shown
+        .values
+        .insert(path("privacy.screen.ddd"), "maybe".to_owned());
+    let pane = shown.pane();
+    assert_eq!(pane.programs.len(), 1);
+    assert_eq!(
+        standing(&pane, GRIM, PrivacyPower::ScreenRecording),
+        PowerStanding::Allowed
+    );
+}
+
+#[test]
+fn a_pick_sends_the_one_change_the_compositor_takes() {
+    let shown = Publication::default()
+        .answered("screen", "aaa", GRIM, "on")
+        .answered("clipboard", "bbb", GRIM, "off");
+    let switch = path("privacy.screen.aaa");
+    let forget = path("privacy.screen.aaa.forget");
+    // `(case, the cell, what is picked, the effect)`.
+    let cases: &[(&str, PrivacyPower, PowerStanding, Option<PrivacyEffect>)] = &[
+        (
+            "deny what was allowed",
+            PrivacyPower::ScreenRecording,
+            PowerStanding::Denied,
+            Some(PrivacyEffect::Set {
+                path: switch.clone(),
+                to: PrivacySwitch::Off,
+            }),
+        ),
+        (
+            "ask again",
+            PrivacyPower::ScreenRecording,
+            PowerStanding::Ask,
+            Some(PrivacyEffect::Forget(forget)),
+        ),
+        (
+            "allow what was denied",
+            PrivacyPower::Clipboard,
+            PowerStanding::Allowed,
+            Some(PrivacyEffect::Set {
+                path: path("privacy.clipboard.bbb"),
+                to: PrivacySwitch::On,
+            }),
+        ),
+        (
+            "pick what already stands",
+            PrivacyPower::ScreenRecording,
+            PowerStanding::Allowed,
+            None,
+        ),
+        (
+            "a power nobody answered",
+            PrivacyPower::Windows,
+            PowerStanding::Allowed,
+            None,
+        ),
+    ];
+    for (case, power, to, want) in cases {
+        let (after, effects) = pick(ready(&shown), GRIM, *power, *to);
+        assert_eq!(effects, want.iter().cloned().collect::<Vec<_>>(), "{case}");
+        assert_eq!(
+            pending(&after).is_some(),
+            want.is_some(),
+            "{case}: a change in flight only when one was sent"
+        );
+    }
+    assert_eq!(PrivacySwitch::On.word(), "on");
+    assert_eq!(PrivacySwitch::Off.word(), "off");
+}
+
+#[test]
+fn a_locked_cell_sends_nothing() {
+    let shown = Publication::default().fixed("screen", "bbb", GRIM, "off");
+    for to in PowerStanding::CHOICES {
+        let (after, effects) = pick(ready(&shown), GRIM, PrivacyPower::ScreenRecording, to);
+        assert!(effects.is_empty(), "{to:?}: {effects:?}");
+        assert_eq!(pending(&after), None);
+    }
+}
+
+#[test]
+fn one_change_at_a_time_and_the_answer_reads_the_rows_again() {
+    let shown = Publication::default().answered("screen", "aaa", GRIM, "on");
+    let (busy, first) = pick(
+        ready(&shown),
+        GRIM,
+        PrivacyPower::ScreenRecording,
+        PowerStanding::Denied,
+    );
+    assert_eq!(first.len(), 1);
+    let (busy, second) = pick(
+        busy,
+        GRIM,
+        PrivacyPower::ScreenRecording,
+        PowerStanding::Ask,
+    );
+    assert!(second.is_empty(), "while one is in flight: {second:?}");
+    let (done, effects) = privacy_step(busy.clone(), PrivacyInput::Done);
+    assert_eq!(effects, [PrivacyEffect::Reload]);
+    assert_eq!(pending(&done), None);
+    let (failed, effects) = privacy_step(busy, PrivacyInput::Failed("no".to_owned()));
+    assert_eq!(
+        effects,
+        [PrivacyEffect::Tell("no".to_owned()), PrivacyEffect::Reload]
+    );
+    assert_eq!(pending(&failed), None);
+}
+
+#[test]
+fn the_compositor_not_being_there_is_a_state_and_its_return_a_list() {
+    let (gone, _) = privacy_step(
+        PrivacyState::Looking,
+        PrivacyInput::Found(Err(Absence::NotRunning)),
+    );
+    assert_eq!(gone, PrivacyState::Unavailable(Absence::NotRunning));
+    let shown = Publication::default().answered("screen", "aaa", GRIM, "on");
+    let (back, _) = privacy_step(gone, PrivacyInput::Found(Ok(shown.described())));
+    assert_eq!(back, ready(&shown));
+}
+
+fn app(id: &str, name: &str, exec: Option<&str>, flatpak: Option<&str>) -> DesktopApp {
+    DesktopApp {
+        id: id.to_owned(),
+        name: name.to_owned(),
+        exec: exec.map(str::to_owned),
+        try_exec: None,
+        flatpak: flatpak.map(str::to_owned),
+        icon: Some(std::path::PathBuf::from(format!("/icons/{id}.svg"))),
+    }
+}
+
+#[test]
+fn a_program_is_named_by_the_entry_that_starts_it_else_by_its_file() {
+    let mut try_only = app("try", "Tried", None, None);
+    try_only.try_exec = Some("/opt/try/bin/tried".to_owned());
+    let book = ProgramBook {
+        apps: vec![
+            app("grim", "Grim", Some("/usr/bin/grim"), None),
+            app("bare", "Bare", Some("bare"), None),
+            try_only,
+            app("loupe", "Image Viewer", Some("flatpak"), Some(LOUPE)),
+            app("nameless", "", Some("/usr/bin/nameless"), None),
+        ],
+    };
+    // `(case, subject, name, has the entry's icon)`.
+    const CASES: &[(&str, &str, &str, bool)] = &[
+        ("the same path", "/usr/bin/grim", "Grim", true),
+        (
+            "a bare name is the image's file name",
+            "/opt/x/bare",
+            "Bare",
+            true,
+        ),
+        (
+            "TryExec starts the image",
+            "/opt/try/bin/tried",
+            "Tried",
+            true,
+        ),
+        ("a sandboxed app by its id", LOUPE, "Image Viewer", true),
+        (
+            "no entry: the file name",
+            "/usr/bin/unknown",
+            "unknown",
+            false,
+        ),
+        (
+            "no entry: the app's id",
+            "org.example.Gone",
+            "org.example.Gone",
+            false,
+        ),
+        (
+            "an entry without a name: the file name",
+            "/usr/bin/nameless",
+            "nameless",
+            true,
+        ),
+        ("nothing to go by", "", "A program", false),
+    ];
+    for (case, who, name, icon) in CASES {
+        let look = book.look_of(&subject(who));
+        assert_eq!(look.name, *name, "{case}");
+        assert_eq!(look.icon.is_some(), *icon, "{case}");
+    }
+    let long = ProgramBook {
+        apps: vec![app("long", &"x".repeat(100), Some("/usr/bin/long"), None)],
+    };
+    let name = long.look_of(&subject("/usr/bin/long")).name;
+    assert_eq!(name.chars().count(), 48);
+    assert!(name.ends_with('\u{2026}'));
+}

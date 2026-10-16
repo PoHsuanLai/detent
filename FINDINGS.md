@@ -130,6 +130,29 @@ Open items, each with its closing condition:
   install under `~/.local/share` (`--write-schema`) therefore shows its keys but offers none to an
   agent. A key path that two programs both name still answers no key (`Catalogue::entry`), so a
   rogue schema can deny an agent a real key; it cannot gain one.
+- **Privacy & Security reads casement's Privacy module.** The page lists the programs the compositor
+  has an answer for, with all seven powers each (Screen recording, Keyboard input, Typing help,
+  Clipboard, Screen lock, Displays, Windows) standing at Allowed, Denied or Ask. The person's own
+  answers are a pop-up: Allowed and Denied set the switch row, Ask runs its "Ask Again" action
+  (the compositor then forgets the answer). An administrator's answer is a locked read-out with
+  "Set by your administrator". A program is named by the desktop entry whose `Exec` or `TryExec`
+  starts its image, or by the Flatpak id, else by its file name, and drawn with that entry's icon
+  (a window glyph when there is none). Settings looks for the compositor and never starts it; the
+  owner of `org.quire.Compositor1` must hold the `compositor` role. Open items, each with the
+  condition that closes it:
+  - The compositor lists a row only for a program that has been answered, so a power nobody
+    answered reads Ask and cannot be set to Allowed or Denied in advance. It closes when casement
+    lists a row for every program and power it knows (or takes a `Set` on a path it has not listed).
+  - Casement publishes its keys on `Page::Apps` until Settings has the page; detent reads the
+    module by its `privacy.` paths and ignores the page tag. Closes when casement moves its keys to
+    `Page::Privacy`.
+  - The entries are read once when the page opens, with their unlocalised `Name`, and the icon
+    theme is the default one (hicolor and the theme's inherits). A localised name and the person's
+    chosen theme need the locale and theme at the edge (`dirs.rs`) the way sill reads them; a
+    shared desktop-entry reader in quire would replace this copy of sill's matching.
+  - The owner check proves the compositor in full (the unit manager confirms its unit). If the
+    compositor runs outside a unit the page reads "could not be confirmed" until the peephole table
+    says otherwise; not tried on a real session.
 - **No headless activation.** The bus file starts `detent`, which opens its window; a read or a set
   that arrives by D-Bus activation therefore shows Settings. A background provider needs
   `ds_blitz::launch_idle` with an `AppHandle` that opens the window only for `settings.page.show`.

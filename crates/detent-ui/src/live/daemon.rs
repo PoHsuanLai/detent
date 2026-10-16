@@ -1,5 +1,6 @@
 //! Which daemon a live module belongs to.
 
+use detent_callers::COMPOSITOR_BUS;
 use detent_model::ModuleId;
 use porter_dbus::names::{
     ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH, SYNC_BUS,
@@ -8,6 +9,9 @@ use porter_dbus::names::{
 
 /// The object path of syncd's settings module.
 const SYNC_SETTINGS_PATH: &str = "/org/quire/Sync1/settings";
+
+/// The object path of the compositor's Privacy module.
+const PRIVACY_PATH: &str = "/org/quire/Compositor1/privacy";
 
 /// A daemon on the bus: its name and its object path (for a live settings module, the module's).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,6 +36,14 @@ impl Daemon {
         Daemon {
             name: ACCOUNTS_BUS,
             path: ACCOUNTS_SETTINGS_PATH.to_owned(),
+        }
+    }
+
+    /// The compositor, whose module lists which program may use which power.
+    pub fn compositor() -> Daemon {
+        Daemon {
+            name: COMPOSITOR_BUS,
+            path: PRIVACY_PATH.to_owned(),
         }
     }
 
@@ -65,7 +77,7 @@ impl Daemon {
 #[cfg(test)]
 mod tests {
     use super::Daemon;
-    use detent_callers::{ACCOUNTS_BUS, INFERENCE_BUS, SYNC_BUS, required_role};
+    use detent_callers::{ACCOUNTS_BUS, COMPOSITOR_BUS, INFERENCE_BUS, SYNC_BUS, required_role};
 
     /// The names the panes call and the names the owner check knows the roles of are one list:
     /// a service whose name drifted would be refused as a stranger, and the page would say so.
@@ -74,11 +86,13 @@ mod tests {
         assert_eq!(Daemon::accountd().name, ACCOUNTS_BUS);
         assert_eq!(Daemon::inferd().name, INFERENCE_BUS);
         assert_eq!(Daemon::syncd().name, SYNC_BUS);
+        assert_eq!(Daemon::compositor().name, COMPOSITOR_BUS);
         for daemon in [
             Daemon::accountd(),
             Daemon::inferd(),
             Daemon::syncd(),
             Daemon::syncd_settings(),
+            Daemon::compositor(),
         ] {
             assert!(required_role(daemon.name).is_some(), "{}", daemon.name);
         }

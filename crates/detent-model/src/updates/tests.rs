@@ -729,7 +729,10 @@ fn the_page_has_its_own_slug_label_and_place_and_draws_only_its_pane() {
 
     let catalogue = Catalogue::build(&[]);
     let slugs: Vec<&str> = catalogue.pages.iter().map(|p| p.slug.0.as_str()).collect();
-    assert_eq!(slugs, ["accounts", "assistant-model", "software-update"]);
+    assert_eq!(
+        slugs,
+        ["accounts", "privacy", "assistant-model", "software-update"]
+    );
     let model: &PageModel = catalogue
         .page(&PageSlug("software-update".to_owned()))
         .expect("always listed");

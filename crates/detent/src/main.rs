@@ -60,7 +60,8 @@ fn environment(opening: Opening) -> Result<Env, ExitCode> {
         opening,
         BusSource::Session,
     )
-    .with_keymap(KeymapFiles::standard());
+    .with_keymap(KeymapFiles::standard())
+    .with_application_dirs(dirs::application_dirs());
     for warning in &env.warnings {
         eprintln!("detent: {warning}");
     }

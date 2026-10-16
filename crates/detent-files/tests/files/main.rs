@@ -5,6 +5,7 @@ mod agents;
 mod first_run_mark;
 mod keymap;
 mod places;
+mod programs;
 mod round_trip;
 mod unreadable;
 mod writes;

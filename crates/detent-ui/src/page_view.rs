@@ -9,6 +9,7 @@ use crate::files::{Edit, Files};
 use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
 use crate::live::start;
 use crate::memory::MemoryConsent;
+use crate::privacy::PrivacyPane;
 use crate::section_view::SectionView;
 use crate::shortcuts::ShortcutsPane;
 use crate::spaces::SpacesPane;
@@ -63,6 +64,7 @@ pub fn PageView(
                         SectionView { key: "{section.title}", section, hits: hits.clone(), files, onedit }
                     },
                     Block::AccountsPane => rsx! { AccountsPane {} },
+                    Block::PrivacyPane => rsx! { PrivacyPane {} },
                     Block::SpacesPane => rsx! { SpacesPane {} },
                     Block::Shortcuts => rsx! { ShortcutsPane {} },
                     Block::SoftwareUpdate => rsx! { SoftwareUpdatePane {} },

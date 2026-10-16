@@ -24,6 +24,9 @@ pub enum Block {
     /// and the computers asking to borrow this one's models, cloud accounts), and the assistants
     /// that sign themselves in: the Intelligence page's rows that are in no schema.
     Assistants,
+    /// The programs and the powers the compositor lists for them, each with Allowed, Denied or
+    /// Ask: the Privacy page's rows that are in no file.
+    PrivacyPane,
     /// The desktop-wide Spaces accountd keeps, each with Remove: the Spaces page's rows that are
     /// in no file.
     SpacesPane,
@@ -67,6 +70,11 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
     match page.page {
         Page::Accounts => {
             return std::iter::once(Block::AccountsPane)
+                .chain(sections)
+                .collect();
+        }
+        Page::Privacy => {
+            return std::iter::once(Block::PrivacyPane)
                 .chain(sections)
                 .collect();
         }
@@ -132,6 +140,7 @@ mod tests {
                 Block::ModelPicker => "<picker>",
                 Block::AccountsPane => "<accounts>",
                 Block::Assistants => "<assistants>",
+                Block::PrivacyPane => "<privacy>",
                 Block::SpacesPane => "<spaces>",
                 Block::Shortcuts => "<shortcuts>",
                 Block::SoftwareUpdate => "<updates>",
@@ -188,6 +197,12 @@ mod tests {
             Page::Accounts,
             &["Sign-in clients"],
             &["<accounts>", "Sign-in clients"],
+        ),
+        (
+            "the privacy pane comes before any section of the page",
+            Page::Privacy,
+            &["Screen"],
+            &["<privacy>", "Screen"],
         ),
         (
             "the spaces pane comes before any section of the page",

@@ -5,6 +5,7 @@
 
 pub mod accountd;
 pub mod bus;
+pub mod compositor;
 pub mod computers;
 pub mod drive;
 pub mod engines;
@@ -106,6 +107,17 @@ impl Sandbox {
         std::fs::write(path, text).expect("schema");
     }
 
+    /// Installs a desktop entry `name.desktop` in this world's `applications` folder, as a package
+    /// would.
+    pub fn write_application(&self, name: &str, text: &str) {
+        let path = self
+            .scratch
+            .join("applications")
+            .join(format!("{name}.desktop"));
+        std::fs::create_dir_all(path.parent().expect("a file has a parent")).expect("mkdir");
+        std::fs::write(path, text).expect("write");
+    }
+
     /// The scratch `$XDG_CONFIG_HOME`.
     pub fn config_home(&self) -> ConfigHome {
         ConfigHome(self.scratch.join("config"))
@@ -156,6 +168,7 @@ impl Sandbox {
         .with_updates(Updater::over(self.updates.clone()))
         .with_log_out(LogOut::over(self.leaves.clone()))
         .with_os_release(self.os_release_path())
+        .with_application_dirs(vec![self.scratch.join("applications")])
     }
 
     /// Where this world's `os-release` is: a scratch file, never the computer's own.

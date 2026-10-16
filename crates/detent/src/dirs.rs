@@ -70,9 +70,45 @@ pub fn schema_dirs() -> Vec<PathBuf> {
     unique(ds_settings::schema::data_dirs())
 }
 
+/// Where the app stores export the desktop entries of what they install, after the folders the
+/// data directories name: Flatpak's system install, then snap's.
+const STORE_EXPORTS: [&str; 2] = [
+    "/var/lib/flatpak/exports/share/applications",
+    "/var/lib/snapd/desktop/applications",
+];
+
+/// The `applications` folders of the desktop entries: the data home's, each of the data
+/// directories' (`/usr/local/share:/usr/share` when the variable is unset), then Flatpak's user
+/// install and the stores' exports, in the order of precedence.
+fn application_dirs_from(data_home: Option<DataHome>, data_dirs: Option<OsString>) -> Vec<PathBuf> {
+    let listed = data_dirs
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| OsString::from("/usr/local/share:/usr/share"));
+    let shares = data_home
+        .iter()
+        .map(|home| home.0.clone())
+        .chain(std::env::split_paths(&listed).filter(|dir| dir.is_absolute()));
+    let exports = data_home
+        .iter()
+        .map(|home| home.0.join("flatpak/exports/share/applications"))
+        .chain(STORE_EXPORTS.map(PathBuf::from));
+    unique(
+        shares
+            .map(|share| share.join("applications"))
+            .chain(exports)
+            .collect(),
+    )
+}
+
+/// The folders desktop entries are read from, at the edge.
+pub fn application_dirs() -> Vec<PathBuf> {
+    application_dirs_from(data_home(), std::env::var_os("XDG_DATA_DIRS"))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{config_home_from, data_home_from, state_home_from, unique};
+    use super::{application_dirs_from, config_home_from, data_home_from, state_home_from, unique};
+    use detent_files::DataHome;
     use std::ffi::OsString;
     use std::path::PathBuf;
 
@@ -160,5 +196,46 @@ mod tests {
     fn a_directory_listed_twice_is_scanned_once() {
         let dirs = ["/a", "/b", "/a", "/c", "/b"].map(PathBuf::from).to_vec();
         assert_eq!(unique(dirs), ["/a", "/b", "/c"].map(PathBuf::from).to_vec());
+    }
+
+    #[test]
+    fn desktop_entries_are_looked_for_in_the_data_home_then_the_data_directories_then_the_stores() {
+        let home = Some(DataHome(PathBuf::from("/home/ada/.local/share")));
+        let dirs =
+            |value: Option<&str>| application_dirs_from(home.clone(), value.map(OsString::from));
+        let paths = |list: &[&str]| list.iter().map(PathBuf::from).collect::<Vec<_>>();
+        assert_eq!(
+            dirs(Some("/opt/share:/usr/share")),
+            paths(&[
+                "/home/ada/.local/share/applications",
+                "/opt/share/applications",
+                "/usr/share/applications",
+                "/home/ada/.local/share/flatpak/exports/share/applications",
+                "/var/lib/flatpak/exports/share/applications",
+                "/var/lib/snapd/desktop/applications",
+            ])
+        );
+        assert_eq!(
+            dirs(None)[1..3],
+            paths(&["/usr/local/share/applications", "/usr/share/applications"])[..],
+            "unset means the standard directories"
+        );
+        assert_eq!(
+            dirs(Some(""))[1],
+            PathBuf::from("/usr/local/share/applications")
+        );
+        assert!(
+            !dirs(Some("relative:/usr/share")).contains(&PathBuf::from("relative/applications")),
+            "a relative directory is not the working directory"
+        );
+        assert_eq!(
+            application_dirs_from(None, Some(OsString::from("/usr/share"))),
+            paths(&[
+                "/usr/share/applications",
+                "/var/lib/flatpak/exports/share/applications",
+                "/var/lib/snapd/desktop/applications",
+            ]),
+            "no data home, no user folders"
+        );
     }
 }

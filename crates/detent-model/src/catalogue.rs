@@ -144,10 +144,12 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
         }
         pages
     });
-    // Accounts is accountd's live pane, Assistant Model inferd's picker row and Software Update
-    // the update service's (no file names any of them), so all three pages are always there.
+    // Accounts is accountd's live pane, Privacy the compositor's list, Assistant Model inferd's
+    // picker row and Software Update the update service's (no file names any of them), so all
+    // four pages are always there.
     for live in [
         Page::Accounts,
+        Page::Privacy,
         assistant_model_page(),
         software_update_page(),
     ] {

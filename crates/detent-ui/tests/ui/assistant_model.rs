@@ -110,20 +110,20 @@ fn the_page_follows_intelligence_in_the_sidebar_and_draws_only_the_assistants_ro
         Inferd::new(Policy::Allow).on_slots(),
     );
     ready(&mut world);
-    // The fixtures' pages: Intelligence is the ninth, the page follows it.
+    // The fixtures' pages: Intelligence is the tenth, the page follows it.
     assert_eq!(
-        world.harness.text_of(&sidebar_row(9)).as_deref(),
+        world.harness.text_of(&sidebar_row(10)).as_deref(),
         Some("Intelligence")
     );
     assert_eq!(
-        world.harness.text_of(&sidebar_row(10)).as_deref(),
+        world.harness.text_of(&sidebar_row(11)).as_deref(),
         Some("Assistant Model"),
         "the sidebar lists the page after Intelligence"
     );
     assert_eq!(
         world
             .harness
-            .attr(&sidebar_row(10), "aria-selected")
+            .attr(&sidebar_row(11), "aria-selected")
             .as_deref(),
         Some("true")
     );

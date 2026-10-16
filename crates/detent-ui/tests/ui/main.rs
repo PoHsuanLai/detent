@@ -17,6 +17,7 @@ mod local_engines;
 mod local_runtimes;
 mod memory_consent;
 mod notices;
+mod privacy;
 mod shortcuts;
 mod snapshots;
 mod software_update;
