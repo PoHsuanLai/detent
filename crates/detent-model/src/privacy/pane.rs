@@ -1,6 +1,8 @@
 //! The programs and their powers, read from the rows the compositor lists. A row's path is
 //! `privacy.<power>.<id>`; beside a person's answer sits `privacy.<power>.<id>.forget`, the action
-//! that puts the question back. An administrator's answer is a read-out that nobody can change.
+//! that puts the question back. A power nobody has answered for a program the compositor knows
+//! stands at `ask` in a switch of the same shape, without that action: switching it on or off is
+//! the person's first answer. An administrator's answer is a read-out that nobody can change.
 
 use super::power::PrivacyPower;
 use crate::picker::Described;
@@ -18,6 +20,9 @@ pub(super) const ALLOWED_WORD: &str = "on";
 
 /// The word of a row's value that says the power is denied.
 pub(super) const DENIED_WORD: &str = "off";
+
+/// The word of a row's value that says nobody has answered: the program asks first.
+pub(super) const ASK_WORD: &str = "ask";
 
 /// What the compositor calls a program: its path on disk, or the id of its sandboxed app.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -75,9 +80,12 @@ impl PowerStanding {
 /// Who an answer is from, and what changes it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CellKind {
-    /// Nobody has answered. The compositor lists no row to change until the program asks.
+    /// Nobody has answered and the compositor lists no row to change: it does not know the
+    /// program yet, so there is nothing to switch until the program asks.
     Asking,
-    /// The person's answer: the row that allows or denies, and the action that asks again.
+    /// The person's answer: the row that allows or denies, and the action that asks again. A
+    /// power nobody has answered is this too, standing at `Ask` with no action to ask again;
+    /// the first switch is the person's first answer.
     Remembered {
         /// The row that is on or off.
         switch: KeyPath,
@@ -165,6 +173,7 @@ fn standing_of(word: &str) -> Option<PowerStanding> {
     match word {
         ALLOWED_WORD => Some(PowerStanding::Allowed),
         DENIED_WORD => Some(PowerStanding::Denied),
+        ASK_WORD => Some(PowerStanding::Ask),
         _ => None,
     }
 }
@@ -214,7 +223,8 @@ fn answer_of(
             switch: spec.path.clone(),
             forget: forgets.get(&(power, id)).map(|path| (*path).clone()),
         },
-        KeyKind::Fixed { .. } => CellKind::Fixed,
+        // An administrator never leaves a power open: a read-out that says `ask` is not theirs.
+        KeyKind::Fixed { .. } if standing != PowerStanding::Ask => CellKind::Fixed,
         _ => return None,
     };
     Some(Answer {

@@ -62,6 +62,20 @@ impl Publication {
         self
     }
 
+    /// A power nobody has answered for `subject`: a switch at `ask`, with no action beside it.
+    fn unanswered(mut self, power: &str, id: &str, subject: &str) -> Publication {
+        let base = format!("privacy.{power}.{id}");
+        self.keys.push(spec(
+            &base,
+            subject,
+            KeyKind::Toggle {
+                variants: ["on".to_owned(), "off".to_owned()],
+            },
+        ));
+        self.values.insert(KeyPath(base), "ask".to_owned());
+        self
+    }
+
     /// An administrator's answer: a read-out that says who set it.
     fn fixed(mut self, power: &str, id: &str, subject: &str, word: &str) -> Publication {
         let base = format!("privacy.{power}.{id}");
@@ -239,8 +253,65 @@ fn an_administrators_answer_is_locked_and_wins_over_the_persons() {
 }
 
 #[test]
+fn a_power_nobody_answered_is_a_switch_at_ask_with_nothing_to_forget() {
+    // Grim has answered one power; Loupe none, so it is listed only because of its Ask rows.
+    let shown = Publication::default()
+        .answered("screen", "aaa", GRIM, "on")
+        .unanswered("keys", "bbb", GRIM)
+        .unanswered("screen", "ccc", LOUPE)
+        .unanswered("keys", "ddd", LOUPE)
+        .pane();
+    let who: Vec<&str> = shown
+        .programs
+        .iter()
+        .map(|p| p.subject.0.as_str())
+        .collect();
+    assert_eq!(who, [GRIM, LOUPE]);
+    // `(program, power, the switch)`.
+    const CASES: &[(&str, PrivacyPower, &str)] = &[
+        (GRIM, PrivacyPower::KeyboardInput, "privacy.keys.bbb"),
+        (LOUPE, PrivacyPower::ScreenRecording, "privacy.screen.ccc"),
+        (LOUPE, PrivacyPower::KeyboardInput, "privacy.keys.ddd"),
+    ];
+    for (who, power, switch) in CASES {
+        let cell = shown
+            .programs
+            .iter()
+            .find(|program| program.subject.0 == *who)
+            .and_then(|program| program.cell(*power))
+            .expect("a cell");
+        assert_eq!(cell.standing, PowerStanding::Ask, "{who} {power:?}");
+        assert_eq!(
+            cell.kind,
+            CellKind::Remembered {
+                switch: path(switch),
+                forget: None,
+            },
+            "{who} {power:?}"
+        );
+        assert!(cell.editable() && !cell.locked(), "{who} {power:?}");
+    }
+    // The answered one beside it keeps its own action.
+    assert_eq!(
+        standing(&shown, GRIM, PrivacyPower::ScreenRecording),
+        PowerStanding::Allowed
+    );
+}
+
+#[test]
 fn a_row_that_is_not_an_answer_is_left_out() {
     let mut shown = Publication::default().answered("screen", "aaa", GRIM, "on");
+    // An administrator's read-out cannot say `ask`: the floor is Allowed or Denied.
+    shown.keys.push(spec(
+        "privacy.keys.ggg",
+        GRIM,
+        KeyKind::Fixed {
+            variant: "ask".to_owned(),
+        },
+    ));
+    shown
+        .values
+        .insert(path("privacy.keys.ggg"), "ask".to_owned());
     // A word that is neither on nor off, a power this page does not know, an id with a dot.
     shown
         .keys
@@ -260,13 +331,22 @@ fn a_row_that_is_not_an_answer_is_left_out() {
         standing(&pane, GRIM, PrivacyPower::ScreenRecording),
         PowerStanding::Allowed
     );
+    let keys = pane.programs[0]
+        .cell(PrivacyPower::KeyboardInput)
+        .expect("a cell");
+    assert_eq!(
+        keys.kind,
+        CellKind::Asking,
+        "the read-out at ask is not an answer"
+    );
 }
 
 #[test]
 fn a_pick_sends_the_one_change_the_compositor_takes() {
     let shown = Publication::default()
         .answered("screen", "aaa", GRIM, "on")
-        .answered("clipboard", "bbb", GRIM, "off");
+        .answered("clipboard", "bbb", GRIM, "off")
+        .unanswered("keys", "ccc", GRIM);
     let switch = path("privacy.screen.aaa");
     let forget = path("privacy.screen.aaa.forget");
     // `(case, the cell, what is picked, the effect)`.
@@ -302,9 +382,33 @@ fn a_pick_sends_the_one_change_the_compositor_takes() {
             None,
         ),
         (
-            "a power nobody answered",
+            "a power the compositor lists no row for",
             PrivacyPower::Windows,
             PowerStanding::Allowed,
+            None,
+        ),
+        (
+            "allow what nobody answered: the first answer",
+            PrivacyPower::KeyboardInput,
+            PowerStanding::Allowed,
+            Some(PrivacyEffect::Set {
+                path: path("privacy.keys.ccc"),
+                to: PrivacySwitch::On,
+            }),
+        ),
+        (
+            "deny what nobody answered: the first answer",
+            PrivacyPower::KeyboardInput,
+            PowerStanding::Denied,
+            Some(PrivacyEffect::Set {
+                path: path("privacy.keys.ccc"),
+                to: PrivacySwitch::Off,
+            }),
+        ),
+        (
+            "ask what already asks: nothing to forget",
+            PrivacyPower::KeyboardInput,
+            PowerStanding::Ask,
             None,
         ),
     ];

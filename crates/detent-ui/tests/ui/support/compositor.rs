@@ -33,6 +33,9 @@ const POWERS: [&str; 7] = [
 pub enum Source {
     Person,
     Administrator,
+    /// A power of a program nobody has answered: a switch at `ask` with no "ask again" beside
+    /// it. Setting it makes the person's first answer.
+    Unanswered,
 }
 
 /// One answer the fake holds.
@@ -58,6 +61,16 @@ impl Row {
             subject,
             word,
             source: Source::Person,
+        }
+    }
+
+    pub fn unanswered(power: &'static str, id: &'static str, subject: &'static str) -> Row {
+        Row {
+            power,
+            id,
+            subject,
+            word: "ask",
+            source: Source::Unanswered,
         }
     }
 
@@ -148,6 +161,13 @@ impl Compositor {
                 of_power
                     .into_iter()
                     .flat_map(|row| match row.source {
+                        Source::Unanswered => vec![spec(
+                            row.base(),
+                            row.subject,
+                            KeyKind::Toggle {
+                                variants: ["on".to_owned(), "off".to_owned()],
+                            },
+                        )],
                         Source::Person => vec![
                             spec(
                                 row.base(),
@@ -232,6 +252,7 @@ impl LiveModule for Compositor {
             .expect("log")
             .push(format!("set {} {word}", key.0));
         row.word = if word == "on" { "on" } else { "off" };
+        row.source = Source::Person;
         Ok(())
     }
 }

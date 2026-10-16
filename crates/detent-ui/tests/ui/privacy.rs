@@ -182,6 +182,28 @@ fn a_choice_is_sent_as_the_one_change_and_the_list_follows() {
 }
 
 #[test]
+fn a_power_nobody_answered_is_switched_on_as_the_first_answer() {
+    let rows = vec![
+        Row::person("screen", "aaa", GRIM, "on"),
+        Row::unanswered("keys", "bbb", GRIM),
+        Row::unanswered("clipboard", "ccc", LOUPE),
+    ];
+    let mut w = world("privacy-first-answer", Some(rows));
+    listed(&mut w);
+    assert_eq!(w.harness.count("[data-program]"), 2);
+    let keys = line("usr-bin-grim", "keys");
+    assert_eq!(label_of(&w.harness, &keys).as_deref(), Some("Ask"));
+    // The menu: Allowed, Denied, Ask.
+    choose(&mut w.harness, &keys, 1);
+    settle(&mut w.harness, "the first answer", |h| {
+        label_of(h, &keys).as_deref() == Some("Allowed")
+    });
+    assert_eq!(w.fake.log(), ["set privacy.keys.bbb on"]);
+    let clipboard = line("org-gnome-loupe", "clipboard");
+    assert_eq!(label_of(&w.harness, &clipboard).as_deref(), Some("Ask"));
+}
+
+#[test]
 fn an_administrators_answer_is_locked_and_says_so() {
     let mut w = world("privacy-floor", Some(answers()));
     listed(&mut w);
