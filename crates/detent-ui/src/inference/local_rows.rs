@@ -1,6 +1,7 @@
 //! What Local asks under its row: how models run on this computer, then which model of that
 //! way. With nothing set up it says so and offers to add an account that would run them.
 
+use super::note::NoteLine;
 use super::tier_row::{NOTHING_CHOSEN, pick_items};
 use crate::key_row::row_id;
 use detent_model::{ChoiceGap, LocalView, PickerInput};
@@ -34,12 +35,12 @@ pub(super) fn LocalRows(
     onask: EventHandler<PickerInput>,
 ) -> Element {
     if view.engines.is_empty() {
-        return rsx! { NoEngine { path, availability, onask } };
+        return rsx! { NoEngine { path, note: view.note.clone(), availability, onask } };
     }
     let engines: Vec<MenuItem<String>> = view
         .engines
         .iter()
-        .map(|engine| MenuItem::new(engine.account.clone(), engine.label.clone()))
+        .map(|engine| MenuItem::new(engine.id.clone(), engine.label.clone()))
         .collect();
     let models: Vec<MenuItem<String>> = view
         .models()
@@ -58,7 +59,7 @@ pub(super) fn LocalRows(
                 title: Some(NOTHING_CHOSEN.to_owned()),
                 size: ControlSize::Small,
                 availability,
-                onpick: move |account| onask.call(PickerInput::Engine { path: engine_at.clone(), account }),
+                onpick: move |engine| onask.call(PickerInput::Engine { path: engine_at.clone(), engine }),
             }
         }
         if view.engine.is_some() {
@@ -79,10 +80,12 @@ pub(super) fn LocalRows(
     }
 }
 
-/// Nothing on this computer is set up to run models: the row says so and adds the way in.
+/// Nothing on this computer is set up to run models: the row says so and adds the way in. The
+/// module's own line says why when it has one, right under the row; otherwise the row's help does.
 #[component]
 fn NoEngine(
     path: KeyPath,
+    note: Option<String>,
     availability: Availability,
     onask: EventHandler<PickerInput>,
 ) -> Element {
@@ -90,7 +93,7 @@ fn NoEngine(
     rsx! {
         FieldRow {
             label: TextLine::from(NO_ENGINE_LABEL),
-            help: Some(TextLine::from(ChoiceGap::NoLocalEngine.sentence())),
+            help: note.is_none().then(|| TextLine::from(ChoiceGap::NoLocalEngine.sentence())),
             availability,
             common: Common { id: Some(row_id("picker-no-engine", &path.0)), ..Common::default() },
             Button {
@@ -99,6 +102,9 @@ fn NoEngine(
                 availability,
                 onclick: move |_| onask.call(PickerInput::SetUpEngine(set_up.clone())),
             }
+        }
+        if let Some(text) = note {
+            NoteLine { text, kind: "no-engine" }
         }
     }
 }

@@ -6,7 +6,9 @@ use super::local::LocalAsk;
 use super::pool::{AutoPool, PoolWrite, is_pool};
 use crate::accounts::Adding;
 use crate::words::word_label;
-use ds_settings::schema::{ChoiceWord, KeyKind, KeyPath, KeySpec, UnavailableReason, WordLabels};
+use ds_settings::schema::{
+    ChoicePlace, ChoiceWord, KeyKind, KeyPath, KeySpec, UnavailableReason, WordLabels,
+};
 use std::collections::BTreeMap;
 
 /// The word that is Automatic, in the module's rows.
@@ -42,6 +44,10 @@ pub struct ModelRow {
     pub labels: WordLabels,
     /// The words that cannot be picked now, each with the reason shown under it.
     pub unavailable: BTreeMap<String, String>,
+    /// Where the model behind each word runs, for the words the module says.
+    pub places: BTreeMap<String, ChoicePlace>,
+    /// The module's short line shown under the row; `None` when it gave none.
+    pub note: Option<String>,
     /// The word chosen now: "", `auto` or `account/model`.
     pub value: String,
     /// The models Automatic chooses among for this row's slot; empty when the module lists none.
@@ -166,6 +172,8 @@ impl ModelRow {
             sections: sections_of(spec),
             labels: spec.labels.clone(),
             unavailable: unavailable_of(&spec.unavailable),
+            places: places_of(spec),
+            note: spec.note.as_ref().map(|note| note.0.clone()),
             value,
             pool: AutoPool::default(),
             local: LocalAsk::Closed,
@@ -288,6 +296,14 @@ pub(super) fn unavailable_of(
     unavailable
         .iter()
         .map(|(word, reason)| (word.0.clone(), reason.0.clone()))
+        .collect()
+}
+
+/// Where the model behind each word of `spec` runs, as plain words.
+pub(super) fn places_of(spec: &KeySpec) -> BTreeMap<String, ChoicePlace> {
+    spec.places
+        .iter()
+        .map(|(word, place)| (word.0.clone(), place.clone()))
         .collect()
 }
 

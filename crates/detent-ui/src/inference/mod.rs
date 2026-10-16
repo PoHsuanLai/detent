@@ -4,6 +4,7 @@
 mod drive;
 mod io;
 mod local_rows;
+mod note;
 mod picker_view;
 mod pool_editor;
 mod reasons;

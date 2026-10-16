@@ -235,6 +235,8 @@ fn spec(path: String, section: &str, label: &str, kind: KeyKind, default: toml::
         labels: Default::default(),
         unavailable: Default::default(),
         groups: Default::default(),
+        places: Default::default(),
+        note: None,
         agent: AgentSetting::HandsOff,
     }
 }

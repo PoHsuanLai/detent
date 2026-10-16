@@ -22,6 +22,8 @@ fn spec(key: &str, kind: KeyKind) -> KeySpec {
         labels: Default::default(),
         unavailable: Default::default(),
         groups: Default::default(),
+        places: Default::default(),
+        note: None,
         agent: AgentSetting::HandsOff,
     }
 }

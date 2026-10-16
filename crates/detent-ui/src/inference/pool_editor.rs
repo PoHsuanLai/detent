@@ -1,6 +1,7 @@
 //! Automatic's list: every model the slot's picker offers, each turned in or out. A model the
 //! list holds and the module no longer offers is listed apart, and can be taken out.
 
+use super::note::NoteLine;
 use crate::key_row::row_id;
 use detent_model::{AutoPool, PickerInput, PoolEntry, PoolMembership, PoolStanding};
 use dioxus::prelude::*;
@@ -39,6 +40,9 @@ pub(super) fn PoolEditor(
             for entry in group.entries {
                 PoolRow { key: "{entry.word}", path: path.clone(), entry, availability, onask }
             }
+        }
+        if let Some(text) = pool.note.clone() {
+            NoteLine { text, kind: "pool" }
         }
     }
 }

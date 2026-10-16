@@ -2,11 +2,12 @@
 //! the choice asks more (Local's engine and model, Automatic's list).
 
 use super::local_rows::LocalRows;
+use super::note::NoteLine;
 use super::pool_editor::PoolEditor;
 use crate::key_row::row_id;
 use detent_model::{Adding, Applying, Choice, Gate, MenuLine, ModelRow, PickerInput, loading_text};
 use dioxus::prelude::*;
-use ds::components::content::label::{LabelRole, LabelStyle};
+use ds::components::content::label::LabelRole;
 use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::FieldRow;
 use ds::components::menus::pop_up_button::PopUpButton;
@@ -64,15 +65,16 @@ pub(crate) fn TierRow(
                 onpick: move |word| onask.call(PickerInput::Chose { path: path.clone(), word }),
             }
         }
+        if let Some(text) = row.row_note().map(str::to_owned) {
+            NoteLine { text, kind: "row" }
+        }
         if let Some(view) = local {
             LocalRows { path: row.path.clone(), view, availability: calm, onask }
         }
         if let Choice::Automatic { pool } = &shown {
             PoolEditor { pool: pool.clone(), availability: calm, onask }
             if let Some(text) = note {
-                div { class: "picker-auto", "data-note": "unready",
-                    Label { text, role: LabelRole::Secondary, style: LabelStyle::Footnote }
-                }
+                NoteLine { text, kind: "unready" }
             }
         }
     }

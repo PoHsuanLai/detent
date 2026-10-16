@@ -60,9 +60,12 @@ fn world(name: &str) -> World {
 }
 
 fn world_in(name: &str, scheme: Scheme) -> World {
+    world_with(name, scheme, Inferd::new(InferPolicy::Allow).on_slots())
+}
+
+fn world_with(name: &str, scheme: Scheme, inferd: Inferd) -> World {
     let rt = runtime();
     let bus = PrivateBus::start(name);
-    let inferd = Inferd::new(InferPolicy::Allow).on_slots();
     let daemon = rt.block_on(inferd.serve_on(&bus));
     let sandbox = Sandbox::new(name).on_bus(&bus.address);
     let mut harness = sandbox.first_run_harness_in(scheme);
@@ -164,7 +167,7 @@ fn automatic_opens_its_list_and_local_asks_how_it_runs_then_which_model() {
     pick(&mut w, 3);
     let model = "#picker-local-model-ai-model-text-balanced .ds-popup .ds-button";
     settle(&mut w.harness, "the questions", |h| h.count(model) == 1);
-    assert!(w.harness.html().contains("Built in"));
+    assert!(w.harness.html().contains("llama.cpp"));
     assert_eq!(
         w.inferd.sets.lock().expect("sets").len(),
         1,
@@ -178,6 +181,26 @@ fn automatic_opens_its_list_and_local_asks_how_it_runs_then_which_model() {
     assert_eq!(
         w.inferd.sets.lock().expect("sets")[1],
         ("ai.model.text.balanced".to_owned(), "local/qwen".to_owned())
+    );
+}
+
+#[test]
+fn the_modules_note_shows_under_the_row_and_under_the_list_once() {
+    const NOTE: &str = "Running models on this computer needs llama.cpp, which is not installed.";
+    let note = |w: &World, kind: &str| w.harness.count(&format!("[data-note=\"{kind}\"]"));
+    let inferd = Inferd::new(InferPolicy::Allow).on_slots().noting(NOTE);
+    let mut w = world_with("first-run-note", Scheme::Light, inferd);
+    assert_eq!((note(&w, "row"), note(&w, "pool")), (1, 0));
+    assert!(w.harness.html().contains(NOTE));
+    open_and_count_marked(&mut w);
+    pick(&mut w, 2);
+    settle(&mut w.harness, "Automatic", |h| {
+        h.html().contains(POOL_NOTE)
+    });
+    assert_eq!(
+        (note(&w, "row"), note(&w, "pool")),
+        (0, 1),
+        "Automatic's list says the note, the row does not repeat it"
     );
 }
 

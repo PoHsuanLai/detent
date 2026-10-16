@@ -5,8 +5,8 @@ use super::local::LOCAL_ITEM;
 use super::*;
 use crate::accounts::AddEnd;
 use ds_settings::schema::{
-    AgentSetting, ChoiceGroup, ChoiceWord, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page,
-    Section, WordLabels,
+    AgentSetting, ChoiceGroup, ChoicePlace, ChoiceWord, Exposure, Help, KeyKind, KeyPath, KeySpec,
+    Label, Page, Section, WordLabels,
 };
 use std::collections::BTreeMap;
 
@@ -50,6 +50,20 @@ fn labels(models: &[(&str, &str)]) -> WordLabels {
     )
 }
 
+/// The place of each model the fixture groups under "On this computer", with no engine named.
+fn places(models: &[(&str, &str)]) -> BTreeMap<ChoiceWord, ChoicePlace> {
+    models
+        .iter()
+        .filter(|(_, group)| *group == "On this computer")
+        .map(|(word, _)| {
+            (
+                ChoiceWord((*word).to_owned()),
+                ChoicePlace::ThisComputer { engine: None },
+            )
+        })
+        .collect()
+}
+
 fn spec(key: &str, label: &str, kind: KeyKind, models: &[(&str, &str)]) -> KeySpec {
     KeySpec {
         path: path(key),
@@ -63,6 +77,8 @@ fn spec(key: &str, label: &str, kind: KeyKind, models: &[(&str, &str)]) -> KeySp
         labels: labels(models),
         unavailable: BTreeMap::new(),
         groups: groups(models),
+        places: places(models),
+        note: None,
         agent: AgentSetting::HandsOff,
     }
 }
@@ -421,15 +437,15 @@ fn local_asks_how_it_runs_then_which_model_and_writes_only_the_model() {
     let engines: Vec<(&str, &str)> = view
         .engines
         .iter()
-        .map(|engine| (engine.account.as_str(), engine.label.as_str()))
+        .map(|engine| (engine.id.as_str(), engine.label.as_str()))
         .collect();
-    assert_eq!(engines, [("local", "Built in"), ("ollama", "Ollama")]);
+    assert_eq!(engines, [("local", "Local"), ("ollama", "Ollama")]);
 
     let (state, effects) = step(
         state,
         PickerInput::Engine {
             path: path(ROW),
-            account: "ollama".to_owned(),
+            engine: "ollama".to_owned(),
         },
     );
     assert_eq!(effects, []);
@@ -477,7 +493,7 @@ fn a_stored_local_model_shows_as_local_and_another_engine_asks_for_its_model() {
         state.clone(),
         PickerInput::Engine {
             path: path(ROW),
-            account: "local".to_owned(),
+            engine: "local".to_owned(),
         },
     );
     assert_eq!(same, state, "the engine it already runs changes nothing");
@@ -485,7 +501,7 @@ fn a_stored_local_model_shows_as_local_and_another_engine_asks_for_its_model() {
         state,
         PickerInput::Engine {
             path: path(ROW),
-            account: "ollama".to_owned(),
+            engine: "ollama".to_owned(),
         },
     );
     let row = row_of(&other, ROW);

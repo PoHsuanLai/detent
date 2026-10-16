@@ -6,8 +6,8 @@
 use super::bus::PrivateBus;
 use ds_settings::live::{Access, Caller, LiveError, LiveModule, LiveSchema, Verdict, serve};
 use ds_settings::schema::{
-    AgentSetting, ChoiceGroup, ChoiceWord, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page,
-    Section, UnavailableReason, WordLabels,
+    AgentSetting, ChoiceGroup, ChoicePlace, ChoiceWord, CompanyName, EngineName, Exposure, Help,
+    KeyKind, KeyPath, KeySpec, Label, Note, Page, Section, UnavailableReason, WordLabels,
 };
 use porter_dbus::names::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
 use std::collections::BTreeMap;
@@ -51,6 +51,31 @@ const WORDS: [(&str, &str, Option<&str>); 6] = [
     ("local/holo", "holo", Some("On this computer")),
 ];
 
+/// Where a model of the slots layout runs: the two local ones on this computer through
+/// llama.cpp, as porter's inferd says them; the hosted ones in their company's cloud.
+fn place_of(word: &str) -> Option<ChoicePlace> {
+    let engine = |name: &str| ChoicePlace::ThisComputer {
+        engine: Some(EngineName(name.to_owned())),
+    };
+    let cloud = |company: &str| ChoicePlace::Cloud {
+        company: CompanyName(company.to_owned()),
+    };
+    match word {
+        "local/qwen" | "local/holo" => Some(engine("llama.cpp")),
+        "anthropic/claude" => Some(cloud("Anthropic")),
+        "google/gemini" => Some(cloud("Google")),
+        _ => None,
+    }
+}
+
+/// The places of `words`, for the words that have one.
+fn places_of(words: &[(&str, &str, Option<&str>)]) -> BTreeMap<ChoiceWord, ChoicePlace> {
+    words
+        .iter()
+        .filter_map(|(word, _, _)| Some((ChoiceWord((*word).to_owned()), place_of(word)?)))
+        .collect()
+}
+
 /// The key of the text slot's Automatic list.
 const POOL_KEY: &str = "ai.auto.pool.text";
 
@@ -87,6 +112,8 @@ pub struct Inferd {
     pub pool: Arc<Mutex<Vec<String>>>,
     /// Every list `Set` on the Automatic list that arrived, in order.
     pub pool_sets: Arc<Mutex<Vec<Vec<String>>>>,
+    /// The line the slots layout's rows and Automatic list carry as their `note`.
+    note: Option<String>,
     policy: Policy,
     layout: Layout,
 }
@@ -101,6 +128,7 @@ impl Inferd {
             gated: Arc::default(),
             pool: Arc::default(),
             pool_sets: Arc::default(),
+            note: None,
             policy,
             layout: Layout::Kinds,
         }
@@ -109,6 +137,12 @@ impl Inferd {
     /// The same fake serving slot keys.
     pub fn on_slots(mut self) -> Inferd {
         self.layout = Layout::Slots;
+        self
+    }
+
+    /// The same fake with `text` as the note of its rows and Automatic list.
+    pub fn noting(mut self, text: &str) -> Inferd {
+        self.note = Some(text.to_owned());
         self
     }
 
@@ -159,6 +193,8 @@ impl Inferd {
                     })
                 })
                 .collect(),
+            places: places_of(&models),
+            note: self.note.clone().map(Note),
         }
     }
 
@@ -221,6 +257,11 @@ impl Inferd {
                     .collect(),
                 false => BTreeMap::new(),
             },
+            places: match slots {
+                true => places_of(&words),
+                false => BTreeMap::new(),
+            },
+            note: self.note.clone().filter(|_| slots).map(Note),
         }
     }
 }

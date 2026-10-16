@@ -4,9 +4,7 @@
 use super::choice::{Choice, Gate};
 use super::model::ModelRow;
 use crate::words::humanize;
-
-/// The group the module puts the models this computer runs in.
-pub(super) const ON_THIS_COMPUTER: &str = "On this computer";
+use ds_settings::schema::ChoicePlace;
 
 /// The menu word of the Local choice. It names no model (a model word has an account before a
 /// slash), so it is never written to the module.
@@ -14,12 +12,6 @@ pub(crate) const LOCAL_ITEM: &str = "on-this-computer";
 
 /// What the menu calls the Local choice.
 pub(super) const LOCAL_LABEL: &str = "Local";
-
-/// The account the models inferd runs itself are served under.
-const BUILT_IN_ACCOUNT: &str = "local";
-
-/// What a person reads for the built-in account.
-const BUILT_IN_LABEL: &str = "Built in";
 
 /// Whether the person is answering what Local asks, before a model of it is chosen.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -45,11 +37,13 @@ pub struct LocalModel {
     pub gate: Gate,
 }
 
-/// A way to run models on this computer: an account that serves models here.
+/// A way to run models on this computer: the engine the module names for them, or, for models
+/// it names no engine for, the account that serves them here.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocalEngine {
-    /// The account, the part of a model word before its slash.
-    pub account: String,
+    /// What picks it: the engine's name, or the account (the part of a model word before its
+    /// slash) when the module names no engine.
+    pub id: String,
     /// What a person reads for it.
     pub label: String,
     /// The models it runs for the slot, in the module's order.
@@ -65,6 +59,9 @@ pub struct LocalView {
     pub engine: Option<String>,
     /// The model chosen, once there is one.
     pub model: Option<String>,
+    /// The module's line for the row, said when nothing here can run a model; `None` when it
+    /// gave none.
+    pub note: Option<String>,
 }
 
 impl LocalView {
@@ -72,7 +69,7 @@ impl LocalView {
     pub fn models(&self) -> &[LocalModel] {
         self.engine
             .as_deref()
-            .and_then(|account| self.engines.iter().find(|engine| engine.account == account))
+            .and_then(|id| self.engines.iter().find(|engine| engine.id == id))
             .map(|engine| engine.models.as_slice())
             .unwrap_or_default()
     }
@@ -83,55 +80,69 @@ pub(super) fn account_of(word: &str) -> &str {
     word.split_once('/').map_or(word, |(account, _)| account)
 }
 
-/// What a person reads for an engine's account.
-fn engine_label(account: &str) -> String {
-    if account == BUILT_IN_ACCOUNT {
-        BUILT_IN_LABEL.to_owned()
-    } else {
-        humanize(&account.replace('-', " "))
-    }
+/// What a person reads for an account that serves models here.
+fn account_label(account: &str) -> String {
+    humanize(&account.replace('-', " "))
 }
 
 impl ModelRow {
     /// Whether the module says `word` runs on this computer.
     pub(super) fn is_local(&self, word: &str) -> bool {
+        matches!(
+            self.places.get(word),
+            Some(ChoicePlace::ThisComputer { .. })
+        )
+    }
+
+    /// The models the module says run on this computer, in its order.
+    fn local_words(&self) -> impl Iterator<Item = &String> {
         self.sections
             .iter()
-            .filter(|section| section.group.as_deref() == Some(ON_THIS_COMPUTER))
-            .any(|section| section.words.iter().any(|local| local == word))
+            .flat_map(|section| section.words.iter())
+            .filter(|word| self.is_local(word))
+    }
+
+    /// What picks the engine that runs the local model `word`, and what a person reads for it:
+    /// the engine's own name, or the account's when the module names no engine.
+    pub(super) fn engine_of(&self, word: &str) -> (String, String) {
+        match self.places.get(word) {
+            Some(ChoicePlace::ThisComputer {
+                engine: Some(engine),
+            }) => (engine.0.clone(), engine.0.clone()),
+            _ => {
+                let account = account_of(word);
+                (account.to_owned(), account_label(account))
+            }
+        }
     }
 
     /// The ways to run models on this computer for this row, in the order the module lists
     /// their models.
     pub fn engines(&self) -> Vec<LocalEngine> {
-        let words = self
-            .sections
-            .iter()
-            .filter(|section| section.group.as_deref() == Some(ON_THIS_COMPUTER))
-            .flat_map(|section| section.words.iter());
-        words.fold(Vec::new(), |mut engines: Vec<LocalEngine>, word| {
-            let account = account_of(word);
-            let model = LocalModel {
-                word: word.clone(),
-                label: self.label_of(word),
-                gate: self.gate(word),
-            };
-            match engines.iter_mut().find(|engine| engine.account == account) {
-                Some(engine) => engine.models.push(model),
-                None => engines.push(LocalEngine {
-                    account: account.to_owned(),
-                    label: engine_label(account),
-                    models: vec![model],
-                }),
-            }
-            engines
-        })
+        self.local_words()
+            .fold(Vec::new(), |mut engines: Vec<LocalEngine>, word| {
+                let (id, label) = self.engine_of(word);
+                let model = LocalModel {
+                    word: word.clone(),
+                    label: self.label_of(word),
+                    gate: self.gate(word),
+                };
+                match engines.iter_mut().find(|engine| engine.id == id) {
+                    Some(engine) => engine.models.push(model),
+                    None => engines.push(LocalEngine {
+                        id,
+                        label,
+                        models: vec![model],
+                    }),
+                }
+                engines
+            })
     }
 
     /// The only engine, when there is exactly one: asking which would be no question.
     pub(super) fn sole_engine(&self) -> Option<String> {
         match self.engines().as_slice() {
-            [only] => Some(only.account.clone()),
+            [only] => Some(only.id.clone()),
             _ => None,
         }
     }
@@ -143,6 +154,7 @@ impl ModelRow {
                 engines: self.engines(),
                 engine,
                 model,
+                note: self.note.clone(),
             }),
             Choice::Nothing | Choice::Automatic { .. } | Choice::Model(_) => None,
         }

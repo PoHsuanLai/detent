@@ -23,4 +23,6 @@ pub use step::{PickerEffect, PickerInput, step};
 #[cfg(test)]
 mod modes_tests;
 #[cfg(test)]
+mod place_tests;
+#[cfg(test)]
 mod tests;

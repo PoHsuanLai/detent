@@ -23,12 +23,13 @@ pub enum PickerInput {
         /// The word.
         word: String,
     },
-    /// The person chose the engine `account` for Local in the row at `path`.
+    /// The person chose the engine `engine` (a [`super::LocalEngine`]'s id) for Local in the row
+    /// at `path`.
     Engine {
         /// The row.
         path: KeyPath,
-        /// The engine's account.
-        account: String,
+        /// The engine's id.
+        engine: String,
     },
     /// The person asked to add an account that runs models on this computer, from the row at
     /// `path`.
@@ -116,8 +117,8 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerE
         PickerInput::Chose { path, word } if ready.is_idle() => {
             effects.extend(choose(&mut ready, path, word));
         }
-        PickerInput::Engine { path, account } if ready.is_idle() => {
-            choose_engine(&mut ready, &path, account);
+        PickerInput::Engine { path, engine } if ready.is_idle() => {
+            choose_engine(&mut ready, &path, engine);
         }
         PickerInput::SetUpEngine(path) if ready.is_idle() => {
             ready.awaiting = Some(AwaitingAccount { path, word: None });
@@ -243,18 +244,16 @@ fn open_local(ready: &mut Ready, path: &KeyPath) {
     }
 }
 
-/// The engine `account` was chosen for Local in the row at `path`; one the row does not list, or
+/// The engine `id` was chosen for Local in the row at `path`; one the row does not list, or
 /// the one it already runs, changes nothing.
-fn choose_engine(ready: &mut Ready, path: &KeyPath, account: String) {
+fn choose_engine(ready: &mut Ready, path: &KeyPath, id: String) {
     let Some(row) = ready.row_mut(path) else {
         return;
     };
-    let listed = row.engines().iter().any(|engine| engine.account == account);
-    let current = matches!(row.choice(), Choice::Local { engine: Some(own), .. } if own == account);
+    let listed = row.engines().iter().any(|engine| engine.id == id);
+    let current = matches!(row.choice(), Choice::Local { engine: Some(own), .. } if own == id);
     if listed && !current {
-        row.local = LocalAsk::Open {
-            engine: Some(account),
-        };
+        row.local = LocalAsk::Open { engine: Some(id) };
     }
 }
 

@@ -18,10 +18,12 @@ pub struct TogglePair {
 const OFF_WORDS: &[&str] = &["off", "hide", "never", "none", "nothing"];
 
 /// Pairs that are a setting and its absence without an off word, written `(on, off)`.
-/// `reduced`/`standard` is macOS's "Reduce motion": on means reduced.
+/// `reduced`/`standard` is macOS's "Reduce motion": on means reduced; `reduced`/`system` is
+/// "Reduce transparency" (appearance.transparency).
 const ON_OFF_PAIRS: &[(&str, &str)] = &[
     ("natural", "traditional"),
     ("reduced", "standard"),
+    ("reduced", "system"),
     ("enabled", "disabled"),
     ("yes", "no"),
 ];
@@ -156,6 +158,8 @@ mod tests {
             agent: Default::default(),
             unavailable: Default::default(),
             groups: Default::default(),
+            places: Default::default(),
+            note: None,
         }
     }
 
@@ -204,6 +208,9 @@ mod tests {
             ("natural", "traditional", Some(("natural", "traditional"))),
             ("traditional", "natural", Some(("natural", "traditional"))),
             ("standard", "reduced", Some(("reduced", "standard"))),
+            // appearance.transparency: reduced is on
+            ("system", "reduced", Some(("reduced", "system"))),
+            ("reduced", "system", Some(("reduced", "system"))),
             ("reduced", "standard", Some(("reduced", "standard"))),
             ("disabled", "enabled", Some(("enabled", "disabled"))),
             ("yes", "no", Some(("yes", "no"))),

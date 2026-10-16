@@ -36,6 +36,8 @@ fn menu(key: &str, label: &str) -> KeySpec {
         agent: AgentSetting::HandsOff,
         unavailable: Default::default(),
         groups: Default::default(),
+        places: Default::default(),
+        note: None,
     }
 }
 

@@ -24,6 +24,8 @@ fn key(path: &str, kind: KeyKind, default: Value) -> KeySpec {
         agent: Default::default(),
         unavailable: Default::default(),
         groups: Default::default(),
+        places: Default::default(),
+        note: None,
     }
 }
 

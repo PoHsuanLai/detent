@@ -1,6 +1,6 @@
 //! What a row has chosen, whether that is enough to use, and whether a menu word can be picked.
 
-use super::local::{LOCAL_ITEM, LocalAsk, account_of};
+use super::local::{LOCAL_ITEM, LocalAsk};
 use super::model::{AUTO, ModelRow};
 use super::pool::AutoPool;
 
@@ -145,7 +145,7 @@ impl ModelRow {
                 pool: self.pool.clone(),
             },
             word if self.is_local(word) => Choice::Local {
-                engine: Some(account_of(word).to_owned()),
+                engine: Some(self.engine_of(word).0),
                 model: Some(word.to_owned()),
             },
             word => Choice::Model(word.to_owned()),
@@ -179,6 +179,17 @@ impl ModelRow {
             (Choice::Nothing, _) | (_, ChoiceReadiness::Ready) => None,
             (_, ChoiceReadiness::Missing(missing)) => Some(missing.sentence()),
         }
+    }
+
+    /// The module's note, as the plain line under the row. Automatic's list and Local's missing
+    /// engine say it in their own place, so the row does not repeat it.
+    pub fn row_note(&self) -> Option<&str> {
+        let said_below = match self.choice() {
+            Choice::Automatic { .. } => true,
+            Choice::Local { .. } => self.engines().is_empty(),
+            Choice::Nothing | Choice::Model(_) => false,
+        };
+        self.note.as_deref().filter(|_| !said_below)
     }
 
     /// Whether `word` can be picked.

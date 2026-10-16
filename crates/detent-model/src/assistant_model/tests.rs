@@ -42,6 +42,8 @@ fn row(key: &str, gated: &[&str]) -> KeySpec {
             })
             .collect(),
         groups: BTreeMap::new(),
+        places: BTreeMap::new(),
+        note: None,
     }
 }
 

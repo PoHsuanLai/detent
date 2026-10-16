@@ -30,6 +30,8 @@ pub struct AutoPool {
     pub labels: WordLabels,
     /// The models that cannot be put in the pool as they are, each with the reason.
     pub unavailable: BTreeMap<String, String>,
+    /// The module's short line shown under the list; `None` when it gave none.
+    pub note: Option<String>,
     /// The models in the pool now, in the order they were added.
     pub chosen: Vec<String>,
 }
@@ -110,6 +112,7 @@ impl AutoPool {
             sections: sections_of(&menu),
             labels: spec.labels.clone(),
             unavailable: unavailable_of(&spec.unavailable),
+            note: spec.note.as_ref().map(|note| note.0.clone()),
             chosen,
         })
     }

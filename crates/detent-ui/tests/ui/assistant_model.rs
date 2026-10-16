@@ -378,7 +378,7 @@ fn local_asks_how_it_runs_then_which_model_and_sets_only_the_model() {
         1,
         "how it runs is asked"
     );
-    assert!(world.harness.html().contains("Built in"));
+    assert!(world.harness.html().contains("llama.cpp"));
     assert_eq!(
         *world.fake.sets.lock().expect("sets"),
         Vec::<(String, String)>::new(),
