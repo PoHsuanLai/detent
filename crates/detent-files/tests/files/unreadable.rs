@@ -43,7 +43,7 @@ fn a_file_the_person_cannot_read_is_reported_and_not_written_over() {
     let (_scratch, home) = home("unreadable-mode0");
     write_file(&home, "[dock]\nposition = \"left\"\n");
     let path = home.path_of(&spec().file);
-    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0)).expect("chmod");
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o000)).expect("chmod");
     if std::fs::read(&path).is_ok() {
         // Running as root: permissions do not stop the read, so there is nothing to refuse.
         return;
