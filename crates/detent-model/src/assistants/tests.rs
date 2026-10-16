@@ -212,6 +212,7 @@ mod offers {
             applying: None,
             awaiting: None,
             pooling: None,
+            turning_on: None,
         }
     }
 

@@ -3,7 +3,7 @@
 use super::absence::Absence;
 use super::choice::{Choice, Gate};
 use super::local::{LOCAL_ITEM, LocalAsk};
-use super::model::{Applying, AwaitingAccount, Described, PickerState, Ready};
+use super::model::{Applying, AwaitingAccount, Described, PickerState, Ready, TurnOn};
 use super::pool::PoolWrite;
 use crate::accounts::AddEnd;
 use ds_settings::schema::KeyPath;
@@ -72,6 +72,19 @@ pub enum PickerInput {
     AccountSheetEnded(AddEnd),
     /// The module's rows, read again after an account was added.
     Reread(Described),
+    /// The person answered whether to turn coding agents on, asked when they picked one.
+    TurnOn(TurnOnAnswer),
+    /// Coding agents were switched on, or the reason they could not be.
+    AgentsTurnedOn(Result<(), String>),
+}
+
+/// What the person said to turning coding agents on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TurnOnAnswer {
+    /// Turn them on, and use the one picked.
+    Yes,
+    /// Leave them off.
+    No,
 }
 
 /// What the caller must do.
@@ -95,6 +108,8 @@ pub enum PickerEffect {
     AddAccount,
     /// Read the module's rows again and answer with `Reread`.
     ReadAgain,
+    /// Switch coding agents on (`agent.acp.agents`) and answer with `AgentsTurnedOn`.
+    TurnOnAgents,
     /// Tell the person something went wrong.
     Tell(String),
 }
@@ -160,7 +175,23 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerE
             ready = Ready::of(&described);
             effects.extend(awaiting.and_then(|pick| pick_again(&mut ready, pick)));
         }
+        PickerInput::TurnOn(answer) if ready.turning_on.is_some() => match answer {
+            TurnOnAnswer::No => ready.turning_on = None,
+            TurnOnAnswer::Yes => effects.push(PickerEffect::TurnOnAgents),
+        },
+        PickerInput::AgentsTurnedOn(done) if ready.turning_on.is_some() => {
+            let asked = ready.turning_on.take();
+            match done {
+                Ok(()) => {
+                    ready.agents_are_on();
+                    effects.extend(asked.and_then(|pick| choose(&mut ready, pick.path, pick.word)));
+                }
+                Err(why) => effects.push(PickerEffect::Tell(why)),
+            }
+        }
         PickerInput::Chose { .. }
+        | PickerInput::TurnOn(_)
+        | PickerInput::AgentsTurnedOn(_)
         | PickerInput::Engine { .. }
         | PickerInput::SetUpEngine(_)
         | PickerInput::PoolToggled { .. }
@@ -190,6 +221,10 @@ fn choose(ready: &mut Ready, path: KeyPath, word: String) -> Option<PickerEffect
             Some(PickerEffect::AddAccount)
         }
         Gate::Blocked(reason) => Some(PickerEffect::Tell(reason)),
+        Gate::TurnOn => {
+            ready.turning_on = Some(TurnOn { path, word });
+            None
+        }
         Gate::Open if unchanged => {
             ready.row_mut(&path)?.local = LocalAsk::Closed;
             None

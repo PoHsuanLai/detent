@@ -5,6 +5,7 @@ use super::choice::NONE_LABEL;
 use super::local::LocalAsk;
 use super::pool::{AutoPool, PoolWrite, is_pool};
 use crate::accounts::Adding;
+use crate::coding_agents::TURNED_OFF;
 use crate::words::word_label;
 use ds_settings::schema::{
     ChoicePlace, ChoiceWord, KeyKind, KeyPath, KeySpec, UnavailableReason, WordLabels,
@@ -98,6 +99,15 @@ pub struct AwaitingAccount {
     pub word: Option<String>,
 }
 
+/// A pick of a coding agent that waits for the person to say yes to turning coding agents on.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TurnOn {
+    /// The row picked in.
+    pub path: KeyPath,
+    /// The agent's word.
+    pub word: String,
+}
+
 /// A picker that is there.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ready {
@@ -110,6 +120,9 @@ pub struct Ready {
     pub awaiting: Option<AwaitingAccount>,
     /// The pool write in flight, if any: one at a time, and no pick is taken meanwhile.
     pub pooling: Option<PoolWrite>,
+    /// The coding agent picked while coding agents are off, waiting on the person's yes to turn
+    /// them on; no other pick is taken meanwhile.
+    pub turning_on: Option<TurnOn>,
 }
 
 /// Where the picker stands.
@@ -233,6 +246,7 @@ impl Ready {
             applying: None,
             awaiting: None,
             pooling: None,
+            turning_on: None,
         }
     }
 
@@ -247,7 +261,10 @@ impl Ready {
 
     /// Whether a pick may be taken: no set is in flight and no account is being added.
     pub(crate) fn is_idle(&self) -> bool {
-        self.applying.is_none() && self.awaiting.is_none() && self.pooling.is_none()
+        self.applying.is_none()
+            && self.awaiting.is_none()
+            && self.pooling.is_none()
+            && self.turning_on.is_none()
     }
 
     /// The row at `path`.
@@ -256,6 +273,13 @@ impl Ready {
             .iter()
             .flat_map(|kind| kind.rows.iter())
             .find(|row| &row.path == path)
+    }
+
+    /// Coding agents were switched on: no word is "Turned off" any more.
+    pub(crate) fn agents_are_on(&mut self) {
+        for row in self.kinds.iter_mut().flat_map(|kind| kind.rows.iter_mut()) {
+            row.unavailable.retain(|_, reason| reason != TURNED_OFF);
+        }
     }
 
     /// The row at `path`, to change.

@@ -7,6 +7,7 @@ mod advanced;
 mod assistant_model;
 mod assistants;
 mod catalogue;
+mod coding_agents;
 mod computers;
 mod config_file;
 mod control;
@@ -55,6 +56,10 @@ pub use assistants::{
     places_step,
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
+pub use coding_agents::{
+    AgentOffer, AgentStanding, CHOOSE_DIRECTLY, GROUP as CODING_AGENTS_GROUP,
+    Reason as AgentReason, TURNED_OFF, WORD_PREFIX, offers as agent_offers, with_agents,
+};
 pub use computers::{
     AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,
     ComputersState, Standing, computers_step, guest_line,
@@ -94,7 +99,7 @@ pub use picker::{
     Absence, Applying, AutoPool, AwaitingAccount, Choice, ChoiceGap, ChoiceReadiness,
     ChoiceSection, Clearing, Described, Gate, KindRows, LocalAsk, LocalEngine, LocalModel,
     LocalView, MenuLine, ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup,
-    PoolMembership, PoolStanding, PoolWrite, Ready, loading_text, step,
+    PoolMembership, PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_text, step,
 };
 pub use privacy::{
     CellKind, DesktopApp, PowerCell, PowerStanding, PrivacyEffect, PrivacyInput, PrivacyPane,

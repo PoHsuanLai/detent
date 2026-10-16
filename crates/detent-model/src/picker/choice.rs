@@ -3,6 +3,7 @@
 use super::local::{LOCAL_ITEM, LocalAsk};
 use super::model::{AUTO, ModelRow};
 use super::pool::AutoPool;
+use crate::coding_agents::TURNED_OFF;
 
 /// What the menu calls the empty word, whatever the module calls it.
 pub(super) const NONE_LABEL: &str = "Off";
@@ -107,6 +108,8 @@ pub enum Gate {
     NeedsAccount,
     /// It cannot be picked now, and this is why.
     Blocked(String),
+    /// It is a coding agent while coding agents are switched off: picking it asks to turn them on.
+    TurnOn,
 }
 
 impl Gate {
@@ -116,6 +119,7 @@ impl Gate {
             Gate::Open => None,
             Gate::NeedsAccount => Some(NEEDS_ACCOUNT),
             Gate::Blocked(reason) => Some(reason),
+            Gate::TurnOn => Some(TURNED_OFF),
         }
     }
 }
@@ -125,6 +129,7 @@ pub(super) fn gate_of(reason: Option<&str>) -> Gate {
     match reason {
         None => Gate::Open,
         Some(NEEDS_ACCOUNT) => Gate::NeedsAccount,
+        Some(TURNED_OFF) => Gate::TurnOn,
         Some(reason) => Gate::Blocked(reason.to_owned()),
     }
 }

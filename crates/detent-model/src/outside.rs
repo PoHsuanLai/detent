@@ -88,7 +88,7 @@ pub struct Assistant {
 fn is_same(agent: &AgentRow, label: &str, key: &str, provider: Option<&str>) -> bool {
     let registry = match &agent.source {
         Source::Registry { id, .. } => Some(id.as_str()),
-        Source::Own => None,
+        Source::Own { .. } => None,
     };
     label.trim().eq_ignore_ascii_case(agent.label.trim())
         || [Some(key), provider]
@@ -137,6 +137,7 @@ mod tests {
                 version: "1.0.0".to_owned(),
                 installed: docket_settings::Install::Installed,
             },
+            command: None,
             model: ModelState::AgentsOwn,
             offers: Offers::NotSeenYet,
             sign_in: SignInState::NotSeenYet,

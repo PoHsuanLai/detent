@@ -15,10 +15,10 @@ pub use local::{LocalAsk, LocalEngine, LocalModel, LocalView};
 pub use menu::{Clearing, MenuLine};
 pub use model::{
     Applying, AwaitingAccount, ChoiceSection, Described, KindRows, ModelRow, PickerState, Ready,
-    loading_text,
+    TurnOn, loading_text,
 };
 pub use pool::{AutoPool, PoolEntry, PoolGroup, PoolMembership, PoolStanding, PoolWrite};
-pub use step::{PickerEffect, PickerInput, step};
+pub use step::{PickerEffect, PickerInput, TurnOnAnswer, step};
 
 #[cfg(test)]
 mod modes_tests;
