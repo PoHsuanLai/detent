@@ -1,11 +1,12 @@
 //! The values the window shows: every settings file read once, and one key set on an edit.
 
 use crate::env::Env;
+use crate::reported::Reported;
 use detent_files::{FileValues, FilesError, load, save};
 use detent_model::{ConfigFile, FileSpec, KeyEntry};
 use dioxus::prelude::{ReadableExt, Signal, WritableExt};
 use ds::stack::toast_hub::ToastHub;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// The current values of every file the catalogue reads.
 pub type Files = BTreeMap<ConfigFile, FileValues>;
@@ -19,26 +20,31 @@ pub struct Edit {
     pub value: toml::Value,
 }
 
-/// The one place the window reports what a read found and dropped.
-fn report(spec: &FileSpec, unknown: &[String], invalid: &[String]) {
+/// What was said about the files by the last read: a problem is said again only when it is new.
+static SAID: Reported = Reported::new();
+
+/// The lines that say what a read found and dropped in `spec`'s file. A value is never echoed
+/// (a free-text key can hold a token), only the key.
+fn problems(spec: &FileSpec, unknown: &[String], invalid: &[String]) -> Vec<String> {
     let file = spec.file.relative().display();
-    for key in unknown {
-        eprintln!("detent: {file}: unknown key `{key}` is not read and is left as it is");
-    }
-    for key in invalid {
-        eprintln!("detent: {file}: {key}");
-    }
+    unknown
+        .iter()
+        .map(|key| format!("{file}: unknown key `{key}` is not read and is left as it is"))
+        .chain(invalid.iter().map(|key| format!("{file}: {key}")))
+        .collect()
 }
 
 /// Every file of the catalogue, read leniently. What no schema describes, or a control
-/// cannot hold, is reported and stays in the file untouched.
+/// cannot hold, is reported (once, until it changes) and stays in the file untouched.
 pub fn load_all(env: &Env) -> Files {
-    env.catalogue
+    let mut found = BTreeSet::new();
+    let files = env
+        .catalogue
         .files
         .iter()
         .map(|spec| {
             let loaded = load(&env.config_home, spec);
-            report(
+            found.extend(problems(
                 spec,
                 &loaded
                     .unknown
@@ -50,10 +56,14 @@ pub fn load_all(env: &Env) -> Files {
                     .iter()
                     .map(ToString::to_string)
                     .collect::<Vec<_>>(),
-            );
+            ));
             (spec.file.clone(), loaded.value)
         })
-        .collect()
+        .collect();
+    for line in SAID.fresh(found) {
+        eprintln!("detent: {line}");
+    }
+    files
 }
 
 /// The value the window shows for `entry`: the file's, else the key's default.

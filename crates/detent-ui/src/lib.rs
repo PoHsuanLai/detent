@@ -18,6 +18,8 @@ mod files;
 mod first_run;
 mod icons;
 mod inbox;
+#[cfg(test)]
+mod inbox_tests;
 mod inference;
 mod key_row;
 mod lender;
@@ -25,6 +27,7 @@ mod live;
 mod marks;
 mod memory;
 mod page_view;
+mod reported;
 mod section_view;
 mod sharing;
 mod shortcuts;

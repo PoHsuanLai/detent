@@ -4,7 +4,15 @@
 
 use detent_model::{AccountTarget, PageSlug};
 use std::sync::{Arc, Mutex, MutexGuard};
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, error::SendError, unbounded_channel};
+use tokio::sync::mpsc::{
+    Receiver, Sender, channel,
+    error::{SendError, TrySendError},
+};
+
+/// How many notices wait for the window at most. A program on the person's bus can call the
+/// window's activation object as often as it likes; past this the extra notices are dropped (the
+/// window is already behind on the ones that wait), so it cannot grow the queue (DETENT-16).
+const WAITING: usize = 64;
 
 /// One thing the window is told.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,22 +29,26 @@ pub enum Notice {
 
 /// The sending end: held by whoever tells the window.
 #[derive(Debug, Clone)]
-pub struct Outbox(UnboundedSender<Notice>);
+pub struct Outbox(Sender<Notice>);
 
 impl Outbox {
-    /// Tells the window `notice`; fails only when the window has gone.
+    /// Tells the window `notice`; fails only when the window has gone. When [`WAITING`] notices
+    /// are already waiting the new one is dropped and this still succeeds.
     pub fn send(&self, notice: Notice) -> Result<(), SendError<Notice>> {
-        self.0.send(notice)
+        match self.0.try_send(notice) {
+            Ok(()) | Err(TrySendError::Full(_)) => Ok(()),
+            Err(TrySendError::Closed(notice)) => Err(SendError(notice)),
+        }
     }
 }
 
 /// The receiving end: in the window's [`Env`](crate::Env), taken once by the root.
 #[derive(Debug, Clone, Default)]
-pub struct Inbox(Arc<Mutex<Option<UnboundedReceiver<Notice>>>>);
+pub struct Inbox(Arc<Mutex<Option<Receiver<Notice>>>>);
 
 impl Inbox {
     /// The receiver, the first time it is asked for; `None` after, or for an empty inbox.
-    pub fn take(&self) -> Option<UnboundedReceiver<Notice>> {
+    pub fn take(&self) -> Option<Receiver<Notice>> {
         let mut held: MutexGuard<'_, _> = self.0.lock().unwrap_or_else(|p| p.into_inner());
         held.take()
     }
@@ -44,6 +56,6 @@ impl Inbox {
 
 /// A new pair: send on the [`Outbox`], the window reads the [`Inbox`].
 pub fn inbox() -> (Outbox, Inbox) {
-    let (sender, receiver) = unbounded_channel();
+    let (sender, receiver) = channel(WAITING);
     (Outbox(sender), Inbox(Arc::new(Mutex::new(Some(receiver)))))
 }
