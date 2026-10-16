@@ -93,11 +93,11 @@ fn the_sections_follow_design_order_whatever_order_the_programs_were_read_in() {
         &harness.html(),
         &[
             "Assistant",
-            "Limits\u{2026}",
             "Models",
             "Model choice",
             "Memory",
             "Computer use",
+            "Limits\u{2026}",
         ],
     );
 }

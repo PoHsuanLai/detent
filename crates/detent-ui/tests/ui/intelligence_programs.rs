@@ -39,6 +39,10 @@ fn in_order(html: &str, texts: &[&str]) {
 /// `(section, the rows it shows before Advanced)`, in the order the page draws them.
 const BASIC: &[(&str, &[&str])] = &[
     (
+        "Assistant",
+        &["Asks first", "Other apps", "Coding Agents", "Undo history"],
+    ),
+    (
         "Models",
         &[
             "Keep AI on this computer",
@@ -55,10 +59,6 @@ const BASIC: &[(&str, &[&str])] = &[
             "Where it works",
             "Pause when I touch the window",
         ],
-    ),
-    (
-        "Assistant",
-        &["Asks first", "Other apps", "Coding Agents", "Undo history"],
     ),
 ];
 
@@ -132,7 +132,17 @@ fn a_write_lands_in_the_file_of_the_program_that_owns_the_row() {
         assert_eq!(sandbox.read(file), None, "{file}: looking writes nothing");
     }
 
-    // Top to bottom, because the page is only ever scrolled down.
+    // Top to bottom, because the page is only ever scrolled down: the Assistant section first.
+    flip(&mut harness, "Other apps");
+    let docket = sandbox.read("docket/settings.toml").expect("docket's file");
+    assert!(docket.contains("expose = \"on\""), "{docket}");
+    assert!(
+        !docket.contains("autopause") && !docket.contains("when"),
+        "{docket}"
+    );
+    assert_eq!(sandbox.read("almanac/settings.toml"), None);
+    assert_eq!(sandbox.read("cua/settings.toml"), None);
+
     let tidy = ".ds-segmented[aria-label=\"Tidy memory\"] .ds-segmented-segment:nth-of-type(2)";
     scroll_into_view(&mut harness, tidy);
     click(&mut harness, tidy);
@@ -141,21 +151,12 @@ fn a_write_lands_in_the_file_of_the_program_that_owns_the_row() {
         .expect("almanac's file");
     assert!(almanac.contains("when = \"manual\""), "{almanac}");
     assert_eq!(sandbox.read("cua/settings.toml"), None);
-    assert_eq!(sandbox.read("docket/settings.toml"), None);
 
     flip(&mut harness, "Pause when I touch the window");
     let cua = sandbox.read("cua/settings.toml").expect("cua's file");
     assert!(cua.contains("autopause = \"off\""), "{cua}");
     assert!(!cua.contains("when"), "{cua}");
-    assert_eq!(sandbox.read("docket/settings.toml"), None);
 
-    flip(&mut harness, "Other apps");
-    let docket = sandbox.read("docket/settings.toml").expect("docket's file");
-    assert!(docket.contains("expose = \"on\""), "{docket}");
-    assert!(
-        !docket.contains("autopause") && !docket.contains("when"),
-        "{docket}"
-    );
     assert_eq!(
         sandbox.read("inferd/inferd.toml"),
         None,
