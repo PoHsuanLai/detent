@@ -202,6 +202,8 @@ mod offers {
                             .collect(),
                     ),
                     unavailable: BTreeMap::new(),
+                    places: BTreeMap::new(),
+                    note: None,
                     value: String::new(),
                     pool: Default::default(),
                     local: Default::default(),
