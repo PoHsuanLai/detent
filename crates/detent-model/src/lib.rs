@@ -17,6 +17,7 @@ mod first_run;
 mod layout;
 mod memory_consent;
 mod navigation;
+mod origin;
 mod outside;
 mod page;
 mod picker;
@@ -57,7 +58,7 @@ pub use computers::{
 };
 pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
-pub use discovery::{Discovery, ProgramSchema, discover};
+pub use discovery::{Discovery, ProgramSchema, discover, discover_under};
 /// Whether an agent may set a key: quire's own type, carried by each `KeySpec`.
 pub use ds_settings::schema::AgentSetting;
 pub use engines::{
@@ -75,6 +76,7 @@ pub use memory_consent::{
     holds_memory_settings, is_memory_setting, tells_confinement, to_confirm, waiting_note,
 };
 pub use navigation::{landing, visible_pages};
+pub use origin::{OriginRule, SchemaOrigin};
 pub use outside::{
     AGENTS_OWN, Assistant, Entry, assistants_of, model_choice, model_menu, model_word, way_choice,
     way_menu,

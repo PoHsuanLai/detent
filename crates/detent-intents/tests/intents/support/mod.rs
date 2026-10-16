@@ -9,7 +9,9 @@ use detent_files::ConfigHome;
 use detent_intents::{
     AccountsRead, AccountsSource, SettingsProvider, Window, WindowGone, serve_with,
 };
-use detent_model::{Absence, AccountTarget, AccountsPane, Catalogue, PageSlug, discover};
+use detent_model::{
+    Absence, AccountTarget, AccountsPane, Catalogue, OriginRule, PageSlug, discover_under,
+};
 use detent_testkit::{Scratch, seed_schemas_settable};
 use docket_core::{
     AppRefusal, Args, CallId, EntityRef, Hit, Invocation, Origin, Outcome, ParamName, Preview,
@@ -144,7 +146,13 @@ impl World {
     pub async fn start_listing(test: &str, settable: &[&str], accounts: Listed) -> World {
         let scratch = Scratch::under(TMP, test);
         let schemas = seed_schemas_settable(&scratch.join("data"), settable);
-        let catalogue = Arc::new(Catalogue::build(&discover(&[schemas]).programs));
+        // The scratch folder is the person's, so it is declared a system folder, as a developer
+        // install is: an agent mark is honoured only from one.
+        let found = discover_under(
+            std::slice::from_ref(&schemas),
+            &OriginRule::declared(std::slice::from_ref(&schemas)),
+        );
+        let catalogue = Arc::new(Catalogue::build(&found.programs));
         let window = Arc::new(WrittenDown::default());
         let provider = SettingsProvider::new(
             catalogue,

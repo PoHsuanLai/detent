@@ -45,7 +45,7 @@ in that list: `ds-settings` builds it (FINDINGS "ds-settings drags zbus into a p
 | Which control draws a key, which values it admits; whether two words are a switch | `detent-model::Control`, `TogglePair::of` |
 | What a search finds, which pages stay in the sidebar | `detent-model::search`, `visible_pages`, `landing` |
 | Reading and writing a settings file | `detent-files::{load, save}` |
-| Whether an agent may set a key | the schema's `agent = "settable"` mark: `KeySpec::agent` of the schema `ds_settings::schema::discover` admitted, read as `KeyEntry::agent()` (a key without it is hands-off; there is no second parser of the schema files) |
+| Whether an agent may set a key | the schema's `agent = "settable"` mark: `KeySpec::agent` of the schema `ds_settings::schema::discover` admitted, read as `KeyEntry::agent()` (a key without it is hands-off; there is no second parser of the schema files), honoured only for a schema from a `SchemaOrigin::System` folder (`detent-model/src/origin.rs`: root-owned, with every folder above it, and closed to group and others); a schema from any other folder, such as `~/.local/share/quire/settings`, is shown and edited as usual and every key of it reads hands-off. Debug builds only: `OriginRule::declared` names folders to treat as system (developer installs, tests) |
 | A key's value as text, and text as a value | `detent-model::{Control::from_text, show_value}` |
 | What the desktop's intents may do here | `dist/intents/org.quire.Settings.toml` (the one declaration) and `detent-intents::SettingsProvider` |
 | What the window is told while it runs | `detent-ui::{Notice, inbox}` (a page to open, files to read again, an account to show, a raise; at most 64 wait, the rest are dropped) |

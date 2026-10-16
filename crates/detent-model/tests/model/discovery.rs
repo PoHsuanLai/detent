@@ -87,7 +87,7 @@ fn an_earlier_directory_wins_and_the_later_one_is_not_a_program_of_its_own() {
     assert_eq!(
         found.warnings,
         Vec::new(),
-        "ds-settings drops the later schema and says so on stderr"
+        "a program found in an earlier directory is not taken again"
     );
 }
 

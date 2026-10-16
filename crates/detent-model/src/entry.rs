@@ -28,7 +28,8 @@ impl KeyEntry {
 
     /// Whether an agent may set the key: the mark of the schema that supplied it, which
     /// `ds_settings::schema::discover` admitted and `Schema::from_toml` checked (a key under a
-    /// never-settable prefix cannot carry the mark).
+    /// never-settable prefix cannot carry the mark); `discover` has already cleared it for a schema
+    /// from a folder the person can write.
     pub fn agent(&self) -> AgentSetting {
         self.spec.agent
     }
