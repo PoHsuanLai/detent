@@ -231,7 +231,8 @@
   padding: 0 var(--s-14);
 }
 
-.updates-note {
+.updates-note,
+.updates-notice {
   padding: 0 var(--s-14);
 }
 

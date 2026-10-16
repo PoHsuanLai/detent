@@ -10,7 +10,8 @@ mod step;
 mod words;
 
 pub use model::{
-    ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus, UpdateWire,
+    ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus, UpdateVersion,
+    UpdateWire,
 };
 pub use page::is_software_update;
 pub(crate) use page::{SLUG, software_update_page};
@@ -18,7 +19,10 @@ pub use shown::{
     ButtonActivity, NotesSheet, UPDATES_NOT_AVAILABLE, UpdateButton, UpdateMeter, UpdatesPage,
     UpdatesShown, updates_shown,
 };
-pub use step::{NotesState, UpdatesEffect, UpdatesInput, UpdatesReady, UpdatesState, updates_step};
+pub use step::{
+    NotesState, UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState,
+    updates_step,
+};
 
 #[cfg(test)]
 mod tests;

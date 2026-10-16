@@ -65,11 +65,41 @@ pub struct Permille(pub u32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UnixSeconds(pub i64);
 
+/// What the service says when an install named a version other than the one it offers (slipway's
+/// words for `org.quire.Updates1.Error.VersionChanged`). A failed state whose problem is exactly
+/// this means the same thing, found by reading instead of by the refusal.
+pub(super) const VERSION_CHANGED: &str =
+    "A different update is on offer now. Look at it again before installing.";
+
+/// A version the service offered, as the person reads it: a short run of version characters.
+/// It is only made by [`UpdateVersion::parse`], so holding one means it passed the bounds, and it
+/// is the one thing an install may name.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UpdateVersion(String);
+
+impl UpdateVersion {
+    /// `text` as a version; `None` when it is empty, long, or has other than version characters.
+    pub fn parse(text: &str) -> Option<UpdateVersion> {
+        version_of(text).map(UpdateVersion)
+    }
+
+    /// The version as the person reads it: "0.4.0".
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for UpdateVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
 /// A newer version on offer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UpdateOffer {
     /// Its version, as the person reads it.
-    pub version: String,
+    pub version: UpdateVersion,
     /// What changed in it; empty when the release says nothing.
     pub notes: String,
     /// How much there is to download.
@@ -133,7 +163,7 @@ impl UpdateStatus {
         };
         let offer = match some_text(wire.available) {
             Some(text) => Some(UpdateOffer {
-                version: version_of(&text).ok_or_else(|| odd("version on offer"))?,
+                version: UpdateVersion::parse(&text).ok_or_else(|| odd("version on offer"))?,
                 notes: notes_of(&wire.notes),
                 size: ByteCount(wire.size),
             }),

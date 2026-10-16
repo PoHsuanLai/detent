@@ -55,6 +55,11 @@ fn Listed(page: UpdatesPage, press: EventHandler<UpdatesInput>) -> Element {
                     }
                 }
             }
+            if let Some(words) = page.notice {
+                div { class: "updates-notice",
+                    Label { text: words, role: LabelRole::Secondary, style: LabelStyle::Footnote }
+                }
+            }
             Meter { meter: page.meter.clone() }
             if let Some(line) = page.checked.clone() {
                 div { class: "updates-note",

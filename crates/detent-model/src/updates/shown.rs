@@ -2,7 +2,7 @@
 //! the notes sheet, worked out once and drawn as they are.
 
 use super::model::{ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus};
-use super::step::{NotesState, UpdatesInput, UpdatesReady, UpdatesState};
+use super::step::{NotesState, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState};
 use super::words::{age_words, size_words};
 use crate::picker::Absence;
 
@@ -17,6 +17,10 @@ const AUTOMATIC: &str = "Quire checks once a day and asks before it installs any
 
 /// Said when a failure came with no words.
 const DID_NOT_FINISH: &str = "The update did not finish. Try again in a moment.";
+
+/// Said under the offer when a newer version arrived after the person had looked, and nothing
+/// was installed.
+const NEWER_VERSION: &str = "A newer version arrived. Check what's new before installing.";
 
 /// Said when a release came with no notes.
 const NO_NOTES: &str = "No release notes came with this update.";
@@ -101,6 +105,8 @@ pub struct UpdatesPage {
     pub title: String,
     /// What is true of it, under the title.
     pub detail: String,
+    /// A word of caution under the row, when there is one.
+    pub notice: Option<&'static str>,
     /// The bar, if the work has one.
     pub meter: UpdateMeter,
     /// The buttons, the one to press last.
@@ -150,6 +156,7 @@ fn plain(title: String, detail: &str) -> UpdatesPage {
     UpdatesPage {
         title,
         detail: detail.to_owned(),
+        notice: None,
         meter: UpdateMeter::None,
         buttons: Vec::new(),
         checked: None,
@@ -209,7 +216,7 @@ fn available(ready: &UpdatesReady, offer: &UpdateOffer, now: UnixSeconds) -> Upd
     };
     let notes = match ready.info {
         NotesState::Open => Some(NotesSheet {
-            title: named(Some(&offer.version)),
+            title: named(Some(offer.version.as_str())),
             body: if offer.notes.trim().is_empty() {
                 NO_NOTES.to_owned()
             } else {
@@ -219,10 +226,14 @@ fn available(ready: &UpdatesReady, offer: &UpdateOffer, now: UnixSeconds) -> Upd
         NotesState::Closed => None,
     };
     UpdatesPage {
+        notice: match ready.notice {
+            UpdatesNotice::NewerVersion => Some(NEWER_VERSION),
+            UpdatesNotice::Nothing => None,
+        },
         buttons: vec![UpdateButton::MoreInfo, UpdateButton::UpdateNow],
         checked: Some(checked_line(&ready.status, now)),
         notes,
-        ..plain(named(Some(&offer.version)), &detail)
+        ..plain(named(Some(offer.version.as_str())), &detail)
     }
 }
 

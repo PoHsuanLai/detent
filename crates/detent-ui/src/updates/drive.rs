@@ -2,7 +2,7 @@
 //! and starting the log-out. The steps are `detent-model`'s `updates_step`.
 
 use super::leave::LogOut;
-use super::link::Updater;
+use super::link::{InstallRefusal, Updater};
 use crate::env::Env;
 use detent_model::{UpdatesEffect, UpdatesInput, UpdatesState, updates_step};
 use dioxus::prelude::*;
@@ -75,10 +75,10 @@ impl Driver {
                     me.answered(done).await;
                 });
             }
-            UpdatesEffect::Install => {
+            UpdatesEffect::Install(version) => {
                 spawn(async move {
-                    let done = me.updater.install().await;
-                    me.answered(done).await;
+                    let done = me.updater.install(&version).await;
+                    me.installed(done).await;
                 });
             }
             UpdatesEffect::LogOut => {
@@ -97,6 +97,19 @@ impl Driver {
         match done {
             Ok(()) => self.reread().await,
             Err(words) => self.feed(UpdatesInput::Refused(words)),
+        }
+    }
+
+    /// The service took the install (read what it says now), or would not: it offers another
+    /// version now (read it, then say so beside it), or it refused (say why).
+    async fn installed(&self, done: Result<(), InstallRefusal>) {
+        match done {
+            Ok(()) => self.reread().await,
+            Err(InstallRefusal::VersionChanged) => {
+                self.reread().await;
+                self.feed(UpdatesInput::VersionChanged);
+            }
+            Err(InstallRefusal::Told(words)) => self.feed(UpdatesInput::Refused(words)),
         }
     }
 }

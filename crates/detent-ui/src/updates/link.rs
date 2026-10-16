@@ -2,7 +2,7 @@
 //! so a test hands in a service that only answers from memory.
 
 use crate::ticks::Ticks;
-use detent_model::{Absence, UnixSeconds, UpdateStatus};
+use detent_model::{Absence, UnixSeconds, UpdateStatus, UpdateVersion};
 use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
@@ -15,6 +15,15 @@ pub type UpdateWork<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 /// while one waits are one tick, and dropping this ends whatever produces them.
 pub type UpdateTicks = Ticks;
 
+/// Why the service did not take an install request.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InstallRefusal {
+    /// What it offers is not the version that was named, or it offers nothing now.
+    VersionChanged,
+    /// It refused or failed, in these words for the person.
+    Told(String),
+}
+
 /// What the page needs of the update service and of the clock.
 pub trait UpdatesLink: Send + Sync {
     /// The service's standing now, or why it cannot be read.
@@ -24,8 +33,9 @@ pub trait UpdatesLink: Send + Sync {
     fn changes(&self) -> UpdateWork<'_, Result<UpdateTicks, Absence>>;
     /// Asks the service to look for a newer version; the service's words when it refuses.
     fn check(&self) -> UpdateWork<'_, Result<(), String>>;
-    /// Asks the service to install the newer version; the service's words when it refuses.
-    fn install(&self) -> UpdateWork<'_, Result<(), String>>;
+    /// Asks the service to install `version`, the one the page shows; it refuses when what it
+    /// offers is another.
+    fn install(&self, version: &UpdateVersion) -> UpdateWork<'_, Result<(), InstallRefusal>>;
     /// The time "last checked" counts from.
     fn now(&self) -> UnixSeconds;
 }
@@ -58,8 +68,11 @@ impl Updater {
         self.0.check()
     }
 
-    pub(crate) fn install(&self) -> UpdateWork<'_, Result<(), String>> {
-        self.0.install()
+    pub(crate) fn install(
+        &self,
+        version: &UpdateVersion,
+    ) -> UpdateWork<'_, Result<(), InstallRefusal>> {
+        self.0.install(version)
     }
 
     pub(crate) fn now(&self) -> UnixSeconds {

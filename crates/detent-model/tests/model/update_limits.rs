@@ -20,7 +20,7 @@ fn wire() -> UpdateWire {
 fn a_real_looking_version_and_short_notes_pass_unchanged() {
     let status = UpdateStatus::of_wire(wire()).expect("a status");
     let offer = status.offer.expect("an offer");
-    assert_eq!(offer.version, "0.4.0-rc.1+build.5");
+    assert_eq!(offer.version.as_str(), "0.4.0-rc.1+build.5");
     assert_eq!(offer.notes, "Faster start.\nFewer crashes.");
 }
 

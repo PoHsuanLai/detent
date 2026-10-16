@@ -1,12 +1,12 @@
 //! The update service on the person's bus: `org.quire.Updates1`. It is only ever looked for, never
 //! started: opening Settings must not wake a service the person's session did not start.
 
-use super::link::{UpdateTicks, UpdateWork, Updater, UpdatesLink};
+use super::link::{InstallRefusal, UpdateTicks, UpdateWork, Updater, UpdatesLink};
 use super::wire::wire_of;
 use crate::deadline::{Deadline, peer};
 use crate::live::{BusSource, connect, name_owned};
 use crate::ticks::{Ticker, Ticks};
-use detent_model::{Absence, UPDATES_NOT_AVAILABLE, UnixSeconds, UpdateStatus};
+use detent_model::{Absence, UPDATES_NOT_AVAILABLE, UnixSeconds, UpdateStatus, UpdateVersion};
 use ds_peer::{NotAnswering, within};
 use porter_dbus::{BusFailure, classify};
 use std::collections::HashMap;
@@ -24,8 +24,19 @@ const BUS_NAME: &str = "org.quire.Updates1";
 const PATH: &str = "/org/quire/Updates1";
 const INTERFACE: &str = "org.quire.Updates1";
 
-/// The error name the service answers a refusal with; its message is the plain sentence.
-const REFUSED: &str = "org.freedesktop.DBus.Error.Failed";
+/// The error names the service answers a refusal with; each one's message is the plain sentence.
+/// The first is the general failure (`Check`, and `Rollback`'s checks); the others are
+/// `Install(version)`'s: the text named is not a version, or anything else that stopped it, such
+/// as work in progress.
+const SENTENCE_ERRORS: [&str; 3] = [
+    "org.freedesktop.DBus.Error.Failed",
+    "org.quire.Updates1.Error.NotAVersion",
+    "org.quire.Updates1.Error.Refused",
+];
+
+/// The error name of `Install(version)` when what the service offers is not the version named,
+/// or it offers nothing.
+const VERSION_CHANGED: &str = "org.quire.Updates1.Error.VersionChanged";
 
 /// What the person reads when a request failed and the service gave no sentence.
 const COULD_NOT: &str = "The request could not be made. Try again in a moment.";
@@ -40,15 +51,16 @@ const COULD_NOT: &str = "The request could not be made. Try again in a moment.";
 trait Updates {
     /// Looks for a newer version; returns at once.
     fn check(&self) -> zbus::Result<()>;
-    /// Installs the newer version; returns at once.
-    fn install(&self) -> zbus::Result<()>;
+    /// Installs the newer version, which is `version`: the one the person was shown (the
+    /// service's `Available`). Returns at once.
+    fn install(&self, version: &str) -> zbus::Result<()>;
 }
 
 /// The one request the page makes of the service.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 enum Ask {
     Check,
-    Install,
+    Install(UpdateVersion),
 }
 
 fn absence(error: zbus::Error) -> Absence {
@@ -65,7 +77,7 @@ fn sentence_of(error: &zbus::Error) -> String {
     match (classify(error), error) {
         (BusFailure::NoDaemon, _) => UPDATES_NOT_AVAILABLE.to_owned(),
         (_, zbus::Error::MethodError(name, Some(words), _))
-            if name.as_str() == REFUSED && !words.is_empty() =>
+            if SENTENCE_ERRORS.contains(&name.as_str()) && !words.is_empty() =>
         {
             words.clone()
         }
@@ -74,6 +86,17 @@ fn sentence_of(error: &zbus::Error) -> String {
             _ => COULD_NOT.to_owned(),
         },
         _ => COULD_NOT.to_owned(),
+    }
+}
+
+/// Why `Install(version)` failed: the version changed (by the service's error name), or the
+/// sentence for the person.
+fn refusal_of(error: &zbus::Error) -> InstallRefusal {
+    match error {
+        zbus::Error::MethodError(name, _, _) if name.as_str() == VERSION_CHANGED => {
+            InstallRefusal::VersionChanged
+        }
+        _ => InstallRefusal::Told(sentence_of(error)),
     }
 }
 
@@ -172,21 +195,32 @@ async fn watch(bus: &BusSource) -> Result<UpdateTicks, Absence> {
         .with_relay(tokio::spawn(relay(properties, ticker))))
 }
 
-async fn ask(bus: &BusSource, request: Ask) -> Result<(), String> {
+async fn ask(bus: &BusSource, request: Ask) -> Result<(), InstallRefusal> {
+    let told = InstallRefusal::Told;
     let connection = running(bus)
         .await
-        .map_err(|_| UPDATES_NOT_AVAILABLE.to_owned())?;
-    let service = proxy(&connection).await.map_err(|e| sentence_of(&e))?;
+        .map_err(|_| told(UPDATES_NOT_AVAILABLE.to_owned()))?;
+    let service = proxy(&connection)
+        .await
+        .map_err(|e| told(sentence_of(&e)))?;
     let call = async {
-        match request {
+        match &request {
             Ask::Check => service.check().await,
-            Ask::Install => service.install().await,
+            Ask::Install(version) => service.install(version.as_str()).await,
         }
     };
     within(Deadline::ACTION, peer::UPDATES, call)
         .await
-        .map_err(|silent| silent.to_string())?
-        .map_err(|e| sentence_of(&e))
+        .map_err(|silent| told(silent.to_string()))?
+        .map_err(|e| refusal_of(&e))
+}
+
+/// The words for the person when a request other than an install was refused.
+fn words_of(refusal: InstallRefusal) -> String {
+    match refusal {
+        InstallRefusal::Told(words) => words,
+        InstallRefusal::VersionChanged => COULD_NOT.to_owned(),
+    }
 }
 
 /// The service on `bus`, and the system clock.
@@ -202,11 +236,11 @@ impl UpdatesLink for OnBus {
     }
 
     fn check(&self) -> UpdateWork<'_, Result<(), String>> {
-        Box::pin(ask(&self.0, Ask::Check))
+        Box::pin(async move { ask(&self.0, Ask::Check).await.map_err(words_of) })
     }
 
-    fn install(&self) -> UpdateWork<'_, Result<(), String>> {
-        Box::pin(ask(&self.0, Ask::Install))
+    fn install(&self, version: &UpdateVersion) -> UpdateWork<'_, Result<(), InstallRefusal>> {
+        Box::pin(ask(&self.0, Ask::Install(version.clone())))
     }
 
     fn now(&self) -> UnixSeconds {

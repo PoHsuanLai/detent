@@ -107,9 +107,9 @@ pub use spaces::{
 pub use text_form::{TextFault, show_value};
 pub use updates::{
     ButtonActivity, ByteCount, NotesSheet, NotesState, Permille, UPDATES_NOT_AVAILABLE,
-    UnixSeconds, UpdateButton, UpdateMeter, UpdateOffer, UpdatePhase, UpdateStatus, UpdateWire,
-    UpdatesEffect, UpdatesInput, UpdatesPage, UpdatesReady, UpdatesShown, UpdatesState,
-    is_software_update, updates_shown, updates_step,
+    UnixSeconds, UpdateButton, UpdateMeter, UpdateOffer, UpdatePhase, UpdateStatus, UpdateVersion,
+    UpdateWire, UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesPage, UpdatesReady,
+    UpdatesShown, UpdatesState, is_software_update, updates_shown, updates_step,
 };
 pub use warning::{StaleReason, Warning};
 pub use words::{humanize, word_label};

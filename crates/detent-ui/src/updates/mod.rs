@@ -10,5 +10,5 @@ mod view;
 mod wire;
 
 pub use leave::{Departure, LogOut};
-pub use link::{UpdateTicks, UpdateWork, Updater, UpdatesLink};
+pub use link::{InstallRefusal, UpdateTicks, UpdateWork, Updater, UpdatesLink};
 pub(crate) use view::SoftwareUpdatePane;

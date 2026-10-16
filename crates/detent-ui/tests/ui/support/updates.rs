@@ -1,16 +1,17 @@
 //! The update service and the log-out, from memory: nothing here reaches a bus, the clock or a
 //! process.
 
-use detent_model::{Absence, UnixSeconds, UpdatePhase, UpdateStatus};
-use detent_ui::{Departure, Ticker, UpdateTicks, UpdateWork, UpdatesLink};
+use detent_model::{Absence, UnixSeconds, UpdatePhase, UpdateStatus, UpdateVersion};
+use detent_ui::{Departure, InstallRefusal, Ticker, UpdateTicks, UpdateWork, UpdatesLink};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 /// What the page asked of the service.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Asked {
     Check,
-    Install,
+    /// An install, naming this version.
+    Install(UpdateVersion),
 }
 
 /// The time the page counts "last checked" from.
@@ -59,6 +60,12 @@ impl Service {
         self.tick();
     }
 
+    /// The service moves to `status` without telling anyone, as when a release lands between the
+    /// page reading the service and the person pressing: the page still shows the old standing.
+    pub fn changes_unseen(&self, status: UpdateStatus) {
+        *self.0.standing.lock().expect("lock") = Ok(status);
+    }
+
     /// The service refuses the next requests, in these words.
     pub fn refuses(&self, words: &str) {
         *self.0.refusal.lock().expect("lock") = Some(words.to_owned());
@@ -80,6 +87,11 @@ impl Service {
     /// Takes a request: written down, refused or moved to `working`.
     fn request(&self, asked: Asked, working: UpdatePhase) -> Result<(), String> {
         self.0.asked.lock().expect("lock").push(asked);
+        self.admit(working)
+    }
+
+    /// Refuses in the words it was given, else moves to `working`.
+    fn admit(&self, working: UpdatePhase) -> Result<(), String> {
         if let Some(words) = self.0.refusal.lock().expect("lock").clone() {
             return Err(words);
         }
@@ -91,6 +103,14 @@ impl Service {
             });
         }
         Ok(())
+    }
+
+    /// Whether `version` is the one on offer, as the real service checks it.
+    fn offers(&self, version: &UpdateVersion) -> bool {
+        matches!(
+            &*self.0.standing.lock().expect("lock"),
+            Ok(UpdateStatus { offer: Some(offer), .. }) if offer.version == *version
+        )
     }
 }
 
@@ -112,10 +132,19 @@ impl UpdatesLink for Service {
         ))
     }
 
-    fn install(&self) -> UpdateWork<'_, Result<(), String>> {
-        Box::pin(std::future::ready(
-            self.request(Asked::Install, UpdatePhase::Downloading),
-        ))
+    fn install(&self, version: &UpdateVersion) -> UpdateWork<'_, Result<(), InstallRefusal>> {
+        self.0
+            .asked
+            .lock()
+            .expect("lock")
+            .push(Asked::Install(version.clone()));
+        let done = if self.offers(version) {
+            self.admit(UpdatePhase::Downloading)
+                .map_err(InstallRefusal::Told)
+        } else {
+            Err(InstallRefusal::VersionChanged)
+        };
+        Box::pin(std::future::ready(done))
     }
 
     fn now(&self) -> UnixSeconds {

@@ -4,9 +4,9 @@
 use super::words::{age_words, size_words};
 use super::{
     ButtonActivity, ByteCount, NotesSheet, NotesState, Permille, UnixSeconds, UpdateButton,
-    UpdateMeter, UpdateOffer, UpdatePhase, UpdateStatus, UpdateWire, UpdatesEffect, UpdatesInput,
-    UpdatesReady, UpdatesShown, UpdatesState, is_software_update, software_update_page,
-    updates_shown, updates_step,
+    UpdateMeter, UpdateOffer, UpdatePhase, UpdateStatus, UpdateVersion, UpdateWire, UpdatesEffect,
+    UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesShown, UpdatesState, is_software_update,
+    software_update_page, updates_shown, updates_step,
 };
 use crate::catalogue::{Catalogue, PageModel};
 use crate::layout::{Block, blocks};
@@ -16,9 +16,13 @@ use ds_settings::schema::Page;
 
 const NOW: UnixSeconds = UnixSeconds(1_000_000);
 
+fn version(text: &str) -> UpdateVersion {
+    UpdateVersion::parse(text).expect("a version")
+}
+
 fn offer() -> UpdateOffer {
     UpdateOffer {
-        version: "0.4.0".to_owned(),
+        version: version("0.4.0"),
         notes: "Faster start.".to_owned(),
         size: ByteCount(45_600_000),
     }
@@ -46,6 +50,7 @@ fn ready(status: UpdateStatus) -> UpdatesState {
     UpdatesState::Ready(UpdatesReady {
         status,
         info: NotesState::Closed,
+        notice: UpdatesNotice::Nothing,
     })
 }
 
@@ -195,7 +200,7 @@ fn a_press_asks_the_service_only_when_the_standing_allows_it() {
             "update now installs",
             offered(UpdatePhase::Available),
             UpdatesInput::UpdateNow,
-            vec![UpdatesEffect::Install],
+            vec![UpdatesEffect::Install(version("0.4.0"))],
         ),
         (
             "update now with nothing on offer asks nothing",
@@ -213,7 +218,7 @@ fn a_press_asks_the_service_only_when_the_standing_allows_it() {
             "try again installs what was on offer",
             offered(UpdatePhase::Failed),
             UpdatesInput::TryAgain,
-            vec![UpdatesEffect::Install],
+            vec![UpdatesEffect::Install(version("0.4.0"))],
         ),
         (
             "try again looks again when nothing was on offer",
@@ -270,6 +275,137 @@ fn a_page_without_a_service_asks_nothing() {
             assert_eq!((after, effects), (state.clone(), vec![]));
         }
     }
+}
+
+fn newer(phase: UpdatePhase) -> UpdateStatus {
+    UpdateStatus {
+        offer: Some(UpdateOffer {
+            version: version("0.5.0"),
+            ..offer()
+        }),
+        ..status(phase)
+    }
+}
+
+/// What the service says when an install named a version that is not on offer any more.
+const OVERTAKEN: &str = "A different update is on offer now. Look at it again before installing.";
+
+fn notice_of(state: &UpdatesState) -> UpdatesNotice {
+    match state {
+        UpdatesState::Ready(ready) => ready.notice,
+        other => panic!("not ready: {other:?}"),
+    }
+}
+
+#[test]
+fn an_install_names_the_version_the_page_shows_and_never_one_that_is_not_shown() {
+    for (press, phase) in [
+        (UpdatesInput::UpdateNow, UpdatePhase::Available),
+        (UpdatesInput::TryAgain, UpdatePhase::Failed),
+    ] {
+        let (_, effects) = updates_step(ready(newer(phase)), press);
+        assert_eq!(effects, vec![UpdatesEffect::Install(version("0.5.0"))]);
+    }
+    // With no version on the page there is nothing to name: no standing turns a press into an
+    // install.
+    for phase in [
+        UpdatePhase::Idle,
+        UpdatePhase::Checking,
+        UpdatePhase::Available,
+        UpdatePhase::Downloading,
+        UpdatePhase::Ready,
+        UpdatePhase::Installing,
+        UpdatePhase::Installed,
+        UpdatePhase::Failed,
+    ] {
+        for press in [UpdatesInput::UpdateNow, UpdatesInput::TryAgain] {
+            let (_, effects) = updates_step(ready(status(phase)), press);
+            assert!(
+                effects
+                    .iter()
+                    .all(|effect| !matches!(effect, UpdatesEffect::Install(_))),
+                "{phase:?}: {effects:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn an_offer_that_changed_between_showing_and_pressing_is_shown_again_with_a_note() {
+    // The page showed 0.4.0; the person pressed; the service named 0.5.0 as on offer.
+    let (state, _) = updates_step(
+        ready(offered(UpdatePhase::Available)),
+        UpdatesInput::Heard(Ok(newer(UpdatePhase::Available))),
+    );
+    assert_eq!(
+        notice_of(&state),
+        UpdatesNotice::Nothing,
+        "a new offer alone says nothing"
+    );
+    let (state, effects) = updates_step(state, UpdatesInput::VersionChanged);
+    assert_eq!(effects, vec![]);
+    let page = page_of(&state);
+    assert_eq!(page.title, "Quire 0.5.0");
+    assert_eq!(
+        page.notice,
+        Some("A newer version arrived. Check what's new before installing.")
+    );
+
+    // Heard again with the same offer: the note stays. Pressing Update Now names what is shown
+    // and puts the note away.
+    let (state, _) = updates_step(
+        state,
+        UpdatesInput::Heard(Ok(newer(UpdatePhase::Available))),
+    );
+    assert_eq!(notice_of(&state), UpdatesNotice::NewerVersion);
+    let (after, effects) = updates_step(state.clone(), UpdatesInput::UpdateNow);
+    assert_eq!(effects, vec![UpdatesEffect::Install(version("0.5.0"))]);
+    assert_eq!(notice_of(&after), UpdatesNotice::Nothing);
+
+    // The offer goes away: so does the note.
+    let (gone, _) = updates_step(state, UpdatesInput::Heard(Ok(status(UpdatePhase::Idle))));
+    assert_eq!(notice_of(&gone), UpdatesNotice::Nothing);
+    assert_eq!(page_of(&gone).notice, None);
+}
+
+#[test]
+fn a_changed_offer_with_nothing_on_offer_leaves_no_note() {
+    let (state, _) = updates_step(
+        ready(status(UpdatePhase::Idle)),
+        UpdatesInput::VersionChanged,
+    );
+    assert_eq!(state, ready(status(UpdatePhase::Idle)));
+}
+
+#[test]
+fn a_failure_that_says_the_offer_changed_is_an_offer_with_the_note() {
+    let overtaken = UpdateStatus {
+        problem: Some(OVERTAKEN.to_owned()),
+        ..newer(UpdatePhase::Failed)
+    };
+    let (state, effects) = updates_step(UpdatesState::Looking, UpdatesInput::Heard(Ok(overtaken)));
+    assert_eq!(effects, vec![]);
+    let page = page_of(&state);
+    assert_eq!(page.title, "Quire 0.5.0");
+    assert_eq!(page.detail, "Update available \u{b7} 45.6 MB");
+    assert_eq!(
+        page.buttons,
+        vec![UpdateButton::MoreInfo, UpdateButton::UpdateNow]
+    );
+    assert_eq!(
+        page.notice,
+        Some("A newer version arrived. Check what's new before installing.")
+    );
+
+    // With nothing on offer it is a failure like any other, in the service's words.
+    let bare = UpdateStatus {
+        problem: Some(OVERTAKEN.to_owned()),
+        ..status(UpdatePhase::Failed)
+    };
+    let page = page_of(&ready(bare));
+    assert_eq!(page.detail, OVERTAKEN);
+    assert_eq!(page.buttons, vec![UpdateButton::TryAgain]);
+    assert_eq!(page.notice, None);
 }
 
 #[test]
@@ -477,6 +613,7 @@ fn the_notes_sheet_carries_the_notes_or_says_there_are_none() {
         UpdatesState::Ready(UpdatesReady {
             status,
             info: NotesState::Open,
+            notice: UpdatesNotice::Nothing,
         })
     };
     assert_eq!(

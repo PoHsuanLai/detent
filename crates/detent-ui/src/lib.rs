@@ -50,7 +50,9 @@ pub use lender::Lender;
 pub use live::BusSource;
 pub use marks::ProviderMarks;
 pub use ticks::{Gone, Ticker, Ticks};
-pub use updates::{Departure, LogOut, UpdateTicks, UpdateWork, Updater, UpdatesLink};
+pub use updates::{
+    Departure, InstallRefusal, LogOut, UpdateTicks, UpdateWork, Updater, UpdatesLink,
+};
 
 /// The app's own layout stylesheet: tokens only.
 pub const STYLE: &str = include_str!("style.css");

@@ -4,7 +4,9 @@
 use crate::support::Sandbox;
 use crate::support::drive::{click, page_of, title_of};
 use crate::support::updates::{Asked, NOW, Service};
-use detent_model::{ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus};
+use detent_model::{
+    ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus, UpdateVersion,
+};
 use detent_ui::Opening;
 use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
@@ -17,6 +19,11 @@ const UPDATE_NOW: &str = "[aria-label=\"Update Now\"]";
 const TRY_AGAIN: &str = "[aria-label=\"Try Again\"]";
 const LOG_OUT: &str = "[aria-label=\"Log Out\u{2026}\"]";
 const NOTES: &str = ".updates-sheet";
+const NOTICE: &str = ".updates-notice";
+/// The note that says a newer version arrived, and what the service says when its offer changed
+/// under an install.
+const NEWER: &str = "A newer version arrived. Check what's new before installing.";
+const OVERTAKEN: &str = "A different update is on offer now. Look at it again before installing.";
 const BAR: &str = ".updates-meter .ds-progress";
 
 fn software_update() -> Opening {
@@ -37,16 +44,24 @@ fn idle() -> UpdateStatus {
     }
 }
 
-fn offered(phase: UpdatePhase) -> UpdateStatus {
+fn version(text: &str) -> UpdateVersion {
+    UpdateVersion::parse(text).expect("a version")
+}
+
+fn offered_version(phase: UpdatePhase, text: &str) -> UpdateStatus {
     UpdateStatus {
         phase,
         offer: Some(UpdateOffer {
-            version: "0.4.0".to_owned(),
+            version: version(text),
             notes: "Faster start.\nFewer crashes.".to_owned(),
             size: ByteCount(45_600_000),
         }),
         ..idle()
     }
+}
+
+fn offered(phase: UpdatePhase) -> UpdateStatus {
+    offered_version(phase, "0.4.0")
 }
 
 /// Lets the page hear what the service said: the follow loop runs on the harness's clock.
@@ -160,7 +175,7 @@ fn update_now_downloads_with_a_bar_installs_without_one_and_ends_with_log_out() 
     showing(&mut harness, "Update Now", UPDATE_NOW);
 
     click(&mut harness, UPDATE_NOW);
-    assert_eq!(service.asked(), [Asked::Install]);
+    assert_eq!(service.asked(), [Asked::Install(version("0.4.0"))]);
     settle(&mut harness, "the download", |h| {
         row_text(h).contains("Downloading")
     });
@@ -219,7 +234,7 @@ fn a_failure_is_told_in_the_services_words_and_try_again_asks_again() {
     click(&mut harness, TRY_AGAIN);
     assert_eq!(
         service.asked(),
-        [Asked::Install],
+        [Asked::Install(version("0.4.0"))],
         "what was on offer is installed again"
     );
 }
@@ -255,4 +270,86 @@ fn a_service_that_goes_away_and_comes_back_is_followed() {
 
     service.becomes(idle());
     showing(&mut harness, "the version row again", CHECK);
+}
+
+#[test]
+fn an_offer_that_changed_after_it_was_shown_is_not_installed_and_the_new_one_is_shown() {
+    let service = Service::answering(offered(UpdatePhase::Available));
+    let (_sandbox, mut harness) = world("swupdate-changed", &service);
+    showing(&mut harness, "Update Now", UPDATE_NOW);
+    assert!(row_text(&harness).contains("Quire 0.4.0"));
+    assert_eq!(harness.count(NOTICE), 0, "no note before anything changed");
+
+    // 0.5.0 lands before the person presses; the page has not heard yet.
+    service.changes_unseen(offered_version(UpdatePhase::Available, "0.5.0"));
+    click(&mut harness, UPDATE_NOW);
+    assert_eq!(
+        service.asked(),
+        [Asked::Install(version("0.4.0"))],
+        "what was shown is what was named"
+    );
+    showing(&mut harness, "the note", NOTICE);
+    assert_eq!(harness.text_of(NOTICE).as_deref(), Some(NEWER));
+    let row = row_text(&harness);
+    assert!(row.contains("Quire 0.5.0"), "{row}");
+    assert_eq!(harness.count(".ds-toast"), 0, "a note, not an error");
+    assert_eq!(harness.count(BAR), 0, "nothing started");
+
+    // Pressing again names the version now shown, and the note goes.
+    click(&mut harness, UPDATE_NOW);
+    assert_eq!(
+        service.asked(),
+        [
+            Asked::Install(version("0.4.0")),
+            Asked::Install(version("0.5.0"))
+        ]
+    );
+    settle(&mut harness, "the download", |h| {
+        row_text(h).contains("Downloading")
+    });
+    assert_eq!(harness.count(NOTICE), 0);
+}
+
+#[test]
+fn a_failure_that_says_the_offer_changed_shows_the_new_version_with_the_note() {
+    let overtaken = UpdateStatus {
+        problem: Some(OVERTAKEN.to_owned()),
+        ..offered_version(UpdatePhase::Failed, "0.5.0")
+    };
+    let service = Service::answering(overtaken);
+    let (_sandbox, mut harness) = world("swupdate-overtaken", &service);
+    showing(&mut harness, "Update Now", UPDATE_NOW);
+    assert_eq!(harness.text_of(NOTICE).as_deref(), Some(NEWER));
+    let row = row_text(&harness);
+    assert!(row.contains("Quire 0.5.0"), "{row}");
+    assert!(!row.contains(OVERTAKEN), "{row}");
+    assert_eq!(harness.count(TRY_AGAIN), 0);
+    assert_eq!(service.asked(), [], "looking asks nothing");
+}
+
+#[test]
+fn nothing_on_offer_shows_no_way_to_install_and_asks_nothing() {
+    let service = Service::answering(idle());
+    let (_sandbox, mut harness) = world("swupdate-nothing", &service);
+    showing(&mut harness, "the version row", CHECK);
+    assert_eq!(harness.count(UPDATE_NOW), 0);
+    assert_eq!(harness.count(TRY_AGAIN), 0);
+    assert_eq!(service.asked(), []);
+}
+
+#[test]
+fn a_refusal_to_install_is_told_in_a_toast_in_the_services_words() {
+    let service = Service::answering(offered(UpdatePhase::Available));
+    let (_sandbox, mut harness) = world("swupdate-install-refused", &service);
+    showing(&mut harness, "Update Now", UPDATE_NOW);
+    service.refuses("An update is already in progress.");
+
+    click(&mut harness, UPDATE_NOW);
+    settle(&mut harness, "the toast", |h| h.count(".ds-toast") == 1);
+    let toast = harness.text_of(".ds-toast").unwrap_or_default();
+    assert!(
+        toast.contains("An update is already in progress."),
+        "{toast}"
+    );
+    assert_eq!(harness.count(NOTICE), 0, "a refusal is not a changed offer");
 }

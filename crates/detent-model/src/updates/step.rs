@@ -2,7 +2,7 @@
 //! answered only when the standing allows it, so the window never asks the service for what it
 //! would refuse.
 
-use super::model::{UpdatePhase, UpdateStatus};
+use super::model::{UpdatePhase, UpdateStatus, UpdateVersion, VERSION_CHANGED};
 use crate::picker::Absence;
 
 /// Whether the release notes are up in a sheet.
@@ -15,6 +15,17 @@ pub enum NotesState {
     Open,
 }
 
+/// What the page says besides the standing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum UpdatesNotice {
+    /// Nothing.
+    #[default]
+    Nothing,
+    /// The version on offer is newer than the one the person was looking at, and was not
+    /// installed: they look at it before pressing again.
+    NewerVersion,
+}
+
 /// A service that answered.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UpdatesReady {
@@ -22,6 +33,8 @@ pub struct UpdatesReady {
     pub status: UpdateStatus,
     /// The notes sheet.
     pub info: NotesState,
+    /// What the page says besides the standing.
+    pub notice: UpdatesNotice,
 }
 
 /// Where the page stands.
@@ -55,6 +68,9 @@ pub enum UpdatesInput {
     LogOut,
     /// The service refused a request, in these words.
     Refused(String),
+    /// The service would not install the version that was named: what it offers is another now
+    /// (the caller has read the service again by then).
+    VersionChanged,
 }
 
 /// What the caller must do.
@@ -62,8 +78,8 @@ pub enum UpdatesInput {
 pub enum UpdatesEffect {
     /// Ask the service to look for a newer version.
     Check,
-    /// Ask the service to install the newer version.
-    Install,
+    /// Ask the service to install this version, the one the page shows.
+    Install(UpdateVersion),
     /// Start logging out.
     LogOut,
     /// Tell the person something went wrong.
@@ -76,20 +92,10 @@ pub fn updates_step(
     input: UpdatesInput,
 ) -> (UpdatesState, Vec<UpdatesEffect>) {
     match (state, input) {
-        (UpdatesState::Ready(ready), UpdatesInput::Heard(Ok(status))) => {
-            let info = match (ready.info, status.phase, &status.offer) {
-                (NotesState::Open, UpdatePhase::Available, Some(_)) => NotesState::Open,
-                _ => NotesState::Closed,
-            };
-            (UpdatesState::Ready(UpdatesReady { status, info }), vec![])
+        (UpdatesState::Ready(before), UpdatesInput::Heard(Ok(status))) => {
+            (UpdatesState::Ready(heard(Some(&before), status)), vec![])
         }
-        (_, UpdatesInput::Heard(Ok(status))) => (
-            UpdatesState::Ready(UpdatesReady {
-                status,
-                info: NotesState::Closed,
-            }),
-            vec![],
-        ),
+        (_, UpdatesInput::Heard(Ok(status))) => (UpdatesState::Ready(heard(None, status)), vec![]),
         (_, UpdatesInput::Heard(Err(absence))) => (UpdatesState::Unavailable(absence), vec![]),
         (UpdatesState::Ready(ready), input) => {
             let (ready, effects) = ready_step(ready, input);
@@ -99,9 +105,65 @@ pub fn updates_step(
     }
 }
 
+/// Whether the page shows an update to take: one waits, and a version is on offer.
+fn is_offering(status: &UpdateStatus) -> bool {
+    status.phase == UpdatePhase::Available && status.offer.is_some()
+}
+
+/// The service's standing after a failure that only says the offer changed under an install: it
+/// is an offer again, with the note, since the person has not seen this version.
+fn overtaken(status: UpdateStatus) -> (UpdateStatus, UpdatesNotice) {
+    let changed = status.phase == UpdatePhase::Failed
+        && status.problem.as_deref() == Some(VERSION_CHANGED)
+        && status.offer.is_some();
+    if changed {
+        let status = UpdateStatus {
+            phase: UpdatePhase::Available,
+            problem: None,
+            ..status
+        };
+        (status, UpdatesNotice::NewerVersion)
+    } else {
+        (status, UpdatesNotice::Nothing)
+    }
+}
+
+/// The page after the service was read: the sheet and the note stay while the same kind of offer
+/// waits, and go when it does not.
+fn heard(before: Option<&UpdatesReady>, status: UpdateStatus) -> UpdatesReady {
+    let (status, found) = overtaken(status);
+    let offering = is_offering(&status);
+    let (info, kept) = before.map_or((NotesState::Closed, UpdatesNotice::Nothing), |ready| {
+        (ready.info, ready.notice)
+    });
+    let info = match info {
+        NotesState::Open if offering => NotesState::Open,
+        _ => NotesState::Closed,
+    };
+    let notice = match (found, kept) {
+        (UpdatesNotice::Nothing, UpdatesNotice::Nothing) => UpdatesNotice::Nothing,
+        _ if offering => UpdatesNotice::NewerVersion,
+        _ => UpdatesNotice::Nothing,
+    };
+    UpdatesReady {
+        status,
+        info,
+        notice,
+    }
+}
+
+/// The version an install names: the one on offer, when there is one. With none on offer there
+/// is nothing to name, so nothing to ask.
+fn install_of(status: &UpdateStatus) -> Vec<UpdatesEffect> {
+    status
+        .offer
+        .iter()
+        .map(|offer| UpdatesEffect::Install(offer.version.clone()))
+        .collect()
+}
+
 fn ready_step(mut ready: UpdatesReady, input: UpdatesInput) -> (UpdatesReady, Vec<UpdatesEffect>) {
     let phase = ready.status.phase;
-    let offered = ready.status.offer.is_some();
     let effects = match input {
         UpdatesInput::Check
             if matches!(
@@ -109,16 +171,21 @@ fn ready_step(mut ready: UpdatesReady, input: UpdatesInput) -> (UpdatesReady, Ve
                 UpdatePhase::Idle | UpdatePhase::Available | UpdatePhase::Failed
             ) =>
         {
+            ready.notice = UpdatesNotice::Nothing;
             vec![UpdatesEffect::Check]
         }
-        UpdatesInput::UpdateNow if phase == UpdatePhase::Available && offered => {
-            vec![UpdatesEffect::Install]
+        UpdatesInput::UpdateNow if phase == UpdatePhase::Available => {
+            ready.notice = UpdatesNotice::Nothing;
+            install_of(&ready.status)
         }
-        UpdatesInput::TryAgain if phase == UpdatePhase::Failed && offered => {
-            vec![UpdatesEffect::Install]
+        UpdatesInput::TryAgain if phase == UpdatePhase::Failed => {
+            ready.notice = UpdatesNotice::Nothing;
+            match install_of(&ready.status) {
+                installs if installs.is_empty() => vec![UpdatesEffect::Check],
+                installs => installs,
+            }
         }
-        UpdatesInput::TryAgain if phase == UpdatePhase::Failed => vec![UpdatesEffect::Check],
-        UpdatesInput::MoreInfo if phase == UpdatePhase::Available && offered => {
+        UpdatesInput::MoreInfo if is_offering(&ready.status) => {
             ready.info = NotesState::Open;
             vec![]
         }
@@ -128,6 +195,10 @@ fn ready_step(mut ready: UpdatesReady, input: UpdatesInput) -> (UpdatesReady, Ve
         }
         UpdatesInput::LogOut if phase == UpdatePhase::Installed => vec![UpdatesEffect::LogOut],
         UpdatesInput::Refused(words) => vec![UpdatesEffect::Tell(words)],
+        UpdatesInput::VersionChanged if is_offering(&ready.status) => {
+            ready.notice = UpdatesNotice::NewerVersion;
+            vec![]
+        }
         _ => vec![],
     };
     (ready, effects)
