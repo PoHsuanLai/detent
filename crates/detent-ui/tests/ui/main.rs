@@ -14,6 +14,7 @@ mod intelligence;
 mod intelligence_programs;
 mod lending;
 mod local_runtimes;
+mod memory_consent;
 mod notices;
 mod shortcuts;
 mod snapshots;

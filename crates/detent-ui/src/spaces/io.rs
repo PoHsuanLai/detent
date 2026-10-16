@@ -1,21 +1,11 @@
 //! The Spaces list and its removal, over accountd's registry and memory's controls.
 
 use crate::live::{BusSource, connect};
+use crate::memory::MemoryControlProxy;
 use almanac_core::Removal;
 use detent_model::{Absence, SpaceKey, SpaceRow};
 use porter_client::{DbusTransport, SpacesError};
 use porter_dbus::{BusFailure, SpacesProxy, classify};
-
-/// The controls memory offers the person (`org.quire.Memory1.Control`).
-#[zbus::proxy(
-    interface = "org.quire.Memory1.Control",
-    default_service = "org.quire.Memory1",
-    default_path = "/org/quire/Memory1"
-)]
-trait MemoryControl {
-    /// Settles a removed Space's memories and history; `removal` is JSON, the reply says what moved.
-    fn remove_space(&self, space: &str, removal: &str) -> zbus::Result<String>;
-}
 
 /// What the person reads when a removal could not be done.
 const COULD_NOT_REMOVE: &str = "The Space could not be removed. Try again in a moment.";

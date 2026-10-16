@@ -8,11 +8,12 @@ use crate::env::Env;
 use crate::files::{Edit, Files};
 use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
 use crate::live::start;
+use crate::memory::MemoryConsent;
 use crate::section_view::SectionView;
 use crate::shortcuts::ShortcutsPane;
 use crate::spaces::SpacesPane;
 use crate::updates::SoftwareUpdatePane;
-use detent_model::{Block, PageSlug, blocks, modules_read};
+use detent_model::{Block, PageSlug, blocks, holds_memory_settings, modules_read};
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
 
@@ -36,6 +37,18 @@ pub fn PageView(
         move || {
             let bus = bus.clone();
             async move { start(&bus, started).await }
+        }
+    });
+    // What waits for the person's word is read each time a page that holds memory settings is
+    // shown, since the file may have been edited by hand since.
+    let consent = use_context::<MemoryConsent>();
+    let holds_memory = env.catalogue.page(&slug).is_some_and(holds_memory_settings);
+    use_future(move || {
+        let consent = consent.clone();
+        async move {
+            if holds_memory {
+                consent.refresh().await;
+            }
         }
     });
     let Some(page) = env.catalogue.page(&slug) else {

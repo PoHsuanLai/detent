@@ -2,7 +2,8 @@
 
 use crate::controls::{Control, FileOnlyControl};
 use crate::files::{Edit, Files, value_of, written_value};
-use detent_model::KeyEntry;
+use crate::memory::ConsentNote;
+use detent_model::{KeyEntry, is_memory_setting};
 use dioxus::prelude::*;
 use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::FieldRow;
@@ -75,6 +76,9 @@ pub fn KeyRow(
                     onchange: move |value| onedit.call(Edit { entry: sent.clone(), value }),
                 }
             }
+        }
+        if is_memory_setting(&entry) {
+            ConsentNote { entry: entry.clone() }
         }
     }
 }

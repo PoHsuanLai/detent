@@ -9,6 +9,7 @@ pub mod computers;
 pub mod drive;
 pub mod inferd;
 pub mod lending;
+pub mod memory;
 pub mod spaces;
 pub mod syncd;
 pub mod updates;

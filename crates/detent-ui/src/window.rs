@@ -2,6 +2,7 @@
 
 use crate::env::Env;
 use crate::files::{Edit, Files, store};
+use crate::memory::use_memory_consent;
 use crate::page_view::PageView;
 use crate::sharing::use_sharing;
 use crate::sidebar::sidebar_items;
@@ -31,12 +32,18 @@ pub fn Window(
 
     let sharing = use_sharing(files);
     let owner = sharing.clone();
+    let consent = use_memory_consent();
+    use_context_provider({
+        let consent = consent.clone();
+        move || consent
+    });
     let write_env = env.clone();
     let onedit = EventHandler::new(move |edit: Edit| {
         if owner.owns(&edit) {
             owner.turned(edit);
         } else {
             store(&write_env, files, toasts, &edit);
+            consent.saved(&edit);
         }
     });
 

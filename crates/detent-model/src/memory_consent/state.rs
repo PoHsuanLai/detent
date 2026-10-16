@@ -1,0 +1,107 @@
+//! What waits for the person's word, and the pairs that are confirmed by saving them.
+
+use crate::entry::KeyEntry;
+use crate::text_form::show_value;
+use almanac_core::WaitingSetting;
+use std::collections::BTreeMap;
+use std::path::Path;
+
+/// The settings file whose looser values wait for confirmation (almanac's, under the config
+/// home).
+const MEMORY_FILE: &str = "almanac/settings.toml";
+
+/// Whether `entry` is a memory setting, one that can wait for the person's confirmation.
+pub fn is_memory_setting(entry: &KeyEntry) -> bool {
+    entry.file.relative() == Path::new(MEMORY_FILE)
+}
+
+/// A setting key and one value for it, as the memory service names them: numbers in decimal,
+/// words as the file has them.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SettingPair {
+    /// The dotted key, like `memory.retention.search_days`.
+    pub key: String,
+    /// Its value as text.
+    pub value: String,
+}
+
+impl SettingPair {
+    /// The pair the person made by setting `entry` to `value`.
+    pub fn of(entry: &KeyEntry, value: &toml::Value) -> SettingPair {
+        SettingPair {
+            key: entry.spec.path.0.clone(),
+            value: show_value(value),
+        }
+    }
+}
+
+/// Why a confirmation did not go through.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Trouble {
+    /// Memory would not take the confirmation from this window.
+    NotAllowed,
+    /// Memory did not accept the value.
+    Invalid,
+    /// Anything else: the call did not come back right.
+    Failed,
+}
+
+/// The pairs of `set` that memory reports as waiting with exactly that value: the ones the person
+/// just set that were looser than the shipped value, so saving them is the confirmation. A pair
+/// memory does not report waiting is not looser (or is already confirmed) and is left out.
+pub fn to_confirm(waiting: &[WaitingSetting], set: &[SettingPair]) -> Vec<SettingPair> {
+    set.iter()
+        .filter(|pair| {
+            waiting
+                .iter()
+                .any(|held| held.key == pair.key && held.waiting == pair.value)
+        })
+        .cloned()
+        .collect()
+}
+
+/// The loose values waiting for the person, and the keys whose last confirmation failed.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct ConsentState {
+    waiting: Vec<WaitingSetting>,
+    troubles: BTreeMap<String, Trouble>,
+}
+
+impl ConsentState {
+    /// The state after memory reported `waiting`. A failure stays only while its key waits.
+    #[must_use]
+    pub fn listed(self, waiting: Vec<WaitingSetting>) -> ConsentState {
+        let troubles = self
+            .troubles
+            .into_iter()
+            .filter(|(key, _)| waiting.iter().any(|held| &held.key == key))
+            .collect();
+        ConsentState { waiting, troubles }
+    }
+
+    /// The state after confirming `keys` failed with `trouble`.
+    #[must_use]
+    pub fn troubled(self, keys: &[String], trouble: Trouble) -> ConsentState {
+        let mut troubles = self.troubles;
+        troubles.extend(keys.iter().map(|key| (key.clone(), trouble)));
+        ConsentState { troubles, ..self }
+    }
+
+    /// The state after confirming `keys` went through: their failures are over.
+    #[must_use]
+    pub fn cleared(self, keys: &[String]) -> ConsentState {
+        let mut troubles = self.troubles;
+        troubles.retain(|key, _| !keys.contains(key));
+        ConsentState { troubles, ..self }
+    }
+
+    /// The value of `key` that waits, if one does.
+    pub fn waiting_for(&self, key: &str) -> Option<&WaitingSetting> {
+        self.waiting.iter().find(|held| held.key == key)
+    }
+
+    /// Why the last confirmation of `key` failed, if it did.
+    pub fn trouble_for(&self, key: &str) -> Option<Trouble> {
+        self.troubles.get(key).copied()
+    }
+}

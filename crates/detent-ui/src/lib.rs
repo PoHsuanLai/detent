@@ -19,6 +19,7 @@ mod key_row;
 mod lender;
 mod live;
 mod marks;
+mod memory;
 mod page_view;
 mod section_view;
 mod sharing;

@@ -15,6 +15,7 @@ mod discovery;
 mod entry;
 mod first_run;
 mod layout;
+mod memory_consent;
 mod navigation;
 mod outside;
 mod page;
@@ -63,6 +64,10 @@ pub use first_run::{
     FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
 };
 pub use layout::{Block, blocks};
+pub use memory_consent::{
+    CONFIRM, ConsentState, SettingPair, Trouble, holds_memory_settings, is_memory_setting,
+    to_confirm, waiting_note,
+};
 pub use navigation::{landing, visible_pages};
 pub use outside::{
     AGENTS_OWN, Assistant, Entry, assistants_of, model_choice, model_menu, model_word, way_choice,

@@ -5,6 +5,7 @@ mod agent_marks;
 mod catalogue;
 mod discovery;
 mod intelligence_schemas;
+mod memory_consent;
 mod sync_now;
 
 /// Fails when a topic file in this directory is not declared above, so a new file cannot be

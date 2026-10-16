@@ -336,6 +336,41 @@ recommended; the person chooses, or skips and is asked when a turn needs one.
 - **The running window does not resize.** `detent --page assistant-model-setup` starts at the step's
   size (440 by 520); a Settings window already open keeps its size and centres the step in it.
 
+## Memory settings that wait for confirmation (`detent-model/src/memory_consent/`, `detent-ui/src/memory/`)
+
+- **The rule is memory's.** A memory setting looser than the shipped one (a retention or pending
+  time below the shipped days, `memory.files.at_rest` = plain, `memory.consolidation.apply` = auto
+  where review ships) takes effect only after the person confirms it; until then memory keeps the
+  shipped value. detent holds no copy of which values are loose: it asks memory.
+- **Saving is the confirmation.** After a save of a key in `almanac/settings.toml` (any key that file's
+  schema names; `is_memory_setting`), the window reads `Memory1.Control.PendingSettings` and sends
+  `ConfirmSettings` with exactly the pair just saved when memory lists that key with that value as
+  waiting (`to_confirm`). A value that is not looser is not listed, so nothing is sent. The read
+  comes after the file write, and memory answers from the files as they are now.
+- **A value typed into the file** shows under its row "Waits for you to confirm. Until then, memory
+  keeps <shipped value>." and a Confirm button that sends that one pair. The list is read each time
+  a page holding memory settings is shown and after every save and confirmation, so a hand edit
+  shows on the next visit to the page, not while the page stays open (the same limit as "External
+  edits" below).
+- **Words.** The shipped value is said in the row's own words: the schema's label in curly quotes
+  for a choice (“Private”), the number and unit for a count (`30 days`). A refusal is one
+  calm line under the note: "Memory would not take this confirmation from here." (NotAllowed, or the
+  bus refusing), "Memory could not accept this value, so it keeps its own." (Invalid) or "This
+  could not be confirmed. Try again in a moment." (anything else). The value keeps waiting.
+- **Memory not running.** Neither call starts memory (`NameHasOwner` first): with it absent the page
+  has no note and a save sends nothing. A loose value saved then waits, and its note and Confirm
+  show the next time the page is shown with memory running.
+- **Only Settings may confirm.** memory accepts `ConfirmSettings` from the unit
+  `org.quire.Settings.service` (porter role `settings`, app `org.quire.Settings`) alone. A detent
+  started any other way (a terminal) gets NotAllowed, and says the line above. Nothing in detent's
+  `dist/` needs a new row: it already installs that unit and the D-Bus file that names it. The
+  desktop installer must install almanac's `dbus/memory-callers.toml` as
+  `/etc/quire/memory-callers.toml`, which carries the Settings row.
+- **The proxy.** `org.quire.Memory1.Control` is declared once in `detent-ui/src/memory/proxy.rs`
+  (`RemoveSpace`, `ConfirmSettings`, `PendingSettings`) and the Spaces page uses it too. almanac's
+  `almanac-dbus` is not a dependency: detent keeps its own three-method proxy, as it had for
+  `RemoveSpace`, and `almanac-core` supplies `WaitingSetting`.
+
 ## Not in v1
 
 - **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): only inferd's

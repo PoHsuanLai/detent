@@ -246,3 +246,17 @@
   display: flex;
   align-self: flex-end;
 }
+
+.consent-note {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: 0 var(--s-14);
+}
+
+.consent-note-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-10);
+}
