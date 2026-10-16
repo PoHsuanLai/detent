@@ -4,7 +4,9 @@
 mod removal;
 mod step;
 
-pub use removal::{HISTORY_CHOICES, HISTORY_NOTE, RemovalSheet, SheetInput};
+pub use removal::{
+    HISTORY_CHOICES, HISTORY_NOTE, MEMORY_NOT_RUNNING, RemovalSheet, SheetInput, WithoutMemory,
+};
 pub use step::{
     SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState, spaces_step,
 };

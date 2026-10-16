@@ -6,7 +6,7 @@ use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
 use crate::support::spaces::{Fakes, serve};
-use detent_model::PageSlug;
+use detent_model::{MEMORY_NOT_RUNNING, PageSlug};
 use detent_ui::Opening;
 use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
@@ -179,4 +179,30 @@ fn with_no_memory_there_is_nothing_to_settle_and_the_registry_is_still_asked() {
     click(&mut w.harness, REMOVE);
     settle(&mut w.harness, "the row to go", |h| h.count(TRIP) == 0);
     assert_eq!(log(&w), ["registry remove space-1".to_owned()]);
+}
+
+#[test]
+fn a_delete_choice_with_no_memory_running_removes_nothing_and_says_why() {
+    // Each delete choice alone: the memories flipped to delete, then the history.
+    for (name, choose) in [
+        ("spaces-no-memory-flip", FLIP),
+        ("spaces-no-memory-history", DELETE_HISTORY),
+    ] {
+        let mut w = world(name, false);
+        open_sheet(&mut w);
+        click(&mut w.harness, choose);
+        settle(&mut w.harness, "the destructive Remove", |h| {
+            h.attr(REMOVE, "data-role").as_deref() == Some("destructive")
+        });
+        click(&mut w.harness, REMOVE);
+        settle(&mut w.harness, "the toast", |h| h.count(".ds-toast") == 1);
+        let toast = w.harness.text_of(".ds-toast").unwrap_or_default();
+        assert!(toast.contains(MEMORY_NOT_RUNNING), "{name}: {toast}");
+        assert!(
+            log(&w).is_empty(),
+            "{name}: the registry was not asked, so nothing is half done: {:?}",
+            log(&w)
+        );
+        assert_eq!(w.harness.count(TRIP), 1, "{name}: the Space stays");
+    }
 }

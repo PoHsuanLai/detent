@@ -83,9 +83,38 @@ impl RemovalSheet {
 
     /// Whether Remove destroys something: a delete choice is on.
     pub fn destroys(&self) -> bool {
-        self.memories == MemoryFate::Delete || self.history == HistoryFate::Delete
+        deletes(&self.removal())
     }
 }
+
+fn deletes(removal: &Removal) -> bool {
+    removal.memories == MemoryFate::Delete || removal.history == HistoryFate::Delete
+}
+
+/// What a removal does when memory is not running: only memory can delete what it holds, so a
+/// delete choice waits for it; one that keeps everything has nothing to tell it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WithoutMemory {
+    /// Ask the registry to remove the Space anyway.
+    Proceed,
+    /// Do nothing at all and say why, so no Space is removed with its memories or history left
+    /// behind that the person asked to delete.
+    Refuse,
+}
+
+impl WithoutMemory {
+    /// What `removal` does while memory is not running.
+    pub fn of(removal: &Removal) -> WithoutMemory {
+        if deletes(removal) {
+            WithoutMemory::Refuse
+        } else {
+            WithoutMemory::Proceed
+        }
+    }
+}
+
+/// What the person reads when a delete choice cannot be carried out because memory is not running.
+pub const MEMORY_NOT_RUNNING: &str = "Memory isn\u{2019}t running right now, so this Space can\u{2019}t be deleted. Try again in a moment.";
 
 /// The history choices, first the one that keeps it.
 pub const HISTORY_CHOICES: [(HistoryFate, &str); 2] = [

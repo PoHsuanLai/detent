@@ -1,6 +1,6 @@
 //! The removal sheet's words and wire, and the list's transitions.
 
-use super::removal::{HISTORY_CHOICES, SheetInput};
+use super::removal::{HISTORY_CHOICES, SheetInput, WithoutMemory};
 use super::{
     RemovalSheet, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesState, spaces_step,
 };
@@ -142,4 +142,42 @@ fn a_failed_removal_is_told_and_the_list_read_again() {
         panic!("the list is there");
     };
     assert_eq!(after.removing, None);
+}
+
+#[test]
+fn a_delete_choice_waits_for_memory_and_a_keeping_one_does_not() {
+    // `(case, memories, history, what happens while memory is not running)`.
+    const CASES: &[(&str, MemoryFate, HistoryFate, WithoutMemory)] = &[
+        (
+            "keep everything",
+            MemoryFate::MoveToApps,
+            HistoryFate::Keep,
+            WithoutMemory::Proceed,
+        ),
+        (
+            "delete the memories",
+            MemoryFate::Delete,
+            HistoryFate::Keep,
+            WithoutMemory::Refuse,
+        ),
+        (
+            "delete the history",
+            MemoryFate::MoveToApps,
+            HistoryFate::Delete,
+            WithoutMemory::Refuse,
+        ),
+        (
+            "delete both",
+            MemoryFate::Delete,
+            HistoryFate::Delete,
+            WithoutMemory::Refuse,
+        ),
+    ];
+    for (name, memories, history, want) in CASES {
+        let removal = Removal {
+            memories: *memories,
+            history: *history,
+        };
+        assert_eq!(WithoutMemory::of(&removal), *want, "{name}");
+    }
 }

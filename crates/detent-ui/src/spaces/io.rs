@@ -5,7 +5,7 @@ use crate::live::{BusSource, connect, not_squatted};
 use crate::memory::MemoryControlProxy;
 use almanac_core::Removal;
 use detent_callers::{ACCOUNTS_BUS, MEMORY_BUS};
-use detent_model::{Absence, SpaceKey, SpaceRow};
+use detent_model::{Absence, MEMORY_NOT_RUNNING, SpaceKey, SpaceRow, WithoutMemory};
 use ds_peer::within;
 use porter_client::{DbusTransport, SpacesError};
 use porter_dbus::{BusFailure, SpacesProxy, classify};
@@ -46,7 +46,9 @@ pub(super) async fn list(bus: &BusSource) -> Result<Vec<SpaceRow>, Absence> {
 
 /// Tells memory what becomes of the Space's memories and history, then asks the registry to
 /// remove it. Memory first: asked the other way round, memory has already kept everything.
-/// Memory not being there means there is nothing to settle, and the registry is asked anyway.
+/// Memory not being there means there is nothing to settle when everything is kept, and the
+/// registry is asked anyway; when the person chose to delete, nothing is done and they are told,
+/// since only memory can delete what it holds.
 pub(super) async fn remove(
     bus: &BusSource,
     space: &SpaceKey,
@@ -75,7 +77,11 @@ pub(super) async fn remove(
     .await;
     match told {
         Some(Ok(_)) => {}
-        Some(Err(error)) if matches!(classify(&error), BusFailure::NoDaemon) => {}
+        Some(Err(error)) if matches!(classify(&error), BusFailure::NoDaemon) => {
+            if WithoutMemory::of(removal) == WithoutMemory::Refuse {
+                return Err(MEMORY_NOT_RUNNING.to_owned());
+            }
+        }
         Some(Err(_)) | None => return Err(COULD_NOT_REMOVE.to_owned()),
     }
     let registry = SpacesProxy::new(&connection)

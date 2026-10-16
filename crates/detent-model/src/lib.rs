@@ -103,8 +103,8 @@ pub use shortcuts::{
     replace_question, shortcuts_step,
 };
 pub use spaces::{
-    HISTORY_CHOICES, HISTORY_NOTE, RemovalSheet, SheetInput, SpaceKey, SpaceRow, SpacesEffect,
-    SpacesInput, SpacesReady, SpacesState, spaces_step,
+    HISTORY_CHOICES, HISTORY_NOTE, MEMORY_NOT_RUNNING, RemovalSheet, SheetInput, SpaceKey,
+    SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState, WithoutMemory, spaces_step,
 };
 pub use text_form::{TextFault, show_value};
 pub use updates::{
