@@ -1,8 +1,10 @@
 //! The installed apps, read from their desktop entries, so the Privacy page can name a program
 //! the way the shell does and draw its icon.
 
+use crate::desktop_paths::{app_id, desktop_files};
 use detent_model::{DesktopApp, ProgramBook};
-use freedesktop_desktop_entry::{DesktopEntry, Iter};
+use ds_helpers::{DESKTOP_ENTRY_CAP, DesktopFile, read_text_capped};
+use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 
 /// The size an entry's icon is looked up at; the page draws it small and the theme gives the
@@ -31,34 +33,36 @@ fn icon_file(icon: &str) -> Option<PathBuf> {
         .flatten()
 }
 
-/// One entry's text as an app; none for anything but an application or an entry with no name
-/// and no launch line to go by.
+/// One entry's text as an app; none for anything but an application, and for a text over the
+/// entry cap. The name is the entry's plain `Name`, never a translation.
 fn app_of(path: &Path, text: &str) -> Option<DesktopApp> {
-    let entry = DesktopEntry::from_str(path, text, None::<&[&str]>).ok()?;
-    if entry.type_() != Some("Application") {
+    let file = DesktopFile::parse(text, DESKTOP_ENTRY_CAP).ok()?;
+    let entry = file.entry()?;
+    if entry.string("Type").as_deref() != Some("Application") {
         return None;
     }
-    let none: &[&str] = &[];
+    let first = |key: &str| entry.string(key).and_then(|line| first_word(&line));
     Some(DesktopApp {
-        id: entry.id().to_owned(),
+        id: app_id(path)?,
         name: entry
-            .name(none)
-            .map(|name| name.into_owned())
+            .string("Name")
+            .map(Cow::into_owned)
             .unwrap_or_default(),
-        exec: entry.exec().and_then(first_word),
-        try_exec: entry.try_exec().and_then(first_word),
-        flatpak: entry.flatpak().map(str::to_owned),
-        icon: entry.icon().and_then(icon_file),
+        exec: first("Exec"),
+        try_exec: first("TryExec"),
+        flatpak: entry.string("X-Flatpak").map(Cow::into_owned),
+        icon: entry.string("Icon").and_then(|icon| icon_file(&icon)),
     })
 }
 
 /// Every application entry under `dirs`, in the order of precedence. A directory that is not
-/// there, and a file that cannot be read or parsed, are skipped.
+/// there, and a file that cannot be read, is over the entry cap or is not text, are skipped.
 pub fn scan_programs(dirs: &[PathBuf]) -> ProgramBook {
     ProgramBook {
-        apps: Iter::new(dirs.iter().cloned())
+        apps: desktop_files(dirs)
+            .into_iter()
             .filter_map(|path| {
-                let text = std::fs::read_to_string(&path).ok()?;
+                let text = read_text_capped(&path, DESKTOP_ENTRY_CAP).ok()?;
                 app_of(&path, &text)
             })
             .collect(),

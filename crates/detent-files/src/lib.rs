@@ -5,6 +5,7 @@
 //! nothing here talks to a program.
 
 mod agents;
+mod desktop_paths;
 mod error;
 mod first_run;
 mod keymap;

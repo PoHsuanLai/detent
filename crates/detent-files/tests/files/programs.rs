@@ -51,3 +51,36 @@ fn entries_are_read_in_the_order_of_their_folders_and_name_the_program_they_star
         SubjectKind::Sandboxed
     );
 }
+
+#[test]
+fn a_folder_inside_applications_names_its_entries_and_a_link_back_up_is_walked_once() {
+    let scratch = Scratch::under(TMP, "programs-nested");
+    let applications = scratch.join("share/applications");
+    let nested = applications.join("kde");
+    entry(
+        &nested,
+        "okular.desktop",
+        "[Desktop Entry]\nType=Application\nName=Okular\nName[de]=Okular (de)\nExec=okular %U\n",
+    );
+    entry(
+        &applications,
+        "big.desktop",
+        &format!(
+            "[Desktop Entry]\nType=Application\nName=Big\nComment={}\n",
+            "x".repeat(300 * 1024)
+        ),
+    );
+    std::os::unix::fs::symlink(&applications, nested.join("back")).expect("link");
+    let book = scan_programs(&[applications]);
+
+    let found: Vec<(&str, &str)> = book
+        .apps
+        .iter()
+        .map(|app| (app.id.as_str(), app.name.as_str()))
+        .collect();
+    assert_eq!(
+        found,
+        [("kde-okular", "Okular")],
+        "the plain name, once; an entry over the cap is not read"
+    );
+}
