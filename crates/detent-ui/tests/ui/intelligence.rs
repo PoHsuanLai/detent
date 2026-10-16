@@ -78,27 +78,26 @@ fn model(name: &str) -> ModelRef {
 fn the_sections_follow_design_order_whatever_order_the_programs_were_read_in() {
     let sandbox = Sandbox::new("intelligence-order");
     // Memory and Computer use come from almanac's and cua's own schemas, Assistant from docket's;
-    // only sill's Asking section has no schema yet, so a stand-in names it.
+    // sill's rows of the same Assistant section have no schema yet, so a stand-in names them.
     sandbox.add_schema(
         "sill-companion",
         &stand_in(
             "sill-companion",
             "sill-companion/companion.toml",
             "companion.summon",
-            "Asking",
+            "Assistant",
         ),
     );
     let harness = sandbox.harness(intelligence());
     in_order(
         &harness.html(),
         &[
-            "Asking",
+            "Assistant",
+            "Limits\u{2026}",
             "Models",
             "Model choice",
             "Memory",
             "Computer use",
-            "Assistant",
-            "Limits\u{2026}",
         ],
     );
 }

@@ -43,13 +43,7 @@ pub enum Block {
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
 /// program names that is not listed follows these, in the order the schemas first mention it.
-const INTELLIGENCE_SECTIONS: &[&str] = &[
-    "Asking",
-    "Models",
-    MEMORY_SECTION,
-    "Computer use",
-    "Assistant",
-];
+const INTELLIGENCE_SECTIONS: &[&str] = &["Assistant", "Models", MEMORY_SECTION, "Computer use"];
 
 /// The section the local runtimes and the model picker follow.
 const PICKER_AFTER: &str = "Models";
@@ -101,8 +95,8 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
         .map(|section| (rank(&section.title) * 2, Block::Section(section.clone())))
         .collect();
     let live = rank(PICKER_AFTER) * 2 + 1;
-    // Right after Asking: the first section is about the assistant, and so is this.
-    slotted.push((rank("Asking") * 2 + 1, Block::Assistants));
+    // Right after Assistant: the first section is about the assistant, and so is this.
+    slotted.push((rank("Assistant") * 2 + 1, Block::Assistants));
     slotted.push((live, Block::LocalRuntimes));
     slotted.push((live, Block::ModelPicker));
     slotted.sort_by_key(|(slot, _)| *slot);
@@ -154,40 +148,33 @@ mod tests {
         (
             "intelligence follows design/22 whatever order the schemas were read in",
             Page::Intelligence,
-            &["Assistant", "Models", "Asking", "Memory", "Computer use"],
+            &["Models", "Assistant", "Memory", "Computer use"],
             &[
-                "Asking",
+                "Assistant",
                 "<assistants>",
                 "Models",
                 "<runtimes>",
                 "<picker>",
                 "Memory",
                 "Computer use",
-                "Assistant",
             ],
         ),
         (
             "the picker takes the place of Models when no schema has it",
             Page::Intelligence,
-            &["Assistant", "Asking"],
-            &[
-                "Asking",
-                "<assistants>",
-                "<runtimes>",
-                "<picker>",
-                "Assistant",
-            ],
+            &["Assistant"],
+            &["Assistant", "<assistants>", "<runtimes>", "<picker>"],
         ),
         (
             "a section nobody listed follows the listed ones in schema order",
             Page::Intelligence,
             &["Zed", "Assistant", "Alpha", "Models"],
             &[
+                "Assistant",
                 "<assistants>",
                 "Models",
                 "<runtimes>",
                 "<picker>",
-                "Assistant",
                 "Zed",
                 "Alpha",
             ],

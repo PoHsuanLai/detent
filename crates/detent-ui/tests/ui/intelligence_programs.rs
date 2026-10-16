@@ -58,7 +58,7 @@ const BASIC: &[(&str, &[&str])] = &[
     ),
     (
         "Assistant",
-        &["Asks first", "Other apps", "Coding helpers", "Undo history"],
+        &["Asks first", "Other apps", "Coding Agents", "Undo history"],
     ),
 ];
 
