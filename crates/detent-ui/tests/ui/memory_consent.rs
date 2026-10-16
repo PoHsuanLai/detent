@@ -94,8 +94,8 @@ fn the_memory_section_says_in_one_line_whether_memory_keeps_to_its_own_folders()
     // `(case, the word memory carries)`; each shows the line the model gives that word.
     let cases = [
         ("confined", "confined"),
-        ("part enforced", "partial"),
-        ("not available", "not-available"),
+        ("part-enforced", "partial"),
+        ("not-available", "not-available"),
     ];
     for (name, word) in cases {
         let mut w = confining(&format!("confinement-{name}"), None, word);
