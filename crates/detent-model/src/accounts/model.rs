@@ -4,6 +4,7 @@
 use super::add_account::Adding;
 use super::grant::{AccountPermission, GrantFact, GrantScope, grant_path};
 use super::module::{ModuleId, ModuleRow, Sources};
+use super::sign_in_client::{SignInClient, wait_for_keys};
 use super::sign_in_help::sign_in_of;
 use crate::picker::{Absence, Described};
 use crate::words::humanize;
@@ -13,10 +14,10 @@ use porter_core::sheet::ProviderGroup;
 use std::collections::BTreeSet;
 
 /// The prefix of every row's path.
-const PREFIX: &str = "accounts.";
+pub(super) const PREFIX: &str = "accounts.";
 
 /// Where the bring-your-own client ids sit: `accounts.clients.<issuer>`.
-const CLIENTS: &str = "clients.";
+pub(super) const CLIENTS: &str = "clients.";
 
 /// Between an account's id and a service's kind in a row's path.
 const SERVICE: &str = ".service.";
@@ -281,83 +282,6 @@ impl Account {
     }
 }
 
-/// Whether a sign-in client field can be filled in now.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ClientEntry {
-    /// Yes.
-    Open,
-    /// Not yet: it is a secret, and the sign-in key it belongs to is still empty.
-    WaitsForKey,
-}
-
-/// One bring-your-own sign-in key (or its secret): a text row. Its `Debug` hides a secret's text,
-/// so a log line of the pane's state cannot print it.
-#[derive(Clone, PartialEq, Eq)]
-pub struct SignInClient {
-    /// The module it is in.
-    pub module: ModuleId,
-    /// The row, `accounts.clients.<issuer>`.
-    pub path: KeyPath,
-    /// What the module calls it.
-    pub label: String,
-    /// What the module says about it.
-    pub help: String,
-    /// The text held now; empty when the build's own is used.
-    pub value: String,
-    /// Whether it can be filled in now.
-    pub entry: ClientEntry,
-}
-
-/// What a secret row's path ends in, after the path of the key it belongs to.
-const SECRET_LEAF: &str = ".secret";
-
-impl SignInClient {
-    /// The line the person reads when they try to fill in a secret before its key.
-    pub const KEY_FIRST: &'static str = "Set the sign-in key first, then its secret.";
-
-    /// Whether this row holds a secret (its path ends in `.secret`).
-    fn is_secret(&self) -> bool {
-        self.path.0.ends_with(SECRET_LEAF)
-    }
-}
-
-impl std::fmt::Debug for SignInClient {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let held = if self.is_secret() && !self.value.is_empty() {
-            "<hidden>"
-        } else {
-            self.value.as_str()
-        };
-        f.debug_struct("SignInClient")
-            .field("module", &self.module)
-            .field("path", &self.path)
-            .field("label", &self.label)
-            .field("help", &self.help)
-            .field("value", &held)
-            .field("entry", &self.entry)
-            .finish()
-    }
-}
-
-/// Marks each secret whose key is still empty as not yet fillable.
-fn wait_for_keys(clients: &mut [SignInClient]) {
-    let empty_keys: Vec<String> = clients
-        .iter()
-        .filter(|c| c.value.is_empty() && !c.path.0.ends_with(SECRET_LEAF))
-        .map(|c| c.path.0.clone())
-        .collect();
-    for client in clients.iter_mut() {
-        let waits = client
-            .path
-            .0
-            .strip_suffix(SECRET_LEAF)
-            .is_some_and(|key| empty_keys.iter().any(|empty| empty == key));
-        if waits {
-            client.entry = ClientEntry::WaitsForKey;
-        }
-    }
-}
-
 /// The row of syncd's module that starts "Continue as" for a new account.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyncAdd {
@@ -544,18 +468,11 @@ impl AccountsPane {
                 && id.starts_with(CLIENTS)
                 && matches!(spec.kind, KeyKind::Text)
             {
-                pane.clients.push(SignInClient {
+                pane.clients.push(SignInClient::read(
                     module,
-                    path: spec.path.clone(),
-                    label: spec.label.0.clone(),
-                    help: spec.help.0.clone(),
-                    value: described
-                        .values
-                        .get(&spec.path)
-                        .cloned()
-                        .unwrap_or_default(),
-                    entry: ClientEntry::Open,
-                });
+                    spec,
+                    described.values.get(&spec.path).map_or("", String::as_str),
+                ));
                 continue;
             }
             if module == ModuleId::Syncd

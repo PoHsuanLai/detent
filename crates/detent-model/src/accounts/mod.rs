@@ -11,6 +11,7 @@ mod model;
 mod module;
 mod reads;
 mod reauth_end;
+mod sign_in_client;
 mod sign_in_help;
 mod sign_out;
 mod step;
@@ -23,12 +24,15 @@ pub use hold::{DatasetName, HoldCounts, KEEP_HELP, SyncHold};
 pub use hold_step::{HoldEffect, HoldInput, Holds, hold_step};
 pub use model::{
     Account, AccountExpiry, AccountKey, AccountProvider, AccountService, AccountStatus,
-    AccountSync, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, ClientEntry,
-    LocalFiles, Place, RemovalQuestion, SignInClient, SyncAdd,
+    AccountSync, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, LocalFiles,
+    Place, RemovalQuestion, SyncAdd,
 };
 pub use module::{ModuleId, ModuleRow, Source, Sources};
 pub use reads::{ReadTurn, Reads};
 pub use reauth_end::ReauthEnd;
+pub use sign_in_client::{
+    ClientEntry, ClientText, ClientValue, Secret, SecretStanding, SignInClient,
+};
 pub use sign_in_help::reauth_help;
 pub use sign_out::SignOutEnd;
 pub use step::{AccountsEffect, AccountsInput, accounts_step};

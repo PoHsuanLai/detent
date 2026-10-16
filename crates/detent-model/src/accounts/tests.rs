@@ -201,7 +201,7 @@ fn the_sign_in_client_ids_are_text_rows_held_apart_from_the_accounts() {
     let pane = AccountsPane::of(ModuleId::Accountd, &described());
     assert_eq!(pane.accounts.len(), 2);
     assert_eq!(pane.clients.len(), 1);
-    assert_eq!(pane.clients[0].value, "abc");
+    assert_eq!(pane.clients[0].value, ClientValue::Text("abc".to_owned()));
 }
 
 #[test]
@@ -381,7 +381,7 @@ fn a_client_id_is_set_trimmed_and_only_when_it_changed() {
         ready(),
         [AccountsInput::ClientEdited {
             row: microsoft.clone(),
-            text: " abc ".to_owned(),
+            text: ClientText::Plain(" abc ".to_owned()),
         }],
     );
     assert!(same.is_empty());
@@ -389,7 +389,7 @@ fn a_client_id_is_set_trimmed_and_only_when_it_changed() {
         ready(),
         [AccountsInput::ClientEdited {
             row: microsoft.clone(),
-            text: " xyz ".to_owned(),
+            text: ClientText::Plain(" xyz ".to_owned()),
         }],
     );
     assert_eq!(
@@ -745,21 +745,4 @@ fn a_missing_or_unknown_sign_in_row_gets_the_plain_line_and_the_expiry_row_decid
             "Sign in to the account again."
         );
     }
-}
-
-#[test]
-fn a_sign_in_secret_does_not_print_in_a_debug_line() {
-    let client = |leaf: &str, value: &str| SignInClient {
-        module: ModuleId::Accountd,
-        path: path(&format!("accounts.clients.acme{leaf}")),
-        label: "Acme".to_owned(),
-        help: String::new(),
-        value: value.to_owned(),
-        entry: ClientEntry::Open,
-    };
-    let secret = format!("{:?}", client(".secret", "hunter2-hunter2"));
-    assert!(!secret.contains("hunter2"), "{secret}");
-    assert!(secret.contains("<hidden>"), "{secret}");
-    let id = format!("{:?}", client("", "client-id-123"));
-    assert!(id.contains("client-id-123"), "the id is not a secret: {id}");
 }

@@ -1,5 +1,6 @@
 //! The three modules the Accounts pane reads: which one a row came from, and what each has said.
 
+use super::sign_in_client::standing_only;
 use crate::picker::{Absence, Described};
 use ds_settings::schema::KeyPath;
 
@@ -77,7 +78,7 @@ impl Sources {
     /// Takes in what `module` found: its rows, or that it is not there.
     pub fn hear(&mut self, module: ModuleId, found: Result<Described, Absence>) {
         *self.slot(module) = match found {
-            Ok(described) => Source::Read(described),
+            Ok(described) => Source::Read(standing_only(described)),
             Err(absence) => Source::Absent(absence),
         };
     }

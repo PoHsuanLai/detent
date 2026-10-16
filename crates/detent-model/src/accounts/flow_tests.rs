@@ -204,20 +204,26 @@ fn google_keys() -> Vec<KeySpec> {
     ]
 }
 
+const SECRET: &str = "accounts.clients.google.secret";
+
+fn secret_row() -> ModuleRow {
+    ModuleRow::new(ModuleId::Accountd, KeyPath(SECRET.to_owned()))
+}
+
+fn typed(text: &str) -> AccountsInput {
+    AccountsInput::ClientEdited {
+        row: secret_row(),
+        text: ClientText::Secret(Secret::new(text)),
+    }
+}
+
 #[test]
 fn a_secret_waits_for_its_key_and_says_so() {
     let state = ready_with(google_keys(), &[]);
-    let secret = KeyPath("accounts.clients.google.secret".to_owned());
     let pane = state_of(state.clone()).pane;
     assert_eq!(pane.clients[0].entry, ClientEntry::Open);
     assert_eq!(pane.clients[1].entry, ClientEntry::WaitsForKey);
-    let (after, effects) = accounts_step(
-        state,
-        AccountsInput::ClientEdited {
-            row: ModuleRow::new(ModuleId::Accountd, secret.clone()),
-            text: "s3cret".to_owned(),
-        },
-    );
+    let (after, effects) = accounts_step(state, typed("s3cret"));
     assert_eq!(
         effects,
         [AccountsEffect::Tell(
@@ -231,20 +237,89 @@ fn a_secret_waits_for_its_key_and_says_so() {
         state_of(keyed.clone()).pane.clients[1].entry,
         ClientEntry::Open
     );
-    let (_, effects) = accounts_step(
-        keyed,
-        AccountsInput::ClientEdited {
-            row: ModuleRow::new(ModuleId::Accountd, secret.clone()),
-            text: "s3cret".to_owned(),
-        },
-    );
+    let (_, effects) = accounts_step(keyed, typed("s3cret"));
     assert_eq!(
         effects,
-        [AccountsEffect::Set {
-            row: ModuleRow::new(ModuleId::Accountd, secret),
-            value: toml::Value::String("s3cret".to_owned())
+        [AccountsEffect::SetSecret {
+            row: secret_row(),
+            secret: Secret::new("s3cret"),
         }]
     );
+}
+
+#[test]
+fn a_stored_secret_is_never_kept_only_whether_there_is_one() {
+    let keys_set = [
+        ("accounts.clients.google", "abc"),
+        (SECRET, "hunter2-hunter2"),
+    ];
+    let ready = state_of(ready_with(google_keys(), &keys_set));
+    let pane = ready.pane;
+    assert_eq!(
+        pane.clients[1].value,
+        ClientValue::Secret(SecretStanding::Set)
+    );
+    assert!(!format!("{pane:?}").contains("hunter2"), "{pane:?}");
+    assert!(
+        !format!("{:?}", ready.sources).contains("hunter2"),
+        "the rows the pane keeps hold no secret text"
+    );
+    let none = state_of(ready_with(
+        google_keys(),
+        &[("accounts.clients.google", "abc")],
+    ))
+    .pane;
+    assert_eq!(
+        none.clients[1].value,
+        ClientValue::Secret(SecretStanding::NotSet)
+    );
+    // The key beside it is drawn as it is.
+    assert_eq!(pane.clients[0].value, ClientValue::Text("abc".to_owned()));
+}
+
+#[test]
+fn typing_replaces_a_secret_and_an_empty_field_changes_nothing() {
+    let set = [
+        ("accounts.clients.google", "abc"),
+        (SECRET, "old-secret-text"),
+    ];
+    let (replaced, effects) = accounts_step(ready_with(google_keys(), &set), typed("  new  "));
+    assert_eq!(
+        effects,
+        [AccountsEffect::SetSecret {
+            row: secret_row(),
+            secret: Secret::new("new"),
+        }],
+        "the same standing, a new text: it is written, trimmed"
+    );
+    assert_eq!(state_of(replaced).pending, Some(secret_row()));
+    let (_, empty) = accounts_step(ready_with(google_keys(), &set), typed("   "));
+    assert!(
+        empty.is_empty(),
+        "leaving the field alone writes nothing: {empty:?}"
+    );
+}
+
+#[test]
+fn a_secret_never_prints_in_a_debug_line() {
+    const TEXT: &str = "hunter2-hunter2";
+    let secret = Secret::new(TEXT);
+    let input = typed(TEXT);
+    let (_, effects) = accounts_step(
+        ready_with(google_keys(), &[("accounts.clients.google", "abc")]),
+        input.clone(),
+    );
+    for line in [
+        format!("{secret:?}"),
+        format!("{:?}", ClientText::Secret(Secret::new(TEXT))),
+        format!("{input:?}"),
+        format!("{effects:?}"),
+        format!("{:#?}", effects),
+    ] {
+        assert!(!line.contains("hunter2"), "{line}");
+        assert!(line.contains("<hidden>"), "{line}");
+    }
+    assert_eq!(effects.len(), 1, "the effect that was printed is the write");
 }
 
 fn state_of(state: AccountsState) -> AccountsReady {

@@ -153,12 +153,17 @@ impl Held {
     }
 }
 
+/// The client secret the fake holds to begin with: a test looks for it on screen and finds none.
+pub const SECRET: &str = "hunter2-hunter2";
+
 /// The fake's state, shared with the test that watches it.
 #[derive(Clone)]
 pub struct Accountd {
     pub accounts: Arc<Mutex<Vec<Held>>>,
     /// The Microsoft client id the fake holds.
     pub client: Arc<Mutex<String>>,
+    /// The Microsoft client secret the fake holds: `SECRET` to begin with.
+    pub secret: Arc<Mutex<String>>,
     /// Every `Set` that arrived, in order.
     pub sets: Arc<Mutex<Vec<(String, toml::Value)>>>,
     /// How many calls (reads and sets) the module was asked to permit: what reached it at all.
@@ -181,6 +186,7 @@ impl Accountd {
             continue_as: false,
             accounts: Arc::new(Mutex::new(accounts)),
             client: Arc::default(),
+            secret: Arc::new(Mutex::new(SECRET.to_owned())),
             sets: Arc::default(),
             calls: Arc::default(),
             policy,
@@ -412,8 +418,17 @@ impl LiveModule for Accountd {
             toml::Value::String(String::new()),
         );
         client.exposure = Exposure::Advanced;
+        let mut secret = spec(
+            "accounts.clients.microsoft.secret".to_owned(),
+            "Sign-in clients",
+            "microsoft client secret",
+            KeyKind::Text,
+            toml::Value::String(String::new()),
+        );
+        secret.exposure = Exposure::Advanced;
         if matches!(self.module, Module::Accountd) {
             key.push(client);
+            key.push(secret);
         }
         LiveSchema { version: 1, key }
     }
@@ -423,6 +438,11 @@ impl LiveModule for Accountd {
         if path == "accounts.clients.microsoft" {
             return Ok(toml::Value::String(
                 self.client.lock().expect("client").clone(),
+            ));
+        }
+        if path == "accounts.clients.microsoft.secret" {
+            return Ok(toml::Value::String(
+                self.secret.lock().expect("secret").clone(),
             ));
         }
         let accounts = self.accounts.lock().expect("accounts");
@@ -452,6 +472,10 @@ impl LiveModule for Accountd {
         let path = key.0.as_str();
         if path == "accounts.clients.microsoft" {
             *self.client.lock().expect("client") = value.as_str().unwrap_or_default().to_owned();
+            return Ok(());
+        }
+        if path == "accounts.clients.microsoft.secret" {
+            *self.secret.lock().expect("secret") = value.as_str().unwrap_or_default().to_owned();
             return Ok(());
         }
         let mut accounts = self.accounts.lock().expect("accounts");

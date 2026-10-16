@@ -2,11 +2,12 @@
 
 use super::add_account::{AddEnd, Adding};
 use super::model::{
-    AccountKey, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, ClientEntry,
-    LocalFiles, RemovalQuestion, SignInClient, toggle_word,
+    AccountKey, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, LocalFiles,
+    RemovalQuestion, toggle_word,
 };
 use super::module::{ModuleId, ModuleRow, Sources};
 use super::reauth_end::ReauthEnd;
+use super::sign_in_client::{ClientChange, ClientText, Secret, SignInClient};
 use super::sign_out::SignOutEnd;
 use crate::picker::{Absence, Described};
 
@@ -45,7 +46,7 @@ pub enum AccountsInput {
         /// The row.
         row: ModuleRow,
         /// What the field holds.
-        text: String,
+        text: ClientText,
     },
     /// The module did what was asked at `path`.
     Done(ModuleRow),
@@ -89,6 +90,13 @@ pub enum AccountsEffect {
         row: ModuleRow,
         /// The value.
         value: toml::Value,
+    },
+    /// Call `Set(path, text)` on the module with a sign-in secret, which is never read back.
+    SetSecret {
+        /// The row.
+        row: ModuleRow,
+        /// The secret.
+        secret: Secret,
     },
     /// Run the action at the row.
     Invoke(ModuleRow),
@@ -273,23 +281,31 @@ fn ready_step(
             }
         }
         AccountsInput::ClientEdited { row, text } if idle => {
-            let text = text.trim().to_owned();
-            let client = ready.pane.clients.iter_mut().find(|client| {
-                client.module == row.module && client.path == row.path && client.value != text
-            });
-            if let Some(SignInClient {
-                entry: ClientEntry::WaitsForKey,
-                ..
-            }) = client
-            {
-                effects.push(AccountsEffect::Tell(SignInClient::KEY_FIRST.to_owned()));
-            } else if let Some(client) = client {
-                client.value.clone_from(&text);
-                effects.push(AccountsEffect::Set {
-                    row: row.clone(),
-                    value: toml::Value::String(text),
-                });
-                ready.pending = Some(row);
+            let change = ready
+                .pane
+                .clients
+                .iter_mut()
+                .find(|client| client.module == row.module && client.path == row.path)
+                .map_or(ClientChange::Nothing, |client| client.edited(text));
+            match change {
+                ClientChange::Nothing => {}
+                ClientChange::KeyFirst => {
+                    effects.push(AccountsEffect::Tell(SignInClient::KEY_FIRST.to_owned()));
+                }
+                ClientChange::Key(text) => {
+                    effects.push(AccountsEffect::Set {
+                        row: row.clone(),
+                        value: toml::Value::String(text),
+                    });
+                    ready.pending = Some(row);
+                }
+                ClientChange::NewSecret(secret) => {
+                    effects.push(AccountsEffect::SetSecret {
+                        row: row.clone(),
+                        secret,
+                    });
+                    ready.pending = Some(row);
+                }
             }
         }
         AccountsInput::Done(row) => {

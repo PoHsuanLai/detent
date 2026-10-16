@@ -90,6 +90,14 @@ pub(super) async fn drive(
                         queue.push_back(answer(row, result));
                     }
                 }
+                AccountsEffect::SetSecret { row, secret } => {
+                    if let Some(client) = opened(row.module) {
+                        let result = client
+                            .set(&row.path, &toml::Value::String(secret.into_text()))
+                            .await;
+                        queue.push_back(answer(row, result));
+                    }
+                }
                 AccountsEffect::Invoke(row) => {
                     if let Some(client) = opened(row.module) {
                         let result = client.invoke(&row.path).await;

@@ -2,7 +2,10 @@
 //! plain text field, initial focus on an alert). Every use of them in the pane goes through here,
 //! so the switch to R2a is these few lines and nothing else.
 
-use detent_model::{Adding, Ask, HoldCounts, KEEP_HELP, LocalFiles, RemovalQuestion, SyncHold};
+use detent_model::{
+    Adding, Ask, ClientValue, HoldCounts, KEEP_HELP, LocalFiles, RemovalQuestion, SecretStanding,
+    SyncHold,
+};
 use dioxus::prelude::*;
 use ds::components::controls::button::Button;
 use ds::components::controls::button_model::{Answers, Bezel, ButtonRole, ImagePosition};
@@ -130,11 +133,29 @@ pub(super) fn RemoveAlert(
     }
 }
 
-/// A text field for a sign-in key or secret: it holds what is typed until the caret leaves or
+/// A text field for a sign-in key or secret. A key holds what is typed until the caret leaves or
 /// Enter is pressed, and is made anew when the stored value changes (the caller keys it on the
-/// value). A secret waits (greyed) until its key is set.
+/// value). A secret is write-only: it shows "Set" or "Not set", never what is stored, and what is
+/// typed replaces it. Either waits (greyed) until its key is set, when it is a secret.
 #[component]
 pub(super) fn ClientField(
+    label: String,
+    value: ClientValue,
+    availability: Availability,
+    onchange: EventHandler<String>,
+) -> Element {
+    match value {
+        ClientValue::Text(text) => rsx! {
+            KeyField { label, value: text, availability, onchange }
+        },
+        ClientValue::Secret(standing) => rsx! {
+            SecretField { label, standing, availability, onchange }
+        },
+    }
+}
+
+#[component]
+fn KeyField(
     label: String,
     value: String,
     availability: Availability,
@@ -149,6 +170,36 @@ pub(super) fn ClientField(
             size: ControlSize::Small,
             oninput: move |next| draft.set(next),
             onchange: move |next: String| onchange.call(next),
+        }
+    }
+}
+
+/// A secure field that starts empty with the secret's standing where the text would be. What is
+/// typed is handed on when the caret leaves or Enter is pressed, and the field is made anew, so
+/// the text is not drawn again.
+#[component]
+fn SecretField(
+    label: String,
+    standing: SecretStanding,
+    availability: Availability,
+    onchange: EventHandler<String>,
+) -> Element {
+    let mut made = use_signal(|| 0_u32);
+    rsx! {
+        Fragment { key: "{made}",
+            TextField {
+                label,
+                value: String::new(),
+                placeholder: standing.label().to_owned(),
+                kind: FieldKind::Secure,
+                availability,
+                size: ControlSize::Small,
+                oninput: move |_: String| {},
+                onchange: move |next: String| {
+                    made += 1;
+                    onchange.call(next);
+                },
+            }
         }
     }
 }

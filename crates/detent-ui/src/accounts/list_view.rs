@@ -6,7 +6,7 @@ use super::adapter::{
 use crate::key_row::row_id;
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Account, AccountKey, AccountsPane as Pane, Adding, ClientEntry, ModuleId, ModuleRow,
+    Account, AccountKey, AccountsPane as Pane, Adding, ClientEntry, ClientText, ModuleId, ModuleRow,
 };
 use dioxus::prelude::*;
 use ds::base::vocab::RowState;
@@ -251,7 +251,7 @@ fn MoreRows(pane: Pane, adding: Adding, availability: Availability, on: FootHand
 /// The bring-your-own client ids, under a disclosure of their own (the page's Advanced one holds
 /// the file's keys); nothing when the account service lists none.
 #[component]
-pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(ModuleRow, String)>) -> Element {
+pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(ModuleRow, ClientText)>) -> Element {
     let mut opened = use_signal(|| Shown::Hidden);
     if pane.clients.is_empty() {
         return rsx! {};
@@ -272,7 +272,7 @@ pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(ModuleRow, String)>) -
                             help_shown: HelpShown::OnRequest,
                             common: Common { id: Some(row_id("client", &client.path.0)), ..Common::default() },
                             ClientField {
-                                key: "{client.path.0}/{client.value}",
+                                key: "{client.path.0}/{client.value.key()}",
                                 label: client.label.clone(),
                                 value: client.value.clone(),
                                 availability: match client.entry {
@@ -281,7 +281,8 @@ pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(ModuleRow, String)>) -
                                 },
                                 onchange: {
                                     let row = ModuleRow::new(client.module, client.path.clone());
-                                    move |text| onedit.call((row.clone(), text))
+                                    let held = client.value.clone();
+                                    move |text| onedit.call((row.clone(), held.typed(text)))
                                 },
                             }
                         }

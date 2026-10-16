@@ -38,9 +38,10 @@ pub use accounts::{
     Account, AccountExpiry, AccountKey, AccountPermission, AccountProvider, AccountSegment,
     AccountService, AccountStatus, AccountSync, AccountTarget, AccountsEffect, AccountsInput,
     AccountsPane, AccountsReady, AccountsScreen, AccountsState, AddEnd, Adding, Ask, ClientEntry,
-    DatasetName, HoldCounts, HoldEffect, HoldInput, Holds, KEEP_HELP, LocalFiles, ModuleId,
-    ModuleRow, Place, ReadTurn, Reads, ReauthEnd, RemovalQuestion, SignInClient, SignOutEnd,
-    Source, Sources, SyncAdd, SyncHold, SyncNowEnd, accounts_step, hold_step, reauth_help,
+    ClientText, ClientValue, DatasetName, HoldCounts, HoldEffect, HoldInput, Holds, KEEP_HELP,
+    LocalFiles, ModuleId, ModuleRow, Place, ReadTurn, Reads, ReauthEnd, RemovalQuestion, Secret,
+    SecretStanding, SignInClient, SignOutEnd, Source, Sources, SyncAdd, SyncHold, SyncNowEnd,
+    accounts_step, hold_step, reauth_help,
 };
 pub use advanced::advanced_name;
 pub use assistant_model::{
