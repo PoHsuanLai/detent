@@ -1278,7 +1278,7 @@ name = "detent-callers"
 version = "0.1.0"
 dependencies = [
  "ds-settings",
- "peephole-bus",
+ "peephole-bus 0.1.1",
  "zbus",
 ]
 
@@ -3009,7 +3009,7 @@ dependencies = [
 [[package]]
 name = "keycap-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=b45d4c22ec22be1117ce451dcc0b4a1f63764515#b45d4c22ec22be1117ce451dcc0b4a1f63764515"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=95018f94256bc875b0020ff688d1f555e2879f20#95018f94256bc875b0020ff688d1f555e2879f20"
 dependencies = [
  "chordkit",
  "keycap-protocol",
@@ -3019,7 +3019,7 @@ dependencies = [
 [[package]]
 name = "keycap-protocol"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=b45d4c22ec22be1117ce451dcc0b4a1f63764515#b45d4c22ec22be1117ce451dcc0b4a1f63764515"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=95018f94256bc875b0020ff688d1f555e2879f20#95018f94256bc875b0020ff688d1f555e2879f20"
 dependencies = [
  "serde",
  "serde_json",
@@ -3949,7 +3949,17 @@ name = "peephole"
 version = "0.1.1"
 source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.1#e1b1b6adaff180516f198cf5435e85e4dc36e971"
 dependencies = [
- "peephole-core",
+ "peephole-core 0.1.1",
+ "rustix",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "peephole"
+version = "0.1.2"
+source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.2#f111ee0c32461d72173bb591079a1fbe0fca1953"
+dependencies = [
+ "peephole-core 0.1.2",
  "rustix",
  "thiserror 2.0.21",
 ]
@@ -3960,8 +3970,21 @@ version = "0.1.1"
 source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.1#e1b1b6adaff180516f198cf5435e85e4dc36e971"
 dependencies = [
  "futures-timer",
- "peephole",
- "peephole-core",
+ "peephole 0.1.1",
+ "peephole-core 0.1.1",
+ "thiserror 2.0.21",
+ "tokio",
+ "zbus",
+]
+
+[[package]]
+name = "peephole-bus"
+version = "0.1.2"
+source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.2#f111ee0c32461d72173bb591079a1fbe0fca1953"
+dependencies = [
+ "futures-timer",
+ "peephole 0.1.2",
+ "peephole-core 0.1.2",
  "thiserror 2.0.21",
  "tokio",
  "zbus",
@@ -3971,6 +3994,16 @@ dependencies = [
 name = "peephole-core"
 version = "0.1.1"
 source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.1#e1b1b6adaff180516f198cf5435e85e4dc36e971"
+dependencies = [
+ "serde",
+ "thiserror 2.0.21",
+ "toml",
+]
+
+[[package]]
+name = "peephole-core"
+version = "0.1.2"
+source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.2#f111ee0c32461d72173bb591079a1fbe0fca1953"
 dependencies = [
  "serde",
  "thiserror 2.0.21",
@@ -4243,19 +4276,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "porter-daemon"
-version = "0.1.0"
-dependencies = [
- "notify",
- "thiserror 2.0.21",
-]
-
-[[package]]
 name = "porter-dbus"
 version = "0.1.0"
 dependencies = [
+ "peephole 0.1.2",
+ "peephole-bus 0.1.2",
+ "peephole-core 0.1.2",
  "porter-core",
- "porter-daemon",
  "serde",
  "serde_json",
  "thiserror 2.0.21",

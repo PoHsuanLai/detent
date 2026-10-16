@@ -66,7 +66,7 @@ regex = { version = "1", default-features = false, features = ["std", "perf", "u
 chordkit = { git = "https://github.com/PoHsuanLai/chordkit.git", rev = "934a2d71f6516bee5919ee29278003702a4ea5e1" }
 
 # The desktop's keymap (chordkit's layers) and keycap's program end, `KeycapSource`: the same line as casement's.
-keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "b45d4c22ec22be1117ce451dcc0b4a1f63764515" }
+keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "95018f94256bc875b0020ff688d1f555e2879f20" }
 
 # Which program is on the other end of a bus name (own repo, public): pinned process, unit and the
 # desktop's caller table. The same tag as quire's ds-blitz, so the lock holds one copy. zbus runs on

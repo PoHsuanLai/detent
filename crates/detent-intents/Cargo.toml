@@ -25,6 +25,7 @@ zbus = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
 detent-callers = { workspace = true, features = ["testing"] }
+docket-dbus = { workspace = true, features = ["fixture-callers"] }
 detent-testkit = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
