@@ -23,8 +23,6 @@ use ds_blitz::{AppHandle, use_app_handle};
 /// Said once, at the top.
 const HEADING: &str = "Choose a Model for Your Assistant";
 
-/// What the step asks.
-
 /// The step, under the frame: the picker's row and the two buttons.
 #[component]
 pub(crate) fn AssistantSetup() -> Element {
