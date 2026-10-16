@@ -1,4 +1,4 @@
-//! The five services Settings talks to, and the role the owner of each one's bus name must hold.
+//! The six services Settings talks to, and the role the owner of each one's bus name must hold.
 
 use peephole_bus::peephole_core::{Proof, RoleName, roles};
 
@@ -12,13 +12,16 @@ pub const INFERENCE_BUS: &str = "org.quire.Inference1";
 pub const UPDATES_BUS: &str = "org.quire.Updates1";
 /// memoryd: the controls Settings reaches.
 pub const MEMORY_BUS: &str = "org.quire.Memory1";
+/// The compositor: the Privacy list of which program may use which power, served as a live
+/// settings module.
+pub const COMPOSITOR_BUS: &str = "org.quire.Compositor1";
 
-/// The proof a service's owner must show. All five run as units, so the unit manager confirms the
+/// The proof a service's owner must show. All six run as units, so the unit manager confirms the
 /// unit: a process that merely sits in the right cgroup, or runs the right image from a unit the
 /// person can edit, does not pass.
 pub const SERVICE_PROOF: Proof = Proof::Full;
 
-/// The role the owner of `name` must hold; none for a name that is not one of the five (such a
+/// The role the owner of `name` must hold; none for a name that is not one of the six (such a
 /// name is never vouched for).
 pub fn required_role(name: &str) -> Option<RoleName> {
     let role = match name {
@@ -27,6 +30,7 @@ pub fn required_role(name: &str) -> Option<RoleName> {
         INFERENCE_BUS => roles::INFERENCE,
         UPDATES_BUS => roles::UPDATER,
         MEMORY_BUS => roles::MEMORY,
+        COMPOSITOR_BUS => roles::COMPOSITOR,
         _ => return None,
     };
     Some(role)
@@ -44,6 +48,7 @@ mod tests {
             (INFERENCE_BUS, "inference"),
             (UPDATES_BUS, "updater"),
             (MEMORY_BUS, "memory"),
+            (COMPOSITOR_BUS, "compositor"),
         ];
         for (name, role) in wanted {
             let held = required_role(name).map(|role| role.to_string());
