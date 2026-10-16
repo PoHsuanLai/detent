@@ -5,8 +5,11 @@ use super::{is_choice, set, set_pool};
 use crate::accounts::add_account;
 use crate::engine_install::use_board;
 use crate::env::Env;
-use crate::live::{BusSource, Daemon, Followed, follow, reread, words_of};
-use detent_model::{PickerEffect, PickerInput, PickerState, step};
+use crate::live::{Daemon, Followed, follow, reread, words_of};
+use detent_files::{agents_switch, load_agents, programs_on, turn_on_agents};
+use detent_model::{
+    Described, PickerEffect, PickerInput, PickerState, agent_offers, step, with_agents,
+};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;
@@ -21,6 +24,15 @@ pub(crate) struct Picker {
     /// What the person asked of a row: a pick, an engine for Local, a model in or out of
     /// Automatic's list.
     pub ask: EventHandler<PickerInput>,
+}
+
+/// inferd's rows with the coding agents docket lists laid over the text slot's: the module knows
+/// no agent, and docket's files say which exist and whether they can be chosen now.
+fn with_coding_agents(env: &Env, described: Described) -> Described {
+    let agents = load_agents(&env.config_home, &env.data_home);
+    let found = programs_on(&env.programs_path);
+    let offers = agent_offers(&agents, &found, agents_switch(&env.config_home));
+    with_agents(described, &offers)
 }
 
 /// Applies `input` to the picker and returns the effects it asks for.
@@ -45,6 +57,7 @@ pub(crate) fn use_picker() -> Picker {
     let look = env.clone();
     use_future(move || {
         let bus = look.bus.clone();
+        let rows = look.clone();
         async move {
             follow(
                 &bus,
@@ -52,6 +65,7 @@ pub(crate) fn use_picker() -> Picker {
                 is_choice,
                 |followed| match followed {
                     Followed::Opened(opened, described) => {
+                        let described = with_coding_agents(&rows, described);
                         send(&mut state, PickerInput::Found(Ok(described)));
                         client.set(Some(opened));
                     }
@@ -75,9 +89,8 @@ pub(crate) fn use_picker() -> Picker {
         }
     });
 
-    let bus = env.bus.clone();
     let ask = EventHandler::new(move |input: PickerInput| {
-        spawn(drive(state, client, bus.clone(), toasts, input));
+        spawn(drive(state, client, env.clone(), toasts, input));
     });
     Picker { state, ask }
 }
@@ -87,7 +100,7 @@ pub(crate) fn use_picker() -> Picker {
 async fn drive(
     mut state: Signal<PickerState>,
     client: Signal<Option<LiveClient>>,
-    bus: BusSource,
+    env: Env,
     toasts: ToastHub,
     first: PickerInput,
 ) {
@@ -115,14 +128,19 @@ async fn drive(
                     });
                 }
                 PickerEffect::AddAccount => {
-                    queue.push_back(PickerInput::AccountSheetEnded(add_account(&bus).await));
+                    queue.push_back(PickerInput::AccountSheetEnded(add_account(&env.bus).await));
+                }
+                PickerEffect::TurnOnAgents => {
+                    let done = turn_on_agents(&env.config_home)
+                        .map_err(|why| format!("Could not turn on coding agents. {why}"));
+                    queue.push_back(PickerInput::AgentsTurnedOn(done));
                 }
                 PickerEffect::ReadAgain => {
                     let Some(opened) = client.peek().clone() else {
                         continue;
                     };
                     queue.push_back(match reread(&opened, is_choice).await {
-                        Ok(described) => PickerInput::Reread(described),
+                        Ok(described) => PickerInput::Reread(with_coding_agents(&env, described)),
                         Err(absence) => PickerInput::Found(Err(absence)),
                     });
                 }

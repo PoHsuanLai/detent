@@ -5,6 +5,7 @@
 //! nothing here talks to a program.
 
 mod agents;
+mod coding_agents;
 mod desktop_paths;
 mod error;
 mod first_run;
@@ -18,6 +19,7 @@ mod unknown;
 mod values;
 
 pub use agents::{load_agents, save_agent_choice};
+pub use coding_agents::{agents_switch, programs_on, turn_on_agents};
 pub use error::FilesError;
 pub use first_run::{FirstRunMark, FirstRunStanding, StateHome};
 pub use keymap::KeymapFiles;

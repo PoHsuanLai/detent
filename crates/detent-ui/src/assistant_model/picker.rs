@@ -2,7 +2,7 @@
 //! draws for the text slot's balanced tier.
 
 use crate::engine_install::EngineSheetView;
-use crate::inference::{TierRow, Unavailable};
+use crate::inference::{TierRow, TurnOnAlert, Unavailable};
 use detent_model::{Clearing, ModelRow, PickerInput, PickerState, assistant_of};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
@@ -40,6 +40,7 @@ pub(crate) fn AssistantPicker(
                 TierRow { row, applying: ready.applying.clone(), adding: ready.adding(), clearing, onask }
             }
             EngineSheetView {}
+            TurnOnAlert { ready: ready.clone(), onask }
         }
     }
 }

@@ -107,5 +107,7 @@ pub(super) fn pick_items(word: &str, label: &str, gate: &Gate) -> Vec<MenuItem<S
         Gate::Open => vec![item],
         Gate::NeedsAccount => vec![item, info(gate.note().unwrap_or_default())],
         Gate::Blocked(reason) => vec![item.with_availability(Availability::Disabled), info(reason)],
+        // A coding agent while they are off: pickable, and picking asks to turn them on.
+        Gate::TurnOn => vec![item, info(gate.note().unwrap_or_default())],
     }
 }

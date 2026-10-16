@@ -67,6 +67,9 @@ pub struct Env {
     /// What the sheet that downloads an engine does to the computer: the person's own unless a
     /// test hands in another.
     pub engines: EngineDesk,
+    /// The value of `PATH`: where the coding agents already on this computer are looked for for
+    /// the assistant's model. Empty until the launcher gives it, so a test finds none.
+    pub programs_path: String,
 }
 
 impl Env {
@@ -103,6 +106,7 @@ impl Env {
             os_release: Environment::system().os_release,
             application_dirs: Vec::new(),
             engines,
+            programs_path: String::new(),
         }
     }
 
@@ -142,6 +146,14 @@ impl Env {
     /// This environment with the engine sheet working through `engines`.
     pub fn with_engines(self, engines: EngineDesk) -> Env {
         Env { engines, ..self }
+    }
+
+    /// This environment looking for coding agents on `programs_path` (the value of `PATH`).
+    pub fn with_programs_path(self, programs_path: String) -> Env {
+        Env {
+            programs_path,
+            ..self
+        }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.

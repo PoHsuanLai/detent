@@ -66,7 +66,8 @@ fn environment(opening: Opening) -> Result<Env, ExitCode> {
         BusSource::Session,
     )
     .with_keymap(KeymapFiles::standard())
-    .with_application_dirs(dirs::application_dirs());
+    .with_application_dirs(dirs::application_dirs())
+    .with_programs_path(std::env::var("PATH").unwrap_or_default());
     for warning in &env.warnings {
         eprintln!("detent: {warning}");
     }
