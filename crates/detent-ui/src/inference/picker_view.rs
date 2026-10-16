@@ -3,8 +3,8 @@
 
 use super::drive::{Picker, use_picker};
 use super::tier_row::TierRow;
-use crate::engine_install::EngineSheetView;
 use super::turn_on::TurnOnAlert;
+use crate::engine_install::EngineSheetView;
 use crate::env::Env;
 use crate::files::{Files, value_of};
 use detent_model::{Absence, Adding, Clearing, KindRows, PickerInput, PickerState, Reason};
