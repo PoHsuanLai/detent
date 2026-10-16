@@ -1,5 +1,6 @@
 //! Setting a row of inferd's settings module.
 
+use crate::live::plain;
 use ds_settings::live::LiveClient;
 use ds_settings::schema::{KeyKind, KeyPath};
 
@@ -18,7 +19,7 @@ pub(crate) async fn set(client: &LiveClient, path: &KeyPath, word: &str) -> Resu
     client
         .set(path, &toml::Value::String(word.to_owned()))
         .await
-        .map_err(|error| error.to_string())
+        .map_err(|error| plain(&error))
 }
 
 /// Sets the pool at `path` to `words`; the module refuses a model it does not know.
@@ -31,5 +32,5 @@ pub(crate) async fn set_pool(
     client
         .set(path, &toml::Value::Array(list))
         .await
-        .map_err(|error| error.to_string())
+        .map_err(|error| plain(&error))
 }

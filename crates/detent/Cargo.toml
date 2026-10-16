@@ -17,7 +17,6 @@ detent-ui = { workspace = true }
 ds-blitz = { workspace = true }
 ds-settings = { workspace = true }
 tokio = { workspace = true }
-zbus = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
 detent-testkit = { workspace = true }

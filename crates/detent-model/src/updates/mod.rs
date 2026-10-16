@@ -2,6 +2,7 @@
 //! may ask of it, and what the page shows for every standing. Pure; the service, the clock and
 //! the log-out are the window's (`detent-ui`).
 
+mod limits;
 mod model;
 mod page;
 mod shown;

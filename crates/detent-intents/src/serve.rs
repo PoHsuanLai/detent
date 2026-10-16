@@ -7,6 +7,7 @@ use crate::provider::SettingsProvider;
 use docket_client::{TransportError, serve_on, serve_on_with};
 use docket_dbus::BusConnection;
 use docket_dbus::callers::Callers;
+use ds_peer::{Deadline, within};
 use std::sync::Arc;
 
 /// Exports `provider` at `/org/quire/IntentProvider1` on `connection` and claims the bus name
@@ -52,7 +53,23 @@ pub enum ServeFault {
 /// Connects to the session bus (`DBUS_SESSION_BUS_ADDRESS`, read by the bus library) and
 /// serves `provider` on it. The connection is returned: dropping it takes the service off the
 /// bus, so the caller keeps it for as long as the app runs.
+///
+/// A bus that does not answer inside [`BUS_DEADLINE`] is [`ServeFault::Connect`]: Settings then
+/// opens without the service instead of never opening (audit DETENT-07).
 pub async fn serve_session(provider: SettingsProvider) -> Result<BusConnection, ServeFault> {
+    within(BUS_DEADLINE, BUS_PEER, serve_unbounded(provider))
+        .await
+        .map_err(|silent| ServeFault::Connect(silent.to_string()))?
+}
+
+/// How long the session bus gets to take the service: the read deadline, since a healthy bus
+/// answers in milliseconds and a loaded login can take a few seconds.
+const BUS_DEADLINE: Deadline = Deadline::READ;
+
+/// Who is not answering, as a sentence names them.
+pub(crate) const BUS_PEER: &str = "The desktop";
+
+async fn serve_unbounded(provider: SettingsProvider) -> Result<BusConnection, ServeFault> {
     let connection = zbus::connection::Builder::session()
         .map_err(|e| ServeFault::Connect(e.to_string()))?
         .build()

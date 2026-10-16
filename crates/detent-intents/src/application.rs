@@ -2,8 +2,10 @@
 //! activation, so the launcher starts Settings (as its user unit), raises it, or opens it at an
 //! account. A second `detent` hands over through the same `Activate`.
 
+use crate::serve::BUS_PEER;
 use crate::window::Window;
 use detent_model::{AccountTarget, PageSlug};
+use ds_peer::{Deadline, within};
 use std::collections::HashMap;
 use std::sync::Arc;
 use zbus::fdo;
@@ -122,6 +124,29 @@ pub(crate) async fn export_application(
 /// second window. `token` is the xdg-activation token this process was started with, if any;
 /// `page` is the page the second `detent` was asked to open, if any.
 pub async fn hand_over(
+    connection: &zbus::Connection,
+    token: Option<String>,
+    page: Option<PageSlug>,
+) -> zbus::Result<()> {
+    let asked = ask_to_show(connection, token, page);
+    within(Deadline::READ, BUS_PEER, asked)
+        .await
+        .map_err(|silent| zbus::Error::Failure(silent.to_string()))?
+}
+
+/// [`hand_over`] on the session bus, connecting first: the whole of it, connecting included,
+/// gets the read deadline, so a stuck bus socket ends a second `detent` instead of hanging it.
+pub async fn hand_over_session(token: Option<String>, page: Option<PageSlug>) -> zbus::Result<()> {
+    let handed = async {
+        let connection = zbus::connection::Builder::session()?.build().await?;
+        ask_to_show(&connection, token, page).await
+    };
+    within(Deadline::READ, BUS_PEER, handed)
+        .await
+        .map_err(|silent| zbus::Error::Failure(silent.to_string()))?
+}
+
+async fn ask_to_show(
     connection: &zbus::Connection,
     token: Option<String>,
     page: Option<PageSlug>,

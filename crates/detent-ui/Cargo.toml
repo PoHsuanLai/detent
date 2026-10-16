@@ -18,6 +18,7 @@ dioxus = { workspace = true }
 ds = { workspace = true }
 ds-blitz = { workspace = true }
 ds-helpers = { workspace = true }
+ds-peer = { workspace = true }
 ds-settings = { workspace = true, features = ["dioxus", "live", "tokio"] }
 porter-client = { workspace = true, features = ["infer", "lending"] }
 porter-core = { workspace = true }

@@ -3,6 +3,7 @@
 use super::bus::BusSource;
 use super::daemon::Daemon;
 use super::io::connect;
+use crate::deadline::{Deadline, answered, peer};
 use detent_model::ModuleId;
 use zbus::fdo::DBusProxy;
 use zbus::names::WellKnownName;
@@ -28,8 +29,14 @@ pub(crate) async fn start(bus: &BusSource, modules: &[ModuleId]) {
         };
         let proxy = proxy.clone();
         tokio::spawn(async move {
-            // The reply is of no use: whether the daemon came up is learned from its name.
-            let _ = proxy.start_service_by_name(name, 0).await;
+            // The reply is of no use: whether the daemon came up is learned from its name. A bus
+            // that never replies ends the task at the deadline instead of keeping it.
+            let _ = answered(
+                Deadline::ACTION,
+                peer::DESKTOP,
+                proxy.start_service_by_name(name, 0),
+            )
+            .await;
         });
     }
 }

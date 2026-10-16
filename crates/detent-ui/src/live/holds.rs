@@ -3,14 +3,13 @@
 
 use super::bus::BusSource;
 use super::daemon::Daemon;
-use super::io::{connect, next_owner, owner_changes};
+use super::io::{connect, name_owned, next_owner, owner_changes};
+use crate::deadline::{Deadline, answered, peer};
 use detent_model::{DatasetName, HoldCounts, HoldInput, SyncNowEnd};
 use porter_dbus::names::{SYNC_ERROR_NOTHING_HELD, SYNC_ERROR_PAUSED};
 use porter_dbus::{BusError, SyncProxy};
 use std::collections::HashMap;
 use zbus::Connection;
-use zbus::fdo::DBusProxy;
-use zbus::names::BusName;
 use zbus::zvariant::OwnedValue;
 
 /// The key of `Status`'s hold, and of the signal's counts.
@@ -36,13 +35,9 @@ fn held_in_status(status: &HashMap<String, OwnedValue>) -> Option<HoldCounts> {
 }
 
 async fn syncd_is_running(connection: &Connection) -> bool {
-    let (Ok(name), Ok(bus)) = (
-        BusName::try_from(Daemon::syncd().name),
-        DBusProxy::new(connection).await,
-    ) else {
-        return false;
-    };
-    bus.name_has_owner(name).await.unwrap_or(false)
+    name_owned(connection, Daemon::syncd().name)
+        .await
+        .unwrap_or(false)
 }
 
 /// Tells `tell` each hold the sync service starts or ends, until the bus goes away. It joins the
@@ -82,7 +77,7 @@ async fn watch(
         return next_owner(owners).await;
     };
     // Holds already on come back as signals before this returns.
-    let _ = proxy.watch().await;
+    let _ = answered(Deadline::READ, peer::SYNC, proxy.watch()).await;
     use zbus::export::futures_core::Stream;
     loop {
         tokio::select! {
@@ -103,12 +98,13 @@ async fn watch(
 /// of the hold is told as a signal); `NothingHeld` when nothing was held any more; `Refused`
 /// otherwise.
 pub(crate) async fn confirm_discard(bus: &BusSource, dataset: DatasetName) -> Option<HoldInput> {
-    let asked = async {
+    let asked = answered(Deadline::ACTION, peer::SYNC, async {
         let connection = connect(bus).await.ok()?;
         let proxy = SyncProxy::new(&connection).await.ok()?;
         Some(proxy.confirm_discard(&dataset.0).await)
-    }
-    .await;
+    })
+    .await
+    .flatten();
     match asked {
         Some(Ok(())) => None,
         Some(Err(error)) if is_nothing_held(&error) => Some(HoldInput::NothingHeld(dataset)),
@@ -123,12 +119,13 @@ fn is_nothing_held(error: &BusError) -> bool {
 /// `dataset`'s hold as `Status` says it now: told as `Told`, with no counts when nothing is held
 /// or the dataset cannot be asked about.
 pub(crate) async fn hold_now(bus: &BusSource, dataset: DatasetName) -> HoldInput {
-    let counts = async {
+    let counts = answered(Deadline::READ, peer::SYNC, async {
         let connection = connect(bus).await.ok()?;
         let proxy = SyncProxy::new(&connection).await.ok()?;
         held_in_status(&proxy.status(&dataset.0).await.ok()?)
-    }
-    .await;
+    })
+    .await
+    .flatten();
     HoldInput::Told { dataset, counts }
 }
 
@@ -139,12 +136,13 @@ fn is_paused(error: &BusError) -> bool {
 /// Has the sync service sync `dataset` at once. It answers when it took the request, not when the
 /// cycle ends.
 pub(crate) async fn sync_now(bus: &BusSource, dataset: DatasetName) -> SyncNowEnd {
-    let asked = async {
+    let asked = answered(Deadline::ACTION, peer::SYNC, async {
         let connection = connect(bus).await.ok()?;
         let proxy = SyncProxy::new(&connection).await.ok()?;
         Some(proxy.sync_now(&dataset.0).await)
-    }
-    .await;
+    })
+    .await
+    .flatten();
     match asked {
         Some(Ok(())) => SyncNowEnd::Started,
         Some(Err(error)) if is_paused(&error) => SyncNowEnd::Paused,

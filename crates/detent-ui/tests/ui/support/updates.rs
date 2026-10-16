@@ -2,10 +2,9 @@
 //! process.
 
 use detent_model::{Absence, UnixSeconds, UpdatePhase, UpdateStatus};
-use detent_ui::{Departure, UpdateTicks, UpdateWork, UpdatesLink};
+use detent_ui::{Departure, Ticker, UpdateTicks, UpdateWork, UpdatesLink};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc::{UnboundedSender, unbounded_channel};
 
 /// What the page asked of the service.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,7 +20,7 @@ struct Shared {
     standing: Mutex<Result<UpdateStatus, Absence>>,
     asked: Mutex<Vec<Asked>>,
     refusal: Mutex<Option<String>>,
-    listeners: Mutex<Vec<UnboundedSender<()>>>,
+    listeners: Mutex<Vec<Ticker>>,
 }
 
 /// A service that answers from what it was given, and writes down what it was asked.
@@ -75,7 +74,7 @@ impl Service {
             .listeners
             .lock()
             .expect("lock")
-            .retain(|listener| listener.send(()).is_ok());
+            .retain(|listener| listener.tick().is_ok());
     }
 
     /// Takes a request: written down, refused or moved to `working`.
@@ -102,7 +101,7 @@ impl UpdatesLink for Service {
     }
 
     fn changes(&self) -> UpdateWork<'_, Result<UpdateTicks, Absence>> {
-        let (listener, ticks) = unbounded_channel();
+        let (listener, ticks) = UpdateTicks::channel();
         self.0.listeners.lock().expect("lock").push(listener);
         Box::pin(std::future::ready(Ok(ticks)))
     }

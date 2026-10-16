@@ -7,6 +7,7 @@ mod leave;
 mod link;
 mod session;
 mod view;
+mod wire;
 
 pub use leave::{Departure, LogOut};
 pub use link::{UpdateTicks, UpdateWork, Updater, UpdatesLink};

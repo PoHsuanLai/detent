@@ -9,7 +9,7 @@ use accounts::LiveAccounts;
 use clap::Parser;
 use cli::Run;
 use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles};
-use detent_intents::{ServeFault, SettingsProvider, hand_over, serve_session};
+use detent_intents::{ServeFault, SettingsProvider, hand_over_session, serve_session};
 use detent_model::{PageSlug, is_assistant_setup};
 use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, inbox};
 use ds_blitz::{AppConfig, AppId, Decorations, LaunchError, WindowSize, enter_runtime, launch};
@@ -155,10 +155,7 @@ fn hand_over_to_running(page: Option<PageSlug>) -> ExitCode {
     let token = std::env::var("XDG_ACTIVATION_TOKEN")
         .ok()
         .filter(|token| !token.is_empty());
-    let handed = enter_runtime_block(async {
-        let connection = zbus::connection::Builder::session()?.build().await?;
-        hand_over(&connection, token, page).await
-    });
+    let handed = enter_runtime_block(hand_over_session(token, page));
     match handed {
         Ok(()) => ExitCode::SUCCESS,
         Err(fault) => {

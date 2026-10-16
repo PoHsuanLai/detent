@@ -2,6 +2,7 @@
 //! is nothing to say, and opening Settings must not start it. Restarting is the person's word.
 
 use crate::computers::inferd;
+use crate::deadline::{Deadline, answered, peer};
 use crate::live::{BusSource, connect};
 use detent_model::{ListedEngine, LlamaCpp, Program, Restarted, llama_cpp_of};
 use porter_client::{DbusTransport, INFERD_UNIT, SessionUnits, UnitManager};
@@ -13,7 +14,14 @@ pub(super) async fn look(bus: &BusSource) -> LlamaCpp {
     let Ok(connection) = inferd(bus).await else {
         return LlamaCpp::Unknown;
     };
-    let Ok(found) = DbusTransport::over(connection).list_local_engines().await else {
+    let transport = DbusTransport::over(connection);
+    let Some(Ok(found)) = answered(
+        Deadline::READ,
+        peer::ASSISTANT,
+        transport.list_local_engines(),
+    )
+    .await
+    else {
         return LlamaCpp::Unknown;
     };
     let listed: Vec<ListedEngine> = found
@@ -35,8 +43,9 @@ pub(super) async fn restart(bus: &BusSource) -> Restarted {
     let Ok(connection) = connect(bus).await else {
         return Restarted::Failed;
     };
-    match SessionUnits::new(connection).restart(INFERD_UNIT).await {
-        Ok(()) => Restarted::Done,
-        Err(_) => Restarted::Failed,
+    let units = SessionUnits::new(connection);
+    match answered(Deadline::ACTION, peer::SERVICES, units.restart(INFERD_UNIT)).await {
+        Some(Ok(())) => Restarted::Done,
+        Some(Err(_)) | None => Restarted::Failed,
     }
 }

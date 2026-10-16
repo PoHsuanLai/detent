@@ -17,5 +17,5 @@ pub use bus::BusSource;
 pub(crate) use daemon::Daemon;
 pub(crate) use follow::{Followed, follow, read_once, reread};
 pub(crate) use holds::{confirm_discard, follow_holds, hold_now, sync_now};
-pub(crate) use io::{connect, next_owner, owner_changes};
+pub(crate) use io::{connect, name_owned, next_owner, owner_changes, plain};
 pub(crate) use read::words_of;

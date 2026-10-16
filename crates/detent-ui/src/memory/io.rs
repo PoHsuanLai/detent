@@ -2,13 +2,12 @@
 //! nothing waits on anyone, and opening Settings must not start it.
 
 use super::proxy::{MEMORY_NAME, MemoryControlProxy};
-use crate::live::{BusSource, connect};
+use crate::deadline::{Deadline, answered, peer};
+use crate::live::{BusSource, connect, name_owned};
 use almanac_core::WaitingSetting;
 use detent_model::{Confinement, SettingPair, Trouble};
 use porter_dbus::{BusFailure, classify};
 use zbus::Connection;
-use zbus::fdo::DBusProxy;
-use zbus::names::BusName;
 
 /// The bus name memory answers a refusal with when the caller may not do this.
 const NOT_ALLOWED: &str = "org.quire.Memory1.Error.NotAllowed";
@@ -43,11 +42,7 @@ fn failure_of(error: &zbus::Error) -> Failure {
 /// The connection, only when memory is already on the bus.
 async fn running(bus: &BusSource) -> Result<Connection, Failure> {
     let connection = connect(bus).await.map_err(|_| Failure::Absent)?;
-    let name = BusName::try_from(MEMORY_NAME).map_err(|_| Failure::Absent)?;
-    let owned = DBusProxy::new(&connection)
-        .await
-        .map_err(|_| Failure::Absent)?
-        .name_has_owner(name)
+    let owned = name_owned(&connection, MEMORY_NAME)
         .await
         .map_err(|_| Failure::Absent)?;
     if owned {
@@ -63,9 +58,9 @@ pub(super) async fn waiting(bus: &BusSource) -> Result<Vec<WaitingSetting>, Fail
     let proxy = MemoryControlProxy::new(&connection)
         .await
         .map_err(|error| failure_of(&error))?;
-    let rows = proxy
-        .pending_settings()
+    let rows = answered(Deadline::READ, peer::MEMORY, proxy.pending_settings())
         .await
+        .ok_or(Failure::Absent)?
         .map_err(|error| failure_of(&error))?;
     Ok(rows
         .into_iter()
@@ -87,10 +82,14 @@ pub(super) async fn confirm(bus: &BusSource, pairs: &[SettingPair]) -> Result<()
         .iter()
         .map(|pair| (pair.key.clone(), pair.value.clone()))
         .collect();
-    proxy
-        .confirm_settings(values)
-        .await
-        .map_err(|error| failure_of(&error))
+    answered(
+        Deadline::ACTION,
+        peer::MEMORY,
+        proxy.confirm_settings(values),
+    )
+    .await
+    .ok_or(Failure::Trouble(Trouble::Failed))?
+    .map_err(|error| failure_of(&error))
 }
 
 /// How far memory confines itself, read fresh, only when memory is already running.
@@ -99,9 +98,9 @@ pub(super) async fn confinement(bus: &BusSource) -> Result<Confinement, Failure>
     let proxy = MemoryControlProxy::new(&connection)
         .await
         .map_err(|error| failure_of(&error))?;
-    let word = proxy
-        .confinement()
+    let word = answered(Deadline::READ, peer::MEMORY, proxy.confinement())
         .await
+        .ok_or(Failure::Absent)?
         .map_err(|error| failure_of(&error))?;
     Ok(Confinement::from_word(&word))
 }

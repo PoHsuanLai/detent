@@ -1,6 +1,7 @@
 //! What the Software Update page knows: where the update flow stands, as the update service
 //! reports it, parsed once where it enters.
 
+use super::limits::{notes_of, problem_of, version_of};
 use crate::picker::Absence;
 
 /// Where the update flow stands.
@@ -125,19 +126,28 @@ impl UpdateStatus {
         let phase = UpdatePhase::of_word(&wire.state).ok_or_else(|| {
             Absence::Failed(format!("the update service is in a state {:?}", wire.state))
         })?;
-        Ok(UpdateStatus {
-            phase,
-            current: some_text(wire.current),
-            offer: some_text(wire.available).map(|version| UpdateOffer {
-                version,
-                notes: wire.notes,
+        let odd = |what: &str| Absence::Failed(format!("the update service sent an odd {what}"));
+        let current = match some_text(wire.current) {
+            Some(text) => Some(version_of(&text).ok_or_else(|| odd("version"))?),
+            None => None,
+        };
+        let offer = match some_text(wire.available) {
+            Some(text) => Some(UpdateOffer {
+                version: version_of(&text).ok_or_else(|| odd("version on offer"))?,
+                notes: notes_of(&wire.notes),
                 size: ByteCount(wire.size),
             }),
+            None => None,
+        };
+        Ok(UpdateStatus {
+            phase,
+            current,
+            offer,
             progress: Permille(wire.progress.min(1000)),
             last_checked: Some(wire.last_checked)
                 .filter(|seconds| *seconds > 0)
                 .map(UnixSeconds),
-            problem: some_text(wire.problem),
+            problem: some_text(wire.problem).map(|text| problem_of(&text)),
         })
     }
 }

@@ -9,6 +9,9 @@ mod assistant_model;
 mod assistants;
 mod computers;
 mod controls;
+mod deadline;
+#[cfg(test)]
+mod deadline_tests;
 mod engines;
 mod env;
 mod files;
@@ -27,6 +30,9 @@ mod sharing;
 mod shortcuts;
 mod sidebar;
 mod spaces;
+mod ticks;
+#[cfg(test)]
+mod ticks_tests;
 mod updates;
 mod view;
 mod window;
@@ -40,6 +46,7 @@ pub use inference::ReasonFeed;
 pub use lender::Lender;
 pub use live::BusSource;
 pub use marks::ProviderMarks;
+pub use ticks::{Gone, Ticker, Ticks};
 pub use updates::{Departure, LogOut, UpdateTicks, UpdateWork, Updater, UpdatesLink};
 
 /// The app's own layout stylesheet: tokens only.

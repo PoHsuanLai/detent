@@ -1,6 +1,7 @@
 //! Opening an add sheet from Settings, through porter's client: an identity through the account
 //! service, an AI key through the key service. The Settings role may call each `AddAccount`.
 
+use crate::deadline::{Deadline, answered, peer};
 use crate::live::{BusSource, connect};
 use detent_model::{AccountKey, AddEnd};
 use porter_client::{Accounts, AiKeys, ClientError, DbusTransport, TransportError};
@@ -15,12 +16,16 @@ pub(crate) async fn add_account(bus: &BusSource) -> AddEnd {
         return AddEnd::Failed;
     };
     let accounts = Accounts::over(DbusTransport::over(connection));
-    match accounts
-        .add_account(ProviderHint::Any, &ParentWindow::Unparented)
-        .await
-    {
-        Ok(_) => AddEnd::Added,
-        Err(error) => end_of(&error),
+    let asked = answered(
+        Deadline::PROMPT,
+        peer::ACCOUNTS,
+        accounts.add_account(ProviderHint::Any, &ParentWindow::Unparented),
+    )
+    .await;
+    match asked {
+        Some(Ok(_)) => AddEnd::Added,
+        Some(Err(error)) => end_of(&error),
+        None => AddEnd::Failed,
     }
 }
 
@@ -47,15 +52,20 @@ struct OverBus(zbus::Connection);
 
 impl KeySheet for OverBus {
     async fn add(&self) -> AddEnd {
-        let Ok(keys) = AiKeys::connect(&self.0).await else {
+        let Some(Ok(keys)) =
+            answered(Deadline::READ, peer::ACCOUNTS, AiKeys::connect(&self.0)).await
+        else {
             return AddEnd::Failed;
         };
-        match keys
-            .add_account(ProviderHint::Any, &ParentWindow::Unparented)
-            .await
-        {
-            Ok(_) => AddEnd::Added,
-            Err(_) => AddEnd::Failed,
+        let asked = answered(
+            Deadline::PROMPT,
+            peer::ACCOUNTS,
+            keys.add_account(ProviderHint::Any, &ParentWindow::Unparented),
+        )
+        .await;
+        match asked {
+            Some(Ok(_)) => AddEnd::Added,
+            Some(Err(_)) | None => AddEnd::Failed,
         }
     }
 }

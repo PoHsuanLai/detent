@@ -1,9 +1,11 @@
 //! The Spaces list and its removal, over accountd's registry and memory's controls.
 
+use crate::deadline::{Deadline, answered, peer};
 use crate::live::{BusSource, connect};
 use crate::memory::MemoryControlProxy;
 use almanac_core::Removal;
 use detent_model::{Absence, SpaceKey, SpaceRow};
+use ds_peer::within;
 use porter_client::{DbusTransport, SpacesError};
 use porter_dbus::{BusFailure, SpacesProxy, classify};
 
@@ -21,11 +23,16 @@ fn absence_of(error: SpacesError) -> Absence {
 /// The desktop-wide Spaces, in the order they were made.
 pub(super) async fn list(bus: &BusSource) -> Result<Vec<SpaceRow>, Absence> {
     let connection = connect(bus).await?;
-    let spaces = DbusTransport::over(connection)
-        .spaces()
+    let asked = async {
+        let spaces = DbusTransport::over(connection)
+            .spaces()
+            .await
+            .map_err(absence_of)?;
+        spaces.list().await.map_err(absence_of)
+    };
+    let records = within(Deadline::READ, peer::ACCOUNTS, asked)
         .await
-        .map_err(absence_of)?;
-    let records = spaces.list().await.map_err(absence_of)?;
+        .map_err(|silent| Absence::Failed(silent.to_string()))??;
     Ok(records
         .into_iter()
         .map(|record| SpaceRow {
@@ -50,15 +57,22 @@ pub(super) async fn remove(
     let memory = MemoryControlProxy::new(&connection)
         .await
         .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
-    match memory.remove_space(&space.0, &wire).await {
-        Ok(_) => {}
-        Err(error) if matches!(classify(&error), BusFailure::NoDaemon) => {}
-        Err(_) => return Err(COULD_NOT_REMOVE.to_owned()),
+    let told = answered(
+        Deadline::ACTION,
+        peer::MEMORY,
+        memory.remove_space(&space.0, &wire),
+    )
+    .await;
+    match told {
+        Some(Ok(_)) => {}
+        Some(Err(error)) if matches!(classify(&error), BusFailure::NoDaemon) => {}
+        Some(Err(_)) | None => return Err(COULD_NOT_REMOVE.to_owned()),
     }
-    SpacesProxy::new(&connection)
+    let registry = SpacesProxy::new(&connection)
         .await
-        .map_err(|_| COULD_NOT_REMOVE.to_owned())?
-        .remove(&space.0)
+        .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
+    answered(Deadline::ACTION, peer::ACCOUNTS, registry.remove(&space.0))
         .await
+        .ok_or_else(|| COULD_NOT_REMOVE.to_owned())?
         .map_err(|_| COULD_NOT_REMOVE.to_owned())
 }

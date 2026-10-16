@@ -4,13 +4,15 @@
 use super::add_io::{add_account, add_ai_key};
 use super::feeds::Feeds;
 use super::reload::{reload, reload_later};
-use crate::live::{BusSource, Daemon};
+use crate::deadline::{Deadline, peer};
+use crate::live::{BusSource, Daemon, plain};
 use detent_model::{
     Absence, AccountsEffect, AccountsInput, AccountsPane as Pane, AccountsState, ModuleId,
     ModuleRow, Sources, accounts_step,
 };
 use dioxus::prelude::*;
 use ds::stack::toast_hub::ToastHub;
+use ds_peer::within;
 use ds_settings::schema::KeyKind;
 use std::collections::VecDeque;
 
@@ -22,7 +24,16 @@ pub(crate) fn is_valued(kind: &KeyKind) -> bool {
 /// The accounts the modules list now, read once: what the intents provider answers from. Never
 /// starts a daemon. A module that is not there leaves its part out; the answer is an absence
 /// only when none is there.
+///
+/// The whole read is under one action deadline besides each call's own: three modules of a
+/// row's worth of calls each must not hold an agent's request for as long as every call could.
 pub async fn read_accounts(bus: &BusSource) -> Result<Pane, Absence> {
+    within(Deadline::ACTION, peer::ACCOUNTS, read_modules(bus))
+        .await
+        .map_err(|silent| Absence::Failed(silent.to_string()))?
+}
+
+async fn read_modules(bus: &BusSource) -> Result<Pane, Absence> {
     let mut sources = Sources::default();
     for module in ModuleId::ALL {
         let found = crate::live::read_once(bus, &Daemon::of(module), is_valued).await;
@@ -95,7 +106,7 @@ fn answer(row: ModuleRow, result: Result<(), ds_settings::live::LiveError>) -> A
         Ok(()) => AccountsInput::Done(row),
         Err(error) => AccountsInput::Failed {
             row,
-            why: error.to_string(),
+            why: plain(&error),
         },
     }
 }

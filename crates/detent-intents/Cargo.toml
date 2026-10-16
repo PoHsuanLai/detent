@@ -14,6 +14,7 @@ detent-model = { workspace = true }
 docket-client = { workspace = true }
 docket-core = { workspace = true }
 docket-dbus = { workspace = true }
+ds-peer = { workspace = true }
 ds-settings = { workspace = true }
 porter-core = { workspace = true }
 prov = { workspace = true }

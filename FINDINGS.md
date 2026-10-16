@@ -273,17 +273,27 @@ Open items, each with its closing condition:
   sidebar row of its own. Closes when the sidebar has groups.
 - **Wire words are parsed by hand.** `UpdatePhase::of_word` is a hand-written match: `detent-model` has no
   `ds-core` (the `Word` derive) and gaining it is a Cargo change. Closes with that dependency.
-- **The service is looked for, never started.** slipway ships no D-Bus activation file, so the page reads
-  `NameHasOwner` first; a service that starts later is followed (name changes and
-  `PropertiesChanged` tick a re-read). The page says plainly that updates are not available when it is
-  not there.
+- **The service is looked for, never started.** slipway ships a D-Bus activation file for
+  `org.quire.Updates1` (`dist/org.quire.Updates1.service`, which starts its user unit), but opening
+  Settings must not wake a service the session did not start, so the page reads `NameHasOwner` first; a
+  service that starts later is followed (name changes and `PropertiesChanged` tick a re-read). The
+  page says plainly that updates are not available when it is not there.
 - **Log Out opens the shell's power menu** (`sill power-menu open`, which asks before it logs out). There
   is no bus method for logging out in detent or sill. When the command is missing or fails, a toast says
   to use the power menu of the desktop. Closes if sill offers a bus call for it.
 - **"Last checked" is not ticked.** It is worked out when the page draws (on each service change and each
   visit), so "5 minutes ago" does not turn into "6 minutes ago" on its own while the page sits idle.
 - **Rollback and the automatic-update options are not on the page** (owner: check daily, ask to install;
-  the page states the daily check and has no switch).
+  the page states the daily check and has no switch). Nothing in detent calls `Rollback()`. If the
+  owner wants it on the page, what slipway (769704c) requires of the caller: the service answers
+  `Rollback()` only for a process whose cgroup leaf is `sill.service` or an app scope for
+  `org.quire.Settings` (`app-<launcher>-org.quire.Settings-<n>.scope`), and the system then asks for
+  the administrator's password before anything happens. A detent started by its bus activation runs as
+  the unit `org.quire.Settings.service` (`dist/systemd/`), whose leaf is not in slipway's default
+  `callers`, so that call would be refused until slipway lists the unit. The page would then need
+  three plain endings: the person cancels the password (nothing happened, no message beyond the
+  button coming back), the service refuses the caller ("done from Settings" sentence of the service,
+  shown as it is), and the work failing (the service's `Problem`). Needs an owner decision to add.
 - **A second `detent --page X` navigates the running window** (`ActivateAction("open-page", [slug])`, then
   a raise), so the notification's button lands on the page whether or not Settings was open.
 
@@ -478,6 +488,9 @@ What the audit found and where each landed. A row marked deferred or needing a d
 | DETENT-04 | fixed in this process, open across programs | Saves of settings files take one process-wide turn around read and write (the window thread and the intents provider both save), and the temporary names are unique. A write by another program (sill) of the same file between detent's read and rename is still lost: that needs a cross-process lock in `ds_helpers` (interface ask in the audit report: an `update_atomic` that holds the lock across the read). The keymap's `save_person` still writes the whole text it was given. |
 | DETENT-15 | fixed | `save_places` is one edit of the `assistant` table's keys and one rename; the arm that returned `Ok` without writing is an error. |
 | DETENT-02 | fixed, one part needs a decision | The side reader is deleted (above). Tests: `detent-model/tests/model/agent_marks.rs` (a user-directory schema lends no marks to an installed one, a stale schema lends none, a never-settable mark drops the schema, a file not named for its program marks nothing). Needs a decision: a program with no schema in a system directory (the developer install under `~/.local/share`, `--write-schema`) can still be described, marks included, by a file in the user's own directory, which anyone who can write there can add. Options: honour `agent = "settable"` only from system directories (breaks the developer install's agent keys), or only when the program is installed too. A key path that two programs both name still answers no key (`Catalogue::entry`), so a rogue schema can deny an agent a real key; it cannot gain one. |
+| DETENT-07 | fixed in detent, quire carries the live calls | Every call detent makes to another process runs under a named quire `Deadline` (`detent-ui/src/deadline.rs`: `answered`, plus `within` where the failure keeps its type; `peer::*` are the plain names a sentence uses): connecting to the bus, who owns a name, the Spaces, memory, sync, assistant, account and update calls, the service manager, the add sheets (the prompt deadline), the intents service's startup and a second `detent`'s hand-over (`serve_session`, `hand_over_session` in `detent-intents`), and the whole of `read_accounts` (one action deadline, so an agent's `settings.accounts.list` cannot hold the router for as long as every call could). `LiveClient` carries its own read and action deadlines (quire); a `LiveError::Timeout` is the words the module gives ("The service is not answering"), feeds `Failed` to the Accounts pane (which clears the row's pending latch) and `Absence::Failed` elsewhere. A refusal shown to the person is the module's own sentence (`live::plain`), not the error's bus name. Tests: `detent-ui/src/deadline_tests.rs` (a call that never returns ends at its deadline). Not tested end to end: a module that never answers an action, because the deadlines are quire's fixed values (a test would wait ten real seconds); the Accounts pane's `Failed` clearing `pending` is covered by the model tests. |
+| DETENT-09 | fixed | `detent-ui/src/ticks.rs`: `Ticks` is a one-slot wake-up (ticks that come while one waits are one, so a service flooding signals cannot grow a queue or make the page re-read faster than it can) and owns its relay tasks (dropping it aborts them, so leaving the page ends the connection's tasks at once instead of at the service's next signal). Used by the Software Update page and by the computers list. `UpdateTicks` is now `Ticks`; the test service makes one with `UpdateTicks::channel()`. Tests: `detent-ui/src/ticks_tests.rs`. |
+| DETENT-06 | partly fixed | The page reads the service's eight properties in one `GetAll` (`updates/wire.rs`, tested) and `UpdateStatus::of_wire` bounds what the service may make it hold (`detent-model/src/updates/limits.rs`: a version is at most 64 version characters or the service is taken as making no sense; notes at most 200 lines and 16 KiB; a problem one line of at most 300 characters). Tests: `detent-model/tests/model/update_limits.rs`. Not detent's to fix: `Install()` still carries no version, so the person's click is not bound to the version on screen (interface ask to slipway: `Install(version: s)` refusing a mismatch; detent then sends the version it shows); and the owner of the name is not checked (DETENT-05). |
 | DETENT-18 (value echo) | fixed | The invalid-value line no longer prints the value (a free-text key can hold a token). |
 
 ## Manual checks

@@ -2,8 +2,10 @@
 //! it and the person's own service manager. Behind one handle that the environment carries, so a
 //! test hands in scratch folders and a manager that only writes down what it was asked.
 
+use crate::deadline::{Deadline, peer};
 use detent_files::ConfigHome;
 use detent_model::Existing;
+use ds_peer::within;
 use porter_client::{
     LendingConfig, LendingState, SessionUnits, TailnetLending, UnitFailure, UnitManager, UnitName,
 };
@@ -159,11 +161,15 @@ impl Lender {
 
     /// Sets sharing up; the sentence that says why not when it could not be.
     pub(crate) async fn enable(&self) -> Result<(), String> {
-        self.0.enable().await
+        within(Deadline::ACTION, peer::SERVICES, self.0.enable())
+            .await
+            .map_err(|silent| silent.to_string())?
     }
 
     /// Takes sharing away; the sentence that says why not when it could not be.
     pub(crate) async fn disable(&self) -> Result<(), String> {
-        self.0.disable().await
+        within(Deadline::ACTION, peer::SERVICES, self.0.disable())
+            .await
+            .map_err(|silent| silent.to_string())?
     }
 }

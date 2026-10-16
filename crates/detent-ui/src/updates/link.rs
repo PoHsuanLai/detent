@@ -1,18 +1,19 @@
 //! How the Software Update page reaches the update service: one handle the environment carries,
 //! so a test hands in a service that only answers from memory.
 
+use crate::ticks::Ticks;
 use detent_model::{Absence, UnixSeconds, UpdateStatus};
 use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
-use tokio::sync::mpsc::UnboundedReceiver;
 
 /// UpdateWork in flight; the seam's methods are async, and a trait object cannot be.
 pub type UpdateWork<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
-/// A tick for each time the service's standing may have changed: read it again.
-pub type UpdateTicks = UnboundedReceiver<()>;
+/// A tick for each time the service's standing may have changed: read it again. Ticks that come
+/// while one waits are one tick, and dropping this ends whatever produces them.
+pub type UpdateTicks = Ticks;
 
 /// What the page needs of the update service and of the clock.
 pub trait UpdatesLink: Send + Sync {
