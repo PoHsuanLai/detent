@@ -4,6 +4,7 @@ use crate::accounts::AccountsSource;
 use crate::answer::{key_ref, not_found, outcome, own, own_label, page_ref, refusal};
 use crate::ask::{Ask, ask};
 use crate::journal::{Change, Journal};
+use crate::limits::{ACCOUNTS_CHARS, KEY_VALUE_CHARS, many_lines, one_line};
 use crate::manifest::{ManifestFault, manifest};
 use crate::window::Window;
 use detent_files::{ConfigHome, load, save};
@@ -145,7 +146,7 @@ impl SettingsProvider {
         let lines: Vec<String> = pane.accounts.iter().map(|account| account.line()).collect();
         let mut out = outcome("", Undoable::No);
         out.value = Some(Labelled::new(
-            Value::Text(lines.join("\n")),
+            Value::Text(many_lines(&lines.join("\n"), ACCOUNTS_CHARS)),
             Label::untrusted(Source::Web, DataClass::AppOwn, space),
         ));
         Ok(out)
@@ -153,7 +154,7 @@ impl SettingsProvider {
 
     fn read_key(&self, path: &KeyPath, space: prov::SpaceId) -> Result<Outcome, AppRefusal> {
         let entry = self.key(path)?;
-        let text = show_value(&self.current(entry)?);
+        let text = one_line(&show_value(&self.current(entry)?), KEY_VALUE_CHARS);
         let mut out = outcome("", Undoable::No);
         out.value = Some(Labelled::new(
             Value::Text(text),
@@ -214,7 +215,7 @@ impl IntentProvider for SettingsProvider {
             return Ok(Preview::None);
         };
         let (entry, after) = self.settable(&key, &text)?;
-        let before = show_value(&self.current(entry)?);
+        let before = one_line(&show_value(&self.current(entry)?), KEY_VALUE_CHARS);
         let label_of_after = inv
             .args
             .iter()

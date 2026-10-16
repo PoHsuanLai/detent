@@ -8,6 +8,7 @@ use prov::Integrity;
 const MAGNIFICATION: &str = "dock.magnification";
 const TILE_SIZE: &str = "dock.tile_size_px";
 const HANDS_OFF: &str = "dock.autohide";
+const WEB_ADDRESS: &str = "launcher.web_engine_url";
 const SILL: &str = "sill/settings.toml";
 
 async fn world(test: &str) -> World {
@@ -88,6 +89,23 @@ async fn reading_a_key_answers_the_file_then_the_default_and_trusts_neither() {
     world.write(SILL, "[dock]\nmagnification = \"off\"\ntile_size_px = 60\n");
     assert_eq!(read(MAGNIFICATION).await.value, text("off"));
     assert_eq!(read(TILE_SIZE).await.value, text("60"));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_value_longer_than_the_manifest_allows_is_cut_to_one_line() {
+    let world = world("read-a-huge-value").await;
+    let huge = "word\\nand more words ".repeat(5000);
+    world.write(SILL, &format!("[launcher]\nweb_engine_url = \"{huge}\"\n"));
+    let out = world
+        .perform("settings.key.read", &[("key", key(WEB_ADDRESS))])
+        .await
+        .expect("read");
+    let Value::Text(shown) = out.value.expect("a value").value else {
+        panic!("text expected");
+    };
+    assert_eq!(shown.chars().count(), 500, "cut to the declared size");
+    assert!(!shown.contains('\n'), "one line");
+    assert!(shown.starts_with("word and more words"));
 }
 
 #[tokio::test(flavor = "multi_thread")]
