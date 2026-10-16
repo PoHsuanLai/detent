@@ -1271,7 +1271,6 @@ dependencies = [
  "ds-settings",
  "tokio",
  "toml",
- "zbus",
 ]
 
 [[package]]
@@ -1283,6 +1282,7 @@ dependencies = [
  "detent-testkit",
  "docket-agents",
  "docket-settings",
+ "ds-helpers",
  "ds-settings",
  "keycap-client",
  "thiserror 2.0.21",
@@ -1300,6 +1300,7 @@ dependencies = [
  "docket-client",
  "docket-core",
  "docket-dbus",
+ "ds-peer",
  "ds-settings",
  "porter-core",
  "prov",
@@ -1350,6 +1351,7 @@ dependencies = [
  "ds-harness",
  "ds-helpers",
  "ds-lint",
+ "ds-peer",
  "ds-settings",
  "image",
  "porter-client",
@@ -1868,6 +1870,9 @@ dependencies = [
 [[package]]
 name = "ds-desktop"
 version = "0.1.0"
+dependencies = [
+ "ds-peer",
+]
 
 [[package]]
 name = "ds-harness"
@@ -1903,6 +1908,7 @@ dependencies = [
 name = "ds-helpers"
 version = "0.1.0"
 dependencies = [
+ "ds-peer",
  "serde",
  "thiserror 2.0.21",
  "toml",
@@ -1934,12 +1940,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-peer"
+version = "0.1.0"
+dependencies = [
+ "futures-timer",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "ds-settings"
 version = "0.1.0"
 dependencies = [
  "dioxus",
  "ds-behaviour",
  "ds-core",
+ "ds-helpers",
+ "ds-peer",
  "ds-settings-derive",
  "ds-style",
  "futures-timer",
