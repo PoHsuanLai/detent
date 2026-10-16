@@ -44,7 +44,7 @@ pub enum Block {
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
 /// program names that is not listed follows these, in the order the schemas first mention it.
 const INTELLIGENCE_SECTIONS: &[&str] = &[
-    "Companion",
+    "Asking",
     "Models",
     MEMORY_SECTION,
     "Computer use",
@@ -101,8 +101,8 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
         .map(|section| (rank(&section.title) * 2, Block::Section(section.clone())))
         .collect();
     let live = rank(PICKER_AFTER) * 2 + 1;
-    // Right after Companion: the first section is about the assistant, and so is this.
-    slotted.push((rank("Companion") * 2 + 1, Block::Assistants));
+    // Right after Asking: the first section is about the assistant, and so is this.
+    slotted.push((rank("Asking") * 2 + 1, Block::Assistants));
     slotted.push((live, Block::LocalRuntimes));
     slotted.push((live, Block::ModelPicker));
     slotted.sort_by_key(|(slot, _)| *slot);
@@ -154,9 +154,9 @@ mod tests {
         (
             "intelligence follows design/22 whatever order the schemas were read in",
             Page::Intelligence,
-            &["Assistant", "Models", "Companion", "Memory", "Computer use"],
+            &["Assistant", "Models", "Asking", "Memory", "Computer use"],
             &[
-                "Companion",
+                "Asking",
                 "<assistants>",
                 "Models",
                 "<runtimes>",
@@ -169,9 +169,9 @@ mod tests {
         (
             "the picker takes the place of Models when no schema has it",
             Page::Intelligence,
-            &["Assistant", "Companion"],
+            &["Assistant", "Asking"],
             &[
-                "Companion",
+                "Asking",
                 "<assistants>",
                 "<runtimes>",
                 "<picker>",
