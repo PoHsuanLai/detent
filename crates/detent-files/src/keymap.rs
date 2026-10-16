@@ -2,16 +2,16 @@
 //! desktop's own bindings and the change watch, and the person's own keymap file, which detent
 //! reads as text (to keep the person's comments) and writes.
 
-use crate::error::FilesError;
+use crate::error::{FilesError, reason_of};
 use crate::values::ConfigHome;
 use chordkit::{Keymap, KeymapSource, Watch};
 use detent_model::{KeymapText, KeymapTexts, MachineLayer, desktop_keymap};
+use ds_helpers::{NewFileMode, ReadCap, ReadError, read_text_capped, write_atomic};
 use keycap_client::{KeycapSource, system_bindings};
-use std::io::{ErrorKind, Read};
 use std::path::{Path, PathBuf};
 
 /// The most keycap reads of a keymap file; a larger one is not used, so it is not written over.
-const MAX_BYTES: u64 = 32 * 1024;
+const MAX_BYTES: ReadCap = ReadCap::kib(32);
 
 /// Where keycap's daemon would be, under a scratch home: nowhere, so nothing real is asked.
 const NO_SOCKET: &str = "keycap/no-daemon.sock";
@@ -72,20 +72,18 @@ impl KeymapFiles {
         self.source.watch(Box::new(on_change)).ok()
     }
 
-    /// Writes `text` as the person's keymap through a temporary file and a rename, so a watch
-    /// sees one whole file and a crash leaves the old one.
+    /// Writes `text` as the person's keymap through [`write_atomic`] (a uniquely named temporary
+    /// file and a rename, the file's mode and a link to it kept), so a watch sees one whole file
+    /// and a crash leaves the old one.
     pub fn save_person(&self, text: &str) -> Result<(), FilesError> {
         let person = self.source.person_file();
-        let io = |at: &Path| {
-            let path = at.to_path_buf();
-            move |source| FilesError::Io { path, source }
-        };
         if let Some(dir) = person.parent() {
-            std::fs::create_dir_all(dir).map_err(io(dir))?;
+            std::fs::create_dir_all(dir).map_err(|source| FilesError::Io {
+                path: dir.to_path_buf(),
+                source,
+            })?;
         }
-        let temp = person.with_extension("part");
-        std::fs::write(&temp, text).map_err(io(&temp))?;
-        std::fs::rename(&temp, person).map_err(io(person))
+        write_atomic(person, text.as_bytes(), NewFileMode::Umask).map_err(FilesError::from)
     }
 }
 
@@ -97,21 +95,16 @@ fn trouble(why: impl std::fmt::Display) -> KeymapText {
 }
 
 fn read_text(path: &Path) -> KeymapText {
-    let file = match std::fs::File::open(path) {
-        Ok(file) => file,
-        Err(e) if e.kind() == ErrorKind::NotFound => return KeymapText::default(),
-        Err(e) => return trouble(e),
-    };
-    let mut text = String::new();
-    match file.take(MAX_BYTES + 1).read_to_string(&mut text) {
-        Ok(n) if u64::try_from(n).is_ok_and(|n| n > MAX_BYTES) => {
-            trouble(format!("it is larger than {} KiB", MAX_BYTES / 1024))
-        }
-        Ok(_) => KeymapText {
+    match read_text_capped(path, MAX_BYTES) {
+        Ok(text) => KeymapText {
             text,
             trouble: None,
         },
-        Err(e) if e.kind() == ErrorKind::InvalidData => trouble("it is not plain text"),
-        Err(e) => trouble(e),
+        Err(error) if error.is_missing() => KeymapText::default(),
+        Err(ReadError::TooBig { cap, .. }) => {
+            trouble(format!("it is larger than {} KiB", cap.limit() / 1024))
+        }
+        Err(ReadError::NotText { .. }) => trouble("it is not plain text"),
+        Err(error) => trouble(reason_of(&error)),
     }
 }

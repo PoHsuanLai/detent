@@ -2,6 +2,7 @@
 //! directory, not a settings row (a settings row would be a key some schema must own, and the
 //! first run is not a preference).
 
+use ds_helpers::{NewFileMode, write_atomic};
 use std::io;
 use std::path::PathBuf;
 
@@ -52,6 +53,7 @@ impl FirstRunMark {
         if let Some(parent) = self.path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        std::fs::write(&self.path, CONTENT)
+        write_atomic(&self.path, CONTENT.as_bytes(), NewFileMode::Umask)
+            .map_err(|error| io::Error::new(error.source.kind(), error))
     }
 }

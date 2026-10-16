@@ -1,24 +1,69 @@
-//! A write that did not happen.
+//! A write that did not happen, and a file that could not be used.
 
-use std::path::PathBuf;
+use ds_helpers::{ReadError, WriteError};
+use std::path::{Path, PathBuf};
 
-/// What stopped a save.
+/// What stopped a save. The messages are for the person (they appear in a toast): plain words,
+/// the file named, no protocol or format names.
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum FilesError {
-    /// A directory or file could not be written or renamed.
-    #[error("{path}: {source}")]
+    /// A directory or file could not be written.
+    #[error("Settings couldn't save {path}: {source}")]
     Io {
         /// Which path.
         path: PathBuf,
         /// Why.
         source: std::io::Error,
     },
-    /// The file on disk is not valid TOML: writing would replace what the person typed.
-    #[error("{path} is not valid TOML, fix it by hand first: {reason}")]
+    /// The file on disk has a mistake in it: writing would replace what the person typed.
+    #[error(
+        "{path} has a mistake in it, so Settings left it as it is. Fix it by hand first ({reason})."
+    )]
     Garbled {
         /// Which file.
         path: PathBuf,
         /// What the parser said.
         reason: String,
     },
+    /// The file is there and could not be read (no permission, not text, not an ordinary file,
+    /// far too large): it is not taken for an empty one, and nothing is written over it.
+    #[error("Settings couldn't read {path} ({reason}), so it left the file as it is.")]
+    Unreadable {
+        /// Which file.
+        path: PathBuf,
+        /// Why, in a short phrase.
+        reason: String,
+    },
+}
+
+impl From<WriteError> for FilesError {
+    fn from(error: WriteError) -> FilesError {
+        FilesError::Io {
+            path: error.path,
+            source: error.source,
+        }
+    }
+}
+
+impl FilesError {
+    /// The file at `path` could not be read, because of `error`.
+    pub(crate) fn unreadable(path: &Path, error: &ReadError) -> FilesError {
+        FilesError::Unreadable {
+            path: path.to_path_buf(),
+            reason: reason_of(error),
+        }
+    }
+}
+
+/// Why a read failed, as a short phrase for a sentence.
+pub(crate) fn reason_of(error: &ReadError) -> String {
+    match error {
+        ReadError::NotFound { .. } => "it isn't there".to_owned(),
+        ReadError::NotRegular { .. } => "it isn't an ordinary file".to_owned(),
+        ReadError::TooBig { .. } => "it is far larger than a settings file".to_owned(),
+        ReadError::NotText { .. } => "it isn't plain text".to_owned(),
+        ReadError::Io { source, .. } => source.to_string(),
+        other => other.to_string(),
+    }
 }

@@ -10,7 +10,7 @@ use toml::Value;
 
 const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
-fn key(path: &str, kind: KeyKind, default: Value) -> KeySpec {
+pub(crate) fn key(path: &str, kind: KeyKind, default: Value) -> KeySpec {
     KeySpec {
         path: KeyPath(path.to_owned()),
         kind,
@@ -29,11 +29,11 @@ fn key(path: &str, kind: KeyKind, default: Value) -> KeySpec {
     }
 }
 
-fn word(text: &str) -> Value {
+pub(crate) fn word(text: &str) -> Value {
     Value::String(text.to_owned())
 }
 
-fn spec() -> FileSpec {
+pub(crate) fn spec() -> FileSpec {
     let file = ConfigFile::parse(&FilePath("acme/settings.toml".to_owned())).expect("file");
     FileSpec {
         file,
@@ -75,19 +75,19 @@ fn spec() -> FileSpec {
     }
 }
 
-fn home(name: &str) -> (Scratch, ConfigHome) {
+pub(crate) fn home(name: &str) -> (Scratch, ConfigHome) {
     let scratch = Scratch::under(TMP, name);
     let home = ConfigHome(scratch.path().to_path_buf());
     (scratch, home)
 }
 
-fn write_file(home: &ConfigHome, text: &str) {
+pub(crate) fn write_file(home: &ConfigHome, text: &str) {
     let path = home.path_of(&spec().file);
     std::fs::create_dir_all(path.parent().expect("parent")).expect("mkdir");
     std::fs::write(path, text).expect("write");
 }
 
-fn read_file(home: &ConfigHome) -> String {
+pub(crate) fn read_file(home: &ConfigHome) -> String {
     std::fs::read_to_string(home.path_of(&spec().file)).expect("read")
 }
 
@@ -142,7 +142,7 @@ fn a_bad_value_costs_only_its_own_key() {
     );
 }
 
-fn save_key(home: &ConfigHome, path: &str, value: Value) -> Result<(), FilesError> {
+pub(crate) fn save_key(home: &ConfigHome, path: &str, value: Value) -> Result<(), FilesError> {
     save(home, &spec().file, &KeyPath(path.to_owned()), &value)
 }
 
@@ -184,7 +184,7 @@ fn a_write_sets_one_key_and_keeps_every_other_byte() {
     let leftovers = std::fs::read_dir(dir.parent().expect("parent"))
         .expect("dir")
         .filter_map(Result::ok)
-        .filter(|e| e.path().extension().is_some_and(|x| x == "part"))
+        .filter(|e| e.path() != dir)
         .count();
     assert_eq!(leftovers, 0, "the temporary file was renamed away");
 }

@@ -1,5 +1,7 @@
 //! The lenient read.
 
+use crate::error::reason_of;
+use crate::read::text_of;
 use crate::unknown::unknown_keys;
 use crate::values::{ConfigHome, FileValues};
 use detent_model::{Control, FileSpec};
@@ -10,17 +12,20 @@ use std::collections::BTreeMap;
 /// What `spec`'s file holds: every valid value laid over the keys' defaults. A missing file is
 /// the defaults; a bad value costs only its own key (its default is used and it is reported in
 /// `invalid`); a key no schema describes is reported in `unknown` and is not part of the
-/// result, so the next save drops it. Reading never fails.
+/// result, so the next save drops it. A file that is there and cannot be read (no permission,
+/// not text, not an ordinary file, over a megabyte) is not a missing one: it shows the
+/// defaults and is reported as the one invalid key of the whole file, and [`crate::save`]
+/// refuses to write over it. Reading never fails.
 pub fn load(home: &ConfigHome, spec: &FileSpec) -> Loaded<FileValues> {
     let path = home.path_of(&spec.file);
-    let text = match std::fs::read(&path).map(String::from_utf8) {
-        Ok(Ok(text)) => text,
-        Ok(Err(error)) => return Loaded::garbled(defaults(spec), error.to_string()),
-        Err(_) => return Loaded::clean(defaults(spec)),
+    let text = match text_of(&path) {
+        Ok(Some(text)) => text,
+        Ok(None) => return Loaded::clean(defaults(spec)),
+        Err(error) => return Loaded::garbled(defaults(spec), reason_of(&error)),
     };
     match text.parse::<toml::Table>() {
         Ok(table) => overlay(spec, &table),
-        Err(error) => Loaded::garbled(defaults(spec), error.to_string()),
+        Err(error) => Loaded::garbled(defaults(spec), error.message().to_owned()),
     }
 }
 
@@ -51,9 +56,9 @@ fn overlay(spec: &FileSpec, table: &toml::Table) -> Loaded<FileValues> {
                 if ok.is_none() {
                     invalid.push(InvalidKey {
                         path: key.path.0.clone(),
-                        reason: format!(
-                            "{given} is not a value this control holds, kept as written"
-                        ),
+                        // The value itself is not echoed: a free-text key can hold a token.
+                        reason: "the value is not one this control holds, kept as written"
+                            .to_owned(),
                     });
                     as_written.insert(key.path.clone(), given.clone());
                 }

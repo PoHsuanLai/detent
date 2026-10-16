@@ -6,6 +6,8 @@ mod first_run_mark;
 mod keymap;
 mod places;
 mod round_trip;
+mod unreadable;
+mod writes;
 
 /// Fails when a topic file in this directory is not declared above, so a new file cannot be
 /// left out of the binary without anyone noticing.

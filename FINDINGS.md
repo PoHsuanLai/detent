@@ -32,7 +32,7 @@ reader (`lenient::read`) is crate-private. A schema-driven app knows no struct. 
 therefore re-implements, small and tested, the two rules that matter: the lenient overlay (a value
 the control cannot hold is kept as written and shown read-only, unknown keys reported by dotted path
 cut at the first unknown table) and a save that sets one key in place with `toml_edit` through an
-atomic temp-and-rename (`.part` beside the file, as `Store::save` does). It returns
+atomic write (`ds_helpers::write_atomic`, the one writer `Store::save` uses too). It returns
 `ds_settings::Loaded`, `UnknownKey` and `InvalidKey` so callers see quire's types. Closes when
 `ds-settings` offers a table-level `Store::load_table`/`save_table` (or a `RawDoc`) that takes the
 schema's keys.
@@ -465,6 +465,19 @@ recommended; the person chooses, or skips and is asked when a turn needs one.
   is shown read-only with "Edit in file". There is no other in-window notice.
 - A search hit is highlighted and its disclosure opened, but the page is not scrolled to it.
 - The window's size and the sidebar's width are not remembered; there are no back and forward buttons.
+
+## Production audit 2026-10-16 (DETENT-01 to -18)
+
+What the audit found and where each landed. A row marked deferred or needing a decision says why.
+
+| Id | Standing | Notes |
+| --- | --- | --- |
+| DETENT-01 | fixed | `detent-files/src/read.rs::text_of` is the one read: a missing file is empty, every other failure (no permission, not text, a directory, a pipe or device, over 1 MiB) is an error. `load` reports it as the file's one invalid key and shows the defaults; `save` returns `FilesError::Unreadable` and writes nothing. Test: `detent-files/tests/files/unreadable.rs`. The in-window notice for an unreadable file is still the stderr line plus the refusal toast on the first edit; a banner on the page is a UX item. |
+| DETENT-12 | fixed in `detent-files` | The same read caps a settings file at 1 MiB and refuses anything but a regular file (the keymap keeps its 32 KiB cap through the same helper). Reading off the UI task and coalescing `Reload` are not done (deferred: the cap bounds the stall to a megabyte read per file). |
+| DETENT-03 | fixed | `save`, `save_places`, `KeymapFiles::save_person` and `FirstRunMark::record` go through `ds_helpers::write_atomic`: a unique temporary name, `sync_all`, a directory sync, the file's mode kept and a symlink written through. Tests: `tests/files/writes.rs`. |
+| DETENT-04 | fixed in this process, open across programs | Saves of settings files take one process-wide turn around read and write (the window thread and the intents provider both save), and the temporary names are unique. A write by another program (sill) of the same file between detent's read and rename is still lost: that needs a cross-process lock in `ds_helpers` (interface ask in the audit report: an `update_atomic` that holds the lock across the read). The keymap's `save_person` still writes the whole text it was given. |
+| DETENT-15 | fixed | `save_places` is one edit of the `assistant` table's keys and one rename; the arm that returned `Ok` without writing is an error. |
+| DETENT-18 (value echo) | fixed | The invalid-value line no longer prints the value (a free-text key can hold a token). |
 
 ## Manual checks
 

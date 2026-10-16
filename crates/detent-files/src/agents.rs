@@ -2,6 +2,7 @@
 //! and the person's choice of model or way of signing in written back into the entry.
 
 use crate::error::FilesError;
+use crate::read::text_of;
 use crate::values::{ConfigHome, DataHome};
 use docket_agents::AgentsDir;
 use docket_settings::{AgentChoice, Agents, ChoiceFault, read_agents, write_agent_choice};
@@ -14,7 +15,11 @@ const AGENTS_DIR: &str = "docket/agents";
 
 /// The agents `docket/agents.toml` lists, none when there is no file.
 pub fn load_agents(config: &ConfigHome, data: &DataHome) -> Agents {
-    let text = std::fs::read_to_string(config.0.join(AGENTS_FILE)).unwrap_or_default();
+    // A file that cannot be read lists no agents; docket's own writer refuses to write over it.
+    let text = text_of(&config.0.join(AGENTS_FILE))
+        .ok()
+        .flatten()
+        .unwrap_or_default();
     read_agents(&text, &AgentsDir::at(&data.0.join(AGENTS_DIR)))
 }
 
