@@ -10,6 +10,7 @@ use crate::marks::ProviderMarks;
 use crate::updates::{LogOut, Updater};
 use detent_files::{ConfigHome, DataHome, FirstRunMark, KeymapFiles, StateHome};
 use detent_model::{Catalogue, PageSlug, Warning, discover};
+use ds_helpers::Environment;
 use ds_settings::SystemPrefsSource;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -57,6 +58,8 @@ pub struct Env {
     pub updates: Updater,
     /// How the Software Update page logs the person out once an update is installed.
     pub log_out: LogOut,
+    /// The file that says which distro this is (`os-release`), read to word an install line.
+    pub os_release: PathBuf,
 }
 
 impl Env {
@@ -89,6 +92,7 @@ impl Env {
             keymap,
             updates,
             log_out: LogOut::power_menu(),
+            os_release: Environment::system().os_release,
         }
     }
 
@@ -110,6 +114,11 @@ impl Env {
     /// This environment with the Software Update page logging out through `log_out`.
     pub fn with_log_out(self, log_out: LogOut) -> Env {
         Env { log_out, ..self }
+    }
+
+    /// This environment reading the distro from `os_release`.
+    pub fn with_os_release(self, os_release: PathBuf) -> Env {
+        Env { os_release, ..self }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.

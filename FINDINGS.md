@@ -404,6 +404,50 @@ recommended; the person chooses, or skips and is asked when a turn needs one.
 - Not checked here: these changes were written without a build; this repo's gate compiles and runs
   them. The real memoryd on a real session is a manual check (below).
 
+## D15: getting llama.cpp, in Settings (`detent-model/src/engines/`, `detent-ui/src/engines/`)
+
+- **The fact is the assistant's.** porter (58add48) answers `Inference1.LocalEngines`: one row per
+  engine (`llama_cpp`, `vllm`, `speech`, `kokoro`) with `found` or `missing`. detent reads it with
+  porter-client's `DbusTransport::list_local_engines` and keeps only llama.cpp's row
+  (`llama_cpp_of`). vLLM is set up by hand and the page does not list speech or Kokoro, so none of
+  them gets a line. The assistant not running, a refused or failed call, or a list without
+  llama.cpp is `Unknown`: no note.
+- **The note.** Under the "Models on this computer" group (drawn by `LocalRuntimes`, outside the
+  `.runtimes` block, so the rows count does not change), while llama.cpp is missing: "To run
+  models on this computer, install llama.cpp." in the quiet footnote style, then the install line,
+  then a "Start using it" button. The install line is quire's `CommandLine` (a copyable line; the
+  window writes the clipboard with `ds_blitz::clipboard::write_text` and says "Copied").
+- **The install line per distro** (`install_advice`, pure, from the `os-release` text):
+  `ds_helpers::Family::detect` gives the family and `Family::install_command` the start of the
+  line. Fedora and relatives: `sudo dnf install llama-cpp`. Arch and relatives: `sudo pacman -S
+  llama-cpp`. Debian from 14 (a Debian with no `VERSION_ID`, testing, counts as new) and Ubuntu
+  from 26.04: `sudo apt install llama.cpp-tools`. Older Debian and Ubuntu, other apt distros
+  (Mint, Pop, derivatives with their own `ID`), openSUSE and unknown distros get "Get llama.cpp's
+  server from its releases page" as plain text and no command. A derivative of Ubuntu is judged by
+  its own `ID`, not its parent's, because its numbers are its own.
+- **Reading the distro.** `Env::os_release` is a path (`ds_helpers::Environment::system()`'s,
+  `/etc/os-release`); a test hands in a scratch file. The note reads it once when it appears.
+- **"Start using it".** The assistant finds engines when it starts, so installing one needs a
+  restart. The button asks first: "Restart the assistant to use llama.cpp?" / "The assistant
+  restarts so it can find llama.cpp. A conversation that is open stops." detent cannot tell whether
+  a conversation is open, so it always asks, with that neutral wording. Restart restarts the
+  assistant's service in the person's own session and waits for the job to finish
+  (`porter_client::SessionUnits::restart(INFERD_UNIT)`, `RestartUnit(unit, "replace")`), then
+  looks at `LocalEngines` again; the button is busy meanwhile. A failed restart says so in a toast.
+- **One declaration of the manager's proxy.** The brief said to declare the manager's proxy in
+  detent; porter-client already declares it (`SessionUnits`, which the lending switch uses too, and
+  waits for `JobRemoved` so "restarted" means up again). detent uses that one rather than a second.
+  Its `new` takes any connection, so a test serves a fake manager on its private bus.
+- **Never started by looking.** `look` checks `NameHasOwner` first, like the Your computers group
+  (`computers::inferd`, now shared), so opening the page does not start the assistant. The note
+  follows the assistant's name (`owner_changes`) and looks again when it changes hands, which
+  covers a restart done another way. While the restart runs, an assistant that is away does not
+  make the note disappear.
+- **Words.** No systemd, D-Bus or inferd in anything the person reads: "the assistant".
+- Not checked here: written without a build. `Cargo.lock` needs `ds-helpers` (and quire's
+  `CommandLine`/`CopyState` in `ds`, porter at 58add48) before it compiles. The note against a real
+  session (a real install and restart) is a manual check.
+
 ## Not in v1
 
 - **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): only inferd's
@@ -424,6 +468,9 @@ recommended; the person chooses, or skips and is asked when a turn needs one.
 
 ## Manual checks
 
+- The llama.cpp note on a real session with llama.cpp not installed: install it with the line,
+  press Start using it, answer Restart, and the note goes. The tests use a stand-in assistant and
+  service manager.
 - The Memory section's confinement line against the real memory service: on a normal kernel it
   reads "Memory keeps itself to its own folders"; with memory stopped there is no line. The tests
   use a stand-in service.

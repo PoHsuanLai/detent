@@ -7,6 +7,7 @@ pub mod accountd;
 pub mod bus;
 pub mod computers;
 pub mod drive;
+pub mod engines;
 pub mod inferd;
 pub mod lending;
 pub mod memory;
@@ -145,6 +146,19 @@ impl Sandbox {
         .with_lender(self.lender())
         .with_updates(Updater::over(self.updates.clone()))
         .with_log_out(LogOut::over(self.leaves.clone()))
+        .with_os_release(self.os_release_path())
+    }
+
+    /// Where this world's `os-release` is: a scratch file, never the computer's own.
+    pub fn os_release_path(&self) -> std::path::PathBuf {
+        self.scratch.join("etc/os-release")
+    }
+
+    /// This world's computer is the distro `text` describes (an `os-release` file's contents).
+    pub fn write_os_release(&self, text: &str) {
+        let path = self.os_release_path();
+        std::fs::create_dir_all(path.parent().expect("a file has a parent")).expect("mkdir");
+        std::fs::write(path, text).expect("write");
     }
 
     /// The lending switch over the scratch folders and the recording manager: never the real

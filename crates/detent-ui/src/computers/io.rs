@@ -64,7 +64,7 @@ fn sentence_of(error: &ClientError) -> String {
 
 /// A connection, only when inferd is already on the bus: asking would start it, and opening
 /// Settings must not.
-async fn inferd(bus: &BusSource) -> Result<Connection, Absence> {
+pub(crate) async fn inferd(bus: &BusSource) -> Result<Connection, Absence> {
     let connection = connect(bus).await?;
     let name = BusName::try_from(INFERENCE_BUS).map_err(|e| Absence::Failed(e.to_string()))?;
     let running = DBusProxy::new(&connection)

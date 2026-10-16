@@ -1,7 +1,9 @@
 //! "On this computer": the language-model runtimes accountd lists (Ollama, llama.cpp, LM Studio),
 //! each a row with its mark and state and a button to its account. A stopped one stays, greyed.
+//! Under the group, a note while the assistant has not found llama.cpp.
 
 use crate::accounts::{AccountLink, Listed, OpenButton, use_listed};
+use crate::engines::LocalEnginesNote;
 use detent_model::{Absence, Runtime};
 use dioxus::prelude::*;
 use ds::base::vocab::Muting;
@@ -46,7 +48,7 @@ pub fn LocalRuntimes() -> Element {
     let link = use_context::<AccountLink>();
     let found = use_runtimes();
 
-    match found() {
+    let group = match found() {
         Found::Looking => rsx! {},
         Found::Absent(absence) => rsx! {
             div { class: "runtimes", "data-runtimes": "unavailable",
@@ -84,6 +86,10 @@ pub fn LocalRuntimes() -> Element {
                 }
             }
         },
+    };
+    rsx! {
+        {group}
+        LocalEnginesNote {}
     }
 }
 

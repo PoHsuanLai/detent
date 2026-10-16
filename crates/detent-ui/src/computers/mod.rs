@@ -5,4 +5,5 @@
 mod io;
 mod view;
 
+pub(crate) use io::inferd;
 pub(crate) use view::{Computers, use_computers};

@@ -28,6 +28,8 @@ detent-ui      = { path = "crates/detent-ui" }
 ds          = { path = "../quire/crates/ds" }
 ds-blitz    = { path = "../quire/crates/ds-blitz" }
 ds-harness  = { path = "../quire/crates/ds-harness" }
+# The distro family and the release (`os-release`), for the install line of a missing program; the PackageKit backend is not wanted.
+ds-helpers  = { path = "../quire/crates/ds-helpers", default-features = false }
 ds-lint     = { path = "../quire/crates/ds-lint" }
 ds-settings = { path = "../quire/crates/ds-settings" }  # detent-ui adds the `dioxus` feature for `use_environment`
 # docket (private repo, by path like quire): the app side of the intents wire. `docket-client`'s `dbus`

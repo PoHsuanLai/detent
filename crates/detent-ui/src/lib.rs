@@ -9,6 +9,7 @@ mod assistant_model;
 mod assistants;
 mod computers;
 mod controls;
+mod engines;
 mod env;
 mod files;
 mod first_run;

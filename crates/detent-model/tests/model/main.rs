@@ -4,6 +4,7 @@
 mod agent_marks;
 mod catalogue;
 mod discovery;
+mod engines;
 mod intelligence_schemas;
 mod memory_consent;
 mod sync_now;
