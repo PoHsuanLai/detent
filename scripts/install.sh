@@ -18,6 +18,9 @@ repo=$(cd "$(dirname "$0")/.." && pwd)
 prefix=${PREFIX:-/usr}
 dest=${DESTDIR:-}
 bin=${DETENT_BIN:-$repo/target/release/detent}
+# `$prefix` as the replacement text of a `sed s|..|..|`: a `\`, a `|` or a `&` in it would otherwise
+# be read as sed syntax and write a corrupt unit or service file.
+sedprefix=$(printf '%s' "$prefix" | sed -e 's/[\\|&]/\\&/g')
 share=$dest$prefix/share
 # Where systemd and the session bus look: for a prefix under $HOME, the per-user data directory.
 home=${HOME:-}
@@ -39,10 +42,10 @@ install -Dm644 "$repo/dist/org.quire.Settings.desktop" "$share/applications/org.
 install -Dm644 "$repo/dist/intents/org.quire.Settings.toml" "$share/quire/intents/org.quire.Settings.toml"
 # `dbus-1/services/<AppName>.service` beside it, with the binary's installed path.
 mkdir -p "$servicedir"
-sed "s|^Exec=.*|Exec=$prefix/bin/detent|" "$repo/dist/dbus-1/services/org.quire.Settings.service" \
+sed "s|^Exec=.*|Exec=$sedprefix/bin/detent|" "$repo/dist/dbus-1/services/org.quire.Settings.service" \
   >"$servicedir/org.quire.Settings.service"
 chmod 644 "$servicedir/org.quire.Settings.service"
 # The user unit the D-Bus file names (`SystemdService=`): porter gives Settings its role only to this
 # unit's main process.
 install -Dm644 "$repo/dist/systemd/org.quire.Settings.service" "$unitdir/org.quire.Settings.service"
-sed -i "s|^ExecStart=.*|ExecStart=$prefix/bin/detent|" "$unitdir/org.quire.Settings.service"
+sed -i "s|^ExecStart=.*|ExecStart=$sedprefix/bin/detent|" "$unitdir/org.quire.Settings.service"

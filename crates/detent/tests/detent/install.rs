@@ -12,18 +12,23 @@ fn repo() -> PathBuf {
 }
 
 fn install_into(scratch: &Scratch) -> PathBuf {
+    install_under(scratch, "/usr")
+}
+
+/// The installer run with `PREFIX=prefix` into the scratch stage; the tree under the prefix.
+fn install_under(scratch: &Scratch, prefix: &str) -> PathBuf {
     let stage = scratch.join("stage");
     let status = Command::new("bash")
         .arg(repo().join("scripts/install.sh"))
         .env_clear()
         .env("PATH", std::env::var_os("PATH").unwrap_or_default())
         .env("DESTDIR", &stage)
-        .env("PREFIX", "/usr")
+        .env("PREFIX", prefix)
         .env("DETENT_BIN", env!("CARGO_BIN_EXE_detent"))
         .status()
         .expect("bash runs the installer");
     assert!(status.success(), "the installer failed");
-    stage.join("usr")
+    stage.join(prefix.trim_start_matches('/'))
 }
 
 #[test]
@@ -76,4 +81,24 @@ fn the_user_unit_is_the_one_the_service_file_names() {
     assert!(unit.contains("Type=dbus\n"), "{unit}");
     assert!(unit.contains("BusName=org.quire.Settings\n"), "{unit}");
     assert!(unit.contains("ExecStart=/usr/bin/detent\n"), "{unit}");
+}
+
+#[test]
+fn a_prefix_with_characters_sed_reads_as_syntax_is_written_as_it_is() {
+    let scratch = Scratch::under(TMP, "install-odd-prefix");
+    let prefix = "/opt/a|b&c\\d";
+    let root = install_under(&scratch, prefix);
+    let service =
+        std::fs::read_to_string(root.join("share/dbus-1/services/org.quire.Settings.service"))
+            .expect("the service file");
+    assert!(
+        service.contains(&format!("Exec={prefix}/bin/detent\n")),
+        "{service}"
+    );
+    let unit = std::fs::read_to_string(root.join("lib/systemd/user/org.quire.Settings.service"))
+        .expect("the unit");
+    assert!(
+        unit.contains(&format!("ExecStart={prefix}/bin/detent\n")),
+        "{unit}"
+    );
 }
