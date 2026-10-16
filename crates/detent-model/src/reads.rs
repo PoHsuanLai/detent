@@ -19,6 +19,7 @@ const INFERD: &[ModuleId] = &[ModuleId::Inferd];
 ///   accounts the local runtimes and the cloud places read).
 /// - Spaces: accountd, which keeps the registry.
 /// - Assistant Model: inferd, whose picker holds the row.
+/// - Privacy: none. The compositor publishes the rows; Settings looks for it and never starts it.
 pub fn modules_read(page: &Page) -> &'static [ModuleId] {
     match page {
         Page::Accounts | Page::Intelligence => ACCOUNT_MODULES,
@@ -29,6 +30,7 @@ pub fn modules_read(page: &Page) -> &'static [ModuleId] {
         | Page::MouseAndGestures
         | Page::KeyboardAndShortcuts
         | Page::Notifications
+        | Page::Privacy
         | Page::Power
         | Page::Apps
         | Page::Viewer
@@ -51,6 +53,7 @@ mod tests {
             Page::Notifications,
             Page::Spaces,
             Page::Accounts,
+            Page::Privacy,
             Page::Power,
             Page::Apps,
             Page::Intelligence,
@@ -78,6 +81,7 @@ mod tests {
             Page::MouseAndGestures,
             Page::KeyboardAndShortcuts,
             Page::Notifications,
+            Page::Privacy,
             Page::Power,
             Page::Apps,
             Page::Viewer,
