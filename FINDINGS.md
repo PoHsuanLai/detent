@@ -115,12 +115,12 @@ of `gestures.toml`, so a save from detent drops nothing palmrest reads. Two thin
 `detent-intents` serves them while the window runs.
 Open items, each with its closing condition:
 
-- **A schema cannot mark a key agent-settable.** `ds_settings::schema::KeySpec` has no such field, so
-  detent reads `agent = "settable"` from each `[[key]]` table of the schema files itself
-  (`detent-model/src/agent.rs`; `KeySpec`'s deserialiser ignores the extra field), and a key without
-  the mark is hands-off. No installed schema carries the mark yet. Closes when quire adds
-  `KeySpec::agent` (and the derive's `#[settings(agent_settable)]`); then `agent.rs` is deleted and
-  `discover` reads the field.
+- **Agent marks come from the admitted schema only (DETENT-02, closed 2026-10-16).** `agent.rs`
+  and its second parser are gone: `KeyEntry::agent()` is the key's own `KeySpec::agent`, so a mark
+  is read from the schema `ds_settings::schema::discover` admitted (named for its program, its
+  file inside that program's directory, the system's directories before the user's, never
+  settable under `ai.`, `cua.` and the other prefixes). What stays open is in the audit table
+  below (a user-directory schema for a program with no installed schema).
 - **No headless activation.** The bus file starts `detent`, which opens its window; a read or a set
   that arrives by D-Bus activation therefore shows Settings. A background provider needs
   `ds_blitz::launch_idle` with an `AppHandle` that opens the window only for `settings.page.show`.
@@ -477,6 +477,7 @@ What the audit found and where each landed. A row marked deferred or needing a d
 | DETENT-03 | fixed | `save`, `save_places`, `KeymapFiles::save_person` and `FirstRunMark::record` go through `ds_helpers::write_atomic`: a unique temporary name, `sync_all`, a directory sync, the file's mode kept and a symlink written through. Tests: `tests/files/writes.rs`. |
 | DETENT-04 | fixed in this process, open across programs | Saves of settings files take one process-wide turn around read and write (the window thread and the intents provider both save), and the temporary names are unique. A write by another program (sill) of the same file between detent's read and rename is still lost: that needs a cross-process lock in `ds_helpers` (interface ask in the audit report: an `update_atomic` that holds the lock across the read). The keymap's `save_person` still writes the whole text it was given. |
 | DETENT-15 | fixed | `save_places` is one edit of the `assistant` table's keys and one rename; the arm that returned `Ok` without writing is an error. |
+| DETENT-02 | fixed, one part needs a decision | The side reader is deleted (above). Tests: `detent-model/tests/model/agent_marks.rs` (a user-directory schema lends no marks to an installed one, a stale schema lends none, a never-settable mark drops the schema, a file not named for its program marks nothing). Needs a decision: a program with no schema in a system directory (the developer install under `~/.local/share`, `--write-schema`) can still be described, marks included, by a file in the user's own directory, which anyone who can write there can add. Options: honour `agent = "settable"` only from system directories (breaks the developer install's agent keys), or only when the program is installed too. A key path that two programs both name still answers no key (`Catalogue::entry`), so a rogue schema can deny an agent a real key; it cannot gain one. |
 | DETENT-18 (value echo) | fixed | The invalid-value line no longer prints the value (a free-text key can hold a token). |
 
 ## Manual checks

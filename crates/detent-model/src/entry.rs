@@ -1,9 +1,8 @@
 //! One key as the app shows it.
 
-use crate::agent::AgentSetting;
 use crate::config_file::ConfigFile;
 use crate::control::Control;
-use ds_settings::schema::KeySpec;
+use ds_settings::schema::{AgentSetting, KeySpec};
 
 /// A schema key with the file that holds its value and the control that draws it.
 #[derive(Debug, Clone, PartialEq)]
@@ -14,8 +13,6 @@ pub struct KeyEntry {
     pub file: ConfigFile,
     /// What draws it.
     pub control: Control,
-    /// Whether an agent may set it.
-    pub agent: AgentSetting,
 }
 
 impl KeyEntry {
@@ -26,13 +23,13 @@ impl KeyEntry {
             spec,
             file,
             control,
-            agent: AgentSetting::HandsOff,
         }
     }
 
-    /// This entry with `agent` as its setting.
-    #[must_use]
-    pub fn with_agent(self, agent: AgentSetting) -> KeyEntry {
-        KeyEntry { agent, ..self }
+    /// Whether an agent may set the key: the mark of the schema that supplied it, which
+    /// `ds_settings::schema::discover` admitted and `Schema::from_toml` checked (a key under a
+    /// never-settable prefix cannot carry the mark).
+    pub fn agent(&self) -> AgentSetting {
+        self.spec.agent
     }
 }

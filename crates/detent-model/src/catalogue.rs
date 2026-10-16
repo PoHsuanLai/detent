@@ -1,6 +1,5 @@
 //! Every key of every schema, grouped by page then section (design/22 section 9.3 item 1).
 
-use crate::agent::AgentSetting;
 use crate::assistant_model::assistant_model_page;
 use crate::config_file::ConfigFile;
 use crate::discovery::ProgramSchema;
@@ -61,14 +60,9 @@ impl Catalogue {
         let entries: Vec<KeyEntry> = programs
             .iter()
             .flat_map(|p| {
-                p.keys.iter().map(|k| {
-                    let agent = if p.settable.contains(&k.path) {
-                        AgentSetting::Settable
-                    } else {
-                        AgentSetting::HandsOff
-                    };
-                    KeyEntry::new(k.clone(), p.file.clone()).with_agent(agent)
-                })
+                p.keys
+                    .iter()
+                    .map(|k| KeyEntry::new(k.clone(), p.file.clone()))
             })
             .collect();
         Catalogue {

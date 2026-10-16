@@ -4,7 +4,6 @@
 
 mod accounts;
 mod advanced;
-mod agent;
 mod assistant_model;
 mod assistants;
 mod catalogue;
@@ -43,7 +42,6 @@ pub use accounts::{
     Source, Sources, SyncAdd, SyncHold, SyncNowEnd, accounts_step, hold_step, reauth_help,
 };
 pub use advanced::advanced_name;
-pub use agent::AgentSetting;
 pub use assistant_model::{
     ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Pressable, SetupButton, assistant_model_page,
     assistant_of, is_assistant_model, is_assistant_setup, setup_button,
@@ -60,6 +58,8 @@ pub use computers::{
 pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
 pub use discovery::{Discovery, ProgramSchema, discover};
+/// Whether an agent may set a key: quire's own type, carried by each `KeySpec`.
+pub use ds_settings::schema::AgentSetting;
 pub use engines::{
     EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LLAMA_CPP_ID, ListedEngine, LlamaCpp,
     Program, RELEASES_LINE, RESTART, Restart, Restarted, SETUP_LINE, START_USING, SetupNote,

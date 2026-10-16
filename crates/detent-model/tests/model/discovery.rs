@@ -1,6 +1,6 @@
 //! Finding schemas: the real ones, and the stale ones that are skipped.
 
-use detent_model::{Catalogue, StaleReason, discover};
+use detent_model::{Catalogue, ConfigFile, ProgramSchema, StaleReason, discover};
 use detent_testkit::{Scratch, seed_schemas};
 use ds_settings::schema::{AppId, FilePath, ForeignTables, Schema};
 
@@ -45,7 +45,7 @@ fn a_stale_schema_is_skipped_with_a_warning() {
     write(
         &dir,
         "escape",
-        &schema("escape", "../../etc/passwd.toml", 1),
+        &schema("escape", "escape/deep/passwd.toml", 1),
     );
     std::fs::write(dir.join("broken.settings.toml"), "not = [valid").expect("write");
 
@@ -63,7 +63,7 @@ fn a_stale_schema_is_skipped_with_a_warning() {
         [
             (
                 "escape".to_owned(),
-                StaleReason::UnsafeFile("../../etc/passwd.toml".to_owned())
+                StaleReason::UnsafeFile("escape/deep/passwd.toml".to_owned())
             ),
             ("future".to_owned(), StaleReason::UnsupportedVersion(2)),
         ],
@@ -72,7 +72,7 @@ fn a_stale_schema_is_skipped_with_a_warning() {
 }
 
 #[test]
-fn an_earlier_directory_shadows_a_later_one() {
+fn an_earlier_directory_wins_and_the_later_one_is_not_a_program_of_its_own() {
     let scratch = Scratch::under(TMP, "discovery-shadow");
     let (home, system) = (scratch.join("home"), scratch.join("system"));
     write(&home, "acme", &schema("acme", "acme/mine.toml", 1));
@@ -84,25 +84,38 @@ fn an_earlier_directory_shadows_a_later_one() {
         found.programs[0].file.relative().to_str(),
         Some("acme/mine.toml")
     );
-    assert_eq!(found.warnings.len(), 1);
-    assert_eq!(found.warnings[0].reason, StaleReason::Shadowed);
+    assert_eq!(
+        found.warnings,
+        Vec::new(),
+        "ds-settings drops the later schema and says so on stderr"
+    );
 }
 
 #[test]
 fn foreign_tables_reach_the_file_spec_as_a_union_over_programs_sharing_it() {
-    let scratch = Scratch::under(TMP, "discovery-foreign");
-    let dir = scratch.join("quire/settings");
     let owned = |tables: &[&str]| ForeignTables(tables.iter().map(|t| (*t).to_owned()).collect());
-    let mut first = schema("first", "shared/settings.toml", 1);
-    first.foreign = owned(&["engines", "probe"]);
-    let mut second = schema("second", "shared/settings.toml", 1);
-    second.foreign = owned(&["probe", "callers"]);
-    let alone = schema("alone", "alone/settings.toml", 1);
-    write(&dir, "first", &first);
-    write(&dir, "second", &second);
-    write(&dir, "alone", &alone);
-    let found = discover(&[dir]);
-    let catalogue = Catalogue::build(&found.programs);
+    let program = |app: &str, file: &str, foreign: ForeignTables| ProgramSchema {
+        app: AppId(app.to_owned()),
+        file: ConfigFile::parse(&FilePath(file.to_owned())).expect("a config file"),
+        keys: Vec::new(),
+        foreign,
+    };
+    // Schemas that discovery admits each name a file in their own directory, so two programs
+    // sharing a file is built by hand here: the grouping is what is under test.
+    let programs = [
+        program(
+            "first",
+            "shared/settings.toml",
+            owned(&["engines", "probe"]),
+        ),
+        program(
+            "second",
+            "shared/settings.toml",
+            owned(&["probe", "callers"]),
+        ),
+        program("alone", "alone/settings.toml", owned(&[])),
+    ];
+    let catalogue = Catalogue::build(&programs);
     let foreign_of = |file: &str| {
         catalogue
             .files

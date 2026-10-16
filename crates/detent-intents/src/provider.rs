@@ -110,7 +110,7 @@ impl SettingsProvider {
     /// The settable key at `path` and the value `text` makes for it, or why not.
     fn settable(&self, path: &KeyPath, text: &str) -> Result<(&KeyEntry, toml::Value), AppRefusal> {
         let entry = self.key(path)?;
-        if entry.agent != AgentSetting::Settable {
+        if entry.agent() != AgentSetting::Settable {
             return Err(refusal(format!(
                 "{} is not a setting an assistant may change: only the person changes it, in Settings",
                 path.0
@@ -285,7 +285,7 @@ impl IntentProvider for SettingsProvider {
                 .entries()
                 .map(|(_, entry)| entry)
                 .filter(|entry| {
-                    action == "settings.key.read" || entry.agent == AgentSetting::Settable
+                    action == "settings.key.read" || entry.agent() == AgentSetting::Settable
                 })
                 .filter(|entry| matches(&entry.spec.label.0, &entry.spec.path.0))
                 .filter_map(|entry| key_ref(&self.app, entry))

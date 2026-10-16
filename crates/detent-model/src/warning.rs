@@ -10,8 +10,6 @@ pub enum StaleReason {
     UnsupportedVersion(u16),
     /// Its `file` is not `<app-dir>/<name>.toml` under the config home.
     UnsafeFile(String),
-    /// An earlier directory already supplied a schema for the same app; the earlier one wins.
-    Shadowed,
 }
 
 /// A schema that was found and skipped.
@@ -38,9 +36,6 @@ impl fmt::Display for Warning {
                     f,
                     "skipping stale schema for {app}: file `{file}` is not <app>/<name>.toml"
                 )
-            }
-            StaleReason::Shadowed => {
-                write!(f, "skipping schema for {app}: an earlier directory has one")
             }
         }
     }
