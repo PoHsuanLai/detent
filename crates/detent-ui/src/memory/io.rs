@@ -1,10 +1,10 @@
-//! The two calls about looser settings. Neither starts the memory service: with it not running
+//! The calls about looser settings and the confinement line. None starts the memory service: with it not running
 //! nothing waits on anyone, and opening Settings must not start it.
 
 use super::proxy::{MEMORY_NAME, MemoryControlProxy};
 use crate::live::{BusSource, connect};
 use almanac_core::WaitingSetting;
-use detent_model::{SettingPair, Trouble};
+use detent_model::{Confinement, SettingPair, Trouble};
 use porter_dbus::{BusFailure, classify};
 use zbus::Connection;
 use zbus::fdo::DBusProxy;
@@ -91,4 +91,17 @@ pub(super) async fn confirm(bus: &BusSource, pairs: &[SettingPair]) -> Result<()
         .confirm_settings(values)
         .await
         .map_err(|error| failure_of(&error))
+}
+
+/// How far memory confines itself, read fresh, only when memory is already running.
+pub(super) async fn confinement(bus: &BusSource) -> Result<Confinement, Failure> {
+    let connection = running(bus).await?;
+    let proxy = MemoryControlProxy::new(&connection)
+        .await
+        .map_err(|error| failure_of(&error))?;
+    let word = proxy
+        .confinement()
+        .await
+        .map_err(|error| failure_of(&error))?;
+    Ok(Confinement::from_word(&word))
 }

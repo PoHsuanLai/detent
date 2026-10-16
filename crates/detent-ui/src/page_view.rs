@@ -48,6 +48,7 @@ pub fn PageView(
         async move {
             if holds_memory {
                 consent.refresh().await;
+                consent.look_at_confinement().await;
             }
         }
     });

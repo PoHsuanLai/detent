@@ -1,4 +1,5 @@
-//! The note under a memory setting whose value waits for the person, with its Confirm button.
+//! The note under a memory setting whose value waits for the person, with its Confirm button,
+//! and the line under the Memory section that says whether memory keeps to its own folders.
 
 use super::drive::MemoryConsent;
 use detent_model::{CONFIRM, KeyEntry, Trouble, waiting_note};
@@ -36,6 +37,21 @@ pub(crate) fn ConsentNote(entry: KeyEntry) -> Element {
             if let Some(line) = trouble {
                 Label { text: line, role: LabelRole::Secondary, style: LabelStyle::Footnote }
             }
+        }
+    }
+}
+
+/// The quiet line under the Memory section: how far memory keeps itself to its own folders.
+/// Nothing when memory is not running, did not answer, or has nothing the person needs to know.
+#[component]
+pub(crate) fn ConfinementNote() -> Element {
+    let consent = use_context::<MemoryConsent>();
+    let Some(line) = consent.state().confinement().line() else {
+        return rsx! {};
+    };
+    rsx! {
+        div { class: "consent-note", "data-confinement": "memory",
+            Label { text: line, role: LabelRole::Secondary, style: LabelStyle::Footnote }
         }
     }
 }

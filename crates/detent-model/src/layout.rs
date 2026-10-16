@@ -2,6 +2,7 @@
 
 use crate::assistant_model::is_assistant_model;
 use crate::catalogue::{PageModel, SectionModel};
+use crate::memory_consent::MEMORY_SECTION;
 use crate::updates::is_software_update;
 use ds_settings::schema::Page;
 
@@ -39,8 +40,13 @@ pub enum Block {
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
 /// program names that is not listed follows these, in the order the schemas first mention it.
-const INTELLIGENCE_SECTIONS: &[&str] =
-    &["Companion", "Models", "Memory", "Computer use", "Assistant"];
+const INTELLIGENCE_SECTIONS: &[&str] = &[
+    "Companion",
+    "Models",
+    MEMORY_SECTION,
+    "Computer use",
+    "Assistant",
+];
 
 /// The section the local runtimes and the model picker follow.
 const PICKER_AFTER: &str = "Models";

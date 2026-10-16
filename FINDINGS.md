@@ -367,9 +367,42 @@ recommended; the person chooses, or skips and is asked when a turn needs one.
   desktop installer must install almanac's `dbus/memory-callers.toml` as
   `/etc/quire/memory-callers.toml`, which carries the Settings row.
 - **The proxy.** `org.quire.Memory1.Control` is declared once in `detent-ui/src/memory/proxy.rs`
-  (`RemoveSpace`, `ConfirmSettings`, `PendingSettings`) and the Spaces page uses it too. almanac's
-  `almanac-dbus` is not a dependency: detent keeps its own three-method proxy, as it had for
-  `RemoveSpace`, and `almanac-core` supplies `WaitingSetting`.
+  (`RemoveSpace`, `ConfirmSettings`, `PendingSettings` and the `Confinement` property) and the
+  Spaces page uses it too. almanac's `almanac-dbus` is not a dependency: detent keeps its own
+  small proxy, as it had for `RemoveSpace`, and `almanac-core` supplies `WaitingSetting`.
+
+## D21: whether memory keeps to its own folders (`detent-model/src/memory_consent/confinement.rs`, `detent-ui/src/memory/`)
+
+- **The fact is memory's.** almanac (ec45957) serves the read-only property
+  `org.quire.Memory1.Control.Confinement` (type `s`) with four stable words: `confined`,
+  `partial`, `not-available` and, in test builds only, `off`. It does not change while memory
+  runs. detent reads it and decides nothing.
+- **Parsed once.** `Confinement::from_word` turns the word into `Confined`, `Partial`,
+  `NotAvailable`, `Off` or `Unknown` (any other word, and also "memory did not answer": neither
+  gets a line). It is hand-written rather than a `Word` for that catch-all. `Confinement::line`
+  is the only place the sentences live.
+- **One line, under the Memory section.** `confined`: "Memory keeps itself to its own folders".
+  `partial`: "Memory keeps itself to its own folders, though this computer can only enforce part of
+  that". `not-available`: "This computer can't keep memory to its own folders". `off` and
+  unknown: no line. It is a quiet footnote (`LabelRole::Secondary`, `LabelStyle::Footnote`) in
+  the `consent-note` block that already sits under a row, drawn by `SectionView` after the card
+  when `tells_confinement` says the section is "Memory" and holds memory settings (so not the
+  History section, nor an Advanced group). No new CSS, no colour. The words name no kernel
+  feature, bus or protocol.
+- **Read like the other memory calls.** `MemoryConsent::look_at_confinement` runs beside
+  `refresh` each time a page holding memory settings is shown, through `NameHasOwner` first, so
+  opening Settings never starts memory. Memory absent, a failed read, or an older memory without the
+  property leaves `Unknown`, so the page has no line. The word is kept in `ConsentState`
+  (`confined`, `confinement`), which a new list of waiting values leaves alone.
+- **The proxy.** The property is declared in `detent-ui/src/memory/proxy.rs`, the one declaration
+  of `Memory1.Control` in detent (almanac's `ControlProxy::confinement()` lives in `almanac-dbus`,
+  which detent does not depend on).
+- **Tests.** `detent-model/tests/model/memory_consent.rs`: a table of words to values and lines,
+  the state keeping the word, and which sections tell. `detent-ui/tests/ui/memory_consent.rs`
+  over the fake memory, which now carries a `Confinement` word: confined, part enforced and not
+  available show their lines, `off` and an unknown word show none, and no memory shows none.
+- Not checked here: these changes were written without a build; this repo's gate compiles and runs
+  them. The real memoryd on a real session is a manual check (below).
 
 ## Not in v1
 
@@ -391,6 +424,9 @@ recommended; the person chooses, or skips and is asked when a turn needs one.
 
 ## Manual checks
 
+- The Memory section's confinement line against the real memory service: on a normal kernel it
+  reads "Memory keeps itself to its own folders"; with memory stopped there is no line. The tests
+  use a stand-in service.
 - `detent` on a real session: opens, follows the desktop theme, a toggle on the Dock page changes
   `~/.config/sill/settings.toml` and sill's dock reacts. Only the harness has run the window: a
   launch of the binary on scratch directories reached window creation and stopped with "no

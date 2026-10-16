@@ -1,6 +1,6 @@
 //! A fake memory (`org.quire.Memory1.Control`) that answers the loose-settings calls from the
 //! settings file in the scratch config home, the way the real one reads it, and writes down what
-//! it was asked to confirm. It knows two keys and the shipped value of each; a value is loose when
+//! it was asked to confirm, and carries the `Confinement` word it is given. It knows two keys and the shipped value of each; a value is loose when
 //! it is a different word, or a number below the shipped one.
 #![allow(dead_code)]
 
@@ -21,6 +21,8 @@ struct State {
     /// What each `ConfirmSettings` was given, in order: `key=value` pairs joined by a comma.
     confirms: Vec<String>,
     reads: usize,
+    /// How many times the confinement was read.
+    confinement_reads: usize,
     /// The name of the refusal the next confirmation answers with.
     refuse: Option<&'static str>,
 }
@@ -37,6 +39,8 @@ enum Refusal {
 
 struct Control {
     file: PathBuf,
+    /// The word the `Confinement` property carries.
+    confinement: &'static str,
     state: Arc<Mutex<State>>,
 }
 
@@ -65,6 +69,12 @@ impl Control {
 
 #[zbus::interface(name = "org.quire.Memory1.Control")]
 impl Control {
+    #[zbus(property)]
+    async fn confinement(&self) -> String {
+        self.state.lock().expect("state").confinement_reads += 1;
+        self.confinement.to_owned()
+    }
+
     async fn pending_settings(&self) -> Vec<(String, String, String)> {
         let mut state = self.state.lock().expect("state");
         state.reads += 1;
@@ -116,14 +126,20 @@ impl Fake {
         self.state.lock().expect("state").confirms.clone()
     }
 
+    /// How many times the confinement was read.
+    pub fn confinement_reads(&self) -> usize {
+        self.state.lock().expect("state").confinement_reads
+    }
+
     /// How many times the waiting settings were read.
     pub fn reads(&self) -> usize {
         self.state.lock().expect("state").reads
     }
 }
 
-/// Serves memory, reading the settings file at `file`.
-pub async fn serve(bus: &PrivateBus, file: PathBuf) -> Fake {
+/// Serves memory, reading the settings file at `file`, saying `confinement` is how far it
+/// confines itself.
+pub async fn serve(bus: &PrivateBus, file: PathBuf, confinement: &'static str) -> Fake {
     let state: Arc<Mutex<State>> = Arc::default();
     let connection = bus.connect().await;
     connection
@@ -132,6 +148,7 @@ pub async fn serve(bus: &PrivateBus, file: PathBuf) -> Fake {
             "/org/quire/Memory1",
             Control {
                 file,
+                confinement,
                 state: state.clone(),
             },
         )

@@ -2,7 +2,8 @@
 
 use crate::files::{Edit, Files};
 use crate::key_row::{KeyRow, Match};
-use detent_model::{KeyEntry, SectionModel};
+use crate::memory::ConfinementNote;
+use detent_model::{KeyEntry, SectionModel, tells_confinement};
 use dioxus::prelude::*;
 use ds::components::fields::field_row::FieldGroup;
 use ds_settings::schema::KeyPath;
@@ -21,7 +22,8 @@ pub(crate) fn match_of(entry: &KeyEntry, hits: &[KeyPath]) -> Match {
     }
 }
 
-/// A section's card: its title, when it has one, over its rows.
+/// A section's card: its title, when it has one, over its rows. The Memory section ends with the
+/// line about memory's confinement.
 #[component]
 pub fn SectionView(
     section: SectionModel,
@@ -30,12 +32,16 @@ pub fn SectionView(
     onedit: EventHandler<Edit>,
 ) -> Element {
     let title = (!section.title.is_empty()).then(|| section.title.clone());
+    let confinement = tells_confinement(&section);
     rsx! {
         div { class: "section",
             FieldGroup { title,
                 for entry in section.keys.iter().cloned() {
                     KeyRow { key: "{entry.spec.path.0}", found: match_of(&entry, &hits), entry, files, onedit }
                 }
+            }
+            if confinement {
+                ConfinementNote {}
             }
         }
     }

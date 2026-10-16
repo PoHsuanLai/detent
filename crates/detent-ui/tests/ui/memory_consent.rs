@@ -7,7 +7,7 @@ use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use crate::support::drive::{click, scroll_into_view};
 use crate::support::memory::{Fake, serve};
-use detent_model::{PageSlug, Trouble};
+use detent_model::{Confinement, PageSlug, Trouble};
 use detent_ui::Opening;
 use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
@@ -18,6 +18,7 @@ const MANUAL: &str =
     ".ds-segmented[aria-label=\"Tidy memory\"] .ds-segmented-segment:nth-of-type(2)";
 const NOTE: &str = "[data-consent=\"memory.files.at_rest\"]";
 const CONFIRM: &str = "[aria-label=\"Confirm Memory files\"]";
+const LINE: &str = "[data-confinement]";
 const TYPED_BY_HAND: &str = "[memory.files]\nat_rest = \"plain\"\n";
 const WAITS: &str = "Waits for you to confirm. Until then, memory keeps \u{201c}Private\u{201d}.";
 
@@ -60,6 +61,11 @@ struct World {
 /// The Intelligence page with memory on the bus reading the settings file, which holds `file`
 /// to begin with when that is given. The page has read what waits before this returns.
 fn world(name: &str, file: Option<&str>) -> World {
+    confining(name, file, "confined")
+}
+
+/// The same, with memory saying `word` is how far it confines itself.
+fn confining(name: &str, file: Option<&str>, word: &'static str) -> World {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()
@@ -71,7 +77,7 @@ fn world(name: &str, file: Option<&str>) -> World {
     if let Some(text) = file {
         sandbox.write("almanac/settings.toml", text);
     }
-    let fake = rt.block_on(serve(&bus, path));
+    let fake = rt.block_on(serve(&bus, path, word));
     let mut harness = sandbox.harness(intelligence());
     settle(&mut harness, "the first read", |_| fake.reads() >= 1);
     World {
@@ -80,6 +86,35 @@ fn world(name: &str, file: Option<&str>) -> World {
         harness,
         _rt: rt,
         _bus: bus,
+    }
+}
+
+#[test]
+fn the_memory_section_says_in_one_line_whether_memory_keeps_to_its_own_folders() {
+    // `(case, the word memory carries)`; each shows the line the model gives that word.
+    let cases = [
+        ("confined", "confined"),
+        ("part enforced", "partial"),
+        ("not available", "not-available"),
+    ];
+    for (name, word) in cases {
+        let mut w = confining(&format!("confinement-{name}"), None, word);
+        let line = Confinement::from_word(word).line().expect("a line to show");
+        settle(&mut w.harness, name, |h| h.count(LINE) == 1);
+        assert_eq!(
+            w.harness.text_of(LINE).as_deref().map(str::trim),
+            Some(line)
+        );
+    }
+}
+
+#[test]
+fn a_word_with_nothing_to_tell_draws_no_line() {
+    for (name, word) in [("off", "off"), ("unknown", "somewhere-new")] {
+        let mut w = confining(&format!("confinement-{name}"), None, word);
+        settle(&mut w.harness, name, |_| w.fake.confinement_reads() >= 1);
+        let_it_pass(&mut w.harness);
+        assert_eq!(w.harness.count(LINE), 0, "{name}");
     }
 }
 
@@ -169,6 +204,7 @@ fn with_memory_not_running_the_page_has_no_note_and_saving_still_works() {
     let mut harness = sandbox.harness(intelligence());
     let_it_pass(&mut harness);
     assert_eq!(harness.count("[data-consent]"), 0);
+    assert_eq!(harness.count(LINE), 0, "no memory, no line about it");
     scroll_into_view(&mut harness, MANUAL);
     click(&mut harness, MANUAL);
     let_it_pass(&mut harness);

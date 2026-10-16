@@ -20,4 +20,9 @@ pub(crate) trait MemoryControl {
 
     /// The looser settings in the file that are not confirmed: key, value waiting, shipped value.
     fn pending_settings(&self) -> zbus::Result<Vec<(String, String, String)>>;
+
+    /// Whether memory keeps itself to its own folders: `confined`, `partial`, `not-available` or
+    /// (in a test build only) `off`. It does not change while memory runs.
+    #[zbus(property)]
+    fn confinement(&self) -> zbus::Result<String>;
 }

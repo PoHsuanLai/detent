@@ -3,8 +3,8 @@
 
 use almanac_core::WaitingSetting;
 use detent_model::{
-    Catalogue, ConsentState, KeyEntry, SettingPair, Trouble, discover, holds_memory_settings,
-    is_memory_setting, to_confirm, waiting_note,
+    Catalogue, Confinement, ConsentState, KeyEntry, SettingPair, Trouble, discover,
+    holds_memory_settings, is_memory_setting, tells_confinement, to_confirm, waiting_note,
 };
 use detent_testkit::{Scratch, seed_schemas};
 use ds_settings::schema::KeyPath;
@@ -170,4 +170,66 @@ fn a_failure_stays_while_its_key_waits_and_goes_when_confirmed_or_gone() {
     );
     assert!(again.waiting_for(SEARCH_DAYS).is_some());
     assert!(again.waiting_for(APPLY).is_none());
+}
+
+#[test]
+fn memorys_confinement_word_is_parsed_once_and_has_a_line_only_when_there_is_something_to_say() {
+    // `(the word on the bus, what it parses to, the line shown)`.
+    const CASES: &[(&str, Confinement, Option<&str>)] = &[
+        (
+            "confined",
+            Confinement::Confined,
+            Some("Memory keeps itself to its own folders"),
+        ),
+        (
+            "partial",
+            Confinement::Partial,
+            Some(
+                "Memory keeps itself to its own folders, though this computer can only enforce part of that",
+            ),
+        ),
+        (
+            "not-available",
+            Confinement::NotAvailable,
+            Some("This computer can't keep memory to its own folders"),
+        ),
+        ("off", Confinement::Off, None),
+        ("somewhere-new", Confinement::Unknown, None),
+        ("Confined", Confinement::Unknown, None),
+        ("", Confinement::Unknown, None),
+    ];
+    for (word, parsed, line) in CASES {
+        assert_eq!(Confinement::from_word(word), *parsed, "{word:?}");
+        assert_eq!(parsed.line(), *line, "{word:?}");
+    }
+    assert_eq!(
+        Confinement::default(),
+        Confinement::Unknown,
+        "before a read"
+    );
+}
+
+#[test]
+fn the_state_keeps_the_last_confinement_read_and_a_new_list_does_not_lose_it() {
+    let state = ConsentState::default();
+    assert_eq!(state.confinement(), Confinement::Unknown);
+    let state = state
+        .confined(Confinement::Partial)
+        .listed(vec![waits(AT_REST, "plain", "sealed")])
+        .troubled(&[AT_REST.to_owned()], Trouble::Failed)
+        .cleared(&[AT_REST.to_owned()]);
+    assert_eq!(state.confinement(), Confinement::Partial);
+}
+
+#[test]
+fn only_the_memory_section_of_a_page_with_memory_settings_tells_the_confinement() {
+    let catalogue = real("consent-confinement-section");
+    let sections: Vec<(&str, bool)> = catalogue
+        .pages
+        .iter()
+        .flat_map(|page| page.sections.iter().chain(&page.advanced))
+        .map(|section| (section.title.as_str(), tells_confinement(section)))
+        .collect();
+    assert!(sections.contains(&("Memory", true)), "{sections:?}");
+    assert!(sections.contains(&("History", false)), "{sections:?}");
 }

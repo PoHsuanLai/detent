@@ -65,8 +65,8 @@ pub use first_run::{
 };
 pub use layout::{Block, blocks};
 pub use memory_consent::{
-    CONFIRM, ConsentState, SettingPair, Trouble, holds_memory_settings, is_memory_setting,
-    to_confirm, waiting_note,
+    CONFIRM, Confinement, ConsentState, MEMORY_SECTION, SettingPair, Trouble,
+    holds_memory_settings, is_memory_setting, tells_confinement, to_confirm, waiting_note,
 };
 pub use navigation::{landing, visible_pages};
 pub use outside::{

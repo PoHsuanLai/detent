@@ -1,5 +1,6 @@
 //! What waits for the person's word, and the pairs that are confirmed by saving them.
 
+use super::confinement::Confinement;
 use crate::entry::KeyEntry;
 use crate::text_form::show_value;
 use almanac_core::WaitingSetting;
@@ -60,11 +61,13 @@ pub fn to_confirm(waiting: &[WaitingSetting], set: &[SettingPair]) -> Vec<Settin
         .collect()
 }
 
-/// The loose values waiting for the person, and the keys whose last confirmation failed.
+/// The loose values waiting for the person, the keys whose last confirmation failed, and how far
+/// memory confines itself.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ConsentState {
     waiting: Vec<WaitingSetting>,
     troubles: BTreeMap<String, Trouble>,
+    confinement: Confinement,
 }
 
 impl ConsentState {
@@ -76,7 +79,11 @@ impl ConsentState {
             .into_iter()
             .filter(|(key, _)| waiting.iter().any(|held| &held.key == key))
             .collect();
-        ConsentState { waiting, troubles }
+        ConsentState {
+            waiting,
+            troubles,
+            ..self
+        }
     }
 
     /// The state after confirming `keys` failed with `trouble`.
@@ -93,6 +100,20 @@ impl ConsentState {
         let mut troubles = self.troubles;
         troubles.retain(|key, _| !keys.contains(key));
         ConsentState { troubles, ..self }
+    }
+
+    /// The state after memory said how far it confines itself.
+    #[must_use]
+    pub fn confined(self, confinement: Confinement) -> ConsentState {
+        ConsentState {
+            confinement,
+            ..self
+        }
+    }
+
+    /// How far memory confines itself, as of the last read; unknown before one.
+    pub fn confinement(&self) -> Confinement {
+        self.confinement
     }
 
     /// The value of `key` that waits, if one does.

@@ -1,11 +1,11 @@
 //! The looser memory settings the window follows: what waits, what a save confirms, and what the
 //! Confirm button sends. What counts as looser is memory's to say; this only asks it.
 
-use super::io::{Failure, confirm, waiting};
+use super::io::{Failure, confinement, confirm, waiting};
 use crate::env::Env;
 use crate::files::Edit;
 use crate::live::BusSource;
-use detent_model::{ConsentState, SettingPair, is_memory_setting, to_confirm};
+use detent_model::{Confinement, ConsentState, SettingPair, is_memory_setting, to_confirm};
 use dioxus::prelude::*;
 
 /// The state of the looser memory settings and the bus to reach memory on.
@@ -40,6 +40,13 @@ impl MemoryConsent {
     pub(crate) async fn refresh(&self) {
         let found = waiting(&self.bus).await.unwrap_or_default();
         self.update(|state| state.listed(found));
+    }
+
+    /// Reads again how far memory confines itself. Memory not running, not answering, or not
+    /// having the property leaves nothing to say.
+    pub(crate) async fn look_at_confinement(&self) {
+        let found = confinement(&self.bus).await.unwrap_or(Confinement::Unknown);
+        self.update(|state| state.confined(found));
     }
 
     /// The person saved `edit`. When it is a memory setting and memory reports that value as
