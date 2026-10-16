@@ -1320,6 +1320,7 @@ dependencies = [
  "detent-testkit",
  "docket-core",
  "docket-settings",
+ "ds-helpers",
  "ds-settings",
  "porter-core",
  "porter-infer",
@@ -1347,6 +1348,7 @@ dependencies = [
  "ds",
  "ds-blitz",
  "ds-harness",
+ "ds-helpers",
  "ds-lint",
  "ds-settings",
  "image",
@@ -1895,6 +1897,15 @@ dependencies = [
  "vello_hybrid",
  "wgpu",
  "wgpu_context",
+]
+
+[[package]]
+name = "ds-helpers"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "thiserror 2.0.21",
+ "toml",
 ]
 
 [[package]]
