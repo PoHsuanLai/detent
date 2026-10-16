@@ -585,3 +585,23 @@ is given before it, so a jail with no manager does not stop it (read in peephole
 - The assistant's first-run step on a real session: `detent --page assistant-model-setup` closes the
   window on Skip and on Continue, and the same slug sent to a running Settings through `open-page`
   shows the step. The tests have no window to close.
+
+## Engine downloads in the Local row (2026-10-17)
+
+- Settings does the installing, not the assistant: inferd's unit has no network and a read-only home
+  and holds the AI keys (porter ARCHITECTURE section 11). The sheet therefore needs `pkexec` and a
+  polkit agent for a process of Settings' own unit; whether the password prompt appears from there
+  was not tried.
+- Strata has no Linux download (its releases are Windows builds; on Linux its setup compiles the
+  engine), so the sheet for Strata is "Isn't Available to Download" with "Choose Folder…". Starting
+  Strata with a model is a stoker catalogue job.
+- Not run: nothing was compiled. The selectors of `tests/ui/engine_install.rs` (`#picker-engine-ai-model-text-balanced`
+  for the "Runs with" row, `.engine-sheet-buttons .ds-button[data-answers=...]`) are read from the
+  code, not from a page. The folder chooser's portal call (`engine_install/portal.rs`) was written
+  from the portal's documentation and not tried against a portal.
+- The restart that follows Continue stops a conversation that is open; the person pressed Continue
+  knowing the sheet says "Your assistant restarts to use it."
+- `detent`'s `Cargo.lock` needs the new path crates (`porter-engines`, `porter-engines-install`,
+  `porter-daemon`) and what they bring (`sha2`, `rustix`, porter-http's TLS stack): to be locked
+  with the sibling checkouts present.
+
