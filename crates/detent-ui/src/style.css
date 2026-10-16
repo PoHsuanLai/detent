@@ -261,6 +261,19 @@
   align-self: flex-end;
 }
 
+.engine-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-10);
+  padding: var(--s-14);
+}
+
+.engine-sheet-buttons {
+  display: flex;
+  align-self: flex-end;
+  gap: var(--s-8);
+}
+
 .consent-note {
   display: flex;
   flex-direction: column;

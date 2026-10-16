@@ -11,6 +11,7 @@ mod computers;
 mod config_file;
 mod control;
 mod discovery;
+mod engine_install;
 mod engines;
 mod entry;
 mod first_run;
@@ -67,6 +68,11 @@ pub use engines::{
     EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LLAMA_CPP_ID, ListedEngine, LlamaCpp,
     Program, RELEASES_LINE, RESTART, Restart, Restarted, SETUP_LINE, START_USING, SetupNote,
     StartButton, engines_step, install_advice, llama_cpp_of, restart_question, setup_note,
+};
+pub use engine_install::{
+    EngineRef, EngineRow, EngineSheet, EngineSheetEffect, EngineSheetInput, EngineSheetState,
+    EngineStanding, EngineWay, INSTALL_FOR, InstallScope, Press, Replacing, SheetButton,
+    SheetWords, Waiting, engine_named, engine_sheet_step, sheet_words, size_words,
 };
 pub use entry::KeyEntry;
 pub use first_run::{

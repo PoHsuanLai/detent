@@ -1,6 +1,7 @@
 //! The assistant's row of the picker: one pop-up button, the same one the Intelligence page
 //! draws for the text slot's balanced tier.
 
+use crate::engine_install::EngineSheetView;
 use crate::inference::{TierRow, Unavailable};
 use detent_model::{Clearing, ModelRow, PickerInput, PickerState, assistant_of};
 use dioxus::prelude::*;
@@ -38,6 +39,7 @@ pub(crate) fn AssistantPicker(
             FieldGroup {
                 TierRow { row, applying: ready.applying.clone(), adding: ready.adding(), clearing, onask }
             }
+            EngineSheetView {}
         }
     }
 }

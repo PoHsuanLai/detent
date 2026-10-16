@@ -40,6 +40,8 @@ fn row(id: &str, name: &str, found: bool) -> (String, Details) {
             EngineState::Missing
         },
         slots: vec!["text".to_owned()],
+        version: None,
+        place: None,
     })
 }
 

@@ -5,4 +5,5 @@
 mod io;
 mod view;
 
+pub(crate) use io::restart;
 pub(crate) use view::LocalEnginesNote;

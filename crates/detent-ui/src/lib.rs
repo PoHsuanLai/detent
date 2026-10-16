@@ -12,6 +12,7 @@ mod controls;
 mod deadline;
 #[cfg(test)]
 mod deadline_tests;
+mod engine_install;
 mod engines;
 mod env;
 mod files;
@@ -43,6 +44,7 @@ mod window;
 
 pub use accounts::read_accounts;
 pub use app::App;
+pub use engine_install::{Desk, EngineDesk, Work};
 pub use env::{Env, Opening};
 pub use first_run::FirstRunApp;
 pub use inbox::{Inbox, Notice, Outbox, inbox};

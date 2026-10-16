@@ -31,7 +31,7 @@ pub(super) async fn look(bus: &BusSource) -> LlamaCpp {
             id: engine.id,
             program: match engine.state {
                 EngineState::Found(_) => Program::Here,
-                EngineState::Missing => Program::Missing,
+                EngineState::Missing | EngineState::Changed(_) => Program::Missing,
             },
         })
         .collect();
@@ -39,7 +39,7 @@ pub(super) async fn look(bus: &BusSource) -> LlamaCpp {
 }
 
 /// Restarts the assistant in the person's own session, and returns when it is up again.
-pub(super) async fn restart(bus: &BusSource) -> Restarted {
+pub(crate) async fn restart(bus: &BusSource) -> Restarted {
     let Ok(connection) = connect(bus).await else {
         return Restarted::Failed;
     };

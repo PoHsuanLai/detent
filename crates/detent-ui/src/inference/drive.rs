@@ -3,6 +3,7 @@
 
 use super::{is_choice, set, set_pool};
 use crate::accounts::add_account;
+use crate::engine_install::use_board;
 use crate::env::Env;
 use crate::live::{BusSource, Daemon, Followed, follow, reread, words_of};
 use detent_model::{PickerEffect, PickerInput, PickerState, step};
@@ -33,6 +34,10 @@ fn send(state: &mut Signal<PickerState>, input: PickerInput) -> Vec<PickerEffect
 /// the picker; it never starts inferd.
 pub(crate) fn use_picker() -> Picker {
     let env = use_context::<Env>();
+    // The engines Local can run models with, and the sheet that gets one: every row of this page
+    // finds them by context.
+    let board = use_board();
+    use_context_provider(|| board);
     let toasts = use_toasts();
     let mut state = use_signal(PickerState::default);
     let mut client = use_signal(|| None::<LiveClient>);

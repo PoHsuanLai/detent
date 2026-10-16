@@ -2,6 +2,7 @@
 //! open. Provided as a context by whoever launches the app (`ds_blitz::AppConfig::with_context`),
 //! so a test starts it on scratch directories.
 
+use crate::engine_install::EngineDesk;
 use crate::inbox::Inbox;
 use crate::inference::ReasonFeed;
 use crate::lender::Lender;
@@ -63,6 +64,9 @@ pub struct Env {
     /// The folders of desktop entries, in the order of precedence: where the Privacy page finds
     /// the name and icon of a program. None until the launcher names them.
     pub application_dirs: Vec<PathBuf>,
+    /// What the sheet that downloads an engine does to the computer: the person's own unless a
+    /// test hands in another.
+    pub engines: EngineDesk,
 }
 
 impl Env {
@@ -79,6 +83,7 @@ impl Env {
         let found = discover(schema_dirs);
         let keymap = KeymapFiles::under(&config_home);
         let updates = Updater::on(bus.clone());
+        let engines = EngineDesk::system(bus.clone(), &data_home.0);
         Env {
             catalogue: Arc::new(Catalogue::build(&found.programs)),
             warnings: found.warnings,
@@ -97,6 +102,7 @@ impl Env {
             log_out: LogOut::power_menu(),
             os_release: Environment::system().os_release,
             application_dirs: Vec::new(),
+            engines,
         }
     }
 
@@ -131,6 +137,11 @@ impl Env {
             application_dirs,
             ..self
         }
+    }
+
+    /// This environment with the engine sheet working through `engines`.
+    pub fn with_engines(self, engines: EngineDesk) -> Env {
+        Env { engines, ..self }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.

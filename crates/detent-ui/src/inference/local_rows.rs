@@ -3,8 +3,9 @@
 
 use super::note::NoteLine;
 use super::tier_row::{NOTHING_CHOSEN, pick_items};
+use crate::engine_install::{Board, GET};
 use crate::key_row::row_id;
-use detent_model::{ChoiceGap, LocalView, PickerInput};
+use detent_model::{ChoiceGap, EngineSheetInput, LocalView, PickerInput};
 use dioxus::prelude::*;
 use ds::components::controls::button::Button;
 use ds::components::fields::field_row::FieldRow;
@@ -34,13 +35,34 @@ pub(super) fn LocalRows(
     availability: Availability,
     onask: EventHandler<PickerInput>,
 ) -> Element {
-    if view.engines.is_empty() {
+    // The engines the person could get, listed after the ones that run models now: choosing one
+    // asks to download it instead of setting anything.
+    let board = try_use_context::<Board>();
+    let wanted: Vec<(String, String)> = board
+        .map(|board| {
+            board
+                .state
+                .read()
+                .rows
+                .iter()
+                .filter(|row| row.needs_getting())
+                .filter(|row| !view.engines.iter().any(|engine| engine.label == row.name))
+                .map(|row| (row.id.clone(), row.name.clone()))
+                .collect()
+        })
+        .unwrap_or_default();
+    if view.engines.is_empty() && wanted.is_empty() {
         return rsx! { NoEngine { path, note: view.note.clone(), availability, onask } };
     }
     let engines: Vec<MenuItem<String>> = view
         .engines
         .iter()
         .map(|engine| MenuItem::new(engine.id.clone(), engine.label.clone()))
+        .chain(
+            wanted
+                .iter()
+                .map(|(id, name)| MenuItem::new(format!("{GET}{id}"), name.clone())),
+        )
         .collect();
     let models: Vec<MenuItem<String>> = view
         .models()
@@ -59,7 +81,10 @@ pub(super) fn LocalRows(
                 title: Some(NOTHING_CHOSEN.to_owned()),
                 size: ControlSize::Small,
                 availability,
-                onpick: move |engine| onask.call(PickerInput::Engine { path: engine_at.clone(), engine }),
+                onpick: move |engine: String| match (engine.strip_prefix(GET), board) {
+                    (Some(id), Some(board)) => board.ask.call(EngineSheetInput::Chose(id.to_owned())),
+                    _ => onask.call(PickerInput::Engine { path: engine_at.clone(), engine }),
+                },
             }
         }
         if view.engine.is_some() {

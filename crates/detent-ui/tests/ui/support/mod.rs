@@ -7,6 +7,7 @@ pub mod accountd;
 pub mod bus;
 pub mod compositor;
 pub mod computers;
+pub mod desk;
 pub mod drive;
 pub mod engines;
 pub mod inferd;
@@ -19,8 +20,8 @@ pub mod updates;
 use detent_files::{ConfigHome, DataHome, StateHome};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{
-    App, BusSource, Env, FirstRunApp, Lender, LogOut, Opening, Outbox, ReasonFeed, Updater, Vouch,
-    inbox,
+    App, BusSource, EngineDesk, Env, FirstRunApp, Lender, LogOut, Opening, Outbox, ReasonFeed,
+    Updater, Vouch, inbox,
 };
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
@@ -48,6 +49,7 @@ pub struct Sandbox {
     units: Units,
     updates: Service,
     leaves: Leaves,
+    engines: EngineDesk,
 }
 
 impl Sandbox {
@@ -65,6 +67,8 @@ impl Sandbox {
             units: Units::default(),
             updates: Service::absent(),
             leaves: Leaves::default(),
+            // Nothing is listed and nothing is downloaded, whatever this computer has.
+            engines: EngineDesk::quiet(),
         }
     }
 
@@ -86,6 +90,11 @@ impl Sandbox {
     /// This world with the reason footer reading `reasons`.
     pub fn with_reasons(self, reasons: ReasonFeed) -> Sandbox {
         Sandbox { reasons, ..self }
+    }
+
+    /// This world with the engine sheet working through `engines`.
+    pub fn with_engines(self, engines: EngineDesk) -> Sandbox {
+        Sandbox { engines, ..self }
     }
 
     /// This world with the update service in this standing.
@@ -167,6 +176,7 @@ impl Sandbox {
         .with_lender(self.lender())
         .with_updates(Updater::over(self.updates.clone()))
         .with_log_out(LogOut::over(self.leaves.clone()))
+        .with_engines(self.engines.clone())
         .with_os_release(self.os_release_path())
         .with_application_dirs(vec![self.scratch.join("applications")])
     }
