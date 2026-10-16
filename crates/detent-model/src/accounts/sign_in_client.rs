@@ -151,6 +151,8 @@ pub(super) enum ClientChange {
     Key(String),
     /// Write this secret.
     NewSecret(Secret),
+    /// Write the empty secret, which removes it.
+    ClearSecret,
 }
 
 impl SignInClient {
@@ -205,6 +207,22 @@ impl SignInClient {
             }
             (ClientValue::Text(_), ClientText::Secret(_))
             | (ClientValue::Secret(_), ClientText::Plain(_)) => ClientChange::Nothing,
+        }
+    }
+}
+
+impl SignInClient {
+    /// The row after the person pressed Clear: a held secret is removed (the service takes the
+    /// empty text for that); a key, or a secret there is none of, is left alone.
+    pub(super) fn cleared(&mut self) -> ClientChange {
+        match &mut self.value {
+            ClientValue::Secret(standing @ SecretStanding::Set) => {
+                *standing = SecretStanding::NotSet;
+                ClientChange::ClearSecret
+            }
+            ClientValue::Secret(SecretStanding::NotSet) | ClientValue::Text(_) => {
+                ClientChange::Nothing
+            }
         }
     }
 }

@@ -48,6 +48,8 @@ pub enum AccountsInput {
         /// What the field holds.
         text: ClientText,
     },
+    /// The person pressed Clear beside a sign-in secret that is set.
+    SecretCleared(ModuleRow),
     /// The module did what was asked at `path`.
     Done(ModuleRow),
     /// The module refused what was asked at `path`.
@@ -306,6 +308,24 @@ fn ready_step(
                     });
                     ready.pending = Some(row);
                 }
+                // Only Clear produces this, and it has its own input.
+                ClientChange::ClearSecret => {}
+            }
+        }
+        AccountsInput::SecretCleared(row) if idle => {
+            let change = ready
+                .pane
+                .clients
+                .iter_mut()
+                .find(|client| client.module == row.module && client.path == row.path)
+                .map_or(ClientChange::Nothing, SignInClient::cleared);
+            if change == ClientChange::ClearSecret {
+                // The empty text carries no secret, so it travels as a plain value.
+                effects.push(AccountsEffect::Set {
+                    row: row.clone(),
+                    value: toml::Value::String(String::new()),
+                });
+                ready.pending = Some(row);
             }
         }
         AccountsInput::Done(row) => {

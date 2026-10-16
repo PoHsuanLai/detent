@@ -167,6 +167,7 @@ fn Ready(
                 ClientIds {
                     pane: ready.pane.clone(),
                     onedit: move |(row, text)| send.call(AccountsInput::ClientEdited { row, text }),
+                    onclear: move |row| send.call(AccountsInput::SecretCleared(row)),
                 }
             }
             if let Some(question) = asked {

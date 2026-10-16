@@ -301,6 +301,55 @@ fn typing_replaces_a_secret_and_an_empty_field_changes_nothing() {
 }
 
 #[test]
+fn clear_removes_a_set_secret_by_writing_nothing_and_only_that() {
+    let set = [
+        ("accounts.clients.google", "abc"),
+        (SECRET, "old-secret-text"),
+    ];
+    let (cleared, effects) = accounts_step(
+        ready_with(google_keys(), &set),
+        AccountsInput::SecretCleared(secret_row()),
+    );
+    assert_eq!(
+        effects,
+        [AccountsEffect::Set {
+            row: secret_row(),
+            value: toml::Value::String(String::new()),
+        }]
+    );
+    let cleared = state_of(cleared);
+    assert_eq!(cleared.pending, Some(secret_row()));
+    assert_eq!(
+        cleared.pane.clients[1].value,
+        ClientValue::Secret(SecretStanding::NotSet)
+    );
+    // `(case, the rows, the row pressed)`: nothing is written for a secret there is none of,
+    // for a key, or while another change is in flight.
+    let key_row = ModuleRow::new(
+        ModuleId::Accountd,
+        KeyPath("accounts.clients.google".to_owned()),
+    );
+    let none = [("accounts.clients.google", "abc")];
+    let cases = [
+        ("no secret", ready_with(google_keys(), &none), secret_row()),
+        (
+            "a key, not a secret",
+            ready_with(google_keys(), &set),
+            key_row,
+        ),
+        (
+            "a change in flight",
+            accounts_step(ready_with(google_keys(), &set), typed("new")).0,
+            secret_row(),
+        ),
+    ];
+    for (case, state, row) in cases {
+        let (_, effects) = accounts_step(state, AccountsInput::SecretCleared(row));
+        assert!(effects.is_empty(), "{case}: {effects:?}");
+    }
+}
+
+#[test]
 fn a_secret_never_prints_in_a_debug_line() {
     const TEXT: &str = "hunter2-hunter2";
     let secret = Secret::new(TEXT);

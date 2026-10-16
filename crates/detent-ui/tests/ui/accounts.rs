@@ -753,6 +753,31 @@ fn a_stored_secret_shows_set_and_never_its_text_and_typing_replaces_it() {
     assert!(!w.harness.html().contains("new-secret"), "nor the new one");
 }
 
+#[test]
+fn clear_removes_a_stored_secret_and_then_goes_away() {
+    let mut w = world("accounts-secret-clear");
+    click(&mut w.harness, "#sign-in-clients .ds-disclosure-trigger");
+    let clear = "[aria-label=\"Clear microsoft client secret\"]";
+    settle(&mut w.harness, "the Clear button", |h| h.count(clear) == 1);
+    click(&mut w.harness, clear);
+    settle(&mut w.harness, "the empty secret to be sent", |_| {
+        !w.accountd.sets().is_empty()
+    });
+    assert_eq!(
+        w.accountd.sets(),
+        [(
+            "accounts.clients.microsoft.secret".to_owned(),
+            toml::Value::String(String::new())
+        )]
+    );
+    settle(&mut w.harness, "the field to say Not set", |h| {
+        h.text_of(&format!("{SECRET_FIELD} .ds-input-placeholder"))
+            .as_deref()
+            == Some("Not set")
+            && h.count(clear) == 0
+    });
+}
+
 /// No service, program or file name of the desktop's insides is in what the pane says.
 fn assert_no_developer_words(harness: &Harness) {
     let text = harness.text_of(".accounts").unwrap_or_default();

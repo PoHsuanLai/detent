@@ -6,7 +6,8 @@ use super::adapter::{
 use crate::key_row::row_id;
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Account, AccountKey, AccountsPane as Pane, Adding, ClientEntry, ClientText, ModuleId, ModuleRow,
+    Account, AccountKey, AccountsPane as Pane, Adding, ClientEntry, ClientText, ClientValue,
+    ModuleId, ModuleRow, SecretStanding,
 };
 use dioxus::prelude::*;
 use ds::base::vocab::RowState;
@@ -251,7 +252,11 @@ fn MoreRows(pane: Pane, adding: Adding, availability: Availability, on: FootHand
 /// The bring-your-own client ids, under a disclosure of their own (the page's Advanced one holds
 /// the file's keys); nothing when the account service lists none.
 #[component]
-pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(ModuleRow, ClientText)>) -> Element {
+pub(super) fn ClientIds(
+    pane: Pane,
+    onedit: EventHandler<(ModuleRow, ClientText)>,
+    onclear: EventHandler<ModuleRow>,
+) -> Element {
     let mut opened = use_signal(|| Shown::Hidden);
     if pane.clients.is_empty() {
         return rsx! {};
@@ -284,6 +289,18 @@ pub(super) fn ClientIds(pane: Pane, onedit: EventHandler<(ModuleRow, ClientText)
                                     let held = client.value.clone();
                                     move |text| onedit.call((row.clone(), held.typed(text)))
                                 },
+                            }
+                            if client.value == ClientValue::Secret(SecretStanding::Set) {
+                                ActionButton {
+                                    label: "Clear".to_owned(),
+                                    subject: client.label.clone(),
+                                    weight: ActionWeight::Plain,
+                                    availability: Availability::Enabled,
+                                    onpress: {
+                                        let row = ModuleRow::new(client.module, client.path.clone());
+                                        move |()| onclear.call(row.clone())
+                                    },
+                                }
                             }
                         }
                     }
