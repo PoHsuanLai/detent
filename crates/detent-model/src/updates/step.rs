@@ -2,7 +2,7 @@
 //! answered only when the standing allows it, so the window never asks the service for what it
 //! would refuse.
 
-use super::model::{UpdatePhase, UpdateStatus, UpdateVersion, VERSION_CHANGED};
+use super::model::{ProblemKind, UpdatePhase, UpdateStatus, UpdateVersion};
 use crate::picker::Absence;
 
 /// Whether the release notes are up in a sheet.
@@ -110,16 +110,17 @@ fn is_offering(status: &UpdateStatus) -> bool {
     status.phase == UpdatePhase::Available && status.offer.is_some()
 }
 
-/// The service's standing after a failure that only says the offer changed under an install: it
+/// The service's standing after a failure of the kind "the offer changed under an install": it
 /// is an offer again, with the note, since the person has not seen this version.
 fn overtaken(status: UpdateStatus) -> (UpdateStatus, UpdatesNotice) {
     let changed = status.phase == UpdatePhase::Failed
-        && status.problem.as_deref() == Some(VERSION_CHANGED)
+        && status.problem_kind == ProblemKind::VersionChanged
         && status.offer.is_some();
     if changed {
         let status = UpdateStatus {
             phase: UpdatePhase::Available,
             problem: None,
+            problem_kind: ProblemKind::Other,
             ..status
         };
         (status, UpdatesNotice::NewerVersion)

@@ -1,7 +1,7 @@
 //! What the Software Update page knows: where the update flow stands, as the update service
 //! reports it, parsed once where it enters.
 
-use super::limits::{notes_of, problem_of, version_of};
+use super::limits::{kind_of, notes_of, problem_of, version_of};
 use crate::picker::Absence;
 
 /// Where the update flow stands.
@@ -65,11 +65,29 @@ pub struct Permille(pub u32);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UnixSeconds(pub i64);
 
-/// What the service says when an install named a version other than the one it offers (slipway's
-/// words for `org.quire.Updates1.Error.VersionChanged`). A failed state whose problem is exactly
-/// this means the same thing, found by reading instead of by the refusal.
-pub(super) const VERSION_CHANGED: &str =
-    "A different update is on offer now. Look at it again before installing.";
+/// What kind of failure the service reports (its `ProblemKind`), for the kinds this window acts on.
+/// It is never shown; the person reads the service's own sentence. A word this window does not
+/// know, a word that is too long, and no word at all (an older service) are all [`Self::Other`], a
+/// plain failure.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ProblemKind {
+    /// An install named a version other than the one on offer: the same thing the refusal
+    /// `org.quire.Updates1.Error.VersionChanged` says, found by reading instead.
+    VersionChanged,
+    /// Any other failure, or none.
+    #[default]
+    Other,
+}
+
+impl ProblemKind {
+    /// The kind the service's word names.
+    pub fn of_word(word: &str) -> ProblemKind {
+        match word {
+            "version-changed" => ProblemKind::VersionChanged,
+            _ => ProblemKind::Other,
+        }
+    }
+}
 
 /// A version the service offered, as the person reads it: a short run of version characters.
 /// It is only made by [`UpdateVersion::parse`], so holding one means it passed the bounds, and it
@@ -121,6 +139,8 @@ pub struct UpdateStatus {
     pub last_checked: Option<UnixSeconds>,
     /// What went wrong, in plain words, when something did.
     pub problem: Option<String>,
+    /// What kind of failure it was; [`ProblemKind::Other`] when nothing went wrong.
+    pub problem_kind: ProblemKind,
 }
 
 /// The service's properties as they come on the wire (`org.quire.Updates1`): what a read of them
@@ -143,6 +163,8 @@ pub struct UpdateWire {
     pub last_checked: i64,
     /// `Problem`; empty for none.
     pub problem: String,
+    /// `ProblemKind`; empty for none, and empty when the service is too old to have it.
+    pub problem_kind: String,
 }
 
 fn some_text(text: String) -> Option<String> {
@@ -178,6 +200,7 @@ impl UpdateStatus {
                 .filter(|seconds| *seconds > 0)
                 .map(UnixSeconds),
             problem: some_text(wire.problem).map(|text| problem_of(&text)),
+            problem_kind: kind_of(&wire.problem_kind),
         })
     }
 }

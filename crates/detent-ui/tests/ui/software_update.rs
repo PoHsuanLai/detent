@@ -5,7 +5,8 @@ use crate::support::Sandbox;
 use crate::support::drive::{click, page_of, title_of};
 use crate::support::updates::{Asked, NOW, Service};
 use detent_model::{
-    ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus, UpdateVersion,
+    ByteCount, Permille, ProblemKind, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus,
+    UpdateVersion,
 };
 use detent_ui::Opening;
 use ds_harness::{Driver, Harness, Query};
@@ -20,8 +21,8 @@ const TRY_AGAIN: &str = "[aria-label=\"Try Again\"]";
 const LOG_OUT: &str = "[aria-label=\"Log Out\u{2026}\"]";
 const NOTES: &str = ".updates-sheet";
 const NOTICE: &str = ".updates-notice";
-/// The note that says a newer version arrived, and what the service says when its offer changed
-/// under an install.
+/// The note that says a newer version arrived, and what the service says (with the kind
+/// `version-changed`) when its offer changed under an install.
 const NEWER: &str = "A newer version arrived. Check what's new before installing.";
 const OVERTAKEN: &str = "A different update is on offer now. Look at it again before installing.";
 const BAR: &str = ".updates-meter .ds-progress";
@@ -41,6 +42,7 @@ fn idle() -> UpdateStatus {
         progress: Permille(0),
         last_checked: Some(UnixSeconds(NOW.0 - 300)),
         problem: None,
+        problem_kind: ProblemKind::Other,
     }
 }
 
@@ -314,6 +316,7 @@ fn an_offer_that_changed_after_it_was_shown_is_not_installed_and_the_new_one_is_
 fn a_failure_that_says_the_offer_changed_shows_the_new_version_with_the_note() {
     let overtaken = UpdateStatus {
         problem: Some(OVERTAKEN.to_owned()),
+        problem_kind: ProblemKind::VersionChanged,
         ..offered_version(UpdatePhase::Failed, "0.5.0")
     };
     let service = Service::answering(overtaken);

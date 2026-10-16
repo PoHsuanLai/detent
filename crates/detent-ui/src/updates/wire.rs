@@ -30,6 +30,9 @@ pub(super) fn wire_of(all: &HashMap<String, OwnedValue>) -> Result<UpdateWire, A
         progress: field(all, "Progress")?,
         last_checked: field(all, "LastChecked")?,
         problem: text("Problem")?,
+        // An older service has no ProblemKind, and a kind of another type is not a kind this window
+        // knows: both read as none, which is a plain failure.
+        problem_kind: text("ProblemKind").unwrap_or_default(),
     })
 }
 
@@ -53,6 +56,7 @@ mod tests {
             ("Progress".to_owned(), owned(250_u32)),
             ("LastChecked".to_owned(), owned(1_000_i64)),
             ("Problem".to_owned(), owned("")),
+            ("ProblemKind".to_owned(), owned("version-changed")),
         ])
     }
 
@@ -65,6 +69,7 @@ mod tests {
         assert_eq!(wire.size, 45_600_000);
         assert_eq!(wire.progress, 250);
         assert_eq!(wire.last_checked, 1_000);
+        assert_eq!(wire.problem_kind, "version-changed");
     }
 
     #[test]
@@ -75,5 +80,13 @@ mod tests {
         let mut odd = all();
         odd.insert("Size".to_owned(), owned("big"));
         assert!(wire_of(&odd).is_err());
+        // An older service has no kind, and an odd one is no kind: neither is a service that
+        // makes no sense, both are a plain failure.
+        let mut old = all();
+        old.remove("ProblemKind");
+        assert_eq!(wire_of(&old).expect("a wire").problem_kind, "");
+        let mut strange = all();
+        strange.insert("ProblemKind".to_owned(), owned(7_u32));
+        assert_eq!(wire_of(&strange).expect("a wire").problem_kind, "");
     }
 }

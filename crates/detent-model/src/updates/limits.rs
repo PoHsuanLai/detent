@@ -1,7 +1,9 @@
 //! What the update service may make the page hold (audit DETENT-06). Its words are shown as they
 //! come, and a service that is not the real one (or a real one with a bug) must not be able to
 //! fill the window: a version is a short run of version characters, the notes are a few screens,
-//! the problem a sentence.
+//! the problem a sentence, its kind one short known word.
+
+use super::model::ProblemKind;
 
 /// The longest version the page shows: far beyond any real one (`0.12.3-rc.4+build.5`).
 const MAX_VERSION_CHARS: usize = 64;
@@ -14,6 +16,9 @@ const MAX_NOTES_LINES: usize = 200;
 
 /// The longest problem sentence the page shows.
 const MAX_PROBLEM_CHARS: usize = 300;
+
+/// The longest kind word the page reads: a longer one is not a word this window knows.
+const MAX_KIND_BYTES: usize = 64;
 
 /// Whether `c` may appear in a version: digits, letters and the marks versions use.
 fn is_version_char(c: char) -> bool {
@@ -62,4 +67,13 @@ pub(super) fn problem_of(text: &str) -> String {
         shown.push('\u{2026}');
     }
     shown
+}
+
+/// The failure kind `word` names; any word that is long or unknown is a plain failure.
+pub(super) fn kind_of(word: &str) -> ProblemKind {
+    if word.len() > MAX_KIND_BYTES {
+        ProblemKind::Other
+    } else {
+        ProblemKind::of_word(word)
+    }
 }

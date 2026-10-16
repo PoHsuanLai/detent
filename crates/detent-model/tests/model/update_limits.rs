@@ -1,7 +1,7 @@
 //! What the update service may make the page hold: the page keeps a short version, a few screens
 //! of notes and one sentence of problem, whatever the service sends (DETENT-06).
 
-use detent_model::{Absence, UpdateStatus, UpdateWire};
+use detent_model::{Absence, ProblemKind, UpdateStatus, UpdateWire};
 
 fn wire() -> UpdateWire {
     UpdateWire {
@@ -13,6 +13,7 @@ fn wire() -> UpdateWire {
         progress: 0,
         last_checked: 5,
         problem: String::new(),
+        problem_kind: String::new(),
     }
 }
 
@@ -68,17 +69,14 @@ fn five_megabytes_of_notes_are_a_few_screens() {
     );
     assert!(notes.len() <= 16 * 1024, "{} bytes", notes.len());
     assert!(notes.starts_with("A line of the notes"));
-}
 
-#[test]
-fn notes_are_cut_on_a_character_boundary() {
-    let wide = "\u{3042}".repeat(10_000);
-    let status = UpdateStatus::of_wire(UpdateWire {
-        notes: wide,
+    // A cut falls on a character boundary, never inside one.
+    let wide = UpdateStatus::of_wire(UpdateWire {
+        notes: "\u{3042}".repeat(10_000),
         ..wire()
     })
     .expect("a status");
-    assert!(status.offer.expect("an offer").notes.len() <= 16 * 1024);
+    assert!(wide.offer.expect("an offer").notes.len() <= 16 * 1024);
 }
 
 #[test]
@@ -97,4 +95,31 @@ fn a_problem_is_one_short_line() {
         301,
         "300 characters and an ellipsis"
     );
+}
+
+#[test]
+fn a_failure_kind_the_page_does_not_know_is_a_plain_failure() {
+    let long = format!("version-changed{}", "x".repeat(60));
+    let padded = format!("{}version-changed", "x".repeat(50));
+    // `(what the service sent, the kind it is)`.
+    let table = [
+        ("version-changed", ProblemKind::VersionChanged),
+        ("", ProblemKind::Other),
+        ("offline", ProblemKind::Other),
+        ("a-kind-from-a-newer-service", ProblemKind::Other),
+        ("Version-Changed", ProblemKind::Other),
+        (long.as_str(), ProblemKind::Other),
+        (padded.as_str(), ProblemKind::Other),
+    ];
+    for (sent, expected) in table {
+        let status = UpdateStatus::of_wire(UpdateWire {
+            state: "failed".to_owned(),
+            problem: "It did not work.".to_owned(),
+            problem_kind: sent.to_owned(),
+            ..wire()
+        })
+        .expect("a status");
+        assert_eq!(status.problem_kind, expected, "{sent:?}");
+        assert_eq!(status.problem.as_deref(), Some("It did not work."));
+    }
 }

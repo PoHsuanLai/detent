@@ -10,8 +10,8 @@ mod step;
 mod words;
 
 pub use model::{
-    ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus, UpdateVersion,
-    UpdateWire,
+    ByteCount, Permille, ProblemKind, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus,
+    UpdateVersion, UpdateWire,
 };
 pub use page::is_software_update;
 pub(crate) use page::{SLUG, software_update_page};

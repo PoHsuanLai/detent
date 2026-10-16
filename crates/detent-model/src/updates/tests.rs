@@ -3,10 +3,10 @@
 
 use super::words::{age_words, size_words};
 use super::{
-    ButtonActivity, ByteCount, NotesSheet, NotesState, Permille, UnixSeconds, UpdateButton,
-    UpdateMeter, UpdateOffer, UpdatePhase, UpdateStatus, UpdateVersion, UpdateWire, UpdatesEffect,
-    UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesShown, UpdatesState, is_software_update,
-    software_update_page, updates_shown, updates_step,
+    ButtonActivity, ByteCount, NotesSheet, NotesState, Permille, ProblemKind, UnixSeconds,
+    UpdateButton, UpdateMeter, UpdateOffer, UpdatePhase, UpdateStatus, UpdateVersion, UpdateWire,
+    UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesShown, UpdatesState,
+    is_software_update, software_update_page, updates_shown, updates_step,
 };
 use crate::catalogue::{Catalogue, PageModel};
 use crate::layout::{Block, blocks};
@@ -36,6 +36,7 @@ fn status(phase: UpdatePhase) -> UpdateStatus {
         progress: Permille(0),
         last_checked: Some(UnixSeconds(NOW.0 - 300)),
         problem: None,
+        problem_kind: ProblemKind::Other,
     }
 }
 
@@ -110,6 +111,7 @@ fn wire(state: &str) -> UpdateWire {
         progress: 500,
         last_checked: 700_000,
         problem: String::new(),
+        problem_kind: String::new(),
     }
 }
 
@@ -125,6 +127,7 @@ fn the_services_properties_become_a_typed_status() {
             progress: Permille(500),
             last_checked: Some(UnixSeconds(700_000)),
             problem: None,
+            problem_kind: ProblemKind::Other,
         }
     );
     let bare = UpdateStatus::of_wire(UpdateWire {
@@ -132,6 +135,7 @@ fn the_services_properties_become_a_typed_status() {
         last_checked: 0,
         progress: 4000,
         problem: "No network.".to_owned(),
+        problem_kind: "version-changed".to_owned(),
         ..wire("failed")
     })
     .expect("a known state");
@@ -143,6 +147,7 @@ fn the_services_properties_become_a_typed_status() {
         "a share is at most all of it"
     );
     assert_eq!(bare.problem.as_deref(), Some("No network."));
+    assert_eq!(bare.problem_kind, ProblemKind::VersionChanged);
     assert!(matches!(
         UpdateStatus::of_wire(wire("rebooting")),
         Err(Absence::Failed(_))
@@ -287,7 +292,8 @@ fn newer(phase: UpdatePhase) -> UpdateStatus {
     }
 }
 
-/// What the service says when an install named a version that is not on offer any more.
+/// What the service says when an install named a version that is not on offer any more; the page
+/// does not read it to know that (the kind says so), it only shows it.
 const OVERTAKEN: &str = "A different update is on offer now. Look at it again before installing.";
 
 fn notice_of(state: &UpdatesState) -> UpdatesNotice {
@@ -381,6 +387,7 @@ fn a_changed_offer_with_nothing_on_offer_leaves_no_note() {
 fn a_failure_that_says_the_offer_changed_is_an_offer_with_the_note() {
     let overtaken = UpdateStatus {
         problem: Some(OVERTAKEN.to_owned()),
+        problem_kind: ProblemKind::VersionChanged,
         ..newer(UpdatePhase::Failed)
     };
     let (state, effects) = updates_step(UpdatesState::Looking, UpdatesInput::Heard(Ok(overtaken)));
@@ -397,15 +404,24 @@ fn a_failure_that_says_the_offer_changed_is_an_offer_with_the_note() {
         Some("A newer version arrived. Check what's new before installing.")
     );
 
-    // With nothing on offer it is a failure like any other, in the service's words.
-    let bare = UpdateStatus {
-        problem: Some(OVERTAKEN.to_owned()),
-        ..status(UpdatePhase::Failed)
-    };
-    let page = page_of(&ready(bare));
-    assert_eq!(page.detail, OVERTAKEN);
-    assert_eq!(page.buttons, vec![UpdateButton::TryAgain]);
-    assert_eq!(page.notice, None);
+    // With nothing on offer, or from a service whose kind is not known (an older one), it is a
+    // failure like any other, in the service's words.
+    for failed in [
+        UpdateStatus {
+            problem_kind: ProblemKind::VersionChanged,
+            ..status(UpdatePhase::Failed)
+        },
+        newer(UpdatePhase::Failed),
+    ] {
+        let failed = UpdateStatus {
+            problem: Some(OVERTAKEN.to_owned()),
+            ..failed
+        };
+        let page = page_of(&ready(failed));
+        assert_eq!(page.detail, OVERTAKEN);
+        assert_eq!(page.buttons, vec![UpdateButton::TryAgain]);
+        assert_eq!(page.notice, None);
+    }
 }
 
 #[test]
