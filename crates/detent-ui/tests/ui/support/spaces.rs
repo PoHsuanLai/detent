@@ -74,13 +74,16 @@ impl Control {
 /// The fakes, kept alive while the test runs.
 pub struct Fakes {
     pub log: Log,
-    _registry: zbus::Connection,
+    pub registry: zbus::Connection,
     _memory: Option<zbus::Connection>,
 }
 
-/// Serves the registry holding `spaces` (`(id, name)`), and memory unless `memory` is false.
-pub async fn serve(bus: &PrivateBus, spaces: &[(&str, &str)], memory: bool) -> Fakes {
-    let log: Log = Arc::default();
+/// A registry holding `spaces` on its own connection, writing into `log`; it has no name yet.
+async fn registry_holding(
+    bus: &PrivateBus,
+    spaces: &[(&str, &str)],
+    log: &Log,
+) -> zbus::Connection {
     let rows = Arc::new(Mutex::new(
         spaces
             .iter()
@@ -99,6 +102,13 @@ pub async fn serve(bus: &PrivateBus, spaces: &[(&str, &str)], memory: bool) -> F
         )
         .await
         .expect("registry served");
+    registry
+}
+
+/// Serves the registry holding `spaces` (`(id, name)`), and memory unless `memory` is false.
+pub async fn serve(bus: &PrivateBus, spaces: &[(&str, &str)], memory: bool) -> Fakes {
+    let log: Log = Arc::default();
+    let registry = registry_holding(bus, spaces, &log).await;
     registry
         .request_name("org.quire.Accounts1")
         .await
@@ -120,7 +130,19 @@ pub async fn serve(bus: &PrivateBus, spaces: &[(&str, &str)], memory: bool) -> F
     };
     Fakes {
         log,
-        _registry: registry,
+        registry,
         _memory: memory,
+    }
+}
+
+/// Serves a second registry holding `spaces` that does not own accountd's name: a program that
+/// takes it later.
+pub async fn serve_unnamed(bus: &PrivateBus, spaces: &[(&str, &str)]) -> Fakes {
+    let log: Log = Arc::default();
+    let registry = registry_holding(bus, spaces, &log).await;
+    Fakes {
+        log,
+        registry,
+        _memory: None,
     }
 }

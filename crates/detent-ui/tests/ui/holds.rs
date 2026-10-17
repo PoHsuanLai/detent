@@ -5,12 +5,13 @@ use crate::support::Sandbox;
 use crate::support::accountd::{Accountd, Held, Policy};
 use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
+use crate::support::handover::HandsOver;
 use crate::support::syncd::Syncd;
 use detent_callers::{RoleCheck, introduce_service, private_peers, roles};
 use detent_model::PageSlug;
 use detent_ui::{Opening, Vouch};
 use ds_harness::{Driver, Harness, Query};
-use ds_settings::live::{AnyOwner, OwnerAnswer, OwnerCheck, SenderName, Verdict};
+use ds_settings::live::AnyOwner;
 use porter_dbus::names::SYNC_BUS;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -61,27 +62,6 @@ enum Trust {
     HandsOver,
 }
 
-/// Vouches for everyone, and when armed hands the sync name from one program to another at the
-/// moment it is asked, which is after the owner was found and before the call.
-#[derive(Debug)]
-struct HandsOver {
-    armed: Arc<AtomicBool>,
-    from: zbus::Connection,
-    to: zbus::Connection,
-}
-
-impl OwnerCheck for HandsOver {
-    fn holds_role<'a>(&'a self, name: &'a str, _owner: &'a SenderName) -> OwnerAnswer<'a> {
-        Box::pin(async move {
-            if name == SYNC_BUS && self.armed.swap(false, Ordering::SeqCst) {
-                self.from.release_name(SYNC_BUS).await.expect("released");
-                self.to.request_name(SYNC_BUS).await.expect("taken");
-            }
-            Verdict::Allow
-        })
-    }
-}
-
 /// The Accounts page over the fakes, with `before` holds already on when the window opens.
 fn world(name: &str, before: &[(&str, u64, u64)]) -> World {
     world_trusting(name, before, Trust::Everyone)
@@ -111,14 +91,14 @@ fn world_trusting(name: &str, before: &[(&str, u64, u64)], trust: Trust) -> Worl
     };
     let successor = Syncd::default();
     let successor_bus = rt.block_on(successor.serve_unnamed(&bus));
-    let handover = Arc::new(AtomicBool::new(false));
+    let mut handover = Arc::new(AtomicBool::new(false));
     let vouch = match trust {
         Trust::Everyone => Vouch::of(AnyOwner),
-        Trust::HandsOver => Vouch::of(HandsOver {
-            armed: Arc::clone(&handover),
-            from: sync_bus.clone(),
-            to: successor_bus.clone(),
-        }),
+        Trust::HandsOver => {
+            let (check, armed) = HandsOver::new(SYNC_BUS, sync_bus.clone(), successor_bus.clone());
+            handover = armed;
+            Vouch::of(check)
+        }
         Trust::AccountsOnly => {
             let watcher = rt.block_on(bus.connect());
             let peers = private_peers(&watcher);

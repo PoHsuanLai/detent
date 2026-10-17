@@ -8,6 +8,7 @@ mod assistant_model;
 mod assistants;
 mod behaviour;
 mod coherence;
+mod confirmed_owner;
 mod engine_install;
 mod first_run;
 mod holds;
