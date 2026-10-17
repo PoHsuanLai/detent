@@ -3174,7 +3174,7 @@ dependencies = [
 [[package]]
 name = "keycap-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=3236bed60fa5c2189ef2c1000fbe50bd010aec3b#3236bed60fa5c2189ef2c1000fbe50bd010aec3b"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=9c85e76d95a84ec681bc14375c397d670331f6ac#9c85e76d95a84ec681bc14375c397d670331f6ac"
 dependencies = [
  "chordkit",
  "keycap-protocol",
@@ -3184,7 +3184,7 @@ dependencies = [
 [[package]]
 name = "keycap-protocol"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=3236bed60fa5c2189ef2c1000fbe50bd010aec3b#3236bed60fa5c2189ef2c1000fbe50bd010aec3b"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=9c85e76d95a84ec681bc14375c397d670331f6ac#9c85e76d95a84ec681bc14375c397d670331f6ac"
 dependencies = [
  "serde",
  "serde_json",
@@ -4059,7 +4059,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.45.0",
 ]
 
 [[package]]
@@ -6656,7 +6656,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
