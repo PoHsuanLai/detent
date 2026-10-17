@@ -164,6 +164,15 @@ fn listed(w: &mut World) {
     settle(&mut w.harness, "the list", |h| h.count(GROUP) == 1);
 }
 
+/// The programs above are on the page too. They load on their own and push the rows below down
+/// when they come, so a click aimed before then can land on another row.
+fn steady(w: &mut World) {
+    listed(w);
+    settle(&mut w.harness, "the programs above", |h| {
+        h.count("[data-privacy=\"list\"]") == 1
+    });
+}
+
 #[test]
 fn the_apps_the_portal_remembers_are_named_by_the_id_it_proved_and_say_when_and_for_how_long() {
     let mut w = world(
@@ -207,7 +216,7 @@ fn remove_takes_the_app_back_and_its_row_goes() {
         Presence::Running(remembered()),
         Trust::Anyone,
     );
-    listed(&mut w);
+    steady(&mut w);
     let portal = w.portal.as_ref().expect("a portal");
     assert!(portal.revoked().is_empty());
     click(&mut w.harness, REMOVE_MEET);
@@ -231,7 +240,7 @@ fn a_refusal_is_told_in_plain_words_and_the_row_stays() {
         Presence::Running(remembered()),
         Trust::Anyone,
     );
-    listed(&mut w);
+    steady(&mut w);
     w.portal.as_ref().expect("a portal").refuse_next();
     click(&mut w.harness, REMOVE_MEET);
     settle(&mut w.harness, "the toast", |h| h.count(".ds-toast") == 1);
