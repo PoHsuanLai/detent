@@ -128,6 +128,20 @@ fn world(name: &str, apps: Option<Vec<Remembered>>, trust: Trust) -> World {
     }
 }
 
+/// `html` without its `<style>` blocks: the stylesheet's comments name System Settings too.
+fn without_styles(html: &str) -> String {
+    let mut rest = html;
+    let mut kept = String::with_capacity(html.len());
+    while let Some(start) = rest.find("<style") {
+        kept.push_str(&rest[..start]);
+        rest = rest[start..]
+            .find("</style>")
+            .map_or("", |end| &rest[start + end + "</style>".len()..]);
+    }
+    kept.push_str(rest);
+    kept
+}
+
 fn listed(w: &mut World) {
     settle(&mut w.harness, "the list", |h| h.count(GROUP) == 1);
 }
@@ -149,7 +163,7 @@ fn the_apps_the_portal_remembers_are_named_by_the_id_it_proved_and_say_when_and_
         assert!(html.contains(text), "{text} in {html}");
     }
     assert!(
-        !html.contains("System Settings"),
+        !without_styles(&html).contains("System Settings"),
         "the portal's own name for an app is not shown: {html}"
     );
     let at = |text: &str| html.find(text).unwrap_or(usize::MAX);
@@ -158,11 +172,10 @@ fn the_apps_the_portal_remembers_are_named_by_the_id_it_proved_and_say_when_and_
         "the app allowed last comes first"
     );
     assert_eq!(w.harness.count("[aria-label^=\"Remove \"]"), 3);
-    assert_eq!(
-        w.harness.count("[data-privacy=\"list\"]"),
-        1,
-        "the programs above are still there"
-    );
+    // The programs above load on their own; they come too.
+    settle(&mut w.harness, "the programs above", |h| {
+        h.count("[data-privacy=\"list\"]") == 1
+    });
 }
 
 #[test]
@@ -199,7 +212,9 @@ fn a_refusal_is_told_in_plain_words_and_the_row_stays() {
     );
     assert!(w.portal.as_ref().expect("a portal").revoked().is_empty());
     assert_eq!(w.harness.count(REMOVE_MEET), 1, "the app is still listed");
-    // A second press works: the first refusal did not leave the list stuck.
+    // A second press works: the first refusal did not leave the list stuck. The toast sits over
+    // the last row at this window size, so the press waits for it to go.
+    settle(&mut w.harness, "the toast to go", |h| h.count(".ds-toast") == 0);
     click(&mut w.harness, REMOVE_MEET);
     settle(&mut w.harness, "the row to go", |h| {
         h.count(REMOVE_MEET) == 0
