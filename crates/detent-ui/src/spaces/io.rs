@@ -1,13 +1,14 @@
-//! The Spaces list and its removal, over accountd's registry and memory's controls.
+//! The Spaces list and its removal, over accountd's registry and memory's controls. Every call
+//! goes to the owner of the service's name that was confirmed, never to the name.
 
 use crate::deadline::{Deadline, answered, peer};
-use crate::live::{BusSource, connect, not_squatted};
-use crate::memory::MemoryControlProxy;
+use crate::live::{BusSource, pinned_starting};
+use crate::memory::control;
 use almanac_core::Removal;
 use detent_callers::{ACCOUNTS_BUS, MEMORY_BUS};
 use detent_model::{Absence, MEMORY_NOT_RUNNING, SpaceKey, SpaceRow, WithoutMemory};
 use ds_peer::within;
-use porter_client::{DbusTransport, SpacesError};
+use porter_client::SpacesError;
 use porter_dbus::{BusFailure, SpacesProxy, classify};
 
 /// What the person reads when a removal could not be done.
@@ -23,13 +24,9 @@ fn absence_of(error: SpacesError) -> Absence {
 
 /// The desktop-wide Spaces, in the order they were made.
 pub(super) async fn list(bus: &BusSource) -> Result<Vec<SpaceRow>, Absence> {
-    let connection = connect(bus).await?;
-    not_squatted(bus, &connection, ACCOUNTS_BUS).await?;
+    let accountd = pinned_starting(bus, ACCOUNTS_BUS).await?;
     let asked = async {
-        let spaces = DbusTransport::over(connection)
-            .spaces()
-            .await
-            .map_err(absence_of)?;
+        let spaces = accountd.accounts()?.spaces().await.map_err(absence_of)?;
         spaces.list().await.map_err(absence_of)
     };
     let records = within(Deadline::READ, peer::ACCOUNTS, asked)
@@ -48,47 +45,64 @@ pub(super) async fn list(bus: &BusSource) -> Result<Vec<SpaceRow>, Absence> {
 /// remove it. Memory first: asked the other way round, memory has already kept everything.
 /// Memory not being there means there is nothing to settle when everything is kept, and the
 /// registry is asked anyway; when the person chose to delete, nothing is done and they are told,
-/// since only memory can delete what it holds.
+/// since only memory can delete what it holds. A program that took either name is told nothing.
 pub(super) async fn remove(
     bus: &BusSource,
     space: &SpaceKey,
     removal: &Removal,
 ) -> Result<(), String> {
-    let connection = connect(bus)
-        .await
-        .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
     let wire = serde_json::to_string(removal).map_err(|_| COULD_NOT_REMOVE.to_owned())?;
-    // A program that took memory's or the registry's name is told nothing; a name nobody owns is
-    // still asked by name, which may start the service.
-    not_squatted(bus, &connection, MEMORY_BUS)
+    let accountd = pinned_starting(bus, ACCOUNTS_BUS)
         .await
         .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
-    not_squatted(bus, &connection, ACCOUNTS_BUS)
-        .await
-        .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
-    let memory = MemoryControlProxy::new(&connection)
-        .await
-        .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
-    let told = answered(
-        Deadline::ACTION,
-        peer::MEMORY,
-        memory.remove_space(&space.0, &wire),
-    )
-    .await;
-    match told {
-        Some(Ok(_)) => {}
-        Some(Err(error)) if matches!(classify(&error), BusFailure::NoDaemon) => {
-            if WithoutMemory::of(removal) == WithoutMemory::Refuse {
-                return Err(MEMORY_NOT_RUNNING.to_owned());
-            }
-        }
-        Some(Err(_)) | None => return Err(COULD_NOT_REMOVE.to_owned()),
-    }
-    let registry = SpacesProxy::new(&connection)
+    tell_memory(bus, space, &wire, removal).await?;
+    let registry = SpacesProxy::builder(&accountd.connection)
+        .destination(accountd.destination())
+        .map_err(|_| COULD_NOT_REMOVE.to_owned())?
+        .build()
         .await
         .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
     answered(Deadline::ACTION, peer::ACCOUNTS, registry.remove(&space.0))
         .await
         .ok_or_else(|| COULD_NOT_REMOVE.to_owned())?
         .map_err(|_| COULD_NOT_REMOVE.to_owned())
+}
+
+/// Tells memory the person's choice for the Space; with no memory running, what the choice does
+/// without it.
+async fn tell_memory(
+    bus: &BusSource,
+    space: &SpaceKey,
+    wire: &str,
+    removal: &Removal,
+) -> Result<(), String> {
+    let memory = match pinned_starting(bus, MEMORY_BUS).await {
+        Ok(memory) => memory,
+        Err(Absence::NotRunning) => return without_memory(removal),
+        Err(_) => return Err(COULD_NOT_REMOVE.to_owned()),
+    };
+    let proxy = control(&memory)
+        .await
+        .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
+    let told = answered(
+        Deadline::ACTION,
+        peer::MEMORY,
+        proxy.remove_space(&space.0, wire),
+    )
+    .await;
+    match told {
+        Some(Ok(_)) => Ok(()),
+        Some(Err(error)) if matches!(classify(&error), BusFailure::NoDaemon) => {
+            without_memory(removal)
+        }
+        Some(Err(_)) | None => Err(COULD_NOT_REMOVE.to_owned()),
+    }
+}
+
+/// What a removal does when memory is not there: carries on when it keeps everything, else stops.
+fn without_memory(removal: &Removal) -> Result<(), String> {
+    match WithoutMemory::of(removal) {
+        WithoutMemory::Proceed => Ok(()),
+        WithoutMemory::Refuse => Err(MEMORY_NOT_RUNNING.to_owned()),
+    }
 }

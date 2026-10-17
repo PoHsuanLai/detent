@@ -30,7 +30,7 @@ pub(crate) trait MemoryControl {
 
 /// The controls of the memory service whose owner was confirmed: calls go to that owner by its
 /// unique name.
-pub(super) async fn control(memory: &Pinned) -> zbus::Result<MemoryControlProxy<'_>> {
+pub(crate) async fn control(memory: &Pinned) -> zbus::Result<MemoryControlProxy<'_>> {
     MemoryControlProxy::builder(&memory.connection)
         .destination(memory.destination())?
         .build()

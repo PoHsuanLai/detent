@@ -124,7 +124,7 @@ async fn owner_of(connection: &Connection, name: &str) -> Result<Option<SenderNa
 /// caller table. `NotRunning` when nobody owns the name, `Unavailable` when its owner is not the
 /// service (a program that took the name first, or one that could not be told apart from it): a
 /// caller then sends it nothing and shows nothing from it.
-pub(crate) async fn confirmed(
+pub(super) async fn confirmed(
     bus: &BusSource,
     connection: &Connection,
     name: &str,
@@ -141,19 +141,6 @@ pub(crate) async fn confirmed(
     within(Deadline::READ, peer::DESKTOP, looked)
         .await
         .map_err(failed)?
-}
-
-/// Fails only when the owner of `name` is not the service: a name nobody owns passes, for a call
-/// by name that asks the bus to start the service (the registry, memory's Space removal).
-pub(crate) async fn not_squatted(
-    bus: &BusSource,
-    connection: &Connection,
-    name: &str,
-) -> Result<(), Absence> {
-    match confirmed(bus, connection, name).await {
-        Ok(_) | Err(Absence::NotRunning) => Ok(()),
-        Err(other) => Err(other),
-    }
 }
 
 /// A client of the daemon's module, only when the daemon is already on the bus: asking for the

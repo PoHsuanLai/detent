@@ -5,16 +5,18 @@ use crate::computers::inferd;
 use crate::deadline::{Deadline, answered, peer};
 use crate::live::{BusSource, connect};
 use detent_model::{ListedEngine, LlamaCpp, Program, Restarted, llama_cpp_of};
-use porter_client::{DbusTransport, INFERD_UNIT, SessionUnits, UnitManager};
+use porter_client::{INFERD_UNIT, SessionUnits, UnitManager};
 use porter_dbus::EngineState;
 
 /// Where llama.cpp stands in the engines the assistant lists now. The assistant not running, not
 /// answering, or not allowing Settings to ask leaves it unknown.
 pub(super) async fn look(bus: &BusSource) -> LlamaCpp {
-    let Ok(connection) = inferd(bus).await else {
+    let Ok(running) = inferd(bus).await else {
         return LlamaCpp::Unknown;
     };
-    let transport = DbusTransport::over(connection);
+    let Ok(transport) = running.inference() else {
+        return LlamaCpp::Unknown;
+    };
     let Some(Ok(found)) = answered(
         Deadline::READ,
         peer::ASSISTANT,

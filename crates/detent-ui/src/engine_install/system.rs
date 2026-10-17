@@ -8,7 +8,6 @@ use crate::deadline::{Deadline, answered, peer};
 use crate::engines::restart;
 use crate::live::BusSource;
 use detent_model::{EngineRow, EngineStanding, EngineWay, InstallScope};
-use porter_client::DbusTransport;
 use porter_dbus::{EngineState, LocalEngine};
 use porter_engines::{BackendChoice, EngineId, Host, Manifest, Roots, Scope};
 use porter_engines_install::{
@@ -43,10 +42,12 @@ impl System {
 
     /// The engines the assistant lists, when it is running: Settings never starts it.
     async fn reported(&self) -> Vec<LocalEngine> {
-        let Ok(connection) = inferd(&self.bus).await else {
+        let Ok(running) = inferd(&self.bus).await else {
             return Vec::new();
         };
-        let transport = DbusTransport::over(connection);
+        let Ok(transport) = running.inference() else {
+            return Vec::new();
+        };
         answered(
             Deadline::READ,
             peer::ASSISTANT,
@@ -141,10 +142,12 @@ impl Desk for System {
         Box::pin(async move {
             let name = EngineId::from_slug(&engine).map_or("it", EngineId::name);
             let refused = format!("That folder doesn't hold {name}.");
-            let Ok(connection) = inferd(&self.bus).await else {
+            let Ok(running) = inferd(&self.bus).await else {
                 return Err("The assistant is not running.".to_owned());
             };
-            let transport = DbusTransport::over(connection);
+            let Ok(transport) = running.inference() else {
+                return Err("The assistant is not running.".to_owned());
+            };
             match answered(
                 Deadline::ACTION,
                 peer::ASSISTANT,

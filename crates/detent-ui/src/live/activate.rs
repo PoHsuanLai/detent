@@ -5,6 +5,7 @@ use super::daemon::Daemon;
 use super::io::connect;
 use crate::deadline::{Deadline, answered, peer};
 use detent_model::ModuleId;
+use zbus::Connection;
 use zbus::fdo::DBusProxy;
 use zbus::names::WellKnownName;
 
@@ -20,23 +21,26 @@ pub(crate) async fn start(bus: &BusSource, modules: &[ModuleId]) {
     let Ok(connection) = connect(bus).await else {
         return;
     };
-    let Ok(proxy) = DBusProxy::new(&connection).await else {
+    for module in modules {
+        let (connection, name) = (connection.clone(), Daemon::of(*module).name);
+        tokio::spawn(async move { start_one(&connection, name).await });
+    }
+}
+
+/// Asks the bus to start the service `name` and waits for its answer, which comes once the
+/// service has taken its name. The answer is of no use: whether it came up is learned from who
+/// owns the name. A bus that never replies ends the wait at the deadline.
+pub(super) async fn start_one(connection: &Connection, name: &str) {
+    let Ok(proxy) = DBusProxy::new(connection).await else {
         return;
     };
-    for module in modules {
-        let Ok(name) = WellKnownName::try_from(Daemon::of(*module).name) else {
-            continue;
-        };
-        let proxy = proxy.clone();
-        tokio::spawn(async move {
-            // The reply is of no use: whether the daemon came up is learned from its name. A bus
-            // that never replies ends the task at the deadline instead of keeping it.
-            let _ = answered(
-                Deadline::ACTION,
-                peer::DESKTOP,
-                proxy.start_service_by_name(name, 0),
-            )
-            .await;
-        });
-    }
+    let Ok(name) = WellKnownName::try_from(name) else {
+        return;
+    };
+    let _ = answered(
+        Deadline::ACTION,
+        peer::DESKTOP,
+        proxy.start_service_by_name(name, 0),
+    )
+    .await;
 }

@@ -9,5 +9,5 @@ mod proxy;
 mod view;
 
 pub(crate) use drive::{MemoryConsent, use_memory_consent};
-pub(crate) use proxy::MemoryControlProxy;
+pub(crate) use proxy::control;
 pub(crate) use view::{ConfinementNote, ConsentNote};

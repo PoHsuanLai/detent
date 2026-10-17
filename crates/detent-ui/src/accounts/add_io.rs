@@ -1,11 +1,12 @@
 //! Opening an add sheet from Settings, through porter's client: an identity through the account
-//! service, an AI key through the key service. The Settings role may call each `AddAccount`.
+//! service, an AI key through the key service. The Settings role may call each `AddAccount`. The
+//! sheet is asked of the owner of the service's name that was confirmed, never of the name.
 
 use crate::deadline::{Deadline, answered, peer};
-use crate::live::{BusSource, connect, not_squatted};
+use crate::live::{BusSource, Pinned, pinned_starting};
 use detent_callers::{ACCOUNTS_BUS, INFERENCE_BUS};
 use detent_model::{AccountKey, AddEnd};
-use porter_client::{Accounts, AiKeys, ClientError, DbusTransport, TransportError};
+use porter_client::{Accounts, AiKeys, ClientError, TransportError};
 use porter_core::wire::{ParentWindow, ProviderHint, Refusal};
 
 /// The bus's own word for a second sheet of a kind from the same app.
@@ -13,13 +14,13 @@ const SHEET_OPEN: &str = "LimitsExceeded";
 
 /// Asks for the add sheet and waits for it to end.
 pub(crate) async fn add_account(bus: &BusSource) -> AddEnd {
-    let Ok(connection) = connect(bus).await else {
+    let Ok(accountd) = pinned_starting(bus, ACCOUNTS_BUS).await else {
         return AddEnd::Failed;
     };
-    if not_squatted(bus, &connection, ACCOUNTS_BUS).await.is_err() {
+    let Ok(transport) = accountd.accounts() else {
         return AddEnd::Failed;
-    }
-    let accounts = Accounts::over(DbusTransport::over(connection));
+    };
+    let accounts = Accounts::over(transport);
     let asked = answered(
         Deadline::PROMPT,
         peer::ACCOUNTS,
@@ -51,13 +52,20 @@ trait KeySheet {
     async fn add(&self) -> AddEnd;
 }
 
-/// The key service over a connection to the bus.
-struct OverBus(zbus::Connection);
+/// The key service, at the owner of its name that was confirmed.
+struct OverBus(Pinned);
 
 impl KeySheet for OverBus {
     async fn add(&self) -> AddEnd {
-        let Some(Ok(keys)) =
-            answered(Deadline::READ, peer::ACCOUNTS, AiKeys::connect(&self.0)).await
+        let Ok(to) = self.0.at_owner() else {
+            return AddEnd::Failed;
+        };
+        let Some(Ok(keys)) = answered(
+            Deadline::READ,
+            peer::ACCOUNTS,
+            AiKeys::connect_at(&self.0.connection, &to),
+        )
+        .await
         else {
             return AddEnd::Failed;
         };
@@ -76,11 +84,8 @@ impl KeySheet for OverBus {
 
 /// Asks the key service for its add sheet and waits for it to end.
 pub(super) async fn add_ai_key(bus: &BusSource) -> AddEnd {
-    let Ok(connection) = connect(bus).await else {
+    let Ok(inferd) = pinned_starting(bus, INFERENCE_BUS).await else {
         return AddEnd::Failed;
     };
-    if not_squatted(bus, &connection, INFERENCE_BUS).await.is_err() {
-        return AddEnd::Failed;
-    }
-    OverBus(connection).add().await
+    OverBus(inferd).add().await
 }

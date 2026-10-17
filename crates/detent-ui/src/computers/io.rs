@@ -2,7 +2,7 @@
 //! guests and the changes. The engines signal (a computer answering or not) comes from its proxy.
 
 use crate::deadline::{Deadline, answered, peer};
-use crate::live::{BusSource, confirmed, connect};
+use crate::live::{BusSource, Pinned, pinned};
 use crate::ticks::{Ticker, Ticks};
 use detent_model::{Absence, ComputerRow, ComputersFound};
 use ds_peer::within;
@@ -12,7 +12,6 @@ use porter_client::{
 use porter_core::lending::ComputerCandidate;
 use porter_dbus::names::INFERENCE_BUS;
 use porter_dbus::{BusFailure, BusStream, InferenceProxy, classify};
-use zbus::Connection;
 
 /// What the person reads when a change could not be made and the service gave no sentence.
 const COULD_NOT: &str = "Your computers could not be changed. Try again in a moment.";
@@ -63,22 +62,20 @@ fn sentence_of(error: &ClientError) -> String {
     }
 }
 
-/// A connection, only when inferd is already on the bus: asking would start it, and opening
-/// Settings must not.
-pub(crate) async fn inferd(bus: &BusSource) -> Result<Connection, Absence> {
-    let connection = connect(bus).await?;
-    confirmed(bus, &connection, INFERENCE_BUS).await?;
-    Ok(connection)
+/// inferd and its confirmed owner, only when it is already on the bus: asking would start it, and
+/// opening Settings must not. Every call goes to that owner.
+pub(crate) async fn inferd(bus: &BusSource) -> Result<Pinned, Absence> {
+    pinned(bus, INFERENCE_BUS).await
 }
 
-fn accounts(connection: &Connection) -> Accounts<DbusTransport> {
-    Accounts::over(DbusTransport::over(connection.clone()))
+fn accounts(inferd: &Pinned) -> Result<Accounts<DbusTransport>, Absence> {
+    Ok(Accounts::over(inferd.inference()?))
 }
 
 /// The person's computers and the guests, as inferd lists them now.
 pub(super) async fn read(bus: &BusSource) -> Result<ComputersFound, Absence> {
-    let connection = inferd(bus).await?;
-    let accounts = accounts(&connection);
+    let running = inferd(bus).await?;
+    let accounts = accounts(&running)?;
     let asked = async {
         let places = accounts.places().await.map_err(absence_of)?;
         let guests = accounts.guests().await.map_err(absence_of)?;
@@ -95,21 +92,18 @@ pub(super) async fn read(bus: &BusSource) -> Result<ComputersFound, Absence> {
 
 /// The Tailscale computers that can be added, or the sentence that says why they cannot be listed.
 pub(super) async fn candidates(bus: &BusSource) -> Result<Vec<ComputerCandidate>, String> {
-    let connection = inferd(bus).await.map_err(|_| COULD_NOT.to_owned())?;
-    answered(
-        Deadline::READ,
-        peer::ASSISTANT,
-        accounts(&connection).candidates(),
-    )
-    .await
-    .ok_or_else(|| COULD_NOT.to_owned())?
-    .map_err(|e| sentence_of(&e))
+    let running = inferd(bus).await.map_err(|_| COULD_NOT.to_owned())?;
+    let accounts = accounts(&running).map_err(|_| COULD_NOT.to_owned())?;
+    answered(Deadline::READ, peer::ASSISTANT, accounts.candidates())
+        .await
+        .ok_or_else(|| COULD_NOT.to_owned())?
+        .map_err(|e| sentence_of(&e))
 }
 
 /// Makes one change; the sentence that says why not when it was refused.
 pub(super) async fn change(bus: &BusSource, change: Change) -> Result<(), String> {
-    let connection = inferd(bus).await.map_err(|_| COULD_NOT.to_owned())?;
-    let accounts = accounts(&connection);
+    let running = inferd(bus).await.map_err(|_| COULD_NOT.to_owned())?;
+    let accounts = accounts(&running).map_err(|_| COULD_NOT.to_owned())?;
     let done = answered(Deadline::ACTION, peer::ASSISTANT, async {
         match change {
             Change::Add(node) => accounts.add_tailnet_computer(&node).await.map(drop),
@@ -145,13 +139,14 @@ async fn relay(mut stream: impl BusStream<Item = impl Send> + Unpin, out: Ticker
 impl Watch {
     /// Subscribes, only when inferd is on the bus.
     pub(super) async fn start(bus: &BusSource) -> Result<Watch, Absence> {
-        let connection = inferd(bus).await?;
+        let running = inferd(bus).await?;
+        let accounts = accounts(&running)?;
         let subscribed = async {
-            let guests = accounts(&connection)
-                .watch_guests()
-                .await
-                .map_err(absence_of)?;
-            let engines = InferenceProxy::new(&connection)
+            let guests = accounts.watch_guests().await.map_err(absence_of)?;
+            let engines = InferenceProxy::builder(&running.connection)
+                .destination(running.destination())
+                .map_err(|e| absence_of_bus(&e))?
+                .build()
                 .await
                 .map_err(|e| absence_of_bus(&e))?
                 .receive_engines_changed()
