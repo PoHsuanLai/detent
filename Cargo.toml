@@ -77,7 +77,7 @@ keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "9c85e76d9
 # tokio here, so `tokio` is on and the default executor is off; `desktop` is the role names. `dev-rows` (a
 # person's own rows file, `Proof::Dev`) is only behind detent-callers' `dev-callers`, itself only behind the
 # `detent` binary's `dev-callers` feature, so no shipped build has it.
-peephole-bus = { git = "https://github.com/PoHsuanLai/peephole", tag = "v0.1.4", default-features = false, features = ["desktop", "tokio"] }
+peephole-bus = { git = "https://github.com/PoHsuanLai/peephole", tag = "v0.1.6", default-features = false, features = ["desktop", "tokio"] }
 
 # The person's own user id, to tell their rows file from someone else's (only behind `dev-callers`).
 rustix = { version = "1.1", default-features = false, features = ["std", "process"] }
