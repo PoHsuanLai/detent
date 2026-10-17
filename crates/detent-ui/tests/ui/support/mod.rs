@@ -14,6 +14,7 @@ pub mod handover;
 pub mod inferd;
 pub mod lending;
 pub mod memory;
+pub mod portal;
 pub mod spaces;
 pub mod syncd;
 pub mod updates;

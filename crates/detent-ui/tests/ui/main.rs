@@ -20,6 +20,7 @@ mod local_runtimes;
 mod memory_consent;
 mod notices;
 mod privacy;
+mod screen_sharing;
 mod shortcuts;
 mod snapshots;
 mod software_update;

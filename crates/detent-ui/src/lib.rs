@@ -30,6 +30,7 @@ mod memory;
 mod page_view;
 mod privacy;
 mod reported;
+mod screen_sharing;
 mod section_view;
 mod sharing;
 mod shortcuts;

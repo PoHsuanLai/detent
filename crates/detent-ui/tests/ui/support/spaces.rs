@@ -135,8 +135,8 @@ pub async fn serve(bus: &PrivateBus, spaces: &[(&str, &str)], memory: bool) -> F
     }
 }
 
-/// Serves a second registry holding `spaces` that does not own accountd's name: a program that
-/// takes it later.
+/// Serves a second registry holding `spaces` that does not own accountd's name: a program a test
+/// hands the name to.
 pub async fn serve_unnamed(bus: &PrivateBus, spaces: &[(&str, &str)]) -> Fakes {
     let log: Log = Arc::default();
     let registry = registry_holding(bus, spaces, &log).await;

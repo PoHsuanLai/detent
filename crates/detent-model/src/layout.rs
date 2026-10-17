@@ -27,6 +27,9 @@ pub enum Block {
     /// The programs and the powers the compositor lists for them, each with Allowed, Denied or
     /// Ask: the Privacy page's rows that are in no file.
     PrivacyPane,
+    /// The apps the screen-sharing portal lets share the screen without asking again, each with
+    /// Remove: the Privacy page's rows that are in no file.
+    ScreenSharing,
     /// The desktop-wide Spaces accountd keeps, each with Remove: the Spaces page's rows that are
     /// in no file.
     SpacesPane,
@@ -68,7 +71,8 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
                 .collect();
         }
         Page::Privacy => {
-            return std::iter::once(Block::PrivacyPane)
+            return [Block::PrivacyPane, Block::ScreenSharing]
+                .into_iter()
                 .chain(sections)
                 .collect();
         }
@@ -135,6 +139,7 @@ mod tests {
                 Block::AccountsPane => "<accounts>",
                 Block::Assistants => "<assistants>",
                 Block::PrivacyPane => "<privacy>",
+                Block::ScreenSharing => "<screen sharing>",
                 Block::SpacesPane => "<spaces>",
                 Block::Shortcuts => "<shortcuts>",
                 Block::SoftwareUpdate => "<updates>",
@@ -186,10 +191,10 @@ mod tests {
             &["<accounts>", "Sign-in clients"],
         ),
         (
-            "the privacy pane comes before any section of the page",
+            "the privacy pane and the screen-sharing apps come before any section of the page",
             Page::Privacy,
             &["Screen"],
-            &["<privacy>", "Screen"],
+            &["<privacy>", "<screen sharing>", "Screen"],
         ),
         (
             "the spaces pane comes before any section of the page",

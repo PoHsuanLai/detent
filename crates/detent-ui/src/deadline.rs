@@ -23,6 +23,8 @@ pub(crate) mod peer {
     pub(crate) const SYNC: &str = "The sync service";
     /// Memory.
     pub(crate) const MEMORY: &str = "Memory";
+    /// The screen-sharing portal.
+    pub(crate) const PORTAL: &str = "The screen sharing service";
     /// The update service.
     pub(crate) const UPDATES: &str = "Software Update";
     /// The person's own service manager.

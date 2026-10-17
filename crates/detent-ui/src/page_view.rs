@@ -10,6 +10,7 @@ use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
 use crate::live::start;
 use crate::memory::MemoryConsent;
 use crate::privacy::PrivacyPane;
+use crate::screen_sharing::ScreenSharingPane;
 use crate::section_view::SectionView;
 use crate::shortcuts::ShortcutsPane;
 use crate::spaces::SpacesPane;
@@ -65,6 +66,7 @@ pub fn PageView(
                     },
                     Block::AccountsPane => rsx! { AccountsPane {} },
                     Block::PrivacyPane => rsx! { PrivacyPane {} },
+                    Block::ScreenSharing => rsx! { ScreenSharingPane {} },
                     Block::SpacesPane => rsx! { SpacesPane {} },
                     Block::Shortcuts => rsx! { ShortcutsPane {} },
                     Block::SoftwareUpdate => rsx! { SoftwareUpdatePane {} },
