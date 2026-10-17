@@ -20,7 +20,7 @@ pub(super) fn absence_help(absence: &Absence) -> &'static str {
     match absence {
         Absence::NoBus => "Settings is not connected to the desktop, so there are no apps to show.",
         Absence::NotRunning => {
-            "The screen sharing service is not running, so there are no apps to show."
+            "The screen sharing service could not be started, so there are no apps to show."
         }
         Absence::NotPermitted => {
             "Apps that may share your screen can only be managed when Settings is opened from the desktop."

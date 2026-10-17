@@ -1,5 +1,6 @@
 //! The Privacy page's screen-sharing apps: the apps the portal lets share the screen without
-//! asking again, each with Remove. Settings looks for the portal and never starts it.
+//! asking again, each with Remove. Showing the group starts the portal when it is not running (the
+//! portal remembers its apps on disk), and the owner must still hold the portal's role.
 
 mod io;
 mod pane;

@@ -1,12 +1,14 @@
 //! The Privacy page's screen-sharing apps over a fake portal on a private bus: the apps it
-//! remembers are listed by the id it proved them by, Remove takes one back and the row goes, and a
-//! portal that is absent or is not the portal leaves the rest of the page as it was.
+//! remembers are listed by the id it proved them by, Remove takes one back and the row goes, a
+//! portal that is not running is started on demand and listed once the program that took its name
+//! holds the portal role, and a portal that cannot be started or is not the portal leaves the rest
+//! of the page as it was.
 
 use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use crate::support::compositor::{Compositor, Row};
 use crate::support::drive::click;
-use crate::support::portal::{Fake, NAME, Remembered, serve};
+use crate::support::portal::{Fake, NAME, Remembered, serve, serve_unnamed};
 use crate::support::updates::NOW;
 use detent_callers::{RoleCheck, introduce_service, private_peers, roles};
 use detent_model::PageSlug;
@@ -81,26 +83,42 @@ enum Trust {
     Nobody,
 }
 
+/// Whether the portal is there, and how.
+enum Presence {
+    /// No portal, and the bus has no way to start one.
+    Unstartable,
+    /// A portal holding these apps, already on the bus.
+    Running(Vec<Remembered>),
+    /// A portal holding these apps that takes its name only when the bus starts it.
+    OnDemand(Vec<Remembered>),
+}
+
 struct World {
     portal: Option<Fake>,
     harness: Harness,
-    _rt: tokio::runtime::Runtime,
-    _bus: PrivateBus,
+    rt: tokio::runtime::Runtime,
+    bus: PrivateBus,
     _compositor: (zbus::Connection, ds_settings::live::Served),
 }
 
-/// The Privacy page over a compositor listing one program, and the portal holding `apps` when
-/// there are any to serve (`None`: no portal is running).
-fn world(name: &str, apps: Option<Vec<Remembered>>, trust: Trust) -> World {
+/// The Privacy page over a compositor listing one program, and the portal as `presence` says.
+fn world(name: &str, presence: Presence, trust: Trust) -> World {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()
         .build()
         .expect("a runtime for the fakes");
-    let bus = PrivateBus::start(name);
+    let bus = match presence {
+        Presence::OnDemand(_) => PrivateBus::start_with_lingering_services(name, &[NAME]),
+        Presence::Unstartable | Presence::Running(_) => PrivateBus::start(name),
+    };
     let compositor = Compositor::holding(vec![Row::person("screen", "aaa", "/usr/bin/grim", "on")]);
     let served = rt.block_on(compositor.serve_on(&bus));
-    let portal = apps.map(|apps| rt.block_on(serve(&bus, &apps)));
+    let portal = match &presence {
+        Presence::Unstartable => None,
+        Presence::Running(apps) => Some(rt.block_on(serve(&bus, apps))),
+        Presence::OnDemand(apps) => Some(rt.block_on(serve_unnamed(&bus, apps))),
+    };
     let vouch = match (trust, &portal) {
         (Trust::Anyone, _) => Vouch::of(AnyOwner),
         (Trust::Introduced, Some(portal)) => {
@@ -122,8 +140,8 @@ fn world(name: &str, apps: Option<Vec<Remembered>>, trust: Trust) -> World {
     World {
         portal,
         harness,
-        _rt: rt,
-        _bus: bus,
+        rt,
+        bus,
         _compositor: served,
     }
 }
@@ -148,7 +166,11 @@ fn listed(w: &mut World) {
 
 #[test]
 fn the_apps_the_portal_remembers_are_named_by_the_id_it_proved_and_say_when_and_for_how_long() {
-    let mut w = world("screen-sharing-list", Some(remembered()), Trust::Anyone);
+    let mut w = world(
+        "screen-sharing-list",
+        Presence::Running(remembered()),
+        Trust::Anyone,
+    );
     listed(&mut w);
     let html = w.harness.html();
     for text in [
@@ -180,7 +202,11 @@ fn the_apps_the_portal_remembers_are_named_by_the_id_it_proved_and_say_when_and_
 
 #[test]
 fn remove_takes_the_app_back_and_its_row_goes() {
-    let mut w = world("screen-sharing-remove", Some(remembered()), Trust::Anyone);
+    let mut w = world(
+        "screen-sharing-remove",
+        Presence::Running(remembered()),
+        Trust::Anyone,
+    );
     listed(&mut w);
     let portal = w.portal.as_ref().expect("a portal");
     assert!(portal.revoked().is_empty());
@@ -200,7 +226,11 @@ fn remove_takes_the_app_back_and_its_row_goes() {
 
 #[test]
 fn a_refusal_is_told_in_plain_words_and_the_row_stays() {
-    let mut w = world("screen-sharing-refused", Some(remembered()), Trust::Anyone);
+    let mut w = world(
+        "screen-sharing-refused",
+        Presence::Running(remembered()),
+        Trust::Anyone,
+    );
     listed(&mut w);
     w.portal.as_ref().expect("a portal").refuse_next();
     click(&mut w.harness, REMOVE_MEET);
@@ -225,7 +255,11 @@ fn a_refusal_is_told_in_plain_words_and_the_row_stays() {
 
 #[test]
 fn with_no_app_remembered_the_group_says_so() {
-    let mut w = world("screen-sharing-empty", Some(vec![]), Trust::Anyone);
+    let mut w = world(
+        "screen-sharing-empty",
+        Presence::Running(vec![]),
+        Trust::Anyone,
+    );
     listed(&mut w);
     let words = w.harness.text_of(GROUP).unwrap_or_default();
     assert!(
@@ -236,25 +270,77 @@ fn with_no_app_remembered_the_group_says_so() {
 }
 
 #[test]
-fn with_no_portal_the_group_says_so_and_the_rest_of_the_page_is_there() {
-    let mut w = world("screen-sharing-absent", None, Trust::Anyone);
+fn a_portal_that_cannot_be_started_is_told_in_plain_words_and_the_rest_of_the_page_is_there() {
+    let mut w = world(
+        "screen-sharing-absent",
+        Presence::Unstartable,
+        Trust::Anyone,
+    );
     settle(&mut w.harness, "the line", |h| h.count(UNAVAILABLE) == 1);
     let words = w.harness.text_of(UNAVAILABLE).unwrap_or_default();
     assert!(
-        words.contains("The screen sharing service is not running"),
+        words.contains("The screen sharing service could not be started"),
         "{words}"
     );
+    assert!(!words.contains("not running"), "{words}");
     for banned in ["portal", "D-Bus", "bus"] {
         assert!(!words.contains(banned), "{banned} in {words}");
     }
+    assert_eq!(w.bus.started(), Vec::<String>::new());
     settle(&mut w.harness, "the programs", |h| {
         h.count("[data-privacy=\"list\"]") == 1
     });
 }
 
 #[test]
+fn a_portal_that_is_not_running_is_started_and_the_apps_it_remembers_are_listed() {
+    let mut w = world(
+        "screen-sharing-on-demand",
+        Presence::OnDemand(remembered()),
+        Trust::Introduced,
+    );
+    // The bus starts the portal when the group is shown; the portal takes its name then.
+    settle(&mut w.harness, "the bus to start the portal", |_| {
+        w.bus.started() == [NAME]
+    });
+    let portal = w.portal.as_ref().expect("a portal");
+    assert_eq!(portal.listed(), 0, "nothing is asked before it is up");
+    w.rt.block_on(portal.connection.request_name(NAME))
+        .expect("the portal's name");
+    listed(&mut w);
+    let portal = w.portal.as_ref().expect("a portal");
+    assert_eq!(portal.listed(), 1);
+    assert_eq!(w.harness.count("[aria-label^=\"Remove \"]"), 3);
+    assert!(w.harness.html().contains("Video Meet"));
+}
+
+#[test]
+fn a_portal_that_is_started_but_is_not_the_portal_is_not_asked_anything() {
+    let mut w = world(
+        "screen-sharing-on-demand-squatter",
+        Presence::OnDemand(remembered()),
+        Trust::Nobody,
+    );
+    settle(&mut w.harness, "the bus to start the portal", |_| {
+        w.bus.started() == [NAME]
+    });
+    let portal = w.portal.as_ref().expect("a portal");
+    w.rt.block_on(portal.connection.request_name(NAME))
+        .expect("the portal's name");
+    settle(&mut w.harness, "the line", |h| h.count(UNAVAILABLE) == 1);
+    let words = w.harness.text_of(UNAVAILABLE).unwrap_or_default();
+    assert!(words.contains("could not be confirmed"), "{words}");
+    let portal = w.portal.as_ref().expect("a portal");
+    assert_eq!(portal.listed(), 0, "it was not asked for its list");
+}
+
+#[test]
 fn a_program_the_desktop_does_not_know_as_the_portal_is_not_asked_anything() {
-    let mut w = world("screen-sharing-squatter", Some(remembered()), Trust::Nobody);
+    let mut w = world(
+        "screen-sharing-squatter",
+        Presence::Running(remembered()),
+        Trust::Nobody,
+    );
     settle(&mut w.harness, "the line", |h| h.count(UNAVAILABLE) == 1);
     let words = w.harness.text_of(UNAVAILABLE).unwrap_or_default();
     assert!(words.contains("could not be confirmed"), "{words}");
@@ -265,23 +351,13 @@ fn a_program_the_desktop_does_not_know_as_the_portal_is_not_asked_anything() {
 
 #[test]
 fn the_program_that_holds_the_portal_role_is_listed() {
-    let mut w = world("screen-sharing-role", Some(remembered()), Trust::Introduced);
+    let mut w = world(
+        "screen-sharing-role",
+        Presence::Running(remembered()),
+        Trust::Introduced,
+    );
     listed(&mut w);
     let portal = w.portal.as_ref().expect("a portal");
     assert_eq!(portal.listed(), 1);
     assert_eq!(w.harness.count("[aria-label^=\"Remove \"]"), 3);
-}
-
-#[test]
-fn showing_the_page_does_not_start_the_portal() {
-    let bus = PrivateBus::start_with_services("screen-sharing-start", &[NAME]);
-    let mut harness = Sandbox::new("screen-sharing-start")
-        .on_bus(&bus.address)
-        .harness(privacy());
-    for _ in 0..100 {
-        harness.advance(Duration::from_millis(50));
-        std::thread::sleep(Duration::from_millis(20));
-    }
-    assert_eq!(bus.started(), Vec::<String>::new());
-    assert_eq!(harness.count(UNAVAILABLE), 1, "{}", harness.html());
 }
