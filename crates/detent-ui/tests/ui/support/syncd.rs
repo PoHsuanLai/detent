@@ -57,6 +57,18 @@ impl Syncd {
         connection
     }
 
+    /// Serves the object on `bus` without taking the name; the connection must be kept alive. A
+    /// test makes this program take `org.quire.Sync1` later.
+    pub async fn serve_unnamed(&self, bus: &PrivateBus) -> zbus::Connection {
+        let connection = bus.connect().await;
+        connection
+            .object_server()
+            .at(SYNC_PATH, self.clone())
+            .await
+            .expect("serves");
+        connection
+    }
+
     /// A hold starts (or changes): held now, and told.
     pub async fn hold(
         &self,

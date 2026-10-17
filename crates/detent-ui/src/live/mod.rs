@@ -8,6 +8,7 @@ mod daemon;
 mod follow;
 mod holds;
 mod io;
+mod pinned;
 mod read;
 #[cfg(test)]
 mod read_tests;
@@ -19,5 +20,6 @@ pub(crate) use daemon::Daemon;
 pub(crate) use follow::{Followed, follow, read_once, reread};
 pub(crate) use holds::{confirm_discard, follow_holds, hold_now, sync_now};
 pub(crate) use io::{confirmed, connect, next_owner, not_squatted, owner_changes, plain};
+pub(crate) use pinned::{Pinned, pinned};
 pub(crate) use read::words_of;
 pub use vouch::Vouch;

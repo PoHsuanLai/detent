@@ -4,7 +4,7 @@
 use super::link::{InstallRefusal, UpdateTicks, UpdateWork, Updater, UpdatesLink};
 use super::wire::wire_of;
 use crate::deadline::{Deadline, peer};
-use crate::live::{BusSource, confirmed, connect};
+use crate::live::{BusSource, Pinned, connect, pinned};
 use crate::ticks::{Ticker, Ticks};
 use detent_model::{Absence, UPDATES_NOT_AVAILABLE, UnixSeconds, UpdateStatus, UpdateVersion};
 use ds_peer::{NotAnswering, within};
@@ -100,17 +100,11 @@ fn refusal_of(error: &zbus::Error) -> InstallRefusal {
     }
 }
 
-/// A connection, only when the service is already on the bus and its owner is the update service:
-/// a program that took the name is unavailable, and is asked and told nothing.
-async fn running(bus: &BusSource) -> Result<Connection, Absence> {
-    let connection = connect(bus).await?;
-    confirmed(bus, &connection, BUS_NAME).await?;
-    Ok(connection)
-}
-
-/// The service's object, read live each time: a cached value would outlive the change.
-async fn proxy(connection: &Connection) -> Result<UpdatesProxy<'_>, zbus::Error> {
-    UpdatesProxy::builder(connection)
+/// The service's object, read live each time: a cached value would outlive the change. It is
+/// called by the owner that was confirmed to be the update service.
+async fn proxy(running: &Pinned) -> Result<UpdatesProxy<'_>, zbus::Error> {
+    UpdatesProxy::builder(&running.connection)
+        .destination(running.destination())?
         .cache_properties(CacheProperties::No)
         .build()
         .await
@@ -122,9 +116,9 @@ fn silent(error: NotAnswering) -> Absence {
 }
 
 /// Every property of the service at once.
-async fn get_all(connection: &Connection) -> Result<HashMap<String, OwnedValue>, Absence> {
-    let properties = PropertiesProxy::builder(connection)
-        .destination(BUS_NAME)
+async fn get_all(running: &Pinned) -> Result<HashMap<String, OwnedValue>, Absence> {
+    let properties = PropertiesProxy::builder(&running.connection)
+        .destination(running.destination())
         .map_err(absence)?
         .path(PATH)
         .map_err(absence)?
@@ -140,8 +134,8 @@ async fn get_all(connection: &Connection) -> Result<HashMap<String, OwnedValue>,
 }
 
 async fn read(bus: &BusSource) -> Result<UpdateStatus, Absence> {
-    let connection = running(bus).await?;
-    let all = within(Deadline::READ, peer::UPDATES, get_all(&connection))
+    let running = pinned(bus, BUS_NAME).await?;
+    let all = within(Deadline::READ, peer::UPDATES, get_all(&running))
         .await
         .map_err(silent)??;
     UpdateStatus::of_wire(wire_of(&all)?)
@@ -195,10 +189,10 @@ async fn watch(bus: &BusSource) -> Result<UpdateTicks, Absence> {
 
 async fn ask(bus: &BusSource, request: Ask) -> Result<(), InstallRefusal> {
     let told = InstallRefusal::Told;
-    let connection = running(bus)
+    let running = pinned(bus, BUS_NAME)
         .await
         .map_err(|_| told(UPDATES_NOT_AVAILABLE.to_owned()))?;
-    let service = proxy(&connection)
+    let service = proxy(&running)
         .await
         .map_err(|e| told(sentence_of(&e)))?;
     let call = async {

@@ -1,13 +1,12 @@
 //! The calls about looser settings and the confinement line. None starts the memory service: with it not running
 //! nothing waits on anyone, and opening Settings must not start it.
 
-use super::proxy::{MEMORY_NAME, MemoryControlProxy};
+use super::proxy::{MEMORY_NAME, control};
 use crate::deadline::{Deadline, answered, peer};
-use crate::live::{BusSource, confirmed, connect};
+use crate::live::{BusSource, Pinned, pinned};
 use almanac_core::WaitingSetting;
 use detent_model::{Confinement, SettingPair, Trouble};
 use porter_dbus::{BusFailure, classify};
-use zbus::Connection;
 
 /// The bus name memory answers a refusal with when the caller may not do this.
 const NOT_ALLOWED: &str = "org.quire.Memory1.Error.NotAllowed";
@@ -39,20 +38,17 @@ fn failure_of(error: &zbus::Error) -> Failure {
     }
 }
 
-/// The connection, only when memory is already on the bus and its owner is memory: a program that
-/// took the name is treated as memory not running, and is asked and told nothing.
-async fn running(bus: &BusSource) -> Result<Connection, Failure> {
-    let connection = connect(bus).await.map_err(|_| Failure::Absent)?;
-    confirmed(bus, &connection, MEMORY_NAME)
-        .await
-        .map_err(|_| Failure::Absent)?;
-    Ok(connection)
+/// The connection and memory's owner, only when memory is already on the bus and its owner is
+/// memory: a program that took the name is treated as memory not running, and is asked and told
+/// nothing. The calls go to that owner.
+async fn running(bus: &BusSource) -> Result<Pinned, Failure> {
+    pinned(bus, MEMORY_NAME).await.map_err(|_| Failure::Absent)
 }
 
 /// The looser values the file holds that wait for the person, in key order, read fresh.
 pub(super) async fn waiting(bus: &BusSource) -> Result<Vec<WaitingSetting>, Failure> {
-    let connection = running(bus).await?;
-    let proxy = MemoryControlProxy::new(&connection)
+    let memory = running(bus).await?;
+    let proxy = control(&memory)
         .await
         .map_err(|error| failure_of(&error))?;
     let rows = answered(Deadline::READ, peer::MEMORY, proxy.pending_settings())
@@ -71,8 +67,8 @@ pub(super) async fn waiting(bus: &BusSource) -> Result<Vec<WaitingSetting>, Fail
 
 /// Tells memory the person agreed to `pairs`; memory takes all of them or none.
 pub(super) async fn confirm(bus: &BusSource, pairs: &[SettingPair]) -> Result<(), Failure> {
-    let connection = running(bus).await?;
-    let proxy = MemoryControlProxy::new(&connection)
+    let memory = running(bus).await?;
+    let proxy = control(&memory)
         .await
         .map_err(|error| failure_of(&error))?;
     let values = pairs
@@ -91,8 +87,8 @@ pub(super) async fn confirm(bus: &BusSource, pairs: &[SettingPair]) -> Result<()
 
 /// How far memory confines itself, read fresh, only when memory is already running.
 pub(super) async fn confinement(bus: &BusSource) -> Result<Confinement, Failure> {
-    let connection = running(bus).await?;
-    let proxy = MemoryControlProxy::new(&connection)
+    let memory = running(bus).await?;
+    let proxy = control(&memory)
         .await
         .map_err(|error| failure_of(&error))?;
     let word = answered(Deadline::READ, peer::MEMORY, proxy.confinement())

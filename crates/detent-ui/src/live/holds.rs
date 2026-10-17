@@ -3,13 +3,13 @@
 
 use super::bus::BusSource;
 use super::daemon::Daemon;
-use super::io::{confirmed, connect, next_owner, owner_changes};
+use super::io::{connect, next_owner, owner_changes};
+use super::pinned::{Pinned, pinned};
 use crate::deadline::{Deadline, answered, peer};
 use detent_model::{DatasetName, HoldCounts, HoldInput, SyncNowEnd};
 use porter_dbus::names::{SYNC_ERROR_NOTHING_HELD, SYNC_ERROR_PAUSED};
 use porter_dbus::{BusError, SyncProxy};
 use std::collections::HashMap;
-use zbus::Connection;
 use zbus::zvariant::OwnedValue;
 
 /// The key of `Status`'s hold, and of the signal's counts.
@@ -34,12 +34,20 @@ fn held_in_status(status: &HashMap<String, OwnedValue>) -> Option<HoldCounts> {
     counts_of(&nested)
 }
 
-/// Whether the sync service is on the bus and its owner is the sync service: a program that took
-/// the name is not listened to and is told nothing.
-async fn syncd_is_running(bus: &BusSource, connection: &Connection) -> bool {
-    confirmed(bus, connection, Daemon::syncd().name)
+/// The sync service, only when it is on the bus and its owner is the sync service: a program that
+/// took the name is not listened to and is told nothing. The calls go to that owner.
+async fn syncd_running(bus: &BusSource) -> Option<Pinned> {
+    pinned(bus, Daemon::syncd().name).await.ok()
+}
+
+/// The sync service's side, called by the owner that was confirmed.
+async fn sync_of(syncd: &Pinned) -> Option<SyncProxy<'_>> {
+    SyncProxy::builder(&syncd.connection)
+        .destination(syncd.destination())
+        .ok()?
+        .build()
         .await
-        .is_ok()
+        .ok()
 }
 
 /// Tells `tell` each hold the sync service starts or ends, until the bus goes away. It joins the
@@ -54,8 +62,8 @@ pub(crate) async fn follow_holds(bus: &BusSource, mut tell: impl FnMut(HoldInput
         return;
     };
     loop {
-        if syncd_is_running(bus, &connection).await
-            && watch(&connection, &mut owners, &mut tell).await.is_none()
+        if let Some(syncd) = syncd_running(bus).await
+            && watch(&syncd, &mut owners, &mut tell).await.is_none()
         {
             return;
         }
@@ -68,11 +76,11 @@ pub(crate) async fn follow_holds(bus: &BusSource, mut tell: impl FnMut(HoldInput
 /// One stretch of the service being there: `Some` when its name changed hands, `None` when the
 /// bus closed.
 async fn watch(
-    connection: &Connection,
+    syncd: &Pinned,
     owners: &mut zbus::fdo::NameOwnerChangedStream,
     tell: &mut impl FnMut(HoldInput),
 ) -> Option<()> {
-    let Ok(proxy) = SyncProxy::new(connection).await else {
+    let Some(proxy) = sync_of(syncd).await else {
         return next_owner(owners).await;
     };
     let Ok(mut signals) = proxy.receive_needs_confirmation().await else {
@@ -103,11 +111,8 @@ async fn watch(
 /// otherwise.
 pub(crate) async fn confirm_discard(bus: &BusSource, dataset: DatasetName) -> Option<HoldInput> {
     let asked = answered(Deadline::ACTION, peer::SYNC, async {
-        let connection = connect(bus).await.ok()?;
-        confirmed(bus, &connection, Daemon::syncd().name)
-            .await
-            .ok()?;
-        let proxy = SyncProxy::new(&connection).await.ok()?;
+        let syncd = syncd_running(bus).await?;
+        let proxy = sync_of(&syncd).await?;
         Some(proxy.confirm_discard(&dataset.0).await)
     })
     .await
@@ -127,11 +132,8 @@ fn is_nothing_held(error: &BusError) -> bool {
 /// or the dataset cannot be asked about.
 pub(crate) async fn hold_now(bus: &BusSource, dataset: DatasetName) -> HoldInput {
     let counts = answered(Deadline::READ, peer::SYNC, async {
-        let connection = connect(bus).await.ok()?;
-        confirmed(bus, &connection, Daemon::syncd().name)
-            .await
-            .ok()?;
-        let proxy = SyncProxy::new(&connection).await.ok()?;
+        let syncd = syncd_running(bus).await?;
+        let proxy = sync_of(&syncd).await?;
         held_in_status(&proxy.status(&dataset.0).await.ok()?)
     })
     .await
@@ -147,11 +149,8 @@ fn is_paused(error: &BusError) -> bool {
 /// cycle ends.
 pub(crate) async fn sync_now(bus: &BusSource, dataset: DatasetName) -> SyncNowEnd {
     let asked = answered(Deadline::ACTION, peer::SYNC, async {
-        let connection = connect(bus).await.ok()?;
-        confirmed(bus, &connection, Daemon::syncd().name)
-            .await
-            .ok()?;
-        let proxy = SyncProxy::new(&connection).await.ok()?;
+        let syncd = syncd_running(bus).await?;
+        let proxy = sync_of(&syncd).await?;
         Some(proxy.sync_now(&dataset.0).await)
     })
     .await

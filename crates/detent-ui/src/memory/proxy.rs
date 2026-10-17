@@ -1,5 +1,6 @@
 //! The caller's side of `org.quire.Memory1.Control`, the members Settings uses.
 
+use crate::live::Pinned;
 use std::collections::HashMap;
 
 /// The memory service's name on the bus.
@@ -25,6 +26,15 @@ pub(crate) trait MemoryControl {
     /// (in a test build only) `off`. It does not change while memory runs.
     #[zbus(property)]
     fn confinement(&self) -> zbus::Result<String>;
+}
+
+/// The controls of the memory service whose owner was confirmed: calls go to that owner by its
+/// unique name.
+pub(super) async fn control(memory: &Pinned) -> zbus::Result<MemoryControlProxy<'_>> {
+    MemoryControlProxy::builder(&memory.connection)
+        .destination(memory.destination())?
+        .build()
+        .await
 }
 
 #[cfg(test)]

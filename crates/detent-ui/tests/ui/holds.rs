@@ -10,7 +10,10 @@ use detent_callers::{RoleCheck, introduce_service, private_peers, roles};
 use detent_model::PageSlug;
 use detent_ui::{Opening, Vouch};
 use ds_harness::{Driver, Harness, Query};
-use ds_settings::live::AnyOwner;
+use ds_settings::live::{AnyOwner, OwnerAnswer, OwnerCheck, SenderName, Verdict};
+use porter_dbus::names::SYNC_BUS;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 const HOME: &str = "[aria-label=\"Manage Home cloud\"]";
@@ -35,6 +38,10 @@ fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
 struct World {
     harness: Harness,
     sync: Syncd,
+    /// The program that takes the sync name from `sync` when `handover` fires.
+    successor: Syncd,
+    handover: Arc<AtomicBool>,
+    _successor_bus: zbus::Connection,
     sync_bus: zbus::Connection,
     rt: tokio::runtime::Runtime,
     _bus: PrivateBus,
@@ -49,6 +56,30 @@ enum Trust {
     Everyone,
     /// Only accountd is; the program that owns the sync service's name is nobody the table knows.
     AccountsOnly,
+    /// Every one is, and once `World::handover` fires the next time the sync service is vouched
+    /// for, the name passes from it to the successor right after the answer is given.
+    HandsOver,
+}
+
+/// Vouches for everyone, and when armed hands the sync name from one program to another at the
+/// moment it is asked, which is after the owner was found and before the call.
+#[derive(Debug)]
+struct HandsOver {
+    armed: Arc<AtomicBool>,
+    from: zbus::Connection,
+    to: zbus::Connection,
+}
+
+impl OwnerCheck for HandsOver {
+    fn holds_role<'a>(&'a self, name: &'a str, _owner: &'a SenderName) -> OwnerAnswer<'a> {
+        Box::pin(async move {
+            if name == SYNC_BUS && self.armed.swap(false, Ordering::SeqCst) {
+                self.from.release_name(SYNC_BUS).await.expect("released");
+                self.to.request_name(SYNC_BUS).await.expect("taken");
+            }
+            Verdict::Allow
+        })
+    }
 }
 
 /// The Accounts page over the fakes, with `before` holds already on when the window opens.
@@ -78,8 +109,16 @@ fn world_trusting(name: &str, before: &[(&str, u64, u64)], trust: Trust) -> Worl
         page: Some(PageSlug("accounts".to_owned())),
         query: String::new(),
     };
+    let successor = Syncd::default();
+    let successor_bus = rt.block_on(successor.serve_unnamed(&bus));
+    let handover = Arc::new(AtomicBool::new(false));
     let vouch = match trust {
         Trust::Everyone => Vouch::of(AnyOwner),
+        Trust::HandsOver => Vouch::of(HandsOver {
+            armed: Arc::clone(&handover),
+            from: sync_bus.clone(),
+            to: successor_bus.clone(),
+        }),
         Trust::AccountsOnly => {
             let watcher = rt.block_on(bus.connect());
             let peers = private_peers(&watcher);
@@ -99,6 +138,9 @@ fn world_trusting(name: &str, before: &[(&str, u64, u64)], trust: Trust) -> Worl
     World {
         harness,
         sync,
+        successor,
+        handover,
+        _successor_bus: successor_bus,
         sync_bus,
         rt,
         _bus: bus,
@@ -209,4 +251,18 @@ fn a_server_that_lists_its_files_again_ends_the_hold_by_itself() {
     w.rt.block_on(w.sync.heal(&w.sync_bus, "home/files"));
     settle(&mut w.harness, "the banner to go", |h| h.count(BANNER) == 0);
     assert!(w.sync.confirmed().is_empty());
+}
+
+#[test]
+fn a_discard_goes_to_the_program_that_was_checked_even_when_the_name_changes_hands_after() {
+    let mut w = world_trusting("holds-handover", &[("home/files", 3, 4)], Trust::HandsOver);
+    settle(&mut w.harness, "the banner", |h| h.count(BANNER) == 1);
+    w.handover.store(true, Ordering::SeqCst);
+    click(&mut w.harness, REMOVE);
+    settle(&mut w.harness, "the call", |_| !w.sync.confirmed().is_empty());
+    assert_eq!(w.sync.confirmed(), ["home/files"], "the program checked took it");
+    assert!(
+        w.successor.confirmed().is_empty(),
+        "the program that took the name after the check was sent nothing"
+    );
 }
