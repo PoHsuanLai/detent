@@ -92,9 +92,14 @@ fn a_link_to_a_device_is_not_read() {
     // Endless if it were read; a regular-file check stops it before the first byte.
     symlink("/dev/zero", &path).expect("link");
     assert_eq!(load(&home, &spec()).invalid.len(), 1);
+    // Refused before the first byte: the regular-file check, or the update lock that would sit
+    // beside the link's target (in /dev, which this program cannot write).
     let refused = save_key(&home, "dock.bounce", word("off"));
     assert!(
-        matches!(refused, Err(FilesError::Unreadable { .. })),
+        matches!(
+            refused,
+            Err(FilesError::Unreadable { .. } | FilesError::Io { .. })
+        ),
         "{refused:?}"
     );
 }

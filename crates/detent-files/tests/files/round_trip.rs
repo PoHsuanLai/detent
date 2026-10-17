@@ -181,10 +181,14 @@ fn a_write_sets_one_key_and_keeps_every_other_byte() {
     let want = before.replace("\"right\"", "\"left\"");
     assert_eq!(read_file(&home), want, "only the edited value changed");
     let dir = home.path_of(&spec().file);
+    // The sidecar `.<name>.lock` is the update lock every writer of the file shares; it stays.
+    let mut lock_name = std::ffi::OsString::from(".");
+    lock_name.push(dir.file_name().expect("name"));
+    lock_name.push(".lock");
     let leftovers = std::fs::read_dir(dir.parent().expect("parent"))
         .expect("dir")
         .filter_map(Result::ok)
-        .filter(|e| e.path() != dir)
+        .filter(|e| e.path() != dir && e.file_name() != lock_name)
         .count();
     assert_eq!(leftovers, 0, "the temporary file was renamed away");
 }
