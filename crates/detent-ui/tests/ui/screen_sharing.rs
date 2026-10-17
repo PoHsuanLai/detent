@@ -214,7 +214,9 @@ fn a_refusal_is_told_in_plain_words_and_the_row_stays() {
     assert_eq!(w.harness.count(REMOVE_MEET), 1, "the app is still listed");
     // A second press works: the first refusal did not leave the list stuck. The toast sits over
     // the last row at this window size, so the press waits for it to go.
-    settle(&mut w.harness, "the toast to go", |h| h.count(".ds-toast") == 0);
+    settle(&mut w.harness, "the toast to go", |h| {
+        h.count(".ds-toast") == 0
+    });
     click(&mut w.harness, REMOVE_MEET);
     settle(&mut w.harness, "the row to go", |h| {
         h.count(REMOVE_MEET) == 0
