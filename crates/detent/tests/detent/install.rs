@@ -83,6 +83,51 @@ fn the_user_unit_is_the_one_the_service_file_names() {
     assert!(unit.contains("ExecStart=/usr/bin/detent\n"), "{unit}");
 }
 
+/// The variables peephole-core's `LOADER_VARIABLES` names: a unit that leaves any of them set is
+/// not given the Settings role in full proof.
+const LOADER_VARIABLES: [&str; 22] = [
+    "LD_PRELOAD",
+    "LD_LIBRARY_PATH",
+    "LD_AUDIT",
+    "GCONV_PATH",
+    "GIO_EXTRA_MODULES",
+    "GTK_MODULES",
+    "GTK_PATH",
+    "GST_PLUGIN_PATH",
+    "GST_PLUGIN_SYSTEM_PATH",
+    "LIBGL_DRIVERS_PATH",
+    "MESA_LOADER_DRIVER_OVERRIDE",
+    "__EGL_VENDOR_LIBRARY_DIRS",
+    "__EGL_VENDOR_LIBRARY_FILENAMES",
+    "GBM_BACKENDS_PATH",
+    "LIBVA_DRIVERS_PATH",
+    "VK_ICD_FILENAMES",
+    "VK_DRIVER_FILES",
+    "VK_ADD_DRIVER_FILES",
+    "VK_LAYER_PATH",
+    "VK_ADD_LAYER_PATH",
+    "VK_INSTANCE_LAYERS",
+    "VK_LOADER_LAYERS_ENABLE",
+];
+
+#[test]
+fn the_user_unit_clears_every_loader_variable() {
+    let scratch = Scratch::under(TMP, "install-unit-loader");
+    let usr = install_into(&scratch);
+    let unit = std::fs::read_to_string(usr.join("lib/systemd/user/org.quire.Settings.service"))
+        .expect("the user unit is installed");
+    let unset: Vec<&str> = unit
+        .lines()
+        .filter_map(|line| line.strip_prefix("UnsetEnvironment="))
+        .flat_map(str::split_whitespace)
+        .collect();
+    let kept: Vec<&str> = LOADER_VARIABLES
+        .into_iter()
+        .filter(|name| !unset.contains(name))
+        .collect();
+    assert!(kept.is_empty(), "not unset: {kept:?}");
+}
+
 #[test]
 fn a_prefix_with_characters_sed_reads_as_syntax_is_written_as_it_is() {
     let scratch = Scratch::under(TMP, "install-odd-prefix");
