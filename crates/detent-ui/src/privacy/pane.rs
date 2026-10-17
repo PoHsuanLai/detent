@@ -1,11 +1,11 @@
 //! The page's state, kept current from the compositor and driven by the person's choices.
 
+use super::book::use_program_book;
 use super::io::{NOT_AVAILABLE, forget, is_valued, set};
 use super::program_view::Listed;
 use crate::env::Env;
 use crate::live::{Daemon, Followed, follow, reread};
-use detent_files::scan_programs;
-use detent_model::{Absence, PrivacyEffect, PrivacyInput, PrivacyState, ProgramBook, privacy_step};
+use detent_model::{Absence, PrivacyEffect, PrivacyInput, PrivacyState, privacy_step};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -32,23 +32,7 @@ pub(crate) fn PrivacyPane() -> Element {
     let toasts = use_toasts();
     let state = use_signal(PrivacyState::default);
     let client = use_signal(|| None::<LiveClient>);
-    let mut book = use_signal(ProgramBook::default);
-
-    use_future({
-        let dirs = env.application_dirs.clone();
-        let rule = env.entry_rule.clone();
-        move || {
-            let dirs = dirs.clone();
-            let rule = rule.clone();
-            async move {
-                if let Ok(found) =
-                    tokio::task::spawn_blocking(move || scan_programs(&dirs, &rule)).await
-                {
-                    book.set(found);
-                }
-            }
-        }
-    });
+    let book = use_program_book();
     use_future({
         let bus = env.bus.clone();
         move || {

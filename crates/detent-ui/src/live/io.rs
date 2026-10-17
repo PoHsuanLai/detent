@@ -9,6 +9,7 @@ use detent_model::Absence;
 use ds_peer::within;
 use ds_settings::live::{Changes, LiveClient, LiveError, OwnerCheck, SenderName, Verdict};
 use ds_settings::schema::KeyPath;
+use porter_dbus::{BusFailure, classify};
 use zbus::Connection;
 use zbus::fdo::{DBusProxy, NameOwnerChangedStream};
 use zbus::names::BusName;
@@ -23,6 +24,16 @@ pub(super) fn absence_of(error: LiveError) -> Absence {
         LiveError::NotTheService(_) => Absence::Unavailable,
         LiveError::Timeout(words) => Absence::Failed(words),
         other => failed(plain(&other)),
+    }
+}
+
+/// Why a call to a service's own interface failed: nobody on its name means it is not running, the
+/// bus's refusal means this caller is not permitted, anything else is a failure.
+pub(crate) fn absence_of_bus(error: &zbus::Error) -> Absence {
+    match classify(error) {
+        BusFailure::NoDaemon => Absence::NotRunning,
+        BusFailure::Denied(_) => Absence::NotPermitted,
+        BusFailure::Other(_) => failed(error),
     }
 }
 

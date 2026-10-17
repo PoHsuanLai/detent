@@ -2,7 +2,7 @@
 //! guests and the changes. The engines signal (a computer answering or not) comes from its proxy.
 
 use crate::deadline::{Deadline, answered, peer};
-use crate::live::{BusSource, Pinned, pinned};
+use crate::live::{BusSource, Pinned, absence_of_bus, pinned};
 use crate::ticks::{Ticker, Ticks};
 use detent_model::{Absence, ComputerRow, ComputersFound};
 use ds_peer::within;
@@ -11,7 +11,7 @@ use porter_client::{
 };
 use porter_core::lending::ComputerCandidate;
 use porter_dbus::names::INFERENCE_BUS;
-use porter_dbus::{BusFailure, BusStream, InferenceProxy, classify};
+use porter_dbus::{BusStream, InferenceProxy};
 
 /// What the person reads when a change could not be made and the service gave no sentence.
 const COULD_NOT: &str = "Your computers could not be changed. Try again in a moment.";
@@ -40,14 +40,6 @@ fn absence_of(error: ClientError) -> Absence {
         }
         ClientError::Transport(TransportError::Denied(_)) => Absence::NotPermitted,
         other => Absence::Failed(other.to_string()),
-    }
-}
-
-fn absence_of_bus(error: &zbus::Error) -> Absence {
-    match classify(error) {
-        BusFailure::NoDaemon => Absence::NotRunning,
-        BusFailure::Denied(_) => Absence::NotPermitted,
-        _ => Absence::Failed(error.to_string()),
     }
 }
 
