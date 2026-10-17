@@ -28,6 +28,7 @@ mod range;
 mod reads;
 mod reason;
 mod rows;
+mod screen_sharing;
 mod search;
 mod sharing;
 mod shortcuts;
@@ -110,6 +111,10 @@ pub use range::{Number, Range};
 pub use reads::modules_read;
 pub use reason::Reason;
 pub use rows::Columns;
+pub use screen_sharing::{
+    APP_ID_MAX, GRANTS_MAX, ScreenGrant, ScreenSharingEffect, ScreenSharingInput,
+    ScreenSharingReady, ScreenSharingState, ShareLength, grant_line, screen_sharing_step,
+};
 pub use search::{Found, Hit, Rank, Search, search};
 pub use sharing::{
     ALLOW, CANCEL, Existing, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way,

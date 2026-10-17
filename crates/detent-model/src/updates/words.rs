@@ -36,7 +36,7 @@ fn counted(count: i64, unit: &str) -> String {
 
 /// How long before `now` the moment `then` was: "just now", "5 minutes ago", "yesterday". A
 /// moment that is not yet past (the clocks differ a little) is "just now".
-pub(super) fn age_words(now: UnixSeconds, then: UnixSeconds) -> String {
+pub(crate) fn age_words(now: UnixSeconds, then: UnixSeconds) -> String {
     let seconds = now.0.saturating_sub(then.0);
     match seconds {
         ..MINUTE => "just now".to_owned(),
