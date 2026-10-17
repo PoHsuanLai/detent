@@ -164,6 +164,12 @@
   gap: var(--s-8);
 }
 
+.privacy-program-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .first-run {
   display: flex;
   flex-direction: column;

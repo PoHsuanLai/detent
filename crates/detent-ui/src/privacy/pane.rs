@@ -36,10 +36,14 @@ pub(crate) fn PrivacyPane() -> Element {
 
     use_future({
         let dirs = env.application_dirs.clone();
+        let rule = env.entry_rule.clone();
         move || {
             let dirs = dirs.clone();
+            let rule = rule.clone();
             async move {
-                if let Ok(found) = tokio::task::spawn_blocking(move || scan_programs(&dirs)).await {
+                if let Ok(found) =
+                    tokio::task::spawn_blocking(move || scan_programs(&dirs, &rule)).await
+                {
                     book.set(found);
                 }
             }

@@ -69,7 +69,16 @@ fn ProgramCard(
             "data-program": "{program.subject.0}",
             div { class: "privacy-program-head",
                 ProgramIcon { look: look.clone() }
-                Label { text: TextLine::from(look.name.clone()), role: LabelRole::Primary, style: LabelStyle::Headline }
+                div { class: "privacy-program-name",
+                    Label { text: TextLine::from(look.name.clone()), role: LabelRole::Primary, style: LabelStyle::Headline }
+                    if let Some(place) = look.place.clone() {
+                        Label {
+                            text: TextLine::from(format!("In {place}")),
+                            role: LabelRole::Tertiary,
+                            style: LabelStyle::Footnote,
+                        }
+                    }
+                }
             }
             FieldGroup {
                 for cell in program.cells.iter().cloned() {

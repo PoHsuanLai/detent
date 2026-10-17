@@ -129,6 +129,10 @@ fn programs_are_named_from_their_entries_and_each_power_shows_where_it_stands() 
     for name in ["Grim", "Image Viewer", "capture"] {
         assert!(names.contains(name), "{name} in {names}");
     }
+    assert!(
+        names.contains("In /opt/tools"),
+        "a program no system entry names shows its folder: {names}"
+    );
     let grim = "usr-bin-grim";
     // `(row, what it says)`.
     let cases = [

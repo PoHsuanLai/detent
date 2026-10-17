@@ -605,3 +605,9 @@ is given before it, so a jail with no manager does not stop it (read in peephole
   `porter-daemon`) and what they bring (`sha2`, `rustix`, porter-http's TLS stack): to be locked
   with the sibling checkouts present.
 
+
+## Re-audit fixes 2026-10-17
+
+| Id | Standing | Notes |
+| --- | --- | --- |
+| NEW-QDH-1 | fixed here | The Privacy page no longer names a program by what a desktop entry says about itself. The program is the compositor's proven identity (image path, or the sandboxed app's id); an entry names it, and lends its icon, only when the entry is in a system folder (`SchemaOrigin::System`: the folder and every parent root-owned and closed, judged by `Env::entry_rule`) and its `Exec`/`TryExec` is the image's absolute path, or a bare name for an image in a system program folder (`/usr/bin`, `/usr/local/bin` and the like that are themselves closed), or its Flatpak or entry id is the app's id. An entry of a sandboxed app (`X-Flatpak`) no longer names a host program. Anything else shows the file name and, under it, "In <folder>"; names and folders have controls and direction overrides replaced and are cut (name 48, folder 60 characters, the tail kept). Consequence: an app installed in the person's own Flatpak or home folders shows its file name or id rather than its entry's name (the entry is the person's to write); a Debian `/usr/local` that is group-writable reads as the person's too. Tests: `detent-model` `privacy/tests.rs` (a planted `~/.local` entry named "Firefox" for `/tmp/evil` shows "evil"; the table over launch lines, bare names, sandboxed ids; a planted entry ahead of the system one), `detent-files/tests/files/programs.rs` (the scan judges folders; a person-owned folder names nobody), `detent-ui/tests/ui/privacy.rs` (the folder is on the row). sill's permission sheet looks an app up by the name the compositor sends (`sill-overlays/src/permission_sheet/words.rs::app_named`); that is a different rule and is sill's to review. |

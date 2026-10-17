@@ -18,6 +18,7 @@ pub mod syncd;
 pub mod updates;
 
 use detent_files::{ConfigHome, DataHome, StateHome};
+use detent_model::OriginRule;
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{
     App, BusSource, EngineDesk, Env, FirstRunApp, Lender, LogOut, Opening, Outbox, ReasonFeed,
@@ -179,6 +180,14 @@ impl Sandbox {
         .with_engines(self.engines.clone())
         .with_os_release(self.os_release_path())
         .with_application_dirs(vec![self.scratch.join("applications")])
+        .with_entry_rule(self.entry_rule())
+    }
+
+    /// The scratch `applications` folder is a system one in this world, as a package's would be.
+    fn entry_rule(&self) -> OriginRule {
+        let folder = self.scratch.join("applications");
+        let real = folder.canonicalize().unwrap_or(folder);
+        OriginRule::declared(&[real])
     }
 
     /// Where this world's `os-release` is: a scratch file, never the computer's own.

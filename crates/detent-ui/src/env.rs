@@ -10,7 +10,7 @@ use crate::live::BusSource;
 use crate::marks::ProviderMarks;
 use crate::updates::{LogOut, Updater};
 use detent_files::{ConfigHome, DataHome, FirstRunMark, KeymapFiles, StateHome};
-use detent_model::{Catalogue, PageSlug, Warning, discover};
+use detent_model::{Catalogue, OriginRule, PageSlug, Warning, discover};
 use ds_helpers::Environment;
 use ds_settings::SystemPrefsSource;
 use std::path::PathBuf;
@@ -64,6 +64,9 @@ pub struct Env {
     /// The folders of desktop entries, in the order of precedence: where the Privacy page finds
     /// the name and icon of a program. None until the launcher names them.
     pub application_dirs: Vec<PathBuf>,
+    /// How those folders are judged: only an entry in one closed to everyone but an
+    /// administrator may name a program. A test declares its scratch folder to be one.
+    pub entry_rule: OriginRule,
     /// What the sheet that downloads an engine does to the computer: the person's own unless a
     /// test hands in another.
     pub engines: EngineDesk,
@@ -105,6 +108,7 @@ impl Env {
             log_out: LogOut::power_menu(),
             os_release: Environment::system().os_release,
             application_dirs: Vec::new(),
+            entry_rule: OriginRule::Ownership,
             engines,
             programs_path: String::new(),
         }
@@ -141,6 +145,11 @@ impl Env {
             application_dirs,
             ..self
         }
+    }
+
+    /// This environment judging the desktop entries' folders by `entry_rule`.
+    pub fn with_entry_rule(self, entry_rule: OriginRule) -> Env {
+        Env { entry_rule, ..self }
     }
 
     /// This environment with the engine sheet working through `engines`.
