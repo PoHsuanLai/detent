@@ -8,7 +8,7 @@ use crate::support::Sandbox;
 use crate::support::accountd::{Accountd, Held, Policy};
 use crate::support::bus::PrivateBus;
 use crate::support::computers::{Asker, Fake, Lender, Own, serve};
-use crate::support::drive::{click, scroll_into_view};
+use crate::support::drive::{click, click_when_still, scroll_into_view};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use docket_settings::{CloudAllowed, Toggle, read_places};
@@ -210,7 +210,7 @@ fn ask_me_each_time_sits_under_a_cloud_rows_advanced_and_writes_ask() {
         0,
         "this computer has no such switch"
     );
-    click(&mut w.harness, ask);
+    click_when_still(&mut w.harness, ask);
     settle(&mut w.harness, "the write", |_| {
         written(&w.sandbox)
             .is_some_and(|places| places.cloud[0].allowed == CloudAllowed::AskEachTime)

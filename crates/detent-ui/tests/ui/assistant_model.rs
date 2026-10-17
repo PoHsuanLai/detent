@@ -335,10 +335,10 @@ fn automatic_opens_its_list_and_is_not_ready_until_a_model_is_in_it() {
         [(ROW.to_owned(), "auto".to_owned())]
     );
     assert_eq!(world.harness.count("[data-pool=\"editor\"]"), 1);
-    assert!(
-        world.harness.html().contains(POOL_NOTE),
-        "an empty list says what to do"
-    );
+    // The note comes with the pool's first read, which can land a frame after the editor opens.
+    settle(&mut world.harness, "an empty list says what to do", |h| {
+        h.html().contains(POOL_NOTE)
+    });
     assert_eq!(
         world.harness.attr(CONTINUE, "data-availability").as_deref(),
         Some("disabled"),
