@@ -1,13 +1,13 @@
 //! A list of tables: a line per row with a cell per column, a Remove button on each, and a line
 //! to add one. An edit that does not fit its column is not stored.
 
-use detent_model::{Columns, cell_fits, humanize};
+use detent_model::{Columns, humanize};
 use dioxus::prelude::*;
 use ds::components::controls::button_model::{Bezel, ButtonRole};
 use ds::components::menus::pop_up_button::PopUpButton;
 use ds::prelude::*;
 use ds::style::tokens::control_size::ControlSize;
-use ds_settings::schema::{Column, ColumnKind};
+use ds_settings::schema::ColumnKind;
 
 /// The cells of every row, and the rows each change would make.
 #[derive(Clone, PartialEq)]
@@ -44,16 +44,22 @@ impl Table {
 
     /// Whether `row` has a fitting cell in every column.
     fn fits(&self, row: &[String]) -> bool {
-        row.len() == self.columns.0.len()
-            && self.columns.0.iter().zip(row).all(|(c, t)| cell_fits(c, t))
+        row.len() == self.columns.all().len()
+            && row
+                .iter()
+                .enumerate()
+                .all(|(at, text)| self.columns.fits(at, text))
     }
 }
 
 /// One cell: a text field or a pop-up of the column's words, committing through `oncommit`.
 #[component]
-fn Cell(column: Column, text: String, oncommit: EventHandler<String>) -> Element {
+fn Cell(columns: Columns, at: usize, text: String, oncommit: EventHandler<String>) -> Element {
+    let Some(column) = columns.all().get(at).cloned() else {
+        return rsx! {};
+    };
     let label = column.label.0.clone();
-    match column.kind.clone() {
+    match column.kind {
         ColumnKind::Choice { variants } => {
             let items: Vec<MenuItem<String>> = variants
                 .iter()
@@ -78,7 +84,7 @@ fn Cell(column: Column, text: String, oncommit: EventHandler<String>) -> Element
                     size: ControlSize::Small,
                     oninput: move |next| draft.set(next),
                     onchange: move |next: String| {
-                        if cell_fits(&column, &next) {
+                        if columns.fits(at, &next) {
                             oncommit.call(next);
                         } else {
                             draft.set(stored.clone());
@@ -116,11 +122,12 @@ pub fn RowsControl(
         div { class: "key-rows",
             for (row, cells) in table.cells.iter().cloned().enumerate() {
                 div { key: "{row}:{cells.join(\"|\")}", class: "key-rows-row", "data-row": "{row}",
-                    for (at, column) in columns.0.iter().cloned().enumerate() {
+                    for (at, column) in columns.all().iter().enumerate() {
                         Cell {
                             key: "{column.name.0}",
                             text: cells[at].clone(),
-                            column,
+                            columns: columns.clone(),
+                            at,
                             oncommit: {
                                 let table = table.clone();
                                 move |text: String| send.call(table.with_cell(row, at, &text))
@@ -140,11 +147,12 @@ pub fn RowsControl(
                 }
             }
             div { class: "key-rows-new",
-                for (at, column) in columns.0.iter().cloned().enumerate() {
+                for (at, column) in columns.all().iter().enumerate() {
                     Cell {
                         key: "{column.name.0}:{draft[at]}",
                         text: draft[at].clone(),
-                        column,
+                        columns: columns.clone(),
+                        at,
                         oncommit: {
                             let draft = draft.clone();
                             move |text: String| {

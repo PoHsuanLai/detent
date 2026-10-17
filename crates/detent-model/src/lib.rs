@@ -109,7 +109,7 @@ pub use privacy::{
 pub use range::{Number, Range};
 pub use reads::modules_read;
 pub use reason::Reason;
-pub use rows::{Columns, cell_fits};
+pub use rows::Columns;
 pub use search::{Found, Hit, Rank, Search, search};
 pub use sharing::{
     ALLOW, CANCEL, Existing, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way,

@@ -108,7 +108,7 @@ impl Control {
             KeyKind::Text => Control::Text,
             KeyKind::Colour => Control::Colour,
             KeyKind::Shortcut => Control::FileOnly(FileOnly::Shortcut),
-            KeyKind::Rows { columns } => Control::Rows(Columns(columns.clone())),
+            KeyKind::Rows { columns } => Control::Rows(Columns::new(columns.clone())),
             KeyKind::List(_) => Control::FileOnly(FileOnly::List),
             KeyKind::Live { .. } => Control::FileOnly(FileOnly::Action),
         }

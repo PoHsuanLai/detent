@@ -3,25 +3,72 @@
 
 use ds_settings::schema::{Column, ColumnKind};
 use regex::Regex;
+use std::sync::Arc;
 
-/// The columns of a rows key, in the order the schema gives them.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Columns(pub Vec<Column>);
+/// The columns of a rows key, in the order the schema gives them, with each pattern compiled
+/// once here and not each time a cell is checked.
+#[derive(Debug, Clone)]
+pub struct Columns {
+    columns: Vec<Column>,
+    /// For each column, the whole-text expression of its pattern; none for a column without one
+    /// and for a pattern that is not a regular expression.
+    patterns: Arc<[Option<Regex>]>,
+}
 
-/// Whether `text` is a value of `column`: a word of a choice, or text the whole of which matches
-/// the column's pattern. A pattern that is not a regular expression admits any text; the owning
-/// program validates the rows again at load.
-pub fn cell_fits(column: &Column, text: &str) -> bool {
-    match &column.kind {
-        ColumnKind::Choice { variants } => variants.iter().any(|word| word == text),
-        ColumnKind::Text { pattern: None } => true,
-        ColumnKind::Text {
-            pattern: Some(pattern),
-        } => Regex::new(&format!("^(?:{pattern})$")).is_ok_and(|whole| whole.is_match(text)),
+impl PartialEq for Columns {
+    /// Two sets of columns are the same when the schema's columns are.
+    fn eq(&self, other: &Columns) -> bool {
+        self.columns == other.columns
     }
 }
 
+impl Eq for Columns {}
+
+/// The expression that matches the whole of a text matching `pattern`; none when `pattern` is not
+/// a regular expression.
+fn whole(pattern: &str) -> Option<Regex> {
+    Regex::new(&format!("^(?:{pattern})$")).ok()
+}
+
 impl Columns {
+    /// The columns `columns`, their patterns compiled.
+    pub fn new(columns: Vec<Column>) -> Columns {
+        let patterns = columns
+            .iter()
+            .map(|column| match &column.kind {
+                ColumnKind::Text {
+                    pattern: Some(pattern),
+                } => whole(pattern),
+                ColumnKind::Text { pattern: None } | ColumnKind::Choice { .. } => None,
+            })
+            .collect();
+        Columns { columns, patterns }
+    }
+
+    /// The columns, in order.
+    pub fn all(&self) -> &[Column] {
+        &self.columns
+    }
+
+    /// Whether `text` is a value of the column at `at`: a word of a choice, or text the whole of
+    /// which matches the column's pattern. A pattern that is not a regular expression admits
+    /// nothing (the schema is wrong; a cell is not stored against it), and there is no such
+    /// column for an `at` past the last.
+    pub fn fits(&self, at: usize, text: &str) -> bool {
+        let Some(column) = self.columns.get(at) else {
+            return false;
+        };
+        match &column.kind {
+            ColumnKind::Choice { variants } => variants.iter().any(|word| word == text),
+            ColumnKind::Text { pattern: None } => true,
+            ColumnKind::Text { pattern: Some(_) } => self
+                .patterns
+                .get(at)
+                .and_then(Option::as_ref)
+                .is_some_and(|pattern| pattern.is_match(text)),
+        }
+    }
+
     /// `value`'s rows as text, one string per column, when every row is a table of exactly these
     /// columns holding values that fit; else `None` (the value is shown as written and no edit
     /// could keep what the editor cannot hold).
@@ -31,12 +78,13 @@ impl Columns {
             .iter()
             .map(|row| {
                 let table = row.as_table()?;
-                (table.len() == self.0.len()).then_some(())?;
-                self.0
+                (table.len() == self.columns.len()).then_some(())?;
+                self.columns
                     .iter()
-                    .map(|column| {
+                    .enumerate()
+                    .map(|(at, column)| {
                         let text = table.get(&column.name.0)?.as_str()?;
-                        cell_fits(column, text).then(|| text.to_owned())
+                        self.fits(at, text).then(|| text.to_owned())
                     })
                     .collect()
             })
@@ -48,12 +96,13 @@ impl Columns {
         cells
             .iter()
             .map(|row| {
-                (row.len() == self.0.len()).then_some(())?;
-                self.0
+                (row.len() == self.columns.len()).then_some(())?;
+                self.columns
                     .iter()
                     .zip(row)
-                    .map(|(column, text)| {
-                        cell_fits(column, text)
+                    .enumerate()
+                    .map(|(at, (column, text))| {
+                        self.fits(at, text)
                             .then(|| (column.name.0.clone(), toml::Value::String(text.clone())))
                     })
                     .collect::<Option<toml::Table>>()
@@ -65,7 +114,7 @@ impl Columns {
 
     /// A new row's starting cells: empty text, and a choice's first word.
     pub fn blank(&self) -> Vec<String> {
-        self.0
+        self.columns
             .iter()
             .map(|column| match &column.kind {
                 ColumnKind::Choice { variants } => variants.first().cloned().unwrap_or_default(),
@@ -77,7 +126,7 @@ impl Columns {
 
 #[cfg(test)]
 mod tests {
-    use super::{Columns, cell_fits};
+    use super::Columns;
     use ds_settings::schema::{Column, ColumnKind, ColumnName, Label};
 
     fn column(name: &str, kind: ColumnKind) -> Column {
@@ -89,7 +138,7 @@ mod tests {
     }
 
     fn apps() -> Columns {
-        Columns(vec![
+        Columns::new(vec![
             column(
                 "app",
                 ColumnKind::Text {
@@ -121,8 +170,21 @@ mod tests {
             (1, "Ask", false),
         ];
         for (at, text, fits) in cases {
-            assert_eq!(cell_fits(&columns.0[at], text), fits, "{text:?}");
+            assert_eq!(columns.fits(at, text), fits, "{text:?}");
         }
+    }
+
+    #[test]
+    fn a_pattern_that_is_not_a_regular_expression_admits_nothing_and_a_missing_column_too() {
+        let columns = Columns::new(vec![column(
+            "app",
+            ColumnKind::Text {
+                pattern: Some("([a-z".to_owned()),
+            },
+        )]);
+        assert!(!columns.fits(0, "abc"));
+        assert!(!columns.fits(0, ""));
+        assert!(!apps().fits(2, "ask"));
     }
 
     #[test]
