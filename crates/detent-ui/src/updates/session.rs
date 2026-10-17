@@ -12,7 +12,6 @@ use porter_dbus::{BusFailure, classify};
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::time::{SystemTime, UNIX_EPOCH};
-use zbus::Connection;
 use zbus::export::futures_core::Stream;
 use zbus::fdo::{DBusProxy, PropertiesProxy};
 use zbus::names::InterfaceName;
