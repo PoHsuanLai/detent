@@ -48,9 +48,7 @@ async fn running(bus: &BusSource) -> Result<Pinned, Failure> {
 /// The looser values the file holds that wait for the person, in key order, read fresh.
 pub(super) async fn waiting(bus: &BusSource) -> Result<Vec<WaitingSetting>, Failure> {
     let memory = running(bus).await?;
-    let proxy = control(&memory)
-        .await
-        .map_err(|error| failure_of(&error))?;
+    let proxy = control(&memory).await.map_err(|error| failure_of(&error))?;
     let rows = answered(Deadline::READ, peer::MEMORY, proxy.pending_settings())
         .await
         .ok_or(Failure::Absent)?
@@ -68,9 +66,7 @@ pub(super) async fn waiting(bus: &BusSource) -> Result<Vec<WaitingSetting>, Fail
 /// Tells memory the person agreed to `pairs`; memory takes all of them or none.
 pub(super) async fn confirm(bus: &BusSource, pairs: &[SettingPair]) -> Result<(), Failure> {
     let memory = running(bus).await?;
-    let proxy = control(&memory)
-        .await
-        .map_err(|error| failure_of(&error))?;
+    let proxy = control(&memory).await.map_err(|error| failure_of(&error))?;
     let values = pairs
         .iter()
         .map(|pair| (pair.key.clone(), pair.value.clone()))
@@ -88,9 +84,7 @@ pub(super) async fn confirm(bus: &BusSource, pairs: &[SettingPair]) -> Result<()
 /// How far memory confines itself, read fresh, only when memory is already running.
 pub(super) async fn confinement(bus: &BusSource) -> Result<Confinement, Failure> {
     let memory = running(bus).await?;
-    let proxy = control(&memory)
-        .await
-        .map_err(|error| failure_of(&error))?;
+    let proxy = control(&memory).await.map_err(|error| failure_of(&error))?;
     let word = answered(Deadline::READ, peer::MEMORY, proxy.confinement())
         .await
         .ok_or(Failure::Absent)?

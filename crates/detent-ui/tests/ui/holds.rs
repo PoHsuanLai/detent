@@ -259,8 +259,14 @@ fn a_discard_goes_to_the_program_that_was_checked_even_when_the_name_changes_han
     settle(&mut w.harness, "the banner", |h| h.count(BANNER) == 1);
     w.handover.store(true, Ordering::SeqCst);
     click(&mut w.harness, REMOVE);
-    settle(&mut w.harness, "the call", |_| !w.sync.confirmed().is_empty());
-    assert_eq!(w.sync.confirmed(), ["home/files"], "the program checked took it");
+    settle(&mut w.harness, "the call", |_| {
+        !w.sync.confirmed().is_empty()
+    });
+    assert_eq!(
+        w.sync.confirmed(),
+        ["home/files"],
+        "the program checked took it"
+    );
     assert!(
         w.successor.confirmed().is_empty(),
         "the program that took the name after the check was sent nothing"

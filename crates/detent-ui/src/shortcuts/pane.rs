@@ -56,14 +56,14 @@ impl Pane {
     fn run(&self, effect: ShortcutsEffect) {
         match effect {
             ShortcutsEffect::Save { base, text } => {
-                let ended = self
-                    .env
-                    .keymap
-                    .save_person(&base, &text)
-                    .map_err(|error| match error {
-                        FilesError::Changed { .. } => CHANGED_ELSEWHERE.to_owned(),
-                        _ => COULD_NOT_SAVE.to_owned(),
-                    });
+                let ended =
+                    self.env
+                        .keymap
+                        .save_person(&base, &text)
+                        .map_err(|error| match error {
+                            FilesError::Changed { .. } => CHANGED_ELSEWHERE.to_owned(),
+                            _ => COULD_NOT_SAVE.to_owned(),
+                        });
                 self.feed(ShortcutsInput::Saved(ended));
             }
             ShortcutsEffect::Reread => self.feed(ShortcutsInput::Read(self.env.keymap.read())),

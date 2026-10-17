@@ -192,9 +192,7 @@ async fn ask(bus: &BusSource, request: Ask) -> Result<(), InstallRefusal> {
     let running = pinned(bus, BUS_NAME)
         .await
         .map_err(|_| told(UPDATES_NOT_AVAILABLE.to_owned()))?;
-    let service = proxy(&running)
-        .await
-        .map_err(|e| told(sentence_of(&e)))?;
+    let service = proxy(&running).await.map_err(|e| told(sentence_of(&e)))?;
     let call = async {
         match &request {
             Ask::Check => service.check().await,

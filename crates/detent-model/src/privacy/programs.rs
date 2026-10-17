@@ -91,7 +91,11 @@ impl DesktopApp {
             launch == path
                 || (in_bins && !launch.contains('/') && file_name(launch) == file_name(path))
         };
-        self.flatpak.is_none() && [&self.exec, &self.try_exec].into_iter().flatten().any(starts)
+        self.flatpak.is_none()
+            && [&self.exec, &self.try_exec]
+                .into_iter()
+                .flatten()
+                .any(starts)
     }
 }
 
