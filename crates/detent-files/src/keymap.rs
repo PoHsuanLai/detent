@@ -6,7 +6,7 @@ use crate::error::{FilesError, reason_of};
 use crate::values::ConfigHome;
 use chordkit::{Keymap, KeymapSource, Watch};
 use detent_model::{KeymapText, KeymapTexts, MachineLayer, desktop_keymap};
-use ds_helpers::{NewFileMode, ReadCap, ReadError, read_text_capped, write_atomic};
+use ds_helpers::{NewFileMode, ReadCap, ReadError, read_text_capped, update_atomic};
 use keycap_client::{KeycapSource, system_bindings};
 use std::path::{Path, PathBuf};
 
@@ -72,10 +72,13 @@ impl KeymapFiles {
         self.source.watch(Box::new(on_change)).ok()
     }
 
-    /// Writes `text` as the person's keymap through [`write_atomic`] (a uniquely named temporary
-    /// file and a rename, the file's mode and a link to it kept), so a watch sees one whole file
-    /// and a crash leaves the old one.
-    pub fn save_person(&self, text: &str) -> Result<(), FilesError> {
+    /// Writes `text` as the person's keymap through [`update_atomic`] (the file's lock, a
+    /// uniquely named temporary file and a rename, the file's mode and a link to it kept), so a
+    /// watch sees one whole file and a crash leaves the old one. `base` is the text the edit
+    /// started from: when the file holds something else now (another program wrote it since),
+    /// nothing is written and the answer is [`FilesError::Changed`], so a stale whole-file write
+    /// never puts the other program's change back.
+    pub fn save_person(&self, base: &str, text: &str) -> Result<(), FilesError> {
         let person = self.source.person_file();
         if let Some(dir) = person.parent() {
             std::fs::create_dir_all(dir).map_err(|source| FilesError::Io {
@@ -83,7 +86,16 @@ impl KeymapFiles {
                 source,
             })?;
         }
-        write_atomic(person, text.as_bytes(), NewFileMode::Umask).map_err(FilesError::from)
+        update_atomic(person, MAX_BYTES, NewFileMode::Umask, |current| {
+            if current.unwrap_or_default() == base {
+                Ok(text.to_owned())
+            } else {
+                Err(FilesError::Changed {
+                    path: person.to_path_buf(),
+                })
+            }
+        })
+        .map_err(|error| FilesError::of_update(person, error))
     }
 }
 

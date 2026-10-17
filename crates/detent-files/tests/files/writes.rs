@@ -4,8 +4,10 @@
 use crate::round_trip::{home, read_file, save_key, spec, word, write_file};
 use detent_files::{ConfigHome, load_places, save_places};
 use docket_settings::{ModelChoice, OwnComputer, PlaceName, Places, Toggle};
+use ds_helpers::{NewFileMode, ReadCap, update_atomic};
 use std::os::unix::fs::{PermissionsExt, symlink};
 use std::sync::Arc;
+use std::time::Duration;
 
 #[test]
 fn a_private_file_stays_private() {
@@ -72,6 +74,37 @@ fn saves_from_two_threads_both_land() {
         "size_px = 64",
         "speed = 2.5",
     ] {
+        assert!(text.contains(want), "{want} missing from\n{text}");
+    }
+}
+
+#[test]
+fn a_save_waits_for_another_writer_of_the_file_and_keeps_its_change() {
+    let (_scratch, home) = home("writes-cross");
+    write_file(&home, "[dock]\nposition = \"left\"\n");
+    let path = home.path_of(&spec().file);
+    let (held, holding) = std::sync::mpsc::channel();
+    // Another program changing the file: it holds the file's lock, says so, and lands its change
+    // a moment later. A save that read the file before that would put the old text back.
+    let other = {
+        let path = path.clone();
+        std::thread::spawn(move || {
+            update_atomic(&path, ReadCap::mib(1), NewFileMode::Umask, |text| {
+                held.send(()).expect("the test is listening");
+                std::thread::sleep(Duration::from_millis(300));
+                let text = text.unwrap_or_default();
+                Ok::<_, std::convert::Infallible>(format!("{text}[scroll]\nspeed = 3\n"))
+            })
+            .expect("the other writer");
+        })
+    };
+    holding.recv().expect("the other writer holds the file");
+
+    save_key(&home, "dock.bounce", word("off")).expect("save");
+
+    other.join().expect("the other writer");
+    let text = read_file(&home);
+    for want in ["speed = 3", "bounce = \"off\"", "position = \"left\""] {
         assert!(text.contains(want), "{want} missing from\n{text}");
     }
 }

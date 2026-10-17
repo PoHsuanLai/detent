@@ -33,8 +33,14 @@ pub enum ShortcutsInput {
 /// What the caller must do.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ShortcutsEffect {
-    /// Write this as the person's keymap file.
-    Save(String),
+    /// Write `text` as the person's keymap file, if the file still holds `base`, the text it was
+    /// read as: a file another program changed since is left as it is.
+    Save {
+        /// The file's text when the edit began.
+        base: String,
+        /// The whole new text.
+        text: String,
+    },
     /// Read the files again.
     Reread,
     /// Tell the person something.
@@ -140,13 +146,14 @@ fn commit(state: ShortcutsState, person: Overrides) -> Step {
         return (state, vec![]);
     }
     let text = render_person(&state.person_text, &person);
+    let base = state.person_text.clone();
     let state = ShortcutsState {
         person,
         person_text: text.clone(),
         asking: None,
         ..state
     };
-    (state, vec![ShortcutsEffect::Save(text)])
+    (state, vec![ShortcutsEffect::Save { base, text }])
 }
 
 fn set(state: ShortcutsState, action: StandardAction, chord: Chord) -> Step {

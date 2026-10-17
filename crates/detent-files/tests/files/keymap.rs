@@ -2,7 +2,7 @@
 //! rename, and the watch that tells a change.
 
 use chordkit::StandardAction;
-use detent_files::{ConfigHome, KeymapFiles};
+use detent_files::{ConfigHome, FilesError, KeymapFiles};
 use detent_model::{Origin, ShortcutsEffect, ShortcutsInput, ShortcutsState, shortcuts_step};
 use detent_testkit::Scratch;
 use std::sync::Arc;
@@ -33,7 +33,7 @@ fn the_person_file_is_written_whole_in_keycaps_place_and_read_back() {
     let dir = scratch("keymap-save");
     let files = files(&dir);
     files
-        .save_person("# mine\ncopy = Super+Alt+C\n")
+        .save_person("", "# mine\ncopy = Super+Alt+C\n")
         .expect("saved");
     let path = dir.join("config/keycap/keymap");
     assert_eq!(
@@ -45,7 +45,9 @@ fn the_person_file_is_written_whole_in_keycaps_place_and_read_back() {
         "no temporary file is left"
     );
     assert_eq!(files.read().person.text, "# mine\ncopy = Super+Alt+C\n");
-    files.save_person("").expect("saved over");
+    files
+        .save_person("# mine\ncopy = Super+Alt+C\n", "")
+        .expect("saved over");
     assert_eq!(std::fs::read_to_string(&path).expect("the file"), "");
 }
 
@@ -92,7 +94,7 @@ fn the_watch_fires_when_the_persons_file_changes() {
             seen.fetch_add(1, Ordering::SeqCst);
         })
         .expect("a watch");
-    files.save_person("copy = none\n").expect("saved");
+    files.save_person("", "copy = none\n").expect("saved");
     // The watch looks on its own thread at its own pace.
     for _ in 0..200 {
         if fired.load(Ordering::SeqCst) > 0 {
@@ -108,7 +110,7 @@ fn an_edit_goes_through_the_model_to_the_file_and_back_without_losing_a_line() {
     let dir = scratch("keymap-edit");
     let files = files(&dir);
     files
-        .save_person("# mine\nteleport = F5\ncopy = Super+Alt+C\n")
+        .save_person("", "# mine\nteleport = F5\ncopy = Super+Alt+C\n")
         .expect("seed");
     let state = shortcuts_step(
         ShortcutsState::over(files.base()),
@@ -116,10 +118,10 @@ fn an_edit_goes_through_the_model_to_the_file_and_back_without_losing_a_line() {
     )
     .0;
     let (state, effects) = shortcuts_step(state, ShortcutsInput::Reset(StandardAction::Copy));
-    let [ShortcutsEffect::Save(text)] = effects.as_slice() else {
+    let [ShortcutsEffect::Save { base, text }] = effects.as_slice() else {
         panic!("{effects:?}");
     };
-    files.save_person(text).expect("saved");
+    files.save_person(base, text).expect("saved");
     assert_eq!(files.read().person.text, "# mine\nteleport = F5\n");
     let reread = shortcuts_step(state, ShortcutsInput::Read(files.read())).0;
     let copy = reread
@@ -129,4 +131,26 @@ fn an_edit_goes_through_the_model_to_the_file_and_back_without_losing_a_line() {
         .find(|row| row.name == "Copy")
         .expect("the Copy row");
     assert_eq!(copy.origin, Origin::Standard);
+}
+
+#[test]
+fn a_keymap_another_program_changed_since_it_was_read_is_left_as_it_is() {
+    let dir = scratch("keymap-changed");
+    let files = files(&dir);
+    files.save_person("", "copy = none\n").expect("seed");
+    // Another program rewrites the file after the list read it.
+    files
+        .save_person("copy = none\n", "copy = none\nfind = Super+Alt+F\n")
+        .expect("the other program's save");
+
+    let stale = files.save_person("copy = none\n", "# mine\n");
+    assert!(
+        matches!(stale, Err(FilesError::Changed { .. })),
+        "{stale:?}"
+    );
+    assert_eq!(
+        files.read().person.text,
+        "copy = none\nfind = Super+Alt+F\n",
+        "the other program's change is still there"
+    );
 }

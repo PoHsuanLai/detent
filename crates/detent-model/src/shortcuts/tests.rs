@@ -45,7 +45,7 @@ fn row(state: &ShortcutsState, action: StandardAction) -> ShortcutRow {
 
 /// The entries of a saved file as `(action id, chords)`.
 fn saved(effects: &[ShortcutsEffect]) -> Vec<(String, Vec<Chord>)> {
-    let [ShortcutsEffect::Save(text)] = effects else {
+    let [ShortcutsEffect::Save { text, .. }] = effects else {
         panic!("one save was expected, got {effects:?}");
     };
     let (overrides, problems) = Overrides::parse(text);
@@ -246,7 +246,7 @@ fn an_edit_writes_what_the_person_chose_and_nothing_else() {
             }
         }
         // The state moved with the write: reading what was written back changes nothing.
-        if let [ShortcutsEffect::Save(text)] = effects.as_slice() {
+        if let [ShortcutsEffect::Save { text, .. }] = effects.as_slice() {
             let again = read("", text);
             assert_eq!(again.sections(), state.sections(), "{case}");
         }
@@ -381,10 +381,30 @@ fn the_persons_file_keeps_everything_but_the_lines_that_changed() {
 }
 
 #[test]
+fn a_save_carries_the_text_the_edit_started_from() {
+    let before = "# mine\ncopy = Primary+Alt+C\n";
+    let (state, effects) = shortcuts_step(read("", before), ShortcutsInput::ResetAll);
+    let [ShortcutsEffect::Save { base, text }] = effects.as_slice() else {
+        panic!("{effects:?}");
+    };
+    assert_eq!(base, before);
+    assert_eq!(text, "# mine\n");
+    // The next save starts from what this one wrote.
+    let (_, again) = shortcuts_step(
+        state,
+        ShortcutsInput::Set(StandardAction::Copy, chord("Super+Alt+C")),
+    );
+    assert!(
+        matches!(again.as_slice(), [ShortcutsEffect::Save { base, .. }] if base == "# mine\n"),
+        "{again:?}"
+    );
+}
+
+#[test]
 fn reset_all_keeps_what_the_list_does_not_show() {
     let before = "# mine\ncopy = Primary+Alt+C\nmail.compose = Primary+Alt+N\nbogus line\n";
     let (state, effects) = shortcuts_step(read("", before), ShortcutsInput::ResetAll);
-    let [ShortcutsEffect::Save(text)] = effects.as_slice() else {
+    let [ShortcutsEffect::Save { text, .. }] = effects.as_slice() else {
         panic!("{effects:?}");
     };
     assert_eq!(text, "# mine\nmail.compose = Primary+Alt+N\nbogus line\n");

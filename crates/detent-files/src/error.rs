@@ -1,6 +1,6 @@
 //! A write that did not happen, and a file that could not be used.
 
-use ds_helpers::{ReadError, WriteError};
+use ds_helpers::{ReadError, UpdateError, WriteError};
 use std::path::{Path, PathBuf};
 
 /// What stopped a save. The messages are for the person (they appear in a toast): plain words,
@@ -35,6 +35,15 @@ pub enum FilesError {
         /// Why, in a short phrase.
         reason: String,
     },
+    /// The file was changed by another program since it was read: nothing is written over that.
+    #[error(
+        "Settings couldn't save {path} because another program changed it just now, so it left \
+         the file as it is. Try again."
+    )]
+    Changed {
+        /// Which file.
+        path: PathBuf,
+    },
 }
 
 impl From<WriteError> for FilesError {
@@ -47,6 +56,21 @@ impl From<WriteError> for FilesError {
 }
 
 impl FilesError {
+    /// The error of an update of the file at `path`: the file's own refusal as it was, a read
+    /// that failed as unreadable, a write that failed as a write.
+    pub(crate) fn of_update(path: &Path, error: UpdateError<FilesError>) -> FilesError {
+        match error {
+            UpdateError::Read(error) => FilesError::unreadable(path, &error),
+            UpdateError::Edit(error) => error,
+            UpdateError::Write(error) => error.into(),
+            // `UpdateError` may grow; a case this does not know is a failed write.
+            _ => FilesError::Io {
+                path: path.to_path_buf(),
+                source: std::io::Error::other("the file could not be updated"),
+            },
+        }
+    }
+
     /// The file at `path` could not be read, because of `error`.
     pub(crate) fn unreadable(path: &Path, error: &ReadError) -> FilesError {
         FilesError::Unreadable {

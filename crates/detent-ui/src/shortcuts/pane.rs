@@ -2,6 +2,7 @@
 //! decisions are `detent-model`'s `shortcuts_step`.
 
 use crate::env::Env;
+use detent_files::FilesError;
 use detent_model::{ShortcutsEffect, ShortcutsInput, ShortcutsState, shortcuts_step};
 use dioxus::prelude::*;
 use ds::prelude::*;
@@ -9,6 +10,11 @@ use ds::stack::toast_hub::ToastHub;
 
 /// What the person reads when the file could not be written.
 const COULD_NOT_SAVE: &str = "Your shortcuts could not be saved. Try again in a moment.";
+
+/// What the person reads when another program wrote the file between the list reading it and
+/// this save: the list shows what the file says now.
+const CHANGED_ELSEWHERE: &str =
+    "Your shortcuts were changed by another program just now, so nothing was saved. Try again.";
 
 /// The list of one window.
 #[derive(Clone)]
@@ -49,12 +55,15 @@ impl Pane {
 
     fn run(&self, effect: ShortcutsEffect) {
         match effect {
-            ShortcutsEffect::Save(text) => {
+            ShortcutsEffect::Save { base, text } => {
                 let ended = self
                     .env
                     .keymap
-                    .save_person(&text)
-                    .map_err(|_| COULD_NOT_SAVE.to_owned());
+                    .save_person(&base, &text)
+                    .map_err(|error| match error {
+                        FilesError::Changed { .. } => CHANGED_ELSEWHERE.to_owned(),
+                        _ => COULD_NOT_SAVE.to_owned(),
+                    });
                 self.feed(ShortcutsInput::Saved(ended));
             }
             ShortcutsEffect::Reread => self.feed(ShortcutsInput::Read(self.env.keymap.read())),

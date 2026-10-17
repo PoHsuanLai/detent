@@ -1,17 +1,13 @@
 //! The atomic write of keys in place.
 
 use crate::error::FilesError;
-use crate::read::text_of;
+use crate::read::SETTINGS_CAP;
 use crate::values::ConfigHome;
 use detent_model::ConfigFile;
-use ds_helpers::{NewFileMode, write_atomic};
+use ds_helpers::{NewFileMode, update_atomic};
 use ds_settings::schema::KeyPath;
 use std::path::Path;
-use std::sync::{Mutex, PoisonError};
 use toml_edit::{DocumentMut, Item, Table, Value};
-
-/// The turn of a save in this process: every settings file is saved one at a time.
-static TURN: Mutex<()> = Mutex::new(());
 
 /// Sets `path` in `table` (a real or inline table), making the tables on the way, and leaves
 /// every other key exactly as it was.
@@ -60,13 +56,9 @@ fn refuse(path: &Path, reason: String) -> FilesError {
 /// The keys to set in one file, each with the value it takes.
 pub(crate) type Edits<'a> = [(&'a KeyPath, &'a toml::Value)];
 
-/// The file's text with every key of `edits` set; every other byte is the file's own. A file
-/// that is not there is an empty one; a file that is there and cannot be read is an error, never
-/// an empty file.
-fn edited(path: &Path, edits: &Edits<'_>) -> Result<String, FilesError> {
-    let text = text_of(path)
-        .map_err(|error| FilesError::unreadable(path, &error))?
-        .unwrap_or_default();
+/// `text` (the file's, empty when there is none) with every key of `edits` set; every other byte
+/// is the file's own.
+fn edited(path: &Path, text: &str, edits: &Edits<'_>) -> Result<String, FilesError> {
     let mut doc: DocumentMut = text
         .parse()
         .map_err(|e: toml_edit::TomlError| refuse(path, e.message().to_owned()))?;
@@ -87,7 +79,7 @@ fn edited(path: &Path, edits: &Edits<'_>) -> Result<String, FilesError> {
 }
 
 /// Writes `value` at `key` in `file`: the file is read, that one key is set and the result lands
-/// through [`write_atomic`] (a uniquely named temporary file, flushed, renamed, the directory
+/// through [`update_atomic`] (a uniquely named temporary file, flushed, renamed, the directory
 /// flushed; the file's mode and a link to it are kept), so a crash cannot leave half a file and
 /// a directory watch sees one rename. Every other key, known or not, keeps the text it had
 /// (detent is not the program that owns the file, so it never removes anything). A file that
@@ -109,16 +101,17 @@ pub(crate) fn save_keys(
     edits: &Edits<'_>,
 ) -> Result<(), FilesError> {
     let path = home.path_of(file);
-    // The read and the write are one turn: the window's thread and the intents provider's both
-    // save, and a write that read before the other's rename would put the old text back.
-    // (Another program's write of the same file is not held up by this; see FINDINGS.)
-    let _turn = TURN.lock().unwrap_or_else(PoisonError::into_inner);
-    let text = edited(&path, edits)?;
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(|source| FilesError::Io {
             path: dir.to_path_buf(),
             source,
         })?;
     }
-    write_atomic(&path, text.as_bytes(), NewFileMode::Umask).map_err(FilesError::from)
+    // The read, the edit and the rename happen under the file's lock, which every program that
+    // changes the file through `update_atomic` takes: the window's thread, the intents provider
+    // and another program's save of the same file queue instead of putting an old text back.
+    update_atomic(&path, SETTINGS_CAP, NewFileMode::Umask, |text| {
+        edited(&path, &text.unwrap_or_default(), edits)
+    })
+    .map_err(|error| FilesError::of_update(&path, error))
 }
