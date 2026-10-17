@@ -1,4 +1,4 @@
-//! The six services Settings talks to, and the role the owner of each one's bus name must hold.
+//! The seven services Settings talks to, and the role the owner of each one's bus name must hold.
 
 use peephole_bus::peephole_core::{Proof, RoleName, roles};
 
@@ -15,13 +15,17 @@ pub const MEMORY_BUS: &str = "org.quire.Memory1";
 /// The compositor: the Privacy list of which program may use which power, served as a live
 /// settings module.
 pub const COMPOSITOR_BUS: &str = "org.quire.Compositor1";
+/// The screen-sharing portal (transom): the apps it lets share the screen without asking again,
+/// and the call that takes one back. The name is the portal backend's own; the interface Settings
+/// calls on it is `org.quire.Portal1`.
+pub const PORTAL_BUS: &str = "org.freedesktop.impl.portal.desktop.quire";
 
-/// The proof a service's owner must show. All six run as units, so the unit manager confirms the
+/// The proof a service's owner must show. All seven run as units, so the unit manager confirms the
 /// unit: a process that merely sits in the right cgroup, or runs the right image from a unit the
 /// person can edit, does not pass.
 pub const SERVICE_PROOF: Proof = Proof::Full;
 
-/// The role the owner of `name` must hold; none for a name that is not one of the six (such a
+/// The role the owner of `name` must hold; none for a name that is not one of the seven (such a
 /// name is never vouched for).
 pub fn required_role(name: &str) -> Option<RoleName> {
     let role = match name {
@@ -31,6 +35,7 @@ pub fn required_role(name: &str) -> Option<RoleName> {
         UPDATES_BUS => roles::UPDATER,
         MEMORY_BUS => roles::MEMORY,
         COMPOSITOR_BUS => roles::COMPOSITOR,
+        PORTAL_BUS => roles::PORTAL,
         _ => return None,
     };
     Some(role)
@@ -49,6 +54,7 @@ mod tests {
             (UPDATES_BUS, "updater"),
             (MEMORY_BUS, "memory"),
             (COMPOSITOR_BUS, "compositor"),
+            (PORTAL_BUS, "portal"),
         ];
         for (name, role) in wanted {
             let held = required_role(name).map(|role| role.to_string());

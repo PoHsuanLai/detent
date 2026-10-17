@@ -8,7 +8,7 @@ use std::fmt;
 use std::sync::Arc;
 
 /// Whether the owner of a service's bus name holds the role of that service, at the proof a unit
-/// gives. A name that is not one of the six services, an owner that cannot be identified and an
+/// gives. A name that is not one of the seven services, an owner that cannot be identified and an
 /// owner that holds another role are all a refusal.
 #[derive(Clone)]
 pub struct RoleCheck {
