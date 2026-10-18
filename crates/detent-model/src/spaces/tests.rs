@@ -128,7 +128,11 @@ fn nothing_else_is_asked_while_a_removal_is_under_way() {
     let SpacesState::Ready(after) = after else {
         panic!("the list is there");
     };
-    assert_eq!(after.stage, RemovalStage::Idle);
+    assert_eq!(
+        after.stage,
+        RemovalStage::Removing(SpaceKey("space-1".to_owned())),
+        "the first removal goes on and no second sheet opens"
+    );
 }
 
 #[test]
