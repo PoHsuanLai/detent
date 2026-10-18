@@ -12,7 +12,7 @@ mod offer;
 #[cfg(test)]
 mod tests;
 
-pub use offer::{AgentOffer, AgentStanding, Reason, offers};
+pub use offer::{AgentOffer, AgentReason, AgentStanding, offers};
 
 use crate::picker::Described;
 use ds_settings::schema::{ChoiceGroup, ChoiceWord, KeyKind, KeySpec, UnavailableReason};
@@ -31,25 +31,25 @@ pub const WORD_PREFIX: &str = "agent/";
 
 /// Which of the picker's keys a spec is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Place {
+enum ChoiceKind {
     /// A tier of the text slot: the choice itself.
     Choice,
     /// The text slot's Automatic list.
     Pool,
 }
 
-fn place_of(path: &str) -> Option<Place> {
+fn place_of(path: &str) -> Option<ChoiceKind> {
     let text_slot = |slot: &str| matches!(slot, "text" | "llm");
     if let Some((slot, _tier)) = path
         .strip_prefix("ai.model.")
         .and_then(|r| r.split_once('.'))
         && text_slot(slot)
     {
-        return Some(Place::Choice);
+        return Some(ChoiceKind::Choice);
     }
     path.strip_prefix("ai.auto.pool.")
         .filter(|slot| text_slot(slot))
-        .map(|_| Place::Pool)
+        .map(|_| ChoiceKind::Pool)
 }
 
 /// The menu a spec offers, whichever of the two shapes it is.
@@ -64,7 +64,7 @@ fn variants_of(kind: &mut KeyKind) -> Option<&mut Vec<String>> {
     }
 }
 
-fn lay(spec: &mut KeySpec, place: Place, offers: &[AgentOffer]) {
+fn lay(spec: &mut KeySpec, place: ChoiceKind, offers: &[AgentOffer]) {
     let KeySpec {
         kind,
         labels,
@@ -83,9 +83,9 @@ fn lay(spec: &mut KeySpec, place: Place, offers: &[AgentOffer]) {
         let word = ChoiceWord(offer.word.clone());
         groups.insert(word.clone(), ChoiceGroup(GROUP.to_owned()));
         let reason = match (place, &offer.standing) {
-            (Place::Pool, _) => Some(CHOOSE_DIRECTLY.to_owned()),
-            (Place::Choice, AgentStanding::Blocked(reason)) => Some(reason.words()),
-            (Place::Choice, AgentStanding::Ready) => None,
+            (ChoiceKind::Pool, _) => Some(CHOOSE_DIRECTLY.to_owned()),
+            (ChoiceKind::Choice, AgentStanding::Blocked(reason)) => Some(reason.words()),
+            (ChoiceKind::Choice, AgentStanding::Ready) => None,
         };
         match reason {
             Some(reason) => {

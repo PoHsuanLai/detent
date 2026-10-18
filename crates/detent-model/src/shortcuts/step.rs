@@ -2,7 +2,7 @@
 //! asked about first; the person's keymap is written only for what the person chose, and only
 //! to the person's own file.
 
-use super::model::{KeymapTexts, OURS, Replacing, ShortcutsState};
+use super::model::{KeymapTexts, OURS, ShortcutReplacing, ShortcutsState};
 use super::person_text::render_person;
 use chordkit::{
     Action, Chord, Context, DefaultChord, OverrideEntry, OverrideProblem, Overrides,
@@ -172,7 +172,7 @@ fn set(state: ShortcutsState, action: StandardAction, chord: Chord) -> Step {
         .find(|(holder, bound)| *bound == chord && *holder != mine)
         .map(|(holder, _)| holder.clone());
     if let Some(holder) = holder {
-        let asking = Some(Replacing {
+        let asking = Some(ShortcutReplacing {
             action,
             chord,
             holder,

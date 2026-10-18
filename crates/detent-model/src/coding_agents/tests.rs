@@ -155,7 +155,10 @@ fn each_agent_is_ready_or_greyed_with_the_first_reason_a_person_can_act_on() {
     );
     let on = offers(&agents(), &[], AcpAgents::On);
     assert_eq!(on[0].standing, AgentStanding::Ready);
-    assert_eq!(on[1].standing, AgentStanding::Blocked(Reason::NotInstalled));
+    assert_eq!(
+        on[1].standing,
+        AgentStanding::Blocked(AgentReason::NotInstalled)
+    );
 }
 
 #[test]
@@ -191,7 +194,7 @@ fn a_known_program_no_entry_runs_is_listed_as_not_set_up_once_per_agent() {
     assert!(
         offered
             .iter()
-            .all(|offer| offer.standing == AgentStanding::Blocked(Reason::NotSetUp))
+            .all(|offer| offer.standing == AgentStanding::Blocked(AgentReason::NotSetUp))
     );
 }
 

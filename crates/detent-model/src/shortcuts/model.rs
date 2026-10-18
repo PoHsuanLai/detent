@@ -102,7 +102,7 @@ pub struct ShortcutSection {
 /// A chord the person gave to an action that another action has: nothing is written until the
 /// question is answered.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) struct Replacing {
+pub(super) struct ShortcutReplacing {
     pub(super) action: StandardAction,
     pub(super) chord: Chord,
     pub(super) holder: Action,
@@ -137,7 +137,7 @@ pub struct ShortcutsState {
     pub(super) person_trouble: Option<String>,
     /// Lines and chords that were skipped, in plain words.
     pub(super) problems: Vec<String>,
-    pub(super) asking: Option<Replacing>,
+    pub(super) asking: Option<ShortcutReplacing>,
 }
 
 impl ShortcutsState {

@@ -61,8 +61,8 @@ pub use assistants::{
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use coding_agents::{
-    AgentOffer, AgentStanding, CHOOSE_DIRECTLY, GROUP as CODING_AGENTS_GROUP,
-    Reason as AgentReason, TURNED_OFF, WORD_PREFIX, offers as agent_offers, with_agents,
+    AgentOffer, AgentReason, AgentStanding, CHOOSE_DIRECTLY, GROUP as CODING_AGENTS_GROUP,
+    TURNED_OFF, WORD_PREFIX, offers as agent_offers, with_agents,
 };
 pub use computers::{
     AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,

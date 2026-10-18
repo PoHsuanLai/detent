@@ -5,7 +5,7 @@ use docket_settings::{AcpAgents, AgentRow, Agents, Found, Install, SignInState, 
 
 /// Why an agent cannot be chosen now.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Reason {
+pub enum AgentReason {
     /// Its program is not on this computer.
     NotInstalled,
     /// It asked for a sign-in first; `label` is what the person calls it.
@@ -19,14 +19,14 @@ pub enum Reason {
     TurnedOff,
 }
 
-impl Reason {
+impl AgentReason {
     /// The line under the greyed choice.
     pub fn words(&self) -> String {
         match self {
-            Reason::NotInstalled => "Not installed".to_owned(),
-            Reason::NeedsSignIn { label } => format!("Sign in to {label} first"),
-            Reason::NotSetUp => "Not set up yet".to_owned(),
-            Reason::TurnedOff => TURNED_OFF.to_owned(),
+            AgentReason::NotInstalled => "Not installed".to_owned(),
+            AgentReason::NeedsSignIn { label } => format!("Sign in to {label} first"),
+            AgentReason::NotSetUp => "Not set up yet".to_owned(),
+            AgentReason::TurnedOff => TURNED_OFF.to_owned(),
         }
     }
 }
@@ -37,7 +37,7 @@ pub enum AgentStanding {
     /// It can.
     Ready,
     /// It cannot, and why.
-    Blocked(Reason),
+    Blocked(AgentReason),
 }
 
 /// One agent as a word of the assistant's menu.
@@ -81,13 +81,13 @@ fn missing(source: &Source) -> bool {
 /// then a sign-in, then the switch.
 fn standing_of(row: &AgentRow, switch: AcpAgents) -> AgentStanding {
     let reason = if missing(&row.source) {
-        Some(Reason::NotInstalled)
+        Some(AgentReason::NotInstalled)
     } else if matches!(row.sign_in, SignInState::NeedsSignIn { .. }) {
-        Some(Reason::NeedsSignIn {
+        Some(AgentReason::NeedsSignIn {
             label: row.label.clone(),
         })
     } else if switch == AcpAgents::Off {
-        Some(Reason::TurnedOff)
+        Some(AgentReason::TurnedOff)
     } else {
         None
     };
@@ -118,7 +118,7 @@ pub fn offers(agents: &Agents, found: &[Found], switch: AcpAgents) -> Vec<AgentO
         unset.push(AgentOffer {
             word,
             label: one.known.label.to_owned(),
-            standing: AgentStanding::Blocked(Reason::NotSetUp),
+            standing: AgentStanding::Blocked(AgentReason::NotSetUp),
         });
     }
     listed.chain(unset).collect()
