@@ -1,19 +1,20 @@
 //! The Software Update page's state and what it needs to act: following the service, asking it,
 //! and starting the log-out. The steps are `detent-model`'s `updates_step`.
 
-use super::leave::LogOut;
-use super::link::{InstallRefusal, Updater};
+use super::leave::Departure;
+use super::link::{InstallRefusal, UpdatesLink};
 use crate::env::Env;
 use detent_model::{UpdatesEffect, UpdatesInput, UpdatesState, updates_step};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;
+use std::sync::Arc;
 
 /// The page's state and its links.
 #[derive(Clone)]
 pub(super) struct Driver {
-    updater: Updater,
-    log_out: LogOut,
+    updater: Arc<dyn UpdatesLink>,
+    log_out: Arc<dyn Departure>,
     toasts: ToastHub,
     pub(super) state: Signal<UpdatesState>,
 }
@@ -83,7 +84,7 @@ impl Driver {
             }
             UpdatesEffect::LogOut => {
                 spawn(async move {
-                    if let Err(words) = me.log_out.start().await {
+                    if let Err(words) = me.log_out.log_out().await {
                         me.toasts.push(words, None);
                     }
                 });

@@ -20,11 +20,10 @@ pub mod syncd;
 pub mod updates;
 
 use detent_files::{ConfigHome, DataHome, StateHome};
-use detent_model::OriginRule;
+use detent_model::{OriginRule, Outbox, inbox};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{
-    App, BusSource, EngineDesk, Env, FirstRunApp, Lender, LogOut, Opening, Outbox, ReasonFeed,
-    Updater, Vouch, inbox,
+    App, BusSource, Desk, Env, FirstRunApp, Lender, Opening, Quiet, ReasonFeed, Vouch,
 };
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
@@ -33,6 +32,7 @@ use ds_settings::live::AnyOwner;
 use ds_settings::schema::Schema;
 use lending::Units;
 use porter_client::LendingConfig;
+use std::sync::Arc;
 use updates::{Leaves, Service};
 
 pub const TMP: &str = env!("CARGO_TARGET_TMPDIR");
@@ -52,7 +52,7 @@ pub struct Sandbox {
     units: Units,
     updates: Service,
     leaves: Leaves,
-    engines: EngineDesk,
+    engines: Arc<dyn Desk>,
 }
 
 impl Sandbox {
@@ -71,7 +71,7 @@ impl Sandbox {
             updates: Service::absent(),
             leaves: Leaves::default(),
             // Nothing is listed and nothing is downloaded, whatever this computer has.
-            engines: EngineDesk::quiet(),
+            engines: Arc::new(Quiet),
         }
     }
 
@@ -96,7 +96,7 @@ impl Sandbox {
     }
 
     /// This world with the engine sheet working through `engines`.
-    pub fn with_engines(self, engines: EngineDesk) -> Sandbox {
+    pub fn with_engines(self, engines: Arc<dyn Desk>) -> Sandbox {
         Sandbox { engines, ..self }
     }
 
@@ -177,8 +177,8 @@ impl Sandbox {
         )
         .with_reasons(self.reasons.clone())
         .with_lender(self.lender())
-        .with_updates(Updater::over(self.updates.clone()))
-        .with_log_out(LogOut::over(self.leaves.clone()))
+        .with_updates(Arc::new(self.updates.clone()))
+        .with_log_out(Arc::new(self.leaves.clone()))
         .with_engines(self.engines.clone())
         .with_os_release(self.os_release_path())
         .with_application_dirs(vec![self.scratch.join("applications")])

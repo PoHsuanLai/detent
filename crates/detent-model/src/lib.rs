@@ -21,6 +21,9 @@ mod layout;
 mod live;
 mod memory_consent;
 mod navigation;
+mod notice;
+#[cfg(test)]
+mod notice_tests;
 mod origin;
 mod outside;
 mod page;
@@ -39,6 +42,7 @@ mod text_form;
 mod updates;
 mod warning;
 mod words;
+mod work;
 
 pub use absence::Absence;
 pub use accounts::{
@@ -94,6 +98,7 @@ pub use memory_consent::{
     holds_memory_settings, is_memory_setting, tells_confinement, to_confirm, waiting_note,
 };
 pub use navigation::{landing, visible_pages};
+pub use notice::{Inbox, Notice, Outbox, Receiver, WindowGone, inbox};
 pub use origin::{OriginRule, SchemaOrigin};
 pub use outside::{
     AGENTS_OWN, Assistant, Entry, assistants_of, model_choice, model_menu, model_word, way_choice,
@@ -144,3 +149,4 @@ pub use updates::{
 };
 pub use warning::{StaleReason, Warning};
 pub use words::{humanize, word_label};
+pub use work::Work;

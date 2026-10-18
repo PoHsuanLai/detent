@@ -1,49 +1,24 @@
 //! Logging out, so a new version starts: whatever the desktop offers for it, behind one handle the
 //! environment carries, so a test hands in a stand-in that only writes down that it was asked.
 
-use super::link::UpdateWork;
-use std::fmt;
+use detent_model::Work;
+use std::fmt::Debug;
 use std::process::{Command, Stdio};
-use std::sync::Arc;
 
 /// What the person reads when logging out could not be started.
 const COULD_NOT: &str =
     "Settings could not start logging out. Log out from the power menu of the desktop instead.";
 
 /// What the page needs to start leaving the session.
-pub trait Departure: Send + Sync {
+pub trait Departure: Debug + Send + Sync {
     /// Starts logging out; the sentence that says why not when it could not be started.
-    fn log_out(&self) -> UpdateWork<'_, Result<(), String>>;
+    fn log_out(&self) -> Work<'_, Result<(), String>>;
 }
 
-/// How the page logs the person out, as the environment carries it.
-#[derive(Clone)]
-pub struct LogOut(Arc<dyn Departure>);
-
-impl fmt::Debug for LogOut {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("LogOut").finish_non_exhaustive()
-    }
-}
-
-impl LogOut {
-    /// Logging out over `departure`: what a test hands in.
-    pub fn over(departure: impl Departure + 'static) -> LogOut {
-        LogOut(Arc::new(departure))
-    }
-
-    /// The desktop's own power menu, which asks before it logs out.
-    pub fn power_menu() -> LogOut {
-        LogOut::over(PowerMenu)
-    }
-
-    pub(crate) fn start(&self) -> UpdateWork<'_, Result<(), String>> {
-        self.0.log_out()
-    }
-}
-
-/// The shell's power menu, opened by its command.
-struct PowerMenu;
+/// The shell's power menu, opened by its command: the desktop's own, which asks before it logs
+/// out.
+#[derive(Debug)]
+pub(crate) struct PowerMenu;
 
 fn open_power_menu() -> Result<(), String> {
     let opened = Command::new("sill")
@@ -59,7 +34,7 @@ fn open_power_menu() -> Result<(), String> {
 }
 
 impl Departure for PowerMenu {
-    fn log_out(&self) -> UpdateWork<'_, Result<(), String>> {
+    fn log_out(&self) -> Work<'_, Result<(), String>> {
         Box::pin(async {
             tokio::task::spawn_blocking(open_power_menu)
                 .await

@@ -1,12 +1,14 @@
 //! The update service on the person's bus: `org.quire.Updates1`. It is only ever looked for, never
 //! started: opening Settings must not wake a service the person's session did not start.
 
-use super::link::{InstallRefusal, UpdateTicks, UpdateWork, Updater, UpdatesLink};
+use super::link::{InstallRefusal, UpdateTicks, UpdatesLink};
 use super::wire::wire_of;
 use crate::deadline::{Deadline, peer};
 use crate::live::{BusSource, Pinned, connect, pinned};
 use crate::ticks::{Ticker, Ticks};
-use detent_model::{Absence, UPDATES_NOT_AVAILABLE, UnixSeconds, UpdateStatus, UpdateVersion};
+use detent_model::{
+    Absence, UPDATES_NOT_AVAILABLE, UnixSeconds, UpdateStatus, UpdateVersion, Work,
+};
 use ds_peer::{NotAnswering, within};
 use porter_dbus::{BusFailure, classify};
 use std::collections::HashMap;
@@ -213,22 +215,23 @@ fn words_of(refusal: InstallRefusal) -> String {
 }
 
 /// The service on `bus`, and the system clock.
-struct OnBus(BusSource);
+#[derive(Debug)]
+pub(crate) struct OnBus(pub(crate) BusSource);
 
 impl UpdatesLink for OnBus {
-    fn read(&self) -> UpdateWork<'_, Result<UpdateStatus, Absence>> {
+    fn read(&self) -> Work<'_, Result<UpdateStatus, Absence>> {
         Box::pin(read(&self.0))
     }
 
-    fn changes(&self) -> UpdateWork<'_, Result<UpdateTicks, Absence>> {
+    fn changes(&self) -> Work<'_, Result<UpdateTicks, Absence>> {
         Box::pin(watch(&self.0))
     }
 
-    fn check(&self) -> UpdateWork<'_, Result<(), String>> {
+    fn check(&self) -> Work<'_, Result<(), String>> {
         Box::pin(async move { ask(&self.0, Ask::Check).await.map_err(words_of) })
     }
 
-    fn install(&self, version: &UpdateVersion) -> UpdateWork<'_, Result<(), InstallRefusal>> {
+    fn install(&self, version: &UpdateVersion) -> Work<'_, Result<(), InstallRefusal>> {
         Box::pin(ask(&self.0, Ask::Install(version.clone())))
     }
 
@@ -239,13 +242,6 @@ impl UpdatesLink for OnBus {
                 i64::try_from(since.as_secs()).unwrap_or(i64::MAX)
             });
         UnixSeconds(seconds)
-    }
-}
-
-impl Updater {
-    /// The update service on `bus`, looked for and never started.
-    pub fn on(bus: BusSource) -> Updater {
-        Updater::over(OnBus(bus))
     }
 }
 

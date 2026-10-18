@@ -2,15 +2,14 @@
 //! open. Provided as a context by whoever launches the app (`ds_blitz::AppConfig::with_context`),
 //! so a test starts it on scratch directories.
 
-use crate::engine_install::EngineDesk;
-use crate::inbox::Inbox;
+use crate::engine_install::{Desk, System};
 use crate::inference::ReasonFeed;
 use crate::lender::Lender;
 use crate::live::BusSource;
 use crate::marks::ProviderMarks;
-use crate::updates::{LogOut, Updater};
+use crate::updates::{Departure, OnBus, PowerMenu, UpdatesLink};
 use detent_files::{ConfigHome, DataHome, FirstRunMark, KeymapFiles, StateHome};
-use detent_model::{Catalogue, OriginRule, PageSlug, Warning, discover};
+use detent_model::{Catalogue, Inbox, OriginRule, PageSlug, Warning, discover};
 use ds_helpers::Environment;
 use ds_settings::SystemPrefsSource;
 use std::path::PathBuf;
@@ -56,9 +55,9 @@ pub struct Env {
     /// The keymap files the Shortcuts list reads, and the one it writes: the person's own.
     pub keymap: KeymapFiles,
     /// The update service the Software Update page follows, looked for on `bus`.
-    pub updates: Updater,
+    pub updates: Arc<dyn UpdatesLink>,
     /// How the Software Update page logs the person out once an update is installed.
-    pub log_out: LogOut,
+    pub log_out: Arc<dyn Departure>,
     /// The file that says which distro this is (`os-release`), read to word an install line.
     pub os_release: PathBuf,
     /// The folders of desktop entries, in the order of precedence: where the Privacy page finds
@@ -69,7 +68,7 @@ pub struct Env {
     pub entry_rule: OriginRule,
     /// What the sheet that downloads an engine does to the computer: the person's own unless a
     /// test hands in another.
-    pub engines: EngineDesk,
+    pub engines: Arc<dyn Desk>,
     /// The value of `PATH`: where the coding agents already on this computer are looked for for
     /// the assistant's model. Empty until the launcher gives it, so a test finds none.
     pub programs_path: String,
@@ -88,8 +87,8 @@ impl Env {
     ) -> Env {
         let found = discover(schema_dirs);
         let keymap = KeymapFiles::under(&config_home);
-        let updates = Updater::on(bus.clone());
-        let engines = EngineDesk::system(bus.clone(), &data_home.0);
+        let updates = Arc::new(OnBus(bus.clone()));
+        let engines = Arc::new(System::new(bus.clone(), &data_home.0));
         Env {
             catalogue: Arc::new(Catalogue::build(&found.programs)),
             warnings: found.warnings,
@@ -105,7 +104,7 @@ impl Env {
             lender: Lender::from_env(),
             keymap,
             updates,
-            log_out: LogOut::power_menu(),
+            log_out: Arc::new(PowerMenu),
             os_release: Environment::system().os_release,
             application_dirs: Vec::new(),
             entry_rule: OriginRule::Ownership,
@@ -125,12 +124,12 @@ impl Env {
     }
 
     /// This environment with the Software Update page following `updates`.
-    pub fn with_updates(self, updates: Updater) -> Env {
+    pub fn with_updates(self, updates: Arc<dyn UpdatesLink>) -> Env {
         Env { updates, ..self }
     }
 
     /// This environment with the Software Update page logging out through `log_out`.
-    pub fn with_log_out(self, log_out: LogOut) -> Env {
+    pub fn with_log_out(self, log_out: Arc<dyn Departure>) -> Env {
         Env { log_out, ..self }
     }
 
@@ -153,7 +152,7 @@ impl Env {
     }
 
     /// This environment with the engine sheet working through `engines`.
-    pub fn with_engines(self, engines: EngineDesk) -> Env {
+    pub fn with_engines(self, engines: Arc<dyn Desk>) -> Env {
         Env { engines, ..self }
     }
 

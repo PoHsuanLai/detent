@@ -10,5 +10,6 @@ mod system;
 mod view;
 
 pub(crate) use board::{Board, GET, use_board};
-pub use desk::{Desk, EngineDesk, Work};
+pub use desk::{Desk, Quiet};
+pub(crate) use system::System;
 pub(crate) use view::EngineSheetView;

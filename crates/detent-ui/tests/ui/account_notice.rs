@@ -5,8 +5,8 @@ use crate::support::Sandbox;
 use crate::support::accountd::{Accountd, Held, Policy};
 use crate::support::bus::PrivateBus;
 use crate::support::drive::page_of;
-use detent_model::{AccountSegment, AccountTarget, PageSlug};
-use detent_ui::{Notice, Opening};
+use detent_model::{AccountSegment, AccountTarget, Notice, PageSlug};
+use detent_ui::Opening;
 use ds_harness::{Driver, Harness, Query};
 use std::time::Duration;
 
@@ -28,7 +28,7 @@ fn detail(segment: &str) -> Notice {
 }
 
 /// The window on another page, over a fake accountd holding two accounts.
-fn world(name: &str) -> (Harness, detent_ui::Outbox, impl Sized) {
+fn world(name: &str) -> (Harness, detent_model::Outbox, impl Sized) {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()

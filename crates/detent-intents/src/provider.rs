@@ -6,10 +6,10 @@ use crate::ask::{Ask, ask};
 use crate::journal::{Change, Journal};
 use crate::limits::{ACCOUNTS_CHARS, KEY_VALUE_CHARS, many_lines, one_line};
 use crate::manifest::{ManifestFault, manifest};
-use crate::window::Window;
 use detent_files::{ConfigHome, load, save};
 use detent_model::{
-    AgentSetting, Catalogue, Control, KeyEntry, PageSlug, TextFault, search, show_value,
+    AgentSetting, Catalogue, Control, KeyEntry, Notice, Outbox, PageSlug, TextFault, search,
+    show_value,
 };
 use docket_client::IntentProvider;
 use docket_core::{
@@ -30,7 +30,7 @@ pub struct SettingsProvider {
     app: AppName,
     catalogue: Arc<Catalogue>,
     home: ConfigHome,
-    window: Arc<dyn Window>,
+    window: Outbox,
     accounts: Arc<dyn AccountsSource>,
     journal: Mutex<Journal>,
 }
@@ -49,7 +49,7 @@ impl SettingsProvider {
     pub fn new(
         catalogue: Arc<Catalogue>,
         home: ConfigHome,
-        window: Arc<dyn Window>,
+        window: Outbox,
         accounts: Arc<dyn AccountsSource>,
     ) -> Result<SettingsProvider, ManifestFault> {
         let manifest = manifest()?;
@@ -70,7 +70,7 @@ impl SettingsProvider {
     }
 
     /// The window the provider tells, for the app's own `org.freedesktop.Application` object.
-    pub(crate) fn window(&self) -> Arc<dyn Window> {
+    pub(crate) fn window(&self) -> Outbox {
         self.window.clone()
     }
 
@@ -133,7 +133,7 @@ impl SettingsProvider {
             .ok_or_else(|| not_found(&self.app, "settings.page", &slug.0))?;
         let said = format!("Opened {}", page.page.label());
         self.window
-            .open_page(slug)
+            .send(Notice::OpenPage(slug))
             .map_err(|gone| refusal(gone.to_string()))?;
         Ok(outcome(&said, Undoable::No))
     }
@@ -183,7 +183,7 @@ impl SettingsProvider {
             })
             .ok_or(AppRefusal::Busy)?;
         // The window may have gone; the file is written either way.
-        let _ = self.window.files_changed();
+        let _ = self.window.send(Notice::Reload);
         let said = format!("Set {} to {}", entry.spec.label.0, show_value(&after));
         Ok(outcome(&said, Undoable::Yes(token)))
     }
@@ -250,7 +250,7 @@ impl IntentProvider for SettingsProvider {
         save(&self.home, &change.file, &change.key, &change.before)
             .map_err(|_| UndoFault::Conflict)?;
         self.journal().forget(&token);
-        let _ = self.window.files_changed();
+        let _ = self.window.send(Notice::Reload);
         Ok(())
     }
 

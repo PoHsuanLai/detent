@@ -4,15 +4,13 @@
 
 use crate::deadline::{Deadline, peer};
 use detent_files::ConfigHome;
-use detent_model::Existing;
+use detent_model::{Existing, Work};
 use ds_peer::within;
 use porter_client::{
     LendingConfig, LendingState, SessionUnits, TailnetLending, UnitFailure, UnitManager, UnitName,
 };
-use std::fmt;
-use std::future::Future;
+use std::fmt::Debug;
 use std::path::Path;
-use std::pin::Pin;
 use std::sync::Arc;
 
 /// What the person reads when there is nowhere to keep the setting.
@@ -21,13 +19,11 @@ const NO_HOME: &str = "There is no home folder to keep this setting in, so nothi
 /// What the person reads when the computer's own services cannot be reached.
 const NO_SERVICES: &str = "This computer's services could not be reached, so nothing was changed.";
 
-type Work<'a> = Pin<Box<dyn Future<Output = Result<(), String>> + Send + 'a>>;
-
 /// The two things the switch does, and what is there before it does them.
-trait Lend: Send + Sync {
+trait Lend: Debug + Send + Sync {
     fn existing(&self) -> Existing;
-    fn enable(&self) -> Work<'_>;
-    fn disable(&self) -> Work<'_>;
+    fn enable(&self) -> Work<'_, Result<(), String>>;
+    fn disable(&self) -> Work<'_, Result<(), String>>;
 }
 
 fn existing_of(state: LendingState) -> Existing {
@@ -39,23 +35,25 @@ fn existing_of(state: LendingState) -> Existing {
 }
 
 /// Lending by `config` over a manager that is given.
+#[derive(Debug)]
 struct Over<M>(TailnetLending<M>);
 
-impl<M: UnitManager + 'static> Lend for Over<M> {
+impl<M: UnitManager + Debug + 'static> Lend for Over<M> {
     fn existing(&self) -> Existing {
         existing_of(self.0.state())
     }
 
-    fn enable(&self) -> Work<'_> {
+    fn enable(&self) -> Work<'_, Result<(), String>> {
         Box::pin(async move { self.0.enable().await.map_err(|e| e.to_string()) })
     }
 
-    fn disable(&self) -> Work<'_> {
+    fn disable(&self) -> Work<'_, Result<(), String>> {
         Box::pin(async move { self.0.disable().await.map_err(|e| e.to_string()) })
     }
 }
 
 /// A manager that is never asked: reading what is there needs none.
+#[derive(Debug)]
 struct NoUnits;
 
 impl UnitManager for NoUnits {
@@ -69,6 +67,7 @@ impl UnitManager for NoUnits {
 }
 
 /// The real thing: the person's session, reached when a change is made.
+#[derive(Debug)]
 struct Session(LendingConfig);
 
 impl Session {
@@ -85,14 +84,14 @@ impl Lend for Session {
         existing_of(TailnetLending::new(self.0.clone(), NoUnits).state())
     }
 
-    fn enable(&self) -> Work<'_> {
+    fn enable(&self) -> Work<'_, Result<(), String>> {
         Box::pin(async move {
             let lending = self.lending().await?;
             lending.enable().await.map_err(|e| e.to_string())
         })
     }
 
-    fn disable(&self) -> Work<'_> {
+    fn disable(&self) -> Work<'_, Result<(), String>> {
         Box::pin(async move {
             let lending = self.lending().await?;
             lending.disable().await.map_err(|e| e.to_string())
@@ -101,6 +100,7 @@ impl Lend for Session {
 }
 
 /// This computer has no home folder: nothing can be kept.
+#[derive(Debug)]
 struct Nowhere;
 
 impl Lend for Nowhere {
@@ -108,25 +108,19 @@ impl Lend for Nowhere {
         Existing::Absent
     }
 
-    fn enable(&self) -> Work<'_> {
+    fn enable(&self) -> Work<'_, Result<(), String>> {
         Box::pin(async { Err(NO_HOME.to_owned()) })
     }
 
-    fn disable(&self) -> Work<'_> {
+    fn disable(&self) -> Work<'_, Result<(), String>> {
         Box::pin(async { Err(NO_HOME.to_owned()) })
     }
 }
 
 /// How the switch "Let my other computers use this computer's models" reaches the files and the
 /// service manager.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Lender(Arc<dyn Lend>);
-
-impl fmt::Debug for Lender {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Lender").finish_non_exhaustive()
-    }
-}
 
 impl Lender {
     /// The person's own session: the shipped file is looked for where the environment says
@@ -150,7 +144,7 @@ impl Lender {
     }
 
     /// Lending by `config` over `manager`: what a test hands in.
-    pub fn over<M: UnitManager + 'static>(config: LendingConfig, manager: M) -> Lender {
+    pub fn over<M: UnitManager + Debug + 'static>(config: LendingConfig, manager: M) -> Lender {
         Lender(Arc::new(Over(TailnetLending::new(config, manager))))
     }
 

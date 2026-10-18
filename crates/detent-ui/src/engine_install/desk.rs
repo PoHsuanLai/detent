@@ -1,20 +1,11 @@
 //! What the engine sheet does to the computer, behind one handle that the environment carries, so
 //! a test hands in a desk that writes down what it was asked and never touches the real system.
 
-use super::system::System;
-use crate::live::BusSource;
-use detent_model::{EngineRow, InstallScope};
-use std::fmt;
-use std::future::Future;
-use std::path::Path;
-use std::pin::Pin;
-use std::sync::Arc;
-
-/// Work that answers later.
-pub type Work<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+use detent_model::{EngineRow, InstallScope, Work};
+use std::fmt::Debug;
 
 /// The things the sheet asks for.
-pub trait Desk: Send + Sync {
+pub trait Desk: Debug + Send + Sync {
     /// The engines now: where each stands and what can be done about it.
     fn rows(&self) -> Work<'_, Vec<EngineRow>>;
     /// Starts downloading `engine` for `scope`; answers at once, the rows follow it. `Err` is the
@@ -30,35 +21,9 @@ pub trait Desk: Send + Sync {
     fn restart(&self) -> Work<'_, ()>;
 }
 
-/// The desk the window uses.
-#[derive(Clone)]
-pub struct EngineDesk(pub(crate) Arc<dyn Desk>);
-
-impl fmt::Debug for EngineDesk {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str("EngineDesk")
-    }
-}
-
-impl EngineDesk {
-    /// The person's own computer: downloads under `data_home`, the assistant looked for on `bus`.
-    pub fn system(bus: BusSource, data_home: &Path) -> Self {
-        Self(Arc::new(System::new(bus, data_home)))
-    }
-
-    /// A desk with no engines: nothing is listed and nothing is downloaded.
-    pub fn quiet() -> Self {
-        Self(Arc::new(Quiet))
-    }
-
-    /// A desk of `desk`'s own: a test's, that writes down what it is asked.
-    pub fn of(desk: impl Desk + 'static) -> Self {
-        Self(Arc::new(desk))
-    }
-}
-
-/// Nothing to list and nothing to do.
-struct Quiet;
+/// A desk with no engines: nothing is listed and nothing is downloaded.
+#[derive(Debug, Clone, Copy)]
+pub struct Quiet;
 
 impl Desk for Quiet {
     fn rows(&self) -> Work<'_, Vec<EngineRow>> {

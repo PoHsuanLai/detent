@@ -2,13 +2,13 @@
 //! asked: never a download, never a folder chooser, never the real computer.
 #![allow(dead_code)]
 
-use detent_model::{EngineRow, EngineStanding, EngineWay, InstallScope};
-use detent_ui::{Desk, EngineDesk, Work};
+use detent_model::{EngineRow, EngineStanding, EngineWay, InstallScope, Work};
+use detent_ui::Desk;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 /// What the sheet asked, and the engines it is shown.
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct Book {
     rows: Mutex<Vec<EngineRow>>,
     installs: Mutex<Vec<(String, InstallScope)>>,
@@ -19,7 +19,7 @@ struct Book {
 }
 
 /// The test's side of the desk.
-#[derive(Clone, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Fake(Arc<Book>);
 
 impl Fake {
@@ -61,8 +61,8 @@ impl Fake {
     }
 
     /// The handle the environment takes.
-    pub fn desk(&self) -> EngineDesk {
-        EngineDesk::of(self.clone())
+    pub fn desk(&self) -> Arc<dyn Desk> {
+        Arc::new(self.clone())
     }
 }
 

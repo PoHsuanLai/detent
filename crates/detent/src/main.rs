@@ -4,18 +4,16 @@ mod accounts;
 mod cli;
 mod dev_callers;
 mod dirs;
-mod link;
 
 use accounts::LiveAccounts;
 use clap::Parser;
 use cli::Run;
 use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles};
 use detent_intents::{ServeFault, SettingsProvider, hand_over_session, serve_session};
-use detent_model::{PageSlug, is_assistant_setup};
-use detent_ui::{App, BusSource, Env, FirstRunApp, Opening, inbox};
+use detent_model::{PageSlug, inbox, is_assistant_setup};
+use detent_ui::{App, BusSource, Env, FirstRunApp, Opening};
 use ds_blitz::{AppConfig, AppId, Decorations, LaunchError, WindowSize, enter_runtime, launch};
 use ds_settings::SystemPrefsSource;
-use link::WindowLink;
 use std::process::ExitCode;
 use std::sync::Arc;
 
@@ -114,7 +112,7 @@ fn settings(opening: Opening) -> ExitCode {
     let provider = SettingsProvider::new(
         env.catalogue.clone(),
         config_home,
-        Arc::new(WindowLink(outbox)),
+        outbox,
         Arc::new(LiveAccounts(BusSource::Session)),
     );
     // Held until the process ends: dropping the connection takes the service off the bus.

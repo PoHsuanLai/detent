@@ -1,12 +1,14 @@
 //! Following the engines and carrying out what the sheet asks. Every page that draws the picker
 //! calls [`use_board`] through `use_picker`, so its Local row and the sheet agree.
 
+use super::desk::Desk;
 use crate::env::Env;
 use detent_model::{
     EngineSheetEffect, EngineSheetInput, EngineSheetState, EngineStanding, engine_sheet_step,
 };
 use dioxus::prelude::*;
 use std::collections::VecDeque;
+use std::sync::Arc;
 use std::time::Duration;
 
 /// What an engine's menu word starts with when picking it asks to get the engine, so it is never
@@ -38,7 +40,7 @@ pub(crate) fn use_board() -> Board {
         let desk = looking.clone();
         async move {
             loop {
-                let rows = desk.0.rows().await;
+                let rows = desk.rows().await;
                 let busy = rows
                     .iter()
                     .any(|row| matches!(row.standing, EngineStanding::Installing(_)));
@@ -62,30 +64,26 @@ fn send(state: &mut Signal<EngineSheetState>, input: EngineSheetInput) -> Vec<En
 }
 
 /// Applies `first`, then every input its effects lead to, until nothing is left to do.
-async fn drive(
-    mut state: Signal<EngineSheetState>,
-    desk: super::EngineDesk,
-    first: EngineSheetInput,
-) {
+async fn drive(mut state: Signal<EngineSheetState>, desk: Arc<dyn Desk>, first: EngineSheetInput) {
     let mut queue = VecDeque::from([first]);
     while let Some(input) = queue.pop_front() {
         for effect in send(&mut state, input) {
             match effect {
                 EngineSheetEffect::Install { engine, scope } => {
-                    if let Err(why) = desk.0.install(&engine, scope) {
+                    if let Err(why) = desk.install(&engine, scope) {
                         queue.push_back(EngineSheetInput::NotStarted(why));
                     }
                 }
-                EngineSheetEffect::Cancel(engine) => desk.0.cancel(&engine),
+                EngineSheetEffect::Cancel(engine) => desk.cancel(&engine),
                 EngineSheetEffect::ChooseFolder => {
-                    queue.push_back(EngineSheetInput::Folder(desk.0.choose_folder().await));
+                    queue.push_back(EngineSheetInput::Folder(desk.choose_folder().await));
                 }
                 EngineSheetEffect::Point { engine, folder } => {
                     queue.push_back(EngineSheetInput::Pointed(
-                        desk.0.point(&engine, &folder).await,
+                        desk.point(&engine, &folder).await,
                     ));
                 }
-                EngineSheetEffect::Restart => desk.0.restart().await,
+                EngineSheetEffect::Restart => desk.restart().await,
             }
         }
     }

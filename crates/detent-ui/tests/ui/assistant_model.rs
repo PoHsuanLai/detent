@@ -5,8 +5,8 @@ use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use crate::support::drive::{click, scroll_into_view, sidebar_row};
 use crate::support::inferd::{Inferd, Policy};
-use detent_model::{ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, PageSlug};
-use detent_ui::{Notice, Opening};
+use detent_model::{ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Notice, PageSlug};
+use detent_ui::Opening;
 use ds_harness::{Driver, Harness, Input, Query};
 use std::time::Duration;
 

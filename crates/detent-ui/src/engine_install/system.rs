@@ -1,31 +1,38 @@
 //! The real desk: the engines `porter-engines-install` finds and installs, and what the assistant
 //! says of its own.
 
-use super::desk::{Desk, Work};
+use super::desk::Desk;
 use super::portal;
 use crate::computers::inferd;
 use crate::deadline::{Deadline, answered, peer};
 use crate::engines::restart;
 use crate::live::BusSource;
-use detent_model::{EngineRow, EngineStanding, EngineWay, InstallScope};
+use detent_model::{EngineRow, EngineStanding, EngineWay, InstallScope, Work};
 use porter_dbus::{EngineState, LocalEngine};
 use porter_engines::{BackendChoice, EngineId, Host, Manifest, Roots, Scope};
 use porter_engines_install::{
     EngineInstalls, Fetcher, HelperProgram, InstallChoice, Parts, Standing, StartError,
 };
+use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
 
 /// The words of a download that cannot start.
 const NOT_STARTED: &str = "The download could not be started.";
 
-pub(super) struct System {
+pub(crate) struct System {
     bus: BusSource,
     installs: Option<EngineInstalls>,
 }
 
+impl fmt::Debug for System {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("System").finish_non_exhaustive()
+    }
+}
+
 impl System {
-    pub(super) fn new(bus: BusSource, data_home: &Path) -> Self {
+    pub(crate) fn new(bus: BusSource, data_home: &Path) -> Self {
         let installs = Host::read(Path::new("/"), BackendChoice::Detect).map(|host| {
             EngineInstalls::new(Parts {
                 roots: Roots::standard(data_home),

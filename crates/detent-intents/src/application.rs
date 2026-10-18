@@ -4,9 +4,8 @@
 
 use crate::callers::{Refusals, admit, settings_owner};
 use crate::serve::BUS_PEER;
-use crate::window::Window;
 use detent_callers::{BusPeers, Refused, desktop_peers};
-use detent_model::{AccountTarget, PageSlug};
+use detent_model::{AccountTarget, Notice, Outbox, PageSlug};
 use ds_peer::{Deadline, within};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -31,7 +30,7 @@ type PlatformData = HashMap<String, OwnedValue>;
 
 /// The object that answers the launcher.
 pub(crate) struct Application {
-    window: Arc<dyn Window>,
+    window: Outbox,
     peers: Arc<BusPeers>,
     refusals: Refusals,
 }
@@ -77,7 +76,7 @@ impl Application {
     ) -> fdo::Result<()> {
         admit(&self.peers, &self.refusals, &header).await?;
         self.window
-            .raise(token_of(&platform_data))
+            .send(Notice::Raise(token_of(&platform_data)))
             .map_err(|_| gone())
     }
 
@@ -102,11 +101,13 @@ impl Application {
         match action_name.as_str() {
             OPEN_ACCOUNT => self
                 .window
-                .open_account(target_of(&parameter))
+                .send(Notice::OpenAccount(target_of(&parameter)))
                 .map_err(|_| gone())?,
             OPEN_PAGE => {
                 if let Some(page) = page_of(&parameter) {
-                    self.window.open_page(page).map_err(|_| gone())?;
+                    self.window
+                        .send(Notice::OpenPage(page))
+                        .map_err(|_| gone())?;
                 }
             }
             _ => {
@@ -115,7 +116,7 @@ impl Application {
             }
         }
         self.window
-            .raise(token_of(&platform_data))
+            .send(Notice::Raise(token_of(&platform_data)))
             .map_err(|_| gone())
     }
 }
@@ -123,7 +124,7 @@ impl Application {
 /// Puts the activation object on `connection`, judging its callers with `peers`.
 pub(crate) async fn export_application(
     connection: &zbus::Connection,
-    window: Arc<dyn Window>,
+    window: Outbox,
     peers: Arc<BusPeers>,
 ) -> Result<(), docket_client::TransportError> {
     let application = Application {

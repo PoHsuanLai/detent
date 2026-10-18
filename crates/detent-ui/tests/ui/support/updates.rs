@@ -1,8 +1,8 @@
 //! The update service and the log-out, from memory: nothing here reaches a bus, the clock or a
 //! process.
 
-use detent_model::{Absence, UnixSeconds, UpdatePhase, UpdateStatus, UpdateVersion};
-use detent_ui::{Departure, InstallRefusal, Ticker, UpdateTicks, UpdateWork, UpdatesLink};
+use detent_model::{Absence, UnixSeconds, UpdatePhase, UpdateStatus, UpdateVersion, Work};
+use detent_ui::{Departure, InstallRefusal, Ticker, UpdateTicks, UpdatesLink};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -17,6 +17,7 @@ pub enum Asked {
 /// The time the page counts "last checked" from.
 pub const NOW: UnixSeconds = UnixSeconds(1_000_000);
 
+#[derive(Debug)]
 struct Shared {
     standing: Mutex<Result<UpdateStatus, Absence>>,
     asked: Mutex<Vec<Asked>>,
@@ -25,7 +26,7 @@ struct Shared {
 }
 
 /// A service that answers from what it was given, and writes down what it was asked.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Service(Arc<Shared>);
 
 impl Service {
@@ -115,24 +116,24 @@ impl Service {
 }
 
 impl UpdatesLink for Service {
-    fn read(&self) -> UpdateWork<'_, Result<UpdateStatus, Absence>> {
+    fn read(&self) -> Work<'_, Result<UpdateStatus, Absence>> {
         let standing = self.0.standing.lock().expect("lock").clone();
         Box::pin(std::future::ready(standing))
     }
 
-    fn changes(&self) -> UpdateWork<'_, Result<UpdateTicks, Absence>> {
+    fn changes(&self) -> Work<'_, Result<UpdateTicks, Absence>> {
         let (listener, ticks) = UpdateTicks::channel();
         self.0.listeners.lock().expect("lock").push(listener);
         Box::pin(std::future::ready(Ok(ticks)))
     }
 
-    fn check(&self) -> UpdateWork<'_, Result<(), String>> {
+    fn check(&self) -> Work<'_, Result<(), String>> {
         Box::pin(std::future::ready(
             self.request(Asked::Check, UpdatePhase::Checking),
         ))
     }
 
-    fn install(&self, version: &UpdateVersion) -> UpdateWork<'_, Result<(), InstallRefusal>> {
+    fn install(&self, version: &UpdateVersion) -> Work<'_, Result<(), InstallRefusal>> {
         self.0
             .asked
             .lock()
@@ -153,7 +154,7 @@ impl UpdatesLink for Service {
 }
 
 /// A log-out that is only counted.
-#[derive(Clone, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Leaves(Arc<AtomicUsize>);
 
 impl Leaves {
@@ -164,7 +165,7 @@ impl Leaves {
 }
 
 impl Departure for Leaves {
-    fn log_out(&self) -> UpdateWork<'_, Result<(), String>> {
+    fn log_out(&self) -> Work<'_, Result<(), String>> {
         self.0.fetch_add(1, Ordering::SeqCst);
         Box::pin(std::future::ready(Ok(())))
     }

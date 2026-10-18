@@ -9,6 +9,8 @@ mod session;
 mod view;
 mod wire;
 
-pub use leave::{Departure, LogOut};
-pub use link::{InstallRefusal, UpdateTicks, UpdateWork, Updater, UpdatesLink};
+pub use leave::Departure;
+pub(crate) use leave::PowerMenu;
+pub use link::{InstallRefusal, UpdateTicks, UpdatesLink};
+pub(crate) use session::OnBus;
 pub(crate) use view::SoftwareUpdatePane;

@@ -6,11 +6,9 @@ mod bus;
 
 use detent_callers::{BusPeers, RoleName, introduce_service, private_peers, roles};
 use detent_files::ConfigHome;
-use detent_intents::{
-    AccountsRead, AccountsSource, SettingsProvider, Window, WindowGone, serve_with,
-};
+use detent_intents::{AccountsRead, AccountsSource, SettingsProvider, serve_with};
 use detent_model::{
-    Absence, AccountTarget, AccountsPane, Catalogue, OriginRule, PageSlug, discover_under,
+    Absence, AccountsPane, Catalogue, Notice, OriginRule, Receiver, discover_under, inbox,
 };
 use detent_testkit::{Scratch, seed_schemas_settable};
 use docket_core::{
@@ -27,41 +25,21 @@ pub use bus::PrivateBus;
 pub const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 const APP: &str = "org.quire.Settings";
 
-/// What the window was told.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Told {
-    Page(String),
-    Files,
-    Account(AccountTarget),
-    Raised(Option<String>),
-}
+/// A window that writes down what it is told: the notices that reached its inbox.
+pub struct WrittenDown(Mutex<Heard>);
 
-/// A window that writes down what it is told.
-#[derive(Default)]
-pub struct WrittenDown(Mutex<Vec<Told>>);
+struct Heard {
+    receiver: Receiver,
+    notices: Vec<Notice>,
+}
 
 impl WrittenDown {
-    pub fn told(&self) -> Vec<Told> {
-        self.0.lock().expect("lock").clone()
-    }
-}
-
-impl Window for WrittenDown {
-    fn open_page(&self, page: PageSlug) -> Result<(), WindowGone> {
-        self.0.lock().expect("lock").push(Told::Page(page.0));
-        Ok(())
-    }
-    fn files_changed(&self) -> Result<(), WindowGone> {
-        self.0.lock().expect("lock").push(Told::Files);
-        Ok(())
-    }
-    fn open_account(&self, target: AccountTarget) -> Result<(), WindowGone> {
-        self.0.lock().expect("lock").push(Told::Account(target));
-        Ok(())
-    }
-    fn raise(&self, token: Option<String>) -> Result<(), WindowGone> {
-        self.0.lock().expect("lock").push(Told::Raised(token));
-        Ok(())
+    pub fn told(&self) -> Vec<Notice> {
+        let mut heard = self.0.lock().expect("lock");
+        while let Some(notice) = heard.receiver.try_recv() {
+            heard.notices.push(notice);
+        }
+        heard.notices.clone()
     }
 }
 
@@ -153,11 +131,15 @@ impl World {
             &OriginRule::declared(std::slice::from_ref(&schemas)),
         );
         let catalogue = Arc::new(Catalogue::build(&found.programs));
-        let window = Arc::new(WrittenDown::default());
+        let (outbox, inbox) = inbox();
+        let window = Arc::new(WrittenDown(Mutex::new(Heard {
+            receiver: inbox.take().expect("the receiver"),
+            notices: Vec::new(),
+        })));
         let provider = SettingsProvider::new(
             catalogue,
             ConfigHome(scratch.join("config")),
-            window.clone(),
+            outbox,
             Arc::new(accounts),
         )
         .expect("a provider");

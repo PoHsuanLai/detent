@@ -1,7 +1,7 @@
 //! Settings' three actions, called over a private bus the way intentd calls an app.
 
-use crate::support::{Told, World, entity, key, text};
-use detent_model::ASSISTANT_MODEL_SLUG;
+use crate::support::{World, entity, key, text};
+use detent_model::{ASSISTANT_MODEL_SLUG, Notice, PageSlug};
 use docket_core::{AppRefusal, Preview, UndoFault, Undoable, Value};
 use prov::Integrity;
 
@@ -47,7 +47,7 @@ async fn opening_a_page_tells_the_window() {
         assert_eq!(out.undo, Undoable::No, "{action}");
         assert_eq!(
             world.window.told(),
-            [Told::Page(shown.to_owned())],
+            [Notice::OpenPage(PageSlug(shown.to_owned()))],
             "{action}"
         );
     }
@@ -178,7 +178,7 @@ async fn setting_a_key_writes_the_file_tells_the_window_and_hands_back_an_undo()
         "kept as it was: {file}"
     );
     assert!(file.contains("[mystery]\nx = 1"), "{file}");
-    assert_eq!(world.window.told(), [Told::Files]);
+    assert_eq!(world.window.told(), [Notice::Reload]);
 
     let read = world
         .perform("settings.key.read", &[("key", key(MAGNIFICATION))])
@@ -252,7 +252,7 @@ async fn undo_puts_the_old_value_back_and_only_once() {
             .expect("file")
             .contains("tile_size_px = 60")
     );
-    assert_eq!(world.window.told(), [Told::Files, Told::Files]);
+    assert_eq!(world.window.told(), [Notice::Reload, Notice::Reload]);
     assert_eq!(world.undo(&token).await, Err(UndoFault::Gone));
 }
 

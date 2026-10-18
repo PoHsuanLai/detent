@@ -1,10 +1,10 @@
 //! `org.freedesktop.Application` on `org.quire.Settings`, called the way sill calls it.
 
-use crate::support::{Told, World, peers_knowing};
+use crate::support::{World, peers_knowing};
 use detent_callers::roles;
 use detent_intents::{APPLICATION_INTERFACE, APPLICATION_PATH, HandOverFault, hand_over};
 use detent_model::{
-    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, AccountSegment, AccountTarget, PageSlug,
+    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, AccountSegment, AccountTarget, Notice, PageSlug,
 };
 use std::collections::HashMap;
 use zbus::zvariant::{ObjectPath, Value};
@@ -33,8 +33,8 @@ fn no_data() -> HashMap<&'static str, Value<'static>> {
     HashMap::new()
 }
 
-fn detail(segment: &str) -> Told {
-    Told::Account(AccountTarget::Detail(AccountSegment(segment.to_owned())))
+fn detail(segment: &str) -> Notice {
+    Notice::OpenAccount(AccountTarget::Detail(AccountSegment(segment.to_owned())))
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -49,7 +49,7 @@ async fn open_account_moves_to_that_accounts_detail() {
     .await
     .expect("answered");
     assert_eq!(world.window.told()[0], detail("work_example"));
-    assert!(matches!(world.window.told()[1], Told::Raised(None)));
+    assert!(matches!(world.window.told()[1], Notice::Raise(None)));
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -64,7 +64,10 @@ async fn open_page_shows_the_page_its_slug_names_and_raises() {
     .expect("answered");
     assert_eq!(
         world.window.told(),
-        [Told::Page("software-update".to_owned()), Told::Raised(None)]
+        [
+            Notice::OpenPage(PageSlug("software-update".to_owned())),
+            Notice::Raise(None)
+        ]
     );
     call(
         &world,
@@ -75,7 +78,7 @@ async fn open_page_shows_the_page_its_slug_names_and_raises() {
     .expect("answered");
     assert_eq!(
         world.window.told()[2..],
-        [Told::Raised(None)],
+        [Notice::Raise(None)],
         "a page that is not named only raises the window"
     );
 }
@@ -95,10 +98,10 @@ async fn open_page_shows_the_assistants_model_page_and_its_first_run_step() {
     assert_eq!(
         world.window.told(),
         [
-            Told::Page("assistant-model".to_owned()),
-            Told::Raised(None),
-            Told::Page("assistant-model-setup".to_owned()),
-            Told::Raised(None),
+            Notice::OpenPage(PageSlug("assistant-model".to_owned())),
+            Notice::Raise(None),
+            Notice::OpenPage(PageSlug("assistant-model-setup".to_owned())),
+            Notice::Raise(None),
         ],
         "the slugs sill is told to send, each shown and the window raised"
     );
@@ -123,9 +126,9 @@ async fn a_second_detent_hands_over_the_page_it_was_asked_for() {
     assert_eq!(
         world.window.told(),
         [
-            Told::Page("software-update".to_owned()),
-            Told::Raised(None),
-            Told::Raised(Some("tok-2".to_owned())),
+            Notice::OpenPage(PageSlug("software-update".to_owned())),
+            Notice::Raise(None),
+            Notice::Raise(Some("tok-2".to_owned())),
         ]
     );
 }
@@ -166,7 +169,7 @@ async fn a_path_that_is_no_account_gives_the_list() {
         .window
         .told()
         .into_iter()
-        .filter(|told| *told == Told::Account(AccountTarget::List))
+        .filter(|told| *told == Notice::OpenAccount(AccountTarget::List))
         .count();
     assert_eq!(lists, 3);
 }
@@ -195,7 +198,7 @@ async fn activate_raises_with_the_token() {
         .expect("answered");
     assert_eq!(
         world.window.told(),
-        [Told::Raised(Some("tok-1".to_owned())), Told::Raised(None)]
+        [Notice::Raise(Some("tok-1".to_owned())), Notice::Raise(None)]
     );
 }
 
