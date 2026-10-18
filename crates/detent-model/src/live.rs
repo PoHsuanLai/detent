@@ -4,20 +4,15 @@
 use crate::Absence;
 
 /// Where a live pane stands.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Live<R> {
     /// Looking for the service.
+    #[default]
     Looking,
     /// The service cannot be used, and why.
     Unavailable(Absence),
     /// The service answered.
     Ready(R),
-}
-
-impl<R> Default for Live<R> {
-    fn default() -> Self {
-        Live::Looking
-    }
 }
 
 impl<R> Live<R> {
