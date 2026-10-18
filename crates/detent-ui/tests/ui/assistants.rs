@@ -12,7 +12,7 @@ use crate::support::drive::{click, click_when_still, scroll_into_view};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use docket_settings::{CloudAllowed, Toggle, read_places};
-use ds_harness::{Driver, Harness, Input, Query};
+use ds_harness::{Harness, Input};
 use std::time::Duration;
 
 const CLOUD: &str = "[aria-label=\"me@acme.example\"] .ds-toggle";

@@ -8,7 +8,7 @@ use crate::support::drive::{click, page_of, scroll_into_view};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::Scheme;
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::Harness;
 use std::time::Duration;
 
 const ROWS: &str = ".runtimes .ds-field-row";

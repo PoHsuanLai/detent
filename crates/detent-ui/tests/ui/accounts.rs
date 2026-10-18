@@ -10,7 +10,7 @@ use detent_callers::{RoleCheck, RoleName, introduce_service, private_peers, role
 use detent_model::PageSlug;
 use detent_ui::{Opening, Vouch};
 use ds::prelude::Scheme;
-use ds_harness::{Backdrop, Driver, Harness, Query};
+use ds_harness::{Backdrop, Harness};
 use ds_settings::live::{LiveClient, LiveError, Served};
 use ds_settings::schema::KeyPath;
 use porter_dbus::names::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};

@@ -8,7 +8,6 @@ use crate::support::drive::{click, page_of, title_of};
 use detent_files::load;
 use detent_model::PageSlug;
 use detent_ui::Opening;
-use ds_harness::Query;
 use ds_settings::schema::{
     AppId, Exposure, FilePath, Help, KeyKind, KeyPath, KeySpec, Label, Page, Schema, Section,
 };

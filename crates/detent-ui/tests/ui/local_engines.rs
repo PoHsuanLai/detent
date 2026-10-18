@@ -10,7 +10,7 @@ use crate::support::drive::{click, scroll_into_view};
 use crate::support::engines::{Fake, serve};
 use detent_model::{PageSlug, RELEASES_LINE, SETUP_LINE, START_USING};
 use detent_ui::Opening;
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::Harness;
 use std::time::Duration;
 
 const NOTE: &str = "[data-engine-note]";

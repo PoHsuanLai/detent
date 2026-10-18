@@ -6,7 +6,7 @@ use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use detent_model::PageSlug;
 use detent_ui::Opening;
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::Harness;
 use porter_dbus::names::{ACCOUNTS_BUS, INFERENCE_BUS, SYNC_BUS};
 use std::time::Duration;
 

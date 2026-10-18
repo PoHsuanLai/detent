@@ -4,7 +4,6 @@ use crate::support::Sandbox;
 use crate::support::drive::{click, page_of, search_for, title_of};
 use detent_model::{Notice, PageSlug};
 use detent_ui::Opening;
-use ds_harness::{Driver, Query};
 use std::time::Duration;
 
 const SETTLE: Duration = Duration::from_millis(400);

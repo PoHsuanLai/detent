@@ -7,7 +7,7 @@ use crate::support::drive::{click, scroll_into_view, sidebar_row};
 use crate::support::inferd::{Inferd, Policy};
 use detent_model::{ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Notice, PageSlug};
 use detent_ui::Opening;
-use ds_harness::{Driver, Harness, Input, Query};
+use ds_harness::{Harness, Input};
 use std::time::Duration;
 
 const ROW: &str = "ai.model.text.balanced";

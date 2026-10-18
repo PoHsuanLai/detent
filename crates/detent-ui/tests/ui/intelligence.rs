@@ -7,7 +7,7 @@ use crate::support::drive::{click, scroll_into_view};
 use crate::support::inferd::{Inferd, Policy};
 use detent_model::PageSlug;
 use detent_ui::{Opening, ReasonFeed};
-use ds_harness::{Driver, Harness, Input, Query};
+use ds_harness::{Harness, Input};
 use porter_core::{AccountId, ModelId};
 use porter_infer::{Declined, DeclinedBecause, InferEvent, ModelRef, Why};
 use std::time::Duration;

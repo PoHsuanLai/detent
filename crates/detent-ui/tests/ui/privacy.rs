@@ -8,7 +8,7 @@ use crate::support::compositor::{Compositor, Row};
 use crate::support::drive::{click, scroll_into_view, sidebar_row};
 use detent_model::PageSlug;
 use detent_ui::Opening;
-use ds_harness::{Driver, Harness, Input, Query};
+use ds_harness::{Harness, Input};
 use std::time::Duration;
 
 const GRIM: &str = "/usr/bin/grim";

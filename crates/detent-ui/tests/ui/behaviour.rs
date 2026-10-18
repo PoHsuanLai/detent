@@ -8,7 +8,7 @@ use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::Word;
 use ds::prelude::{Point, Px};
-use ds_harness::{Driver, Input, Query};
+use ds_harness::Input;
 use std::time::Duration;
 
 fn opening(page: &str) -> Opening {

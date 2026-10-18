@@ -8,7 +8,7 @@ use crate::support::drive::{click, scroll_into_view};
 use crate::support::lending::SHIPPED;
 use detent_model::PageSlug;
 use detent_ui::Opening;
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::Harness;
 use std::time::Duration;
 
 const LABEL: &str = "Let my other computers use this computer's models";

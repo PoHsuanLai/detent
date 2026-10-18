@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 
 use ds::prelude::{Point, Px, ShortcutKey};
-use ds_harness::{Driver, Harness, Input, Query};
+use ds_harness::{Harness, Input};
 use std::time::Duration;
 
 /// How long a click or a keystroke is given to reach the document and its handlers.

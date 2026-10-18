@@ -8,7 +8,7 @@ use crate::support::drive::click;
 use crate::support::spaces::{Fakes, serve};
 use detent_model::{MEMORY_NOT_RUNNING, PageSlug};
 use detent_ui::Opening;
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::Harness;
 use std::time::Duration;
 
 const TRIP: &str = "[aria-label=\"Remove Trip\"]";

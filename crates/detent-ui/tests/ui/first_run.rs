@@ -8,7 +8,7 @@ use crate::support::drive::click;
 use crate::support::inferd::{Inferd, Policy as InferPolicy};
 use detent_files::{FirstRunMark, FirstRunStanding};
 use ds::prelude::Scheme;
-use ds_harness::{Driver, Harness, Input, Query};
+use ds_harness::{Harness, Input};
 use std::time::Duration;
 
 const LOCAL_ONLY: &str = ".first-run [aria-label=\"Keep AI on this computer\"] .ds-toggle";

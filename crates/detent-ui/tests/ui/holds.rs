@@ -10,7 +10,7 @@ use crate::support::syncd::Syncd;
 use detent_callers::{RoleCheck, introduce_service, private_peers, roles};
 use detent_model::PageSlug;
 use detent_ui::{Opening, Vouch};
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::Harness;
 use ds_settings::live::AnyOwner;
 use porter_dbus::names::SYNC_BUS;
 use std::sync::Arc;

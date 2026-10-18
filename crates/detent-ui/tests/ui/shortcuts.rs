@@ -8,7 +8,7 @@ use chordkit::{Chord, Desktop, Overrides, Platform};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::ShortcutKey;
-use ds_harness::{Driver, Harness, Input, Query};
+use ds_harness::{Harness, Input};
 use std::time::Duration;
 
 const KEYMAP: &str = "keycap/keymap";

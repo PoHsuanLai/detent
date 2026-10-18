@@ -7,7 +7,7 @@ use crate::support::bus::PrivateBus;
 use crate::support::drive::page_of;
 use detent_model::{AccountSegment, AccountTarget, Notice, PageSlug};
 use detent_ui::Opening;
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::Harness;
 use std::time::Duration;
 
 fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {

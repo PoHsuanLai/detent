@@ -7,7 +7,7 @@ use crate::support::drive::{click, scroll_into_view};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::{Point, ShortcutKey};
-use ds_harness::{Driver, Harness, Input, Query};
+use ds_harness::{Harness, Input};
 use std::time::Duration;
 
 fn intelligence() -> Opening {

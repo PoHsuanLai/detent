@@ -10,7 +10,7 @@ use crate::support::portal;
 use crate::support::spaces::{Fakes, serve, serve_unnamed};
 use detent_model::PageSlug;
 use detent_ui::{Opening, Vouch};
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::Harness;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;

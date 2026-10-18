@@ -9,7 +9,7 @@ use detent_model::{
     UpdateVersion,
 };
 use detent_ui::Opening;
-use ds_harness::{Driver, Harness, Query};
+use ds_harness::Harness;
 use std::time::Duration;
 
 const ROW: &str = ".updates .ds-field-row";
