@@ -73,7 +73,10 @@ pub struct Inbox(Arc<Mutex<Option<Receiver<Notice>>>>);
 impl Inbox {
     /// The receiver, the first time it is asked for; `None` after, or for an empty inbox.
     pub fn take(&self) -> Option<Receiver<Notice>> {
-        let mut held: MutexGuard<'_, _> = self.0.lock().unwrap_or_else(|p| p.into_inner());
+        let mut held: MutexGuard<'_, _> = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         held.take()
     }
 }

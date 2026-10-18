@@ -59,7 +59,7 @@ pub(crate) async fn admit(
     refusals: &Refusals,
     header: &Header<'_>,
 ) -> fdo::Result<()> {
-    let sender = header.sender().map(|name| name.as_str());
+    let sender = header.sender().map(zbus::names::UniqueName::as_str);
     match peers.require(sender, &activators()).await {
         Ok(_) => Ok(()),
         Err(refused) => {

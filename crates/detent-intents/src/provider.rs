@@ -75,7 +75,9 @@ impl SettingsProvider {
     }
 
     fn journal(&self) -> MutexGuard<'_, Journal> {
-        self.journal.lock().unwrap_or_else(|p| p.into_inner())
+        self.journal
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     fn key(&self, path: &KeyPath) -> Result<&KeyEntry, AppRefusal> {
@@ -143,7 +145,11 @@ impl SettingsProvider {
             .read()
             .await
             .map_err(|absence| refusal(format!("the accounts cannot be listed: {absence}")))?;
-        let lines: Vec<String> = pane.accounts.iter().map(|account| account.line()).collect();
+        let lines: Vec<String> = pane
+            .accounts
+            .iter()
+            .map(detent_model::Account::line)
+            .collect();
         let mut out = outcome("", Undoable::No);
         out.value = Some(Labelled::new(
             Value::Text(many_lines(&lines.join("\n"), ACCOUNTS_CHARS)),

@@ -171,19 +171,16 @@ fn set(state: ShortcutsState, action: StandardAction, chord: Chord) -> Step {
         .iter()
         .find(|(holder, bound)| *bound == chord && *holder != mine)
         .map(|(holder, _)| holder.clone());
-    match holder {
-        Some(holder) => {
-            let asking = Some(Replacing {
-                action,
-                chord,
-                holder,
-            });
-            (ShortcutsState { asking, ..state }, vec![])
-        }
-        None => {
-            let person = with_entry(&state.person, mine, vec![DefaultChord::from(chord)]);
-            commit(state, person)
-        }
+    if let Some(holder) = holder {
+        let asking = Some(Replacing {
+            action,
+            chord,
+            holder,
+        });
+        (ShortcutsState { asking, ..state }, vec![])
+    } else {
+        let person = with_entry(&state.person, mine, vec![DefaultChord::from(chord)]);
+        commit(state, person)
     }
 }
 

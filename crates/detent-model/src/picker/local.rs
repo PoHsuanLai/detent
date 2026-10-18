@@ -105,14 +105,14 @@ impl ModelRow {
     /// What picks the engine that runs the local model `word`, and what a person reads for it:
     /// the engine's own name, or the account's when the module names no engine.
     pub(super) fn engine_of(&self, word: &str) -> (String, String) {
-        match self.places.get(word) {
-            Some(ChoicePlace::ThisComputer {
-                engine: Some(engine),
-            }) => (engine.0.clone(), engine.0.clone()),
-            _ => {
-                let account = account_of(word);
-                (account.to_owned(), account_label(account))
-            }
+        if let Some(ChoicePlace::ThisComputer {
+            engine: Some(engine),
+        }) = self.places.get(word)
+        {
+            (engine.0.clone(), engine.0.clone())
+        } else {
+            let account = account_of(word);
+            (account.to_owned(), account_label(account))
         }
     }
 

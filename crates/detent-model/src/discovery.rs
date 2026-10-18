@@ -81,10 +81,10 @@ fn admit(mut found: Discovery, schema: Schema, origin: SchemaOrigin) -> Discover
         app: schema.app.clone(),
         reason,
     };
-    let checked = if schema.version != SUPPORTED_VERSION {
-        Err(StaleReason::UnsupportedVersion(schema.version))
-    } else {
+    let checked = if schema.version == SUPPORTED_VERSION {
         ConfigFile::parse(&schema.file)
+    } else {
+        Err(StaleReason::UnsupportedVersion(schema.version))
     };
     match checked {
         Ok(file) => found.programs.push(ProgramSchema {
