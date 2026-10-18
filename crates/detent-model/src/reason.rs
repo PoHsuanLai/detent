@@ -41,6 +41,7 @@ fn why_line(why: &Why) -> String {
         Why::Smallest => "The lightest model that can do this.".to_owned(),
         Why::LeastCost => "The others cost more to use.".to_owned(),
         Why::CatalogueOrder => "First in your list.".to_owned(),
+        Why::SharedWithHelper => "Another helper is already using it.".to_owned(),
         Why::FallbackFrom { model } => {
             format!("{} couldn't do this.", model.model)
         }
