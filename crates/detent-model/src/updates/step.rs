@@ -3,7 +3,8 @@
 //! would refuse.
 
 use super::model::{ProblemKind, UpdatePhase, UpdateStatus, UpdateVersion};
-use crate::picker::Absence;
+use crate::Absence;
+use crate::Live;
 
 /// Whether the release notes are up in a sheet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -38,16 +39,7 @@ pub struct UpdatesReady {
 }
 
 /// Where the page stands.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum UpdatesState {
-    /// Looking for the service.
-    #[default]
-    Looking,
-    /// The service cannot be used, and why.
-    Unavailable(Absence),
-    /// The service answered.
-    Ready(UpdatesReady),
-}
+pub type UpdatesState = Live<UpdatesReady>;
 
 /// What happened to the page.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -91,17 +83,16 @@ pub fn updates_step(
     state: UpdatesState,
     input: UpdatesInput,
 ) -> (UpdatesState, Vec<UpdatesEffect>) {
-    match (state, input) {
-        (UpdatesState::Ready(before), UpdatesInput::Heard(Ok(status))) => {
-            (UpdatesState::Ready(heard(Some(&before), status)), vec![])
-        }
-        (_, UpdatesInput::Heard(Ok(status))) => (UpdatesState::Ready(heard(None, status)), vec![]),
-        (_, UpdatesInput::Heard(Err(absence))) => (UpdatesState::Unavailable(absence), vec![]),
-        (UpdatesState::Ready(ready), input) => {
-            let (ready, effects) = ready_step(ready, input);
-            (UpdatesState::Ready(ready), effects)
-        }
-        (state, _) => (state, vec![]),
+    match input {
+        UpdatesInput::Heard(read) => (
+            state.found(
+                read,
+                |status| heard(None, status),
+                |before, status| heard(Some(&before), status),
+            ),
+            vec![],
+        ),
+        other => state.inner(|ready| ready_step(ready, other)),
     }
 }
 

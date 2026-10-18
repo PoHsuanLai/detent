@@ -2,7 +2,8 @@
 //! of the Add sheet and the guests are read from the assistant's service; every change is asked
 //! of it and the lists are read again after.
 
-use crate::picker::Absence;
+use crate::Absence;
+use crate::Live;
 use porter_core::NodeId;
 use porter_core::lending::{ComputerCandidate, GuestAnswer, GuestRow};
 use porter_infer::{ComputerName, PlaceKind, PlaceRow, PlaceState, PlaceTarget};
@@ -79,16 +80,7 @@ pub struct ComputersReady {
 }
 
 /// Where the computers stand.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum ComputersState {
-    /// Looking for the service.
-    #[default]
-    Looking,
-    /// The service cannot be used, and why.
-    Unavailable(Absence),
-    /// It answered.
-    Ready(ComputersReady),
-}
+pub type ComputersState = Live<ComputersReady>;
 
 /// What happened.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -137,29 +129,24 @@ pub fn computers_step(
     state: ComputersState,
     input: ComputersInput,
 ) -> (ComputersState, Vec<ComputersEffect>) {
-    match (state, input) {
-        (ComputersState::Ready(ready), ComputersInput::Found(Ok(found))) => (
-            ComputersState::Ready(ComputersReady {
-                computers: found.computers,
-                guests: found.guests,
-                ..ready
-            }),
+    match input {
+        ComputersInput::Found(read) => (
+            state.found(
+                read,
+                |found| ComputersReady {
+                    computers: found.computers,
+                    guests: found.guests,
+                    adding: AddList::Closed,
+                },
+                |ready, found| ComputersReady {
+                    computers: found.computers,
+                    guests: found.guests,
+                    ..ready
+                },
+            ),
             vec![],
         ),
-        (_, ComputersInput::Found(Ok(found))) => (
-            ComputersState::Ready(ComputersReady {
-                computers: found.computers,
-                guests: found.guests,
-                adding: AddList::Closed,
-            }),
-            vec![],
-        ),
-        (_, ComputersInput::Found(Err(absence))) => (ComputersState::Unavailable(absence), vec![]),
-        (ComputersState::Ready(ready), input) => {
-            let (ready, effects) = ready_step(ready, input);
-            (ComputersState::Ready(ready), effects)
-        }
-        (state, _) => (state, vec![]),
+        other => state.inner(|ready| ready_step(ready, other)),
     }
 }
 

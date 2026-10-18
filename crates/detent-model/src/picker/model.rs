@@ -1,9 +1,9 @@
 //! What the picker shows: one group per kind, one row per tier.
 
-use super::absence::Absence;
 use super::choice::NONE_LABEL;
 use super::local::LocalAsk;
 use super::pool::{AutoPool, PoolWrite, is_pool};
+use crate::Live;
 use crate::accounts::Adding;
 use crate::coding_agents::TURNED_OFF;
 use crate::words::word_label;
@@ -108,34 +108,34 @@ pub struct TurnOn {
     pub word: String,
 }
 
+/// What a picker that is there waits on: nothing, or exactly one of these.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub enum Busy {
+    /// Nothing: a pick may be taken.
+    #[default]
+    Idle,
+    /// The set in flight.
+    Applying(Applying),
+    /// The pick that waits on an account being added.
+    Awaiting(AwaitingAccount),
+    /// The pool write in flight.
+    Pooling(PoolWrite),
+    /// The coding agent picked while coding agents are off, waiting on the person's yes to turn
+    /// them on.
+    TurningOn(TurnOn),
+}
+
 /// A picker that is there.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ready {
     /// The slots, in the order their rows first appear in `Describe`.
     pub kinds: Vec<KindRows>,
-    /// The set in flight, if any: one at a time.
-    pub applying: Option<Applying>,
-    /// The pick that waits on an account being added, if any: while it does, no other pick is
-    /// taken.
-    pub awaiting: Option<AwaitingAccount>,
-    /// The pool write in flight, if any: one at a time, and no pick is taken meanwhile.
-    pub pooling: Option<PoolWrite>,
-    /// The coding agent picked while coding agents are off, waiting on the person's yes to turn
-    /// them on; no other pick is taken meanwhile.
-    pub turning_on: Option<TurnOn>,
+    /// What the picker waits on, if anything: one at a time, and no other pick is taken meanwhile.
+    pub busy: Busy,
 }
 
 /// Where the picker stands.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub enum PickerState {
-    /// Looking for the module.
-    #[default]
-    Probing,
-    /// The module is not there, and why.
-    Unavailable(Absence),
-    /// The module answered.
-    Ready(Ready),
-}
+pub type PickerState = Live<Ready>;
 
 /// The slot segment of an `ai.model.<slot>.<tier>` path.
 pub(super) fn slot_of(path: &KeyPath) -> Option<&str> {
@@ -243,16 +243,13 @@ impl Ready {
         }
         Ready {
             kinds,
-            applying: None,
-            awaiting: None,
-            pooling: None,
-            turning_on: None,
+            busy: Busy::Idle,
         }
     }
 
     /// Whether the add-account sheet is open on behalf of a pick.
     pub fn adding(&self) -> Adding {
-        if self.awaiting.is_some() {
+        if matches!(self.busy, Busy::Awaiting(_)) {
             Adding::SheetOpen
         } else {
             Adding::Idle
@@ -261,10 +258,40 @@ impl Ready {
 
     /// Whether a pick may be taken: no set is in flight and no account is being added.
     pub(crate) fn is_idle(&self) -> bool {
-        self.applying.is_none()
-            && self.awaiting.is_none()
-            && self.pooling.is_none()
-            && self.turning_on.is_none()
+        matches!(self.busy, Busy::Idle)
+    }
+
+    /// The set in flight, if that is what the picker waits on.
+    pub fn applying(&self) -> Option<&Applying> {
+        match &self.busy {
+            Busy::Applying(applying) => Some(applying),
+            _ => None,
+        }
+    }
+
+    /// The pick that waits on an account, if that is what the picker waits on.
+    pub fn awaiting(&self) -> Option<&AwaitingAccount> {
+        match &self.busy {
+            Busy::Awaiting(pick) => Some(pick),
+            _ => None,
+        }
+    }
+
+    /// The pool write in flight, if that is what the picker waits on.
+    pub fn pooling(&self) -> Option<&PoolWrite> {
+        match &self.busy {
+            Busy::Pooling(write) => Some(write),
+            _ => None,
+        }
+    }
+
+    /// The pick that waits on the person's yes to turning coding agents on, if that is what the
+    /// picker waits on.
+    pub fn turning_on(&self) -> Option<&TurnOn> {
+        match &self.busy {
+            Busy::TurningOn(asked) => Some(asked),
+            _ => None,
+        }
     }
 
     /// The row at `path`.

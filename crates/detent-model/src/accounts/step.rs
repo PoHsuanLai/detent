@@ -9,7 +9,8 @@ use super::module::{ModuleId, ModuleRow, Sources};
 use super::reauth_end::ReauthEnd;
 use super::sign_in_client::{ClientChange, ClientText, Secret, SignInClient};
 use super::sign_out::SignOutEnd;
-use crate::picker::{Absence, Described};
+use crate::Absence;
+use crate::picker::Described;
 
 /// What happened to the pane.
 #[derive(Debug, Clone, PartialEq)]

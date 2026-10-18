@@ -4,7 +4,7 @@
 use super::model::{ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus};
 use super::step::{NotesState, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState};
 use super::words::{age_words, size_words};
-use crate::picker::Absence;
+use crate::Absence;
 
 /// What the page says when nothing serves updates.
 pub const UPDATES_NOT_AVAILABLE: &str = "Software updates are not available on this computer.";

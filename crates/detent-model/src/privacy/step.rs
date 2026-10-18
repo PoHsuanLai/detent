@@ -4,23 +4,16 @@ use super::pane::{
     ALLOWED_WORD, CellKind, DENIED_WORD, PowerStanding, PrivacyPane, ProgramSubject,
 };
 use super::power::PrivacyPower;
-use crate::picker::{Absence, Described};
+use crate::Absence;
+use crate::Live;
+use crate::picker::Described;
 use ds_settings::schema::KeyPath;
 
 /// What the compositor says under a row it fixed: the line the page repeats.
 pub const SET_BY_ADMINISTRATOR: &str = "Set by your administrator";
 
 /// What the page knows.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub enum PrivacyState {
-    /// Not heard from yet.
-    #[default]
-    Looking,
-    /// The list cannot be shown, and why.
-    Unavailable(Absence),
-    /// The list.
-    Ready(PrivacyReady),
-}
+pub type PrivacyState = Live<PrivacyReady>;
 
 /// The list and the change in flight.
 #[derive(Debug, Clone, PartialEq)]
@@ -93,27 +86,22 @@ pub fn privacy_step(
     state: PrivacyState,
     input: PrivacyInput,
 ) -> (PrivacyState, Vec<PrivacyEffect>) {
-    match (state, input) {
-        (PrivacyState::Ready(ready), PrivacyInput::Found(Ok(described))) => (
-            PrivacyState::Ready(PrivacyReady {
-                pane: PrivacyPane::of(&described),
-                ..ready
-            }),
+    match input {
+        PrivacyInput::Found(read) => (
+            state.found(
+                read,
+                |described| PrivacyReady {
+                    pane: PrivacyPane::of(&described),
+                    pending: None,
+                },
+                |ready, described| PrivacyReady {
+                    pane: PrivacyPane::of(&described),
+                    ..ready
+                },
+            ),
             vec![],
         ),
-        (_, PrivacyInput::Found(Ok(described))) => (
-            PrivacyState::Ready(PrivacyReady {
-                pane: PrivacyPane::of(&described),
-                pending: None,
-            }),
-            vec![],
-        ),
-        (_, PrivacyInput::Found(Err(absence))) => (PrivacyState::Unavailable(absence), vec![]),
-        (PrivacyState::Ready(ready), input) => {
-            let (ready, effects) = ready_step(ready, input);
-            (PrivacyState::Ready(ready), effects)
-        }
-        (state, _) => (state, vec![]),
+        other => state.inner(|ready| ready_step(ready, other)),
     }
 }
 

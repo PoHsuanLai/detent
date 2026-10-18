@@ -4,7 +4,7 @@ use super::{
     APP_ID_MAX, ScreenGrant, ScreenSharingEffect, ScreenSharingInput, ScreenSharingState,
     ShareLength, grant_line, screen_sharing_step,
 };
-use crate::picker::Absence;
+use crate::Absence;
 use crate::privacy::ProgramSubject;
 use crate::updates::UnixSeconds;
 

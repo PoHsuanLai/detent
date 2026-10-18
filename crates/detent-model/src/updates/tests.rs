@@ -8,10 +8,10 @@ use super::{
     UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesShown, UpdatesState,
     is_software_update, software_update_page, updates_shown, updates_step,
 };
+use crate::Absence;
 use crate::catalogue::{Catalogue, PageModel};
 use crate::layout::{Block, blocks};
 use crate::page::PageSlug;
-use crate::picker::Absence;
 use ds_settings::schema::Page;
 
 const NOW: UnixSeconds = UnixSeconds(1_000_000);

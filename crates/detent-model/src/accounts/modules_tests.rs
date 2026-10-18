@@ -2,7 +2,8 @@
 //! its part out, and the same id in two modules is two accounts.
 
 use super::*;
-use crate::picker::{Absence, Described};
+use crate::Absence;
+use crate::picker::Described;
 use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Page, Section,

@@ -114,7 +114,7 @@ fn described_with(models: &[(&str, &str)], value: &str, held: &[&str]) -> Descri
 }
 
 fn state_of(described: Described) -> PickerState {
-    step(PickerState::Probing, PickerInput::Found(Ok(described))).0
+    step(PickerState::Looking, PickerInput::Found(Ok(described))).0
 }
 
 fn ready_with(value: &str, held: &[&str]) -> PickerState {
@@ -290,7 +290,7 @@ fn turning_a_model_on_writes_the_list_and_takes_it_in_when_the_module_has_it() {
         row_of(&state, ROW).pool.chosen,
         ["local/qwen", "anthropic/claude"]
     );
-    assert_eq!(ready_of(&state).pooling, None);
+    assert_eq!(ready_of(&state).busy, Busy::Idle);
 }
 
 #[test]
@@ -304,7 +304,7 @@ fn a_refused_list_is_said_plainly_and_stays_as_it_was() {
         )]
     );
     assert_eq!(row_of(&state, ROW).pool.chosen, ["local/qwen"]);
-    assert_eq!(ready_of(&state).pooling, None);
+    assert_eq!(ready_of(&state).busy, Busy::Idle);
 }
 
 #[test]
@@ -572,8 +572,8 @@ fn local_with_nothing_set_up_says_so_and_the_way_to_add_one_waits_for_the_accoun
     let (waiting, effects) = step(state, PickerInput::SetUpEngine(path(ROW)));
     assert_eq!(effects, [PickerEffect::AddAccount]);
     assert_eq!(
-        ready_of(&waiting).awaiting,
-        Some(AwaitingAccount {
+        ready_of(&waiting).busy,
+        Busy::Awaiting(AwaitingAccount {
             path: path(ROW),
             word: None
         })
@@ -583,8 +583,8 @@ fn local_with_nothing_set_up_says_so_and_the_way_to_add_one_waits_for_the_accoun
         PickerInput::AccountSheetEnded(AddEnd::Closed),
     );
     assert_eq!(
-        (ready_of(&closed).awaiting.clone(), effects),
-        (None, vec![])
+        (ready_of(&closed).busy.clone(), effects),
+        (Busy::Idle, vec![])
     );
     assert_eq!(row_of(&closed, ROW).value, "", "nothing was written");
 

@@ -2,7 +2,8 @@
 
 use super::removal::{HISTORY_CHOICES, SheetInput, WithoutMemory};
 use super::{
-    RemovalSheet, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesState, spaces_step,
+    RemovalSheet, RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesState,
+    spaces_step,
 };
 use almanac_core::{HistoryFate, MemoryFate, Removal};
 
@@ -83,13 +84,13 @@ fn asking_opens_the_sheet_and_cancel_sends_nothing() {
     let SpacesState::Ready(ready) = asked() else {
         panic!("the list is there");
     };
-    assert_eq!(ready.sheet, Some(trip()));
+    assert_eq!(ready.stage, RemovalStage::Asking(trip()));
     let (after, effects) = spaces_step(SpacesState::Ready(ready), SpacesInput::Cancel);
     assert!(effects.is_empty(), "Cancel sends nothing");
     let SpacesState::Ready(after) = after else {
         panic!("still the list");
     };
-    assert_eq!(after.sheet, None);
+    assert_eq!(after.stage, RemovalStage::Idle);
 }
 
 #[test]
@@ -127,7 +128,7 @@ fn nothing_else_is_asked_while_a_removal_is_under_way() {
     let SpacesState::Ready(after) = after else {
         panic!("the list is there");
     };
-    assert_eq!(after.sheet, None);
+    assert_eq!(after.stage, RemovalStage::Idle);
 }
 
 #[test]
@@ -141,7 +142,7 @@ fn a_failed_removal_is_told_and_the_list_read_again() {
     let SpacesState::Ready(after) = after else {
         panic!("the list is there");
     };
-    assert_eq!(after.removing, None);
+    assert_eq!(after.stage, RemovalStage::Idle);
 }
 
 #[test]

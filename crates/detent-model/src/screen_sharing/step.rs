@@ -2,7 +2,8 @@
 //! the portal, then the list is read again.
 
 use super::grant::ScreenGrant;
-use crate::picker::Absence;
+use crate::Absence;
+use crate::Live;
 use crate::privacy::ProgramSubject;
 
 /// A list that is there.
@@ -15,16 +16,7 @@ pub struct ScreenSharingReady {
 }
 
 /// Where the list stands.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum ScreenSharingState {
-    /// Looking for the portal.
-    #[default]
-    Looking,
-    /// The portal cannot be used, and why.
-    Unavailable(Absence),
-    /// The portal answered.
-    Ready(ScreenSharingReady),
-}
+pub type ScreenSharingState = Live<ScreenSharingReady>;
 
 /// What happened to the list.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,29 +51,22 @@ pub fn screen_sharing_step(
     state: ScreenSharingState,
     input: ScreenSharingInput,
 ) -> (ScreenSharingState, Vec<ScreenSharingEffect>) {
-    match (state, input) {
-        (ScreenSharingState::Ready(ready), ScreenSharingInput::Found(Ok(grants))) => (
-            ScreenSharingState::Ready(ScreenSharingReady {
-                grants: newest_first(grants),
-                ..ready
-            }),
+    match input {
+        ScreenSharingInput::Found(read) => (
+            state.found(
+                read,
+                |grants| ScreenSharingReady {
+                    grants: newest_first(grants),
+                    removing: None,
+                },
+                |ready, grants| ScreenSharingReady {
+                    grants: newest_first(grants),
+                    ..ready
+                },
+            ),
             vec![],
         ),
-        (_, ScreenSharingInput::Found(Ok(grants))) => (
-            ScreenSharingState::Ready(ScreenSharingReady {
-                grants: newest_first(grants),
-                removing: None,
-            }),
-            vec![],
-        ),
-        (_, ScreenSharingInput::Found(Err(absence))) => {
-            (ScreenSharingState::Unavailable(absence), vec![])
-        }
-        (ScreenSharingState::Ready(ready), input) => {
-            let (ready, effects) = ready_step(ready, input);
-            (ScreenSharingState::Ready(ready), effects)
-        }
-        (state, _) => (state, vec![]),
+        other => state.inner(|ready| ready_step(ready, other)),
     }
 }
 

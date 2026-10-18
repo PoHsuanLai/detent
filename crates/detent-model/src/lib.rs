@@ -2,6 +2,7 @@
 //! control draws each key, and what a search finds. No I/O beyond the directory scan in
 //! [`discover`], no renderer, no runtime.
 
+mod absence;
 mod accounts;
 mod advanced;
 mod assistant_model;
@@ -17,6 +18,7 @@ mod engines;
 mod entry;
 mod first_run;
 mod layout;
+mod live;
 mod memory_consent;
 mod navigation;
 mod origin;
@@ -38,6 +40,7 @@ mod updates;
 mod warning;
 mod words;
 
+pub use absence::Absence;
 pub use accounts::{
     Account, AccountExpiry, AccountKey, AccountPermission, AccountProvider, AccountSegment,
     AccountService, AccountStatus, AccountSync, AccountTarget, AccountsEffect, AccountsInput,
@@ -85,6 +88,7 @@ pub use first_run::{
     FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
 };
 pub use layout::{Block, blocks};
+pub use live::Live;
 pub use memory_consent::{
     CONFIRM, Confinement, ConsentState, MEMORY_SECTION, SettingPair, Trouble,
     holds_memory_settings, is_memory_setting, tells_confinement, to_confirm, waiting_note,
@@ -97,10 +101,10 @@ pub use outside::{
 };
 pub use page::PageSlug;
 pub use picker::{
-    Absence, Applying, AutoPool, AwaitingAccount, Choice, ChoiceGap, ChoiceReadiness,
-    ChoiceSection, Clearing, Described, Gate, KindRows, LocalAsk, LocalEngine, LocalModel,
-    LocalView, MenuLine, ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup,
-    PoolMembership, PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_text, step,
+    Applying, AutoPool, AwaitingAccount, Busy, Choice, ChoiceGap, ChoiceReadiness, ChoiceSection,
+    Clearing, Described, Gate, KindRows, LocalAsk, LocalEngine, LocalModel, LocalView, MenuLine,
+    ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup, PoolMembership,
+    PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_text, step,
 };
 pub use privacy::{
     CellKind, DesktopApp, PowerCell, PowerStanding, PrivacyEffect, PrivacyInput, PrivacyPane,
@@ -126,8 +130,9 @@ pub use shortcuts::{
     replace_question, shortcuts_step,
 };
 pub use spaces::{
-    HISTORY_CHOICES, HISTORY_NOTE, MEMORY_NOT_RUNNING, RemovalSheet, SheetInput, SpaceKey,
-    SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState, WithoutMemory, spaces_step,
+    HISTORY_CHOICES, HISTORY_NOTE, MEMORY_NOT_RUNNING, RemovalSheet, RemovalStage, SheetInput,
+    SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState, WithoutMemory,
+    spaces_step,
 };
 pub use text_form::{TextFault, show_value};
 pub use updates::{

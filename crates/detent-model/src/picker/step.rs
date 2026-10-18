@@ -1,10 +1,10 @@
 //! The picker's one transition: `(state, input) -> (state, effects)`.
 
-use super::absence::Absence;
 use super::choice::{Choice, Gate};
 use super::local::{LOCAL_ITEM, LocalAsk};
-use super::model::{Applying, AwaitingAccount, Described, PickerState, Ready, TurnOn};
+use super::model::{Applying, AwaitingAccount, Busy, Described, PickerState, Ready, TurnOn};
 use super::pool::PoolWrite;
+use crate::Absence;
 use crate::accounts::AddEnd;
 use ds_settings::schema::KeyPath;
 
@@ -116,17 +116,20 @@ pub enum PickerEffect {
 
 /// The state after `input`, and what to do about it.
 pub fn step(state: PickerState, input: PickerInput) -> (PickerState, Vec<PickerEffect>) {
-    match (state, input) {
-        (_, PickerInput::Found(Ok(described))) => {
-            (PickerState::Ready(Ready::of(&described)), vec![])
-        }
-        (_, PickerInput::Found(Err(absence))) => (PickerState::Unavailable(absence), vec![]),
-        (PickerState::Ready(ready), input) => ready_step(ready, input),
-        (state, _) => (state, vec![]),
+    match input {
+        PickerInput::Found(read) => (
+            state.found(
+                read,
+                |described| Ready::of(&described),
+                |_, described| Ready::of(&described),
+            ),
+            vec![],
+        ),
+        other => state.inner(|ready| ready_step(ready, other)),
     }
 }
 
-fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerEffect>) {
+fn ready_step(mut ready: Ready, input: PickerInput) -> (Ready, Vec<PickerEffect>) {
     let mut effects = Vec::new();
     match input {
         PickerInput::Chose { path, word } if ready.is_idle() => {
@@ -136,7 +139,7 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerE
             choose_engine(&mut ready, &path, engine);
         }
         PickerInput::SetUpEngine(path) if ready.is_idle() => {
-            ready.awaiting = Some(AwaitingAccount { path, word: None });
+            ready.busy = Busy::Awaiting(AwaitingAccount { path, word: None });
             effects.push(PickerEffect::AddAccount);
         }
         PickerInput::PoolToggled { path, word } if ready.is_idle() => {
@@ -162,25 +165,25 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerE
             effects.push(PickerEffect::Tell(why));
         }
         PickerInput::Changed { path, word } => set_value(&mut ready, &path, word),
-        PickerInput::AccountSheetEnded(end) if ready.awaiting.is_some() => match end {
+        PickerInput::AccountSheetEnded(end) if ready.awaiting().is_some() => match end {
             AddEnd::Added => effects.push(PickerEffect::ReadAgain),
-            AddEnd::Closed => ready.awaiting = None,
+            AddEnd::Closed => ready.busy = Busy::Idle,
             other => {
-                ready.awaiting = None;
+                ready.busy = Busy::Idle;
                 effects.extend(other.line().map(|line| PickerEffect::Tell(line.to_owned())));
             }
         },
-        PickerInput::Reread(described) if ready.awaiting.is_some() => {
-            let awaiting = ready.awaiting.take();
+        PickerInput::Reread(described) if ready.awaiting().is_some() => {
+            let awaiting = take_awaiting(&mut ready);
             ready = Ready::of(&described);
             effects.extend(awaiting.and_then(|pick| pick_again(&mut ready, pick)));
         }
-        PickerInput::TurnOn(answer) if ready.turning_on.is_some() => match answer {
-            TurnOnAnswer::No => ready.turning_on = None,
+        PickerInput::TurnOn(answer) if ready.turning_on().is_some() => match answer {
+            TurnOnAnswer::No => ready.busy = Busy::Idle,
             TurnOnAnswer::Yes => effects.push(PickerEffect::TurnOnAgents),
         },
-        PickerInput::AgentsTurnedOn(done) if ready.turning_on.is_some() => {
-            let asked = ready.turning_on.take();
+        PickerInput::AgentsTurnedOn(done) if ready.turning_on().is_some() => {
+            let asked = take_turning_on(&mut ready);
             match done {
                 Ok(()) => {
                     ready.agents_are_on();
@@ -199,7 +202,7 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (PickerState, Vec<PickerE
         | PickerInput::AccountSheetEnded(_)
         | PickerInput::Reread(_) => {}
     }
-    (PickerState::Ready(ready), effects)
+    (ready, effects)
 }
 
 /// What picking `word` in the row at `path` asks: the set, the add-account sheet (the pick then
@@ -214,7 +217,7 @@ fn choose(ready: &mut Ready, path: KeyPath, word: String) -> Option<PickerEffect
     let unchanged = row.value == word;
     match row.gate(&word) {
         Gate::NeedsAccount => {
-            ready.awaiting = Some(AwaitingAccount {
+            ready.busy = Busy::Awaiting(AwaitingAccount {
                 path,
                 word: Some(word),
             });
@@ -222,7 +225,7 @@ fn choose(ready: &mut Ready, path: KeyPath, word: String) -> Option<PickerEffect
         }
         Gate::Blocked(reason) => Some(PickerEffect::Tell(reason)),
         Gate::TurnOn => {
-            ready.turning_on = Some(TurnOn { path, word });
+            ready.busy = Busy::TurningOn(TurnOn { path, word });
             None
         }
         Gate::Open if unchanged => {
@@ -231,7 +234,7 @@ fn choose(ready: &mut Ready, path: KeyPath, word: String) -> Option<PickerEffect
         }
         Gate::Open => {
             ready.row_mut(&path)?.local = LocalAsk::Closed;
-            ready.applying = Some(Applying {
+            ready.busy = Busy::Applying(Applying {
                 path: path.clone(),
                 word: word.clone(),
             });
@@ -260,10 +263,32 @@ fn pick_again(ready: &mut Ready, pick: AwaitingAccount) -> Option<PickerEffect> 
 
 /// The set in flight, if it is the one at `path`.
 fn take_applying(ready: &mut Ready, path: &KeyPath) -> Option<Applying> {
-    match ready.applying.take() {
-        Some(applying) if &applying.path == path => Some(applying),
+    match std::mem::take(&mut ready.busy) {
+        Busy::Applying(applying) if &applying.path == path => Some(applying),
         other => {
-            ready.applying = other;
+            ready.busy = other;
+            None
+        }
+    }
+}
+
+/// The pick that waits on an account, if that is what the picker waits on.
+fn take_awaiting(ready: &mut Ready) -> Option<AwaitingAccount> {
+    match std::mem::take(&mut ready.busy) {
+        Busy::Awaiting(pick) => Some(pick),
+        other => {
+            ready.busy = other;
+            None
+        }
+    }
+}
+
+/// The pick that waits on the person's yes, if that is what the picker waits on.
+fn take_turning_on(ready: &mut Ready) -> Option<TurnOn> {
+    match std::mem::take(&mut ready.busy) {
+        Busy::TurningOn(asked) => Some(asked),
+        other => {
+            ready.busy = other;
             None
         }
     }
@@ -301,7 +326,7 @@ fn toggle_pool(ready: &mut Ready, path: KeyPath, word: String) -> Option<PickerE
     if let (Gate::Blocked(reason), false) = (pool.gate(&word), member) {
         return Some(PickerEffect::Tell(reason));
     }
-    ready.pooling = Some(PoolWrite {
+    ready.busy = Busy::Pooling(PoolWrite {
         path: path.clone(),
         words: words.clone(),
     });
@@ -310,10 +335,10 @@ fn toggle_pool(ready: &mut Ready, path: KeyPath, word: String) -> Option<PickerE
 
 /// The pool write in flight, if it is the one at `path`.
 fn take_pooling(ready: &mut Ready, path: &KeyPath) -> Option<PoolWrite> {
-    match ready.pooling.take() {
-        Some(write) if &write.path == path => Some(write),
+    match std::mem::take(&mut ready.busy) {
+        Busy::Pooling(write) if &write.path == path => Some(write),
         other => {
-            ready.pooling = other;
+            ready.busy = other;
             None
         }
     }

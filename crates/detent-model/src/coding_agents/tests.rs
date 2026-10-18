@@ -254,7 +254,7 @@ const CODING_AGENTS_GROUP_FOR_TEST: &str = "Coding Agents";
 
 fn ready_with(offered: &[AgentOffer]) -> PickerState {
     let laid = with_agents(described(), offered);
-    step(PickerState::Probing, PickerInput::Found(Ok(laid))).0
+    step(PickerState::Looking, PickerInput::Found(Ok(laid))).0
 }
 
 fn row_of(state: &PickerState) -> &crate::picker::ModelRow {
@@ -343,7 +343,7 @@ fn picking_a_turned_off_agent_asks_and_a_yes_turns_them_on_and_sets_it() {
         panic!("ready");
     };
     assert_eq!(
-        asked.turning_on.as_ref().map(|t| t.word.as_str()),
+        asked.turning_on().map(|t| t.word.as_str()),
         Some("agent/claude-code")
     );
     let (state, effects) = step(

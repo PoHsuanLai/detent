@@ -2,7 +2,8 @@
 //! the sheet sends goes to memory before the registry is asked to remove the Space.
 
 use super::removal::{RemovalSheet, SheetInput};
-use crate::picker::Absence;
+use crate::Absence;
+use crate::Live;
 use almanac_core::Removal;
 
 /// A desktop-wide Space's id, as the registry names it.
@@ -23,23 +24,33 @@ pub struct SpaceRow {
 pub struct SpacesReady {
     /// The Spaces, in the order they were made.
     pub rows: Vec<SpaceRow>,
-    /// The sheet asking about a removal, if one is up.
-    pub sheet: Option<RemovalSheet>,
+    /// Where a removal stands.
+    pub stage: RemovalStage,
+}
+
+/// Where a removal stands: nothing, a sheet asking about one, or one under way.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RemovalStage {
+    /// No removal is asked or under way.
+    Idle,
+    /// The sheet asking about a removal is up.
+    Asking(RemovalSheet),
     /// The Space whose removal is under way: nothing else is asked meanwhile.
-    pub removing: Option<SpaceKey>,
+    Removing(SpaceKey),
+}
+
+impl RemovalStage {
+    /// The stage once the removal ended: a removal under way is over, anything else is as it was.
+    fn ended(self) -> RemovalStage {
+        match self {
+            RemovalStage::Removing(_) => RemovalStage::Idle,
+            other => other,
+        }
+    }
 }
 
 /// Where the list stands.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub enum SpacesState {
-    /// Looking for the registry.
-    #[default]
-    Looking,
-    /// The registry cannot be used, and why.
-    Unavailable(Absence),
-    /// The registry answered.
-    Ready(SpacesReady),
-}
+pub type SpacesState = Live<SpacesReady>;
 
 /// What happened to the list.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,64 +88,73 @@ pub enum SpacesEffect {
 
 /// The state after `input`, and what to do about it.
 pub fn spaces_step(state: SpacesState, input: SpacesInput) -> (SpacesState, Vec<SpacesEffect>) {
-    match (state, input) {
-        (SpacesState::Ready(ready), SpacesInput::Found(Ok(rows))) => {
-            let sheet = ready
-                .sheet
-                .filter(|sheet| rows.iter().any(|row| row.id == sheet.space));
-            let state = SpacesReady {
-                rows,
-                sheet,
-                ..ready
-            };
-            (SpacesState::Ready(state), vec![])
-        }
-        (_, SpacesInput::Found(Ok(rows))) => (
-            SpacesState::Ready(SpacesReady {
-                rows,
-                sheet: None,
-                removing: None,
-            }),
-            vec![],
-        ),
-        (_, SpacesInput::Found(Err(absence))) => (SpacesState::Unavailable(absence), vec![]),
-        (SpacesState::Ready(ready), input) => {
-            let (ready, effects) = ready_step(ready, input);
-            (SpacesState::Ready(ready), effects)
-        }
-        (state, _) => (state, vec![]),
+    match input {
+        SpacesInput::Found(read) => (state.found(read, fresh, refreshed), vec![]),
+        other => state.inner(|ready| ready_step(ready, other)),
     }
+}
+
+/// The list once the registry is first read.
+fn fresh(rows: Vec<SpaceRow>) -> SpacesReady {
+    SpacesReady {
+        rows,
+        stage: RemovalStage::Idle,
+    }
+}
+
+/// The list read again: the sheet stays while its Space is still listed.
+fn refreshed(ready: SpacesReady, rows: Vec<SpaceRow>) -> SpacesReady {
+    let stage = match ready.stage {
+        RemovalStage::Asking(sheet) if !rows.iter().any(|row| row.id == sheet.space) => {
+            RemovalStage::Idle
+        }
+        other => other,
+    };
+    SpacesReady { rows, stage }
 }
 
 fn ready_step(mut ready: SpacesReady, input: SpacesInput) -> (SpacesReady, Vec<SpacesEffect>) {
     let mut effects = Vec::new();
     match input {
-        SpacesInput::AskRemove(key) if ready.removing.is_none() => {
-            ready.sheet = ready
+        SpacesInput::AskRemove(key) if !matches!(ready.stage, RemovalStage::Removing(_)) => {
+            ready.stage = ready
                 .rows
                 .iter()
                 .find(|row| row.id == key)
-                .map(|row| RemovalSheet::of(row.id.clone(), row.name.clone()));
+                .map_or(RemovalStage::Idle, |row| {
+                    RemovalStage::Asking(RemovalSheet::of(row.id.clone(), row.name.clone()))
+                });
         }
         SpacesInput::Sheet(change) => {
-            ready.sheet = ready.sheet.map(|sheet| sheet.after(change));
+            ready.stage = match ready.stage {
+                RemovalStage::Asking(sheet) => RemovalStage::Asking(sheet.after(change)),
+                other => other,
+            };
         }
         SpacesInput::Confirm => {
-            if let Some(sheet) = ready.sheet.take() {
-                effects.push(SpacesEffect::Remove {
-                    space: sheet.space.clone(),
-                    removal: sheet.removal(),
-                });
-                ready.removing = Some(sheet.space);
-            }
+            ready.stage = match ready.stage {
+                RemovalStage::Asking(sheet) => {
+                    effects.push(SpacesEffect::Remove {
+                        space: sheet.space.clone(),
+                        removal: sheet.removal(),
+                    });
+                    RemovalStage::Removing(sheet.space)
+                }
+                other => other,
+            };
         }
-        SpacesInput::Cancel => ready.sheet = None,
+        SpacesInput::Cancel => {
+            ready.stage = match ready.stage {
+                RemovalStage::Asking(_) => RemovalStage::Idle,
+                other => other,
+            };
+        }
         SpacesInput::Removed(Ok(())) => {
-            ready.removing = None;
+            ready.stage = ready.stage.ended();
             effects.push(SpacesEffect::Reload);
         }
         SpacesInput::Removed(Err(why)) => {
-            ready.removing = None;
+            ready.stage = ready.stage.ended();
             effects.push(SpacesEffect::Tell(why));
             effects.push(SpacesEffect::Reload);
         }

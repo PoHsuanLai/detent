@@ -24,7 +24,7 @@ pub(crate) fn AssistantPicker(
         PickerState::Unavailable(absence) => {
             return rsx! { Unavailable { absence: absence.clone() } };
         }
-        PickerState::Probing => return rsx! {},
+        PickerState::Looking => return rsx! {},
     };
     let Some(row) = assistant_of(&state) else {
         return rsx! { Missing {} };
@@ -37,7 +37,7 @@ pub(crate) fn AssistantPicker(
     rsx! {
         div { class: "picker", "data-picker": "ready",
             FieldGroup {
-                TierRow { row, applying: ready.applying.clone(), adding: ready.adding(), clearing, onask }
+                TierRow { row, applying: ready.applying().cloned(), adding: ready.adding(), clearing, onask }
             }
             EngineSheetView {}
             TurnOnAlert { ready: ready.clone(), onask }

@@ -61,7 +61,7 @@ fn picker(value: &str) -> PickerState {
         ]),
         ..Default::default()
     };
-    step(PickerState::Probing, PickerInput::Found(Ok(described))).0
+    step(PickerState::Looking, PickerInput::Found(Ok(described))).0
 }
 
 /// `picker`, with the text slot's Automatic list holding `held`.
@@ -77,7 +77,7 @@ fn picker_with_pool(value: &str, held: &[&str]) -> PickerState {
         path("ai.auto.pool.text"),
         held.iter().map(|word| (*word).to_owned()).collect(),
     );
-    step(PickerState::Probing, PickerInput::Found(Ok(described))).0
+    step(PickerState::Looking, PickerInput::Found(Ok(described))).0
 }
 
 fn chose(state: PickerState, word: &str) -> PickerState {
@@ -100,7 +100,7 @@ fn the_assistants_row_is_the_text_slots_balanced_tier() {
         "not the fast tier, not another slot's balanced one"
     );
     let older = step(
-        PickerState::Probing,
+        PickerState::Looking,
         PickerInput::Found(Ok(Described {
             keys: vec![row("ai.model.llm.balanced", &[])],
             values: BTreeMap::new(),
@@ -114,7 +114,7 @@ fn the_assistants_row_is_the_text_slots_balanced_tier() {
         "an older module's name for the text slot"
     );
     let without = step(
-        PickerState::Probing,
+        PickerState::Looking,
         PickerInput::Found(Ok(Described {
             keys: vec![row("ai.model.text.fast", &[])],
             values: BTreeMap::new(),
@@ -123,7 +123,7 @@ fn the_assistants_row_is_the_text_slots_balanced_tier() {
     )
     .0;
     assert_eq!(assistant_of(&without), None);
-    assert_eq!(assistant_of(&PickerState::Probing), None);
+    assert_eq!(assistant_of(&PickerState::Looking), None);
 }
 
 #[test]
@@ -139,7 +139,7 @@ fn the_setup_buttons_follow_what_is_chosen() {
     let waiting_on_account = chose(picker("auto"), "anthropic/claude");
     let writing = chose(picker("auto"), "local/qwen");
     let no_assistant_row = step(
-        PickerState::Probing,
+        PickerState::Looking,
         PickerInput::Found(Ok(Described {
             keys: vec![row("ai.model.text.fast", &[])],
             values: BTreeMap::new(),
@@ -151,13 +151,13 @@ fn the_setup_buttons_follow_what_is_chosen() {
     let cases = [
         (
             "still looking for the module",
-            PickerState::Probing,
+            PickerState::Looking,
             Pressable::Now,
             Pressable::NotYet,
         ),
         (
             "the module is not there",
-            PickerState::Unavailable(crate::picker::Absence::NotRunning),
+            PickerState::Unavailable(crate::Absence::NotRunning),
             Pressable::Now,
             Pressable::NotYet,
         ),

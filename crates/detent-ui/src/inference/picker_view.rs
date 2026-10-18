@@ -49,10 +49,10 @@ pub fn ModelPicker(reasons: Shown) -> Element {
     });
 
     match state() {
-        PickerState::Probing => rsx! {},
+        PickerState::Looking => rsx! {},
         PickerState::Unavailable(absence) => rsx! { Unavailable { absence } },
         PickerState::Ready(ready) => {
-            let applying = ready.applying.clone();
+            let applying = ready.applying().cloned();
             let adding = ready.adding();
             rsx! {
                 div { class: "picker", "data-picker": "ready",

@@ -1,7 +1,8 @@
 //! The three modules the Accounts pane reads: which one a row came from, and what each has said.
 
 use super::sign_in_client::standing_only;
-use crate::picker::{Absence, Described};
+use crate::Absence;
+use crate::picker::Described;
 use ds_settings::schema::KeyPath;
 
 /// A live settings module the pane reads. Each holds its own accounts, and a row's action goes

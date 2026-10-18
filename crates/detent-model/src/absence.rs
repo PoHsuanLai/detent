@@ -1,4 +1,4 @@
-//! Why a live pane (the model picker, the Accounts pane) is not there.
+//! Why a live pane (the model picker, the Accounts pane, the updates page) is not there.
 
 /// Why a live pane is not there.
 #[derive(Debug, Clone, PartialEq, Eq)]

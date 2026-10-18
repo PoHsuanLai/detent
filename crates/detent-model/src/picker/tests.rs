@@ -56,7 +56,7 @@ fn described() -> Described {
 }
 
 fn ready() -> PickerState {
-    step(PickerState::Probing, PickerInput::Found(Ok(described()))).0
+    step(PickerState::Looking, PickerInput::Found(Ok(described()))).0
 }
 
 fn value_at(state: &PickerState, key: &str) -> Option<String> {
@@ -133,8 +133,8 @@ fn choosing_sets_once_shows_loading_and_keeps_the_old_value_until_it_is_applied(
         panic!("still ready");
     };
     assert_eq!(
-        applying.applying,
-        Some(Applying {
+        applying.busy,
+        Busy::Applying(Applying {
             path: key.clone(),
             word: "local/holo".to_owned()
         })
@@ -147,7 +147,7 @@ fn choosing_sets_once_shows_loading_and_keeps_the_old_value_until_it_is_applied(
     let PickerState::Ready(done) = done else {
         panic!("still ready");
     };
-    assert_eq!(done.applying, None);
+    assert_eq!(done.busy, Busy::Idle);
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn a_refused_set_leaves_the_value_and_tells_the_person() {
     let PickerState::Ready(state) = state else {
         panic!("still ready");
     };
-    assert_eq!(state.applying, None);
+    assert_eq!(state.busy, Busy::Idle);
 }
 
 #[test]
@@ -247,7 +247,7 @@ fn ready_of(keys: Vec<KeySpec>) -> Ready {
         values: BTreeMap::new(),
         ..Default::default()
     };
-    let PickerState::Ready(ready) = step(PickerState::Probing, PickerInput::Found(Ok(described))).0
+    let PickerState::Ready(ready) = step(PickerState::Looking, PickerInput::Found(Ok(described))).0
     else {
         panic!("ready");
     };
@@ -410,7 +410,7 @@ fn an_unavailable_choice_carries_its_reason_and_choosing_it_sets_nothing() {
         UnavailableReason("Needs a newer version".to_owned()),
     );
     let (state, _) = step(
-        PickerState::Probing,
+        PickerState::Looking,
         PickerInput::Found(Ok(Described {
             keys: vec![gated],
             values: BTreeMap::new(),
@@ -503,7 +503,7 @@ fn gated_text_described() -> Described {
 
 fn gated_text_row() -> PickerState {
     step(
-        PickerState::Probing,
+        PickerState::Looking,
         PickerInput::Found(Ok(gated_text_described())),
     )
     .0
@@ -527,13 +527,13 @@ fn a_model_that_needs_an_account_offers_the_sheet_and_waits_without_setting() {
         panic!("ready");
     };
     assert_eq!(
-        ready.awaiting,
-        Some(AwaitingAccount {
+        ready.busy,
+        Busy::Awaiting(AwaitingAccount {
             path: path("ai.model.text.balanced"),
             word: Some("local/holo".to_owned())
-        })
+        }),
+        "nothing is written yet"
     );
-    assert_eq!(ready.applying, None, "nothing is written yet");
     assert_eq!(ready.adding(), crate::accounts::Adding::SheetOpen);
     assert_eq!(
         value_at(&state, "ai.model.text.balanced").as_deref(),
@@ -575,8 +575,7 @@ fn the_sheet_ending_without_an_account_drops_the_pick_and_says_why_when_it_can()
         let PickerState::Ready(ready) = state else {
             panic!("ready");
         };
-        assert_eq!(ready.awaiting, None, "{end:?}");
-        assert_eq!(ready.applying, None, "{end:?}");
+        assert_eq!(ready.busy, Busy::Idle, "{end:?}");
     }
 }
 
@@ -602,10 +601,9 @@ fn an_account_that_reaches_the_model_makes_the_pick_and_one_that_does_not_drops_
     let PickerState::Ready(ready) = state else {
         panic!("ready");
     };
-    assert_eq!(ready.awaiting, None);
     assert_eq!(
-        ready.applying,
-        Some(Applying {
+        ready.busy,
+        Busy::Applying(Applying {
             path: path("ai.model.text.balanced"),
             word: "local/holo".to_owned()
         })
@@ -616,5 +614,5 @@ fn an_account_that_reaches_the_model_makes_the_pick_and_one_that_does_not_drops_
     let PickerState::Ready(ready) = state else {
         panic!("ready");
     };
-    assert_eq!((ready.awaiting, ready.applying), (None, None));
+    assert_eq!(ready.busy, Busy::Idle);
 }

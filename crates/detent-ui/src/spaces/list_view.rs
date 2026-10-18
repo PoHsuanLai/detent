@@ -4,7 +4,8 @@ use super::io::{list, remove};
 use super::sheet_view::{RemovalSheetView, SheetHandlers};
 use crate::env::Env;
 use detent_model::{
-    Absence, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState, spaces_step,
+    Absence, RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState,
+    spaces_step,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
@@ -115,7 +116,7 @@ pub(crate) fn SpacesPane() -> Element {
 
 #[component]
 fn Listed(ready: SpacesReady, drive: EventHandler<SpacesInput>) -> Element {
-    let busy = if ready.removing.is_some() {
+    let busy = if matches!(ready.stage, RemovalStage::Removing(_)) {
         Availability::Disabled
     } else {
         Availability::Enabled
@@ -134,7 +135,7 @@ fn Listed(ready: SpacesReady, drive: EventHandler<SpacesInput>) -> Element {
                     }
                 }
             }
-            if let Some(sheet) = ready.sheet.clone() {
+            if let RemovalStage::Asking(sheet) = ready.stage.clone() {
                 RemovalSheetView {
                     sheet,
                     on: SheetHandlers {

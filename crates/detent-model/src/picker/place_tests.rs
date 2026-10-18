@@ -108,7 +108,7 @@ fn state(tier: KeySpec, value: &str, note: Option<&str>) -> PickerState {
         values: BTreeMap::from([(KeyPath(ROW.to_owned()), value.to_owned())]),
         lists: BTreeMap::new(),
     };
-    step(PickerState::Probing, PickerInput::Found(Ok(described))).0
+    step(PickerState::Looking, PickerInput::Found(Ok(described))).0
 }
 
 fn row(value: &str, note: Option<&str>) -> ModelRow {

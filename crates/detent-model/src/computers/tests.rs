@@ -4,7 +4,7 @@ use super::{
     AddList, ComputerRow, ComputersEffect as Effect, ComputersFound, ComputersInput as Input,
     ComputersState as State, Standing, computers_step, guest_line,
 };
-use crate::picker::Absence;
+use crate::Absence;
 use porter_core::lending::{
     Approval, CandidateModel, ComputerCandidate, GuestAnswer, GuestRow, RowState,
 };

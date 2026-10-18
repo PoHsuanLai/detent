@@ -177,7 +177,7 @@ mod offers {
     use super::name;
     use crate::accounts::{Account, AccountKey, AccountStatus, AccountsPane, Place};
     use crate::assistants::{PlaceRef, offers_for};
-    use crate::picker::{ChoiceSection, KindRows, ModelRow, Ready};
+    use crate::picker::{Busy, ChoiceSection, KindRows, ModelRow, Ready};
     use ds_settings::schema::{KeyPath, WordLabels};
     use porter_core::sheet::ProviderGroup;
     use std::collections::BTreeMap;
@@ -209,10 +209,7 @@ mod offers {
                     local: Default::default(),
                 }],
             }],
-            applying: None,
-            awaiting: None,
-            pooling: None,
-            turning_on: None,
+            busy: Busy::Idle,
         }
     }
 

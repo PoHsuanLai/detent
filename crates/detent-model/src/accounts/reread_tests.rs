@@ -2,7 +2,7 @@
 
 use super::tests::{apply, described, ready, state_of};
 use super::*;
-use crate::picker::Absence;
+use crate::Absence;
 
 fn failed() -> AccountsInput {
     AccountsInput::Reread(

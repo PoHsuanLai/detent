@@ -2,7 +2,7 @@
 //! reports it, parsed once where it enters.
 
 use super::limits::{kind_of, notes_of, problem_of, version_of};
-use crate::picker::Absence;
+use crate::Absence;
 
 /// Where the update flow stands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

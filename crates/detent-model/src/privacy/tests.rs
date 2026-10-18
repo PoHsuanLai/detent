@@ -1,8 +1,9 @@
 //! The page over a fake publication: the rows casement lists, as they are named and typed.
 
 use super::*;
+use crate::Absence;
 use crate::origin::SchemaOrigin;
-use crate::picker::{Absence, Described};
+use crate::picker::Described;
 use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Note, Page, Section,

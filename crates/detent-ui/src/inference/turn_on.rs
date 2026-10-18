@@ -14,7 +14,7 @@ const CANCEL: &str = "Cancel";
 /// The question while one stands: nothing when no coding agent waits on it.
 #[component]
 pub(crate) fn TurnOnAlert(ready: Ready, onask: EventHandler<PickerInput>) -> Element {
-    let Some(asked) = ready.turning_on.as_ref() else {
+    let Some(asked) = ready.turning_on() else {
         return rsx! {};
     };
     let name = ready

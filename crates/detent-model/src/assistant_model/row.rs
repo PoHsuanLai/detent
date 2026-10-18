@@ -18,6 +18,6 @@ fn assistant_row(ready: &Ready) -> Option<&ModelRow> {
 pub fn assistant_of(state: &PickerState) -> Option<&ModelRow> {
     match state {
         PickerState::Ready(ready) => assistant_row(ready),
-        PickerState::Probing | PickerState::Unavailable(_) => None,
+        PickerState::Looking | PickerState::Unavailable(_) => None,
     }
 }

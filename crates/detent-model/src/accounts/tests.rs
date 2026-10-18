@@ -1,6 +1,7 @@
 use super::model::{Row, classify};
 use super::*;
-use crate::picker::{Absence, Described};
+use crate::Absence;
+use crate::picker::Described;
 use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Page, Section,
