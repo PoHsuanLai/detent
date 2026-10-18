@@ -65,6 +65,7 @@ fn only_the_persons_own_computers_make_rows() {
         .with_models(vec![PlaceModel {
             id: porter_core::ModelId::parse("qwen").expect("a model id"),
             name: "Qwen".to_owned(),
+            engine: None,
         }])
     };
     assert_eq!(
