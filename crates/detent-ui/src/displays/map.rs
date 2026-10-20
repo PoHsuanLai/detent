@@ -57,7 +57,7 @@ fn monitor_of(head: &Head) -> Monitor {
     }
 }
 
-fn mode_of(mode: &Mode) -> DisplayMode {
+pub(super) fn mode_of(mode: &Mode) -> DisplayMode {
     DisplayMode {
         size: PixelSize {
             width: mode.size.w,

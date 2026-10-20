@@ -93,7 +93,8 @@ pub use displays::{
     DisplayRotation, DisplaysEffect, DisplaysInput, DisplaysReady, DisplaysState, DisplaysStatus,
     LooksLike, Millimetres, ModePreference, Monitor, OutputId, PixelSize, RefreshMilliHz,
     ScaleMilli, default_scale, displays_page, displays_step, hertz_words, is_displays, looks_like,
-    missing_words as displays_missing_words, place_beside, side_of,
+    missing_words as displays_missing_words, mode_at, mode_sizes, native_size, place_beside,
+    side_of, size_words,
 };
 /// Whether an agent may set a key: quire's own type, carried by each `KeySpec`.
 pub use ds_settings::schema::AgentSetting;

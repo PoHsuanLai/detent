@@ -4,6 +4,7 @@
 mod arrange;
 mod looks;
 mod model;
+mod modes;
 mod page;
 mod step;
 mod words;
@@ -14,12 +15,13 @@ pub use model::{
     DisplayMode, DisplayPosition, DisplayRotation, DisplaysStatus, Millimetres, ModePreference,
     Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli,
 };
+pub use modes::{mode_at, mode_sizes, native_size};
 pub use page::{DISPLAYS_SLUG, displays_page, is_displays};
 pub use step::{
     DisplayChange, DisplayEdit, DisplaysEffect, DisplaysInput, DisplaysReady, DisplaysState,
     displays_step,
 };
-pub use words::{hertz_words, missing_words};
+pub use words::{hertz_words, missing_words, size_words};
 
 #[cfg(test)]
 mod tests;

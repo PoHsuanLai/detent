@@ -1,12 +1,12 @@
-//! The Displays page: a card for each display with its resolution, refresh rate and rotation, and
-//! where it sits beside the others.
+//! The Displays page: a card for each display with its resolution, the pixel size of its mode, its
+//! refresh rate and rotation, and where it sits beside the others.
 
 use super::drive::use_displays;
 use crate::system::Unavailable;
 use detent_model::{
     ArrangeSide, DisplayChange, DisplayEdit, DisplayRotation, DisplaysInput, DisplaysReady,
-    DisplaysState, Monitor, OutputId, RefreshMilliHz, ScaleMilli, default_scale,
-    displays_missing_words, hertz_words, looks_like, side_of,
+    DisplaysState, Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli, default_scale,
+    displays_missing_words, hertz_words, looks_like, mode_sizes, native_size, side_of, size_words,
 };
 use dioxus::prelude::*;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -78,6 +78,7 @@ fn DisplayCard(
                 if !others.is_empty() {
                     PlaceRow { display: display.clone(), others, availability, press }
                 }
+                ModeRow { display: display.clone(), availability, pick: move |size| change.call(DisplayEdit::Size(size)) }
             }
         }
     }
@@ -94,7 +95,7 @@ fn ResolutionRow(
     let items: Vec<MenuItem<ScaleMilli>> = looks
         .iter()
         .map(|look| {
-            let size = format!("{} \u{d7} {}", look.size.width, look.size.height);
+            let size = size_words(look.size);
             let label = if look.scale == default {
                 format!("Default for display ({size})")
             } else {
@@ -106,7 +107,7 @@ fn ResolutionRow(
     let now = looks
         .iter()
         .find(|look| look.scale == display.scale)
-        .map(|look| format!("Looks like {} \u{d7} {}", look.size.width, look.size.height));
+        .map(|look| format!("Looks like {}", size_words(look.size)));
     rsx! {
         FieldRow { label: TextLine::from("Resolution"), help: now.map(TextLine::from), availability,
             PopUpButton::<ScaleMilli> {
@@ -115,6 +116,45 @@ fn ResolutionRow(
                 size: ControlSize::Small,
                 availability,
                 onpick: move |scale| pick.call(scale),
+            }
+        }
+    }
+}
+
+/// The pixel sizes the display can draw; a display with one size has nothing to choose.
+#[component]
+fn ModeRow(display: Monitor, availability: Availability, pick: EventHandler<PixelSize>) -> Element {
+    let native = native_size(&display.modes);
+    let sizes = mode_sizes(&display.modes);
+    let alone = sizes.len() < 2;
+    let items: Vec<MenuItem<PixelSize>> = sizes
+        .iter()
+        .map(|size| {
+            let words = size_words(*size);
+            let label = if native == Some(*size) {
+                format!("{words} (Native)")
+            } else {
+                words
+            };
+            MenuItem::new(*size, label)
+        })
+        .collect();
+    let availability = if alone {
+        Availability::Disabled
+    } else {
+        availability
+    };
+    rsx! {
+        FieldRow {
+            label: TextLine::from("Display Mode"),
+            help: Some(TextLine::from("The pixels the display draws")),
+            availability,
+            PopUpButton::<PixelSize> {
+                items,
+                value: display.current.map(|mode| mode.size),
+                size: ControlSize::Small,
+                availability,
+                onpick: move |size| pick.call(size),
             }
         }
     }

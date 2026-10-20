@@ -1,7 +1,7 @@
 //! The page's words.
 
 use super::arrange::ArrangeSide;
-use super::model::{DisplayRotation, RefreshMilliHz};
+use super::model::{DisplayRotation, PixelSize, RefreshMilliHz};
 use crate::missing::Missing;
 
 /// What the page says when there is nothing to show.
@@ -28,6 +28,11 @@ pub fn hertz_words(rate: RefreshMilliHz) -> String {
         h if h % 10 == 0 => format!("{whole}.{} Hertz", h / 10),
         h => format!("{whole}.{h:02} Hertz"),
     }
+}
+
+/// A size as a person reads it: "3024 \u{d7} 1964".
+pub fn size_words(size: PixelSize) -> String {
+    format!("{} \u{d7} {}", size.width, size.height)
 }
 
 impl DisplayRotation {

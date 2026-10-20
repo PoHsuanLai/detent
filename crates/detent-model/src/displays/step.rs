@@ -2,7 +2,8 @@
 
 use super::arrange::{ArrangeSide, place_beside};
 use super::model::{
-    DisplayPosition, DisplayRotation, DisplaysStatus, OutputId, RefreshMilliHz, ScaleMilli,
+    DisplayPosition, DisplayRotation, DisplaysStatus, OutputId, PixelSize, RefreshMilliHz,
+    ScaleMilli,
 };
 use crate::missing::Missing;
 
@@ -34,6 +35,8 @@ pub enum DisplayEdit {
     Scale(ScaleMilli),
     /// A different refresh rate at the same size.
     Refresh(RefreshMilliHz),
+    /// A different mode size, at the refresh rate it runs now when the new size has it.
+    Size(PixelSize),
     /// A different rotation.
     Rotate(DisplayRotation),
     /// A different place.

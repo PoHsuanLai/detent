@@ -2,7 +2,7 @@
 //! the page asked and moves its own standing the way the real one would.
 
 use detent_model::{
-    DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, Missing, ModePreference, Work,
+    DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, Missing, ModePreference, Work, mode_at,
 };
 use detent_ui::{DisplaysLink, Ticker, Ticks};
 use std::sync::{Arc, Mutex};
@@ -84,6 +84,9 @@ impl DisplaysLink for Displays {
                     DisplayEdit::Scale(scale) => display.scale = *scale,
                     DisplayEdit::Rotate(rotation) => display.rotation = *rotation,
                     DisplayEdit::Move(at) => display.position = *at,
+                    DisplayEdit::Size(size) => {
+                        display.current = mode_at(&display.modes, display.current, *size);
+                    }
                     DisplayEdit::Refresh(rate) => {
                         display.current = display.current.map(|mode| DisplayMode {
                             refresh: *rate,

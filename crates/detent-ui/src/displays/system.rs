@@ -6,7 +6,7 @@
 //! own, and only the real session is ever reached: a test's private bus is no compositor.
 
 use super::link::DisplaysLink;
-use super::map::{monitors_of, transform_of};
+use super::map::{mode_of, monitors_of, transform_of};
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::ticks::{Ticker, Ticks};
@@ -18,7 +18,9 @@ use desktop_client::output::{
 use desktop_client::{
     Desktop, DesktopCommand, DesktopConfig, DesktopEvent, OutputName, Point, Protocol, Ticket,
 };
-use detent_model::{DisplayChange, DisplayEdit, DisplaysStatus, Missing, Work};
+use detent_model::{
+    DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, Missing, Work, mode_at,
+};
 use ds_peer::within;
 
 const CANNOT: &str = "Displays can\u{2019}t be changed right now.";
@@ -74,6 +76,12 @@ fn settings_for(
                 .modes
                 .iter()
                 .find(|mode| mode.size == size && mode.refresh.get() == rate.0)?;
+            HeadSettings::keep().with_mode(ModeChoice::Existing(mode.key))
+        }
+        DisplayEdit::Size(size) => {
+            let listed: Vec<DisplayMode> = head.modes.iter().map(mode_of).collect();
+            let wanted = mode_at(&listed, head.current().map(mode_of), *size)?;
+            let mode = head.modes.iter().find(|mode| mode_of(mode) == wanted)?;
             HeadSettings::keep().with_mode(ModeChoice::Existing(mode.key))
         }
     };

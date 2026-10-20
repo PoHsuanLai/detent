@@ -248,3 +248,49 @@ fn a_compositor_that_goes_leaves_nothing() {
     );
     assert_eq!(gone, DisplaysState::Unavailable(Missing::NoService));
 }
+
+#[test]
+fn the_sizes_a_display_lists_are_distinct_and_widest_first_with_its_native_one_known() {
+    let native = mode(3840, 2160, 60, ModePreference::Yes);
+    let modes = [
+        mode(1920, 1080, 60, ModePreference::No),
+        native,
+        mode(1920, 1080, 120, ModePreference::No),
+        mode(2560, 1440, 60, ModePreference::No),
+    ];
+    let sizes: Vec<(u32, u32)> = mode_sizes(&modes)
+        .iter()
+        .map(|size| (size.width, size.height))
+        .collect();
+    assert_eq!(sizes, [(3840, 2160), (2560, 1440), (1920, 1080)]);
+    assert_eq!(native_size(&modes), Some(native.size));
+    assert_eq!(native_size(&modes[..1]), None);
+}
+
+#[test]
+fn a_size_runs_at_the_refresh_rate_the_display_runs_now_else_at_its_fastest() {
+    let modes = [
+        mode(3840, 2160, 60, ModePreference::Yes),
+        mode(1920, 1080, 60, ModePreference::No),
+        mode(1920, 1080, 120, ModePreference::No),
+        mode(1280, 720, 30, ModePreference::No),
+        mode(1280, 720, 50, ModePreference::No),
+    ];
+    let size = |width, height| PixelSize { width, height };
+    let now = Some(modes[0]);
+    assert_eq!(mode_at(&modes, now, size(1920, 1080)), Some(modes[1]));
+    assert_eq!(mode_at(&modes, now, size(1280, 720)), Some(modes[4]));
+    assert_eq!(mode_at(&modes, None, size(1920, 1080)), Some(modes[2]));
+    assert_eq!(mode_at(&modes, now, size(800, 600)), None);
+}
+
+#[test]
+fn a_size_reads_with_the_times_sign() {
+    assert_eq!(
+        size_words(PixelSize {
+            width: 3024,
+            height: 1964
+        }),
+        "3024 \u{d7} 1964"
+    );
+}

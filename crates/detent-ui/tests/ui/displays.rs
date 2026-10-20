@@ -1,5 +1,5 @@
 //! The Displays page over a compositor that answers from memory: each display's resolution
-//! ("Default for display" and the scaled sizes), refresh rate and rotation, and where displays sit
+//! ("Default for display" and the scaled sizes), refresh rate, rotation and mode size, and where displays sit
 //! beside each other; each change goes to the compositor as one change, and a refusal is told.
 
 use crate::support::Sandbox;
@@ -172,8 +172,8 @@ fn a_display_shows_its_name_and_its_resolution_refresh_rate_and_rotation() {
     );
     assert_eq!(
         harness.count("[data-display=\"eDP-1\"] .ds-field-row"),
-        3,
-        "no Position row with one display"
+        4,
+        "resolution, refresh rate, rotation and mode size; no Position row with one display"
     );
 }
 
@@ -216,6 +216,52 @@ fn choosing_a_refresh_rate_sends_it_for_the_size_the_display_runs_at() {
             .unwrap_or_default()
             .contains("60 Hertz")
     });
+}
+
+/// A monitor that also lists a smaller size, with nothing beside it so its rows keep their places.
+fn flexible() -> DisplaysStatus {
+    let native = mode(3840, 2160, 60, ModePreference::Yes);
+    DisplaysStatus {
+        displays: vec![Monitor {
+            modes: vec![native, mode(1920, 1080, 60, ModePreference::No)],
+            ..monitor()
+        }],
+    }
+}
+
+#[test]
+fn choosing_another_mode_size_sends_it_and_a_display_with_one_size_has_nothing_to_choose() {
+    let service = Displays::answering(flexible());
+    let (_sandbox, mut harness) = world("displays-mode-size", &service);
+    showing(&mut harness, "the display", "[data-display=\"DP-1\"]");
+    let words = harness.text_of(&row("DP-1", 4)).unwrap_or_default();
+    assert!(
+        words.contains("Display Mode") && words.contains("3840 \u{d7} 2160 (Native)"),
+        "{words}"
+    );
+    pick(&mut harness, &button("DP-1", 4), 2);
+    assert_eq!(
+        service.asked(),
+        [DisplayChange {
+            output: id("DP-1"),
+            edit: DisplayEdit::Size(PixelSize {
+                width: 1920,
+                height: 1080
+            }),
+        }]
+    );
+    settle(&mut harness, "the new size", |h| {
+        h.text_of(&row("DP-1", 4))
+            .unwrap_or_default()
+            .contains("1920 \u{d7} 1080")
+    });
+    let single = Displays::answering(one());
+    let (_other, mut alone) = world("displays-one-size", &single);
+    showing(&mut alone, "the display", "[data-display=\"eDP-1\"]");
+    assert_eq!(
+        alone.attr(&row("eDP-1", 4), "aria-disabled").as_deref(),
+        Some("true")
+    );
 }
 
 #[test]
