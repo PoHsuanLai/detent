@@ -40,6 +40,7 @@ mod shortcuts;
 mod spaces;
 mod text_form;
 mod updates;
+mod wallpaper;
 mod warning;
 mod words;
 mod work;
@@ -104,7 +105,7 @@ pub use outside::{
     AGENTS_OWN, Assistant, Entry, assistants_of, model_choice, model_menu, model_word, way_choice,
     way_menu,
 };
-pub use page::PageSlug;
+pub use page::{PageSlug, page_title};
 pub use picker::{
     Applying, AutoPool, AwaitingAccount, Busy, Choice, ChoiceGap, ChoiceReadiness, ChoiceSection,
     Clearing, Described, Gate, KindRows, LocalAsk, LocalEngine, LocalModel, LocalView, MenuLine,
@@ -147,6 +148,7 @@ pub use updates::{
     UpdatesPage, UpdatesReady, UpdatesShown, UpdatesState, is_software_update, updates_shown,
     updates_step,
 };
+pub use wallpaper::{PictureMark, PictureTile, is_picture, is_wallpaper, picture_tiles};
 pub use warning::{StaleReason, Warning};
 pub use words::{humanize, word_label};
 pub use work::Work;

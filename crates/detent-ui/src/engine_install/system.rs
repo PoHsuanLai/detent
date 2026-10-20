@@ -2,7 +2,7 @@
 //! says of its own.
 
 use super::desk::Desk;
-use super::portal;
+use crate::chooser::{Want, choose};
 use crate::computers::inferd;
 use crate::deadline::{Deadline, answered, peer};
 use crate::engines::restart;
@@ -141,7 +141,7 @@ impl Desk for System {
     }
 
     fn choose_folder(&self) -> Work<'_, Option<String>> {
-        Box::pin(portal::choose_folder(&self.bus))
+        Box::pin(choose(&self.bus, Want::Folder))
     }
 
     fn point(&self, engine: &str, folder: &str) -> Work<'_, Result<(), String>> {

@@ -2,7 +2,8 @@
 
 use crate::assistant_model::{ASSISTANT_MODEL_SLUG, is_assistant_model};
 use crate::updates::{SLUG as SOFTWARE_UPDATE, is_software_update};
-use ds_settings::schema::Page;
+use crate::wallpaper::{SLUG as WALLPAPER, is_wallpaper};
+use ds_settings::schema::{Page, PageTable};
 use std::cmp::Ordering;
 
 /// A page's stable name: what the sidebar keys on and `--page` takes.
@@ -27,32 +28,39 @@ impl PageSlug {
             Page::Intelligence => "intelligence".to_owned(),
             Page::Viewer => "viewer".to_owned(),
             Page::App(_) if is_software_update(page) => SOFTWARE_UPDATE.to_owned(),
+            Page::App(_) if is_wallpaper(page) => WALLPAPER.to_owned(),
             Page::App(_) if is_assistant_model(page) => ASSISTANT_MODEL_SLUG.to_owned(),
             Page::App(id) => format!("app:{id}"),
         })
     }
 }
 
-/// Where `page` sits in the sidebar: the fixed pages in section 9.3's order with Assistant Model
-/// right after Intelligence, Software Update, then every third-party page by app id.
+/// Where `page` sits in the sidebar: the fixed pages in section 9.3's order with Wallpaper right
+/// after Appearance and Assistant Model right after Intelligence, Software Update, then every third-party page by app id.
 fn place(page: &Page) -> (u8, &str) {
     match page {
         Page::Appearance => (0, ""),
-        Page::Dock => (1, ""),
-        Page::MouseAndGestures => (2, ""),
-        Page::KeyboardAndShortcuts => (3, ""),
-        Page::Notifications => (4, ""),
-        Page::Spaces => (5, ""),
-        Page::Accounts => (6, ""),
-        Page::Privacy => (7, ""),
-        Page::Power => (8, ""),
-        Page::Apps => (9, ""),
-        Page::Intelligence => (10, ""),
-        Page::App(_) if is_assistant_model(page) => (11, ""),
-        Page::Viewer => (12, ""),
-        Page::App(_) if is_software_update(page) => (13, ""),
-        Page::App(id) => (14, id),
+        Page::App(_) if is_wallpaper(page) => (1, ""),
+        Page::Dock => (2, ""),
+        Page::MouseAndGestures => (3, ""),
+        Page::KeyboardAndShortcuts => (4, ""),
+        Page::Notifications => (5, ""),
+        Page::Spaces => (6, ""),
+        Page::Accounts => (7, ""),
+        Page::Privacy => (8, ""),
+        Page::Power => (9, ""),
+        Page::Apps => (10, ""),
+        Page::Intelligence => (11, ""),
+        Page::App(_) if is_assistant_model(page) => (12, ""),
+        Page::Viewer => (13, ""),
+        Page::App(_) if is_software_update(page) => (14, ""),
+        Page::App(id) => (15, id),
     }
+}
+
+/// The name a person reads for `page`: the title the schemas' page table declares, else its label.
+pub fn page_title(page: &Page) -> String {
+    PageTable::built_in().title_of(page).0
 }
 
 /// The sidebar order of two pages.
@@ -81,6 +89,7 @@ mod tests {
             Page::KeyboardAndShortcuts,
             Page::MouseAndGestures,
             Page::Dock,
+            Page::declared("wallpaper"),
             Page::Appearance,
         ];
         pages.sort_by(sidebar_order);
@@ -89,6 +98,7 @@ mod tests {
             slugs,
             [
                 "appearance",
+                "wallpaper",
                 "dock",
                 "mouse_and_gestures",
                 "keyboard_and_shortcuts",

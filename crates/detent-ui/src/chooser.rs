@@ -1,5 +1,6 @@
-//! A folder chosen by the person in the desktop's own chooser (the file chooser portal), never
-//! typed: the one way a Strata they already have is pointed at.
+//! A folder or a picture chosen by the person in the desktop's own chooser (the file chooser
+//! portal), never typed: the one way a Strata they already have is pointed at, and the one way a
+//! wallpaper is added.
 
 use crate::live::{BusSource, connect};
 use std::collections::HashMap;
@@ -11,15 +12,45 @@ const PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
 const CHOOSER: &str = "org.freedesktop.portal.FileChooser";
 const REQUEST: &str = "org.freedesktop.portal.Request";
 
-/// Names the request, so its answer can be listened for before it is asked.
-const TOKEN: &str = "detent_engine_folder";
+/// What the person is asked for.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Want {
+    /// A folder.
+    Folder,
+    /// A picture file.
+    Picture,
+}
 
-/// What the chooser's window is called.
-const TITLE: &str = "Choose a Folder";
+impl Want {
+    /// Names the request, so its answer can be listened for before it is asked.
+    fn token(self) -> &'static str {
+        match self {
+            Want::Folder => "detent_engine_folder",
+            Want::Picture => "detent_wallpaper_picture",
+        }
+    }
 
-/// Asks the person for a folder, and waits for the answer; `None` when the chooser is closed,
-/// there is none, or what was chosen is not a folder on this computer.
-pub(super) async fn choose_folder(bus: &BusSource) -> Option<String> {
+    /// What the chooser's window is called.
+    fn title(self) -> &'static str {
+        match self {
+            Want::Folder => "Choose a Folder",
+            Want::Picture => "Add Picture",
+        }
+    }
+
+    /// The chooser's options for it.
+    fn options(self) -> HashMap<&'static str, Value<'static>> {
+        let mut options = HashMap::from([("handle_token", Value::from(self.token()))]);
+        if self == Want::Folder {
+            options.insert("directory", Value::from(true));
+        }
+        options
+    }
+}
+
+/// Asks the person for a folder or a picture, and waits for the answer; `None` when the chooser
+/// is closed, there is none, or what was chosen is not a file on this computer.
+pub(crate) async fn choose(bus: &BusSource, want: Want) -> Option<String> {
     let connection = connect(bus).await.ok()?;
     // The path the portal will give the request, from the name of this connection and the token.
     let sender = connection
@@ -30,7 +61,7 @@ pub(super) async fn choose_folder(bus: &BusSource) -> Option<String> {
     let request = zbus::Proxy::new(
         &connection,
         PORTAL,
-        format!("{PORTAL_PATH}/request/{sender}/{TOKEN}"),
+        format!("{PORTAL_PATH}/request/{sender}/{}", want.token()),
         REQUEST,
     )
     .await
@@ -39,11 +70,10 @@ pub(super) async fn choose_folder(bus: &BusSource) -> Option<String> {
     let chooser = zbus::Proxy::new(&connection, PORTAL, PORTAL_PATH, CHOOSER)
         .await
         .ok()?;
-    let options: HashMap<&str, Value<'_>> = HashMap::from([
-        ("directory", Value::from(true)),
-        ("handle_token", Value::from(TOKEN)),
-    ]);
-    let _handle: OwnedObjectPath = chooser.call("OpenFile", &("", TITLE, options)).await.ok()?;
+    let _handle: OwnedObjectPath = chooser
+        .call("OpenFile", &("", want.title(), want.options()))
+        .await
+        .ok()?;
     let answer = std::future::poll_fn(|cx| std::pin::Pin::new(&mut answers).poll_next(cx)).await?;
     let (code, results): (u32, HashMap<String, OwnedValue>) = answer.body().deserialize().ok()?;
     if code != 0 {

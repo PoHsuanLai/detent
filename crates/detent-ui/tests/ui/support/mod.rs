@@ -14,6 +14,7 @@ pub mod handover;
 pub mod inferd;
 pub mod lending;
 pub mod memory;
+pub mod pictures;
 pub mod portal;
 pub mod spaces;
 pub mod syncd;
@@ -53,6 +54,7 @@ pub struct Sandbox {
     updates: Service,
     leaves: Leaves,
     engines: Arc<dyn Desk>,
+    pictures: Arc<dyn Pictures>,
 }
 
 impl Sandbox {
@@ -72,6 +74,8 @@ impl Sandbox {
             leaves: Leaves::default(),
             // Nothing is listed and nothing is downloaded, whatever this computer has.
             engines: Arc::new(Quiet),
+            // No folder is read and no chooser is opened, whatever this computer has.
+            pictures: Arc::new(NoPictures),
         }
     }
 
@@ -98,6 +102,11 @@ impl Sandbox {
     /// This world with the engine sheet working through `engines`.
     pub fn with_engines(self, engines: Arc<dyn Desk>) -> Sandbox {
         Sandbox { engines, ..self }
+    }
+
+    /// This world with the Wallpaper page working through `pictures`.
+    pub fn with_pictures(self, pictures: Arc<dyn Pictures>) -> Sandbox {
+        Sandbox { pictures, ..self }
     }
 
     /// This world with the update service in this standing.
@@ -180,6 +189,7 @@ impl Sandbox {
         .with_updates(Arc::new(self.updates.clone()))
         .with_log_out(Arc::new(self.leaves.clone()))
         .with_engines(self.engines.clone())
+        .with_pictures(self.pictures.clone())
         .with_os_release(self.os_release_path())
         .with_application_dirs(vec![self.scratch.join("applications")])
         .with_entry_rule(self.entry_rule())

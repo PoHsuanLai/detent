@@ -3,7 +3,7 @@
 
 use crate::range::Range;
 use crate::rows::Columns;
-use ds_settings::schema::{KeyKind, KeySpec};
+use ds_settings::schema::{Control as Named, KeyKind, KeySpec};
 
 /// The two words of an on/off enum, which one is on.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -86,16 +86,31 @@ pub enum Control {
     Text,
     /// A colour: the swatch row.
     Colour,
+    /// A path chosen from a grid of pictures, with "Add Picture…": a text key whose schema
+    /// says `control = "picture"`.
+    Picture,
     /// A list of tables: the rows editor, one cell per column.
     Rows(Columns),
     /// No component: read-only, edited in the file.
     FileOnly(FileOnly),
 }
 
+/// Whether the schema asks for the picture grid and the key can hold a path (a control that
+/// cannot draw the key's kind is ignored, so a schema never makes a grid of a number).
+fn named_picture(spec: &KeySpec) -> bool {
+    spec.control
+        .as_ref()
+        .and_then(Named::named)
+        .is_some_and(|named| named == Named::Picture && named.fits(&spec.kind))
+}
+
 impl Control {
     /// The control for `spec`'s kind. Total: every [`KeyKind`] arm is written, so a new kind is
     /// a compile error here.
     pub fn of(spec: &KeySpec) -> Control {
+        if named_picture(spec) {
+            return Control::Picture;
+        }
         match &spec.kind {
             KeyKind::Fixed { variant } => Control::Readout(variant.clone()),
             KeyKind::Toggle { variants } => TogglePair::of(variants)
@@ -128,7 +143,9 @@ impl Control {
             Control::Toggle(pair) => word_of(&[pair.on.clone(), pair.off.clone()]),
             Control::Segmented(words) | Control::Menu(words) => word_of(words),
             Control::Slider(range) => range.admit(value),
-            Control::Text | Control::Colour => value.is_str().then(|| value.clone()),
+            Control::Text | Control::Colour | Control::Picture => {
+                value.is_str().then(|| value.clone())
+            }
             Control::Rows(columns) => columns.cells(value).map(|_| value.clone()),
             Control::FileOnly(_) => Some(value.clone()),
         }
@@ -357,5 +374,29 @@ mod tests {
         assert_eq!(toggle.admit(&Value::Integer(1)), None);
         assert_eq!(Control::Text.admit(&text("hello")), Some(text("hello")));
         assert_eq!(Control::Text.admit(&Value::Integer(1)), None);
+    }
+
+    #[test]
+    fn a_text_key_that_asks_for_pictures_gets_the_grid_and_nothing_else_does() {
+        use ds_settings::schema::ControlName;
+        let asking = |kind: KeyKind, default: Value| {
+            let mut asked = spec(kind, default);
+            asked.control = Some(ControlName("picture".to_owned()));
+            asked
+        };
+        let text = asking(KeyKind::Text, Value::String(String::new()));
+        assert_eq!(Control::of(&text), Control::Picture);
+        let number = asking(
+            KeyKind::Bounded {
+                min: 0,
+                max: 9,
+                unit: None,
+            },
+            Value::Integer(1),
+        );
+        assert!(matches!(Control::of(&number), Control::Slider(_)));
+        let path = Value::String("/a/b.png".to_owned());
+        assert_eq!(Control::Picture.admit(&path), Some(path.clone()));
+        assert_eq!(Control::Picture.admit(&Value::Integer(1)), None);
     }
 }

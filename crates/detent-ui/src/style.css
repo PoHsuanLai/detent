@@ -36,6 +36,13 @@
   width: 12em;
 }
 
+.key-pictures {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s-10);
+}
+
 .key-file-only {
   display: flex;
   flex-direction: column;

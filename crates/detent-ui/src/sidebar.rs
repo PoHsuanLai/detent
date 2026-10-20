@@ -1,7 +1,7 @@
 //! The sidebar's page rows.
 
 use crate::icons::icon_of;
-use detent_model::{Catalogue, PageSlug};
+use detent_model::{Catalogue, PageSlug, page_title};
 use dioxus::prelude::*;
 use ds::base::vocab::RowState;
 use ds::prelude::*;
@@ -18,7 +18,7 @@ pub fn sidebar_items(
         .filter_map(|slug| catalogue.page(slug))
         .map(|model| {
             let slug = model.slug.clone();
-            let label = model.page.label().to_owned();
+            let label = page_title(&model.page);
             let selection = if current == Some(&slug) {
                 Selection::Selected
             } else {

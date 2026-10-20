@@ -27,6 +27,7 @@ mod software_update;
 mod spaces;
 mod support;
 mod viewer_page;
+mod wallpaper_page;
 
 /// Fails when a topic file in this directory is not declared above, so a new file cannot be
 /// left out of the binary without anyone noticing.

@@ -6,7 +6,7 @@ use crate::env::Env;
 use crate::files::load_all;
 use crate::view::View;
 use crate::window::Window;
-use detent_model::{Notice, assistant_model_page, is_assistant_setup};
+use detent_model::{Notice, assistant_model_page, is_assistant_setup, page_title};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds_blitz::{TokioSpawner, use_window_handle};
@@ -76,8 +76,7 @@ pub fn App() -> Element {
         view.current
             .as_ref()
             .and_then(|slug| catalogue.page(slug))
-            .map_or("Settings", |page| page.page.label())
-            .to_owned()
+            .map_or_else(|| "Settings".to_owned(), |page| page_title(&page.page))
     };
     rsx! {
         Ds {

@@ -4,6 +4,7 @@
 mod agents;
 mod first_run_mark;
 mod keymap;
+mod pictures;
 mod places;
 mod programs;
 mod round_trip;

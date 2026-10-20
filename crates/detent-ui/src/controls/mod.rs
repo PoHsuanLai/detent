@@ -3,6 +3,7 @@
 
 mod file_only;
 mod menu;
+mod picture;
 mod rows;
 mod segmented;
 mod slider;
@@ -16,6 +17,7 @@ use ds::components::content::label::LabelRole;
 use ds::prelude::*;
 pub(crate) use file_only::FileOnlyControl;
 use menu::MenuControl;
+use picture::PictureControl;
 use rows::RowsControl;
 use segmented::SegmentedKey;
 use slider::SliderControl;
@@ -43,6 +45,7 @@ pub fn Control(
         Kind::Slider(range) => rsx! { SliderControl { label, range, value, onchange } },
         Kind::Text => rsx! { TextControl { label, value, onchange } },
         Kind::Colour => rsx! { SwatchControl { label, value, onchange } },
+        Kind::Picture => rsx! { PictureControl { label, value, onchange } },
         Kind::Readout(word) => {
             rsx! { Label { text: detent_model::word_label(&labels, &word), role: LabelRole::Secondary } }
         }

@@ -7,8 +7,9 @@ use crate::inference::ReasonFeed;
 use crate::lender::Lender;
 use crate::live::BusSource;
 use crate::marks::ProviderMarks;
+use crate::pictures::{OnDisk, Pictures};
 use crate::updates::{Departure, OnBus, PowerMenu, UpdatesLink};
-use detent_files::{ConfigHome, DataHome, FirstRunMark, KeymapFiles, StateHome};
+use detent_files::{ConfigHome, DataHome, FirstRunMark, KeymapFiles, PictureDirs, StateHome};
 use detent_model::{Catalogue, Inbox, OriginRule, PageSlug, Warning, discover};
 use ds_helpers::Environment;
 use ds_settings::SystemPrefsSource;
@@ -72,6 +73,9 @@ pub struct Env {
     /// The value of `PATH`: where the coding agents already on this computer are looked for for
     /// the assistant's model. Empty until the launcher gives it, so a test finds none.
     pub programs_path: String,
+    /// The pictures the Wallpaper page offers and the chooser that adds one: this computer's own
+    /// unless a test hands in another.
+    pub pictures: Arc<dyn Pictures>,
 }
 
 impl Env {
@@ -89,6 +93,7 @@ impl Env {
         let keymap = KeymapFiles::under(&config_home);
         let updates = Arc::new(OnBus(bus.clone()));
         let engines = Arc::new(System::new(bus.clone(), &data_home.0));
+        let pictures = Arc::new(OnDisk::new(bus.clone(), PictureDirs::standard(&data_home)));
         Env {
             catalogue: Arc::new(Catalogue::build(&found.programs)),
             warnings: found.warnings,
@@ -110,6 +115,7 @@ impl Env {
             entry_rule: OriginRule::Ownership,
             engines,
             programs_path: String::new(),
+            pictures,
         }
     }
 
@@ -162,6 +168,11 @@ impl Env {
             programs_path,
             ..self
         }
+    }
+
+    /// This environment with the Wallpaper page working through `pictures`.
+    pub fn with_pictures(self, pictures: Arc<dyn Pictures>) -> Env {
+        Env { pictures, ..self }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.
