@@ -24,7 +24,8 @@ use detent_files::{ConfigHome, DataHome, StateHome};
 use detent_model::{OriginRule, Outbox, inbox};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{
-    App, BusSource, Desk, Env, FirstRunApp, Lender, Opening, Quiet, ReasonFeed, Vouch,
+    App, BusSource, Desk, Env, FirstRunApp, Lender, NoPictures, Opening, Pictures, Quiet,
+    ReasonFeed, Vouch,
 };
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};

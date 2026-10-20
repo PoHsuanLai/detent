@@ -128,7 +128,13 @@ mod tests {
     #[test]
     fn the_grid_is_sorted_marks_the_current_one_and_always_holds_it() {
         use PictureMark::{Current, Other};
-        let cases: &[(&str, &[&str], &str, &[(&str, PictureMark)])] = &[
+        type Case<'a> = (
+            &'a str,
+            &'a [&'a str],
+            &'a str,
+            &'a [(&'a str, PictureMark)],
+        );
+        let cases: &[Case] = &[
             ("none", &[], "", &[]),
             (
                 "sorted by name, nothing current",
@@ -150,7 +156,12 @@ mod tests {
             ),
         ];
         for (case, found, current, want) in cases {
-            assert_eq!(&summary(found, current), want, "{case}");
+            let got = summary(found, current);
+            let got: Vec<(&str, PictureMark)> = got
+                .iter()
+                .map(|(name, mark)| (name.as_str(), *mark))
+                .collect();
+            assert_eq!(got, *want, "{case}");
         }
     }
 }

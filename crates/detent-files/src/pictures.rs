@@ -118,7 +118,7 @@ mod tests {
     #[test]
     fn a_taken_name_gets_the_next_free_number_before_its_ending() {
         let taken = ["dune.png", "dune 2.png"];
-        let used = |candidate: &str| taken.iter().any(|name| *name == candidate);
+        let used = |candidate: &str| taken.contains(&candidate);
         let cases: &[(&str, &str)] = &[
             ("sky.png", "sky.png"),
             ("dune.png", "dune 3.png"),
