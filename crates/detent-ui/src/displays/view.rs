@@ -4,7 +4,7 @@
 use super::drive::use_displays;
 use crate::system::Unavailable;
 use detent_model::{
-    ArrangeSide, DisplayChange, DisplayEdit, DisplayRotation, DisplaysInput, DisplaysReady,
+    ArrangeSide, Brightness, BrightnessList, DisplayChange, DisplayEdit, DisplayRotation, DisplaysInput, DisplaysReady,
     DisplaysState, Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli, default_scale,
     display_size_words, displays_missing_words, hertz_words, looks_like, mode_sizes, native_size,
     side_of,
@@ -26,14 +26,24 @@ pub(crate) fn DisplaysPane() -> Element {
             Unavailable { title: "Displays", words: displays_missing_words(missing) }
         },
         DisplaysState::Ready(page) => {
+            let brightness = driver.brightness.read().clone();
+            let dim = EventHandler::new({
+                let driver = driver.clone();
+                move |(output, level): (OutputId, Brightness)| driver.set_brightness(output, level)
+            });
             let press = EventHandler::new(move |input: DisplaysInput| driver.feed(input));
-            rsx! { Listed { page, press } }
+            rsx! { Listed { page, brightness, press, dim } }
         }
     }
 }
 
 #[component]
-fn Listed(page: DisplaysReady, press: EventHandler<DisplaysInput>) -> Element {
+fn Listed(
+    page: DisplaysReady,
+    brightness: BrightnessList,
+    press: EventHandler<DisplaysInput>,
+    dim: EventHandler<(OutputId, Brightness)>,
+) -> Element {
     let availability = if page.is_applying() {
         Availability::Busy
     } else {
@@ -46,9 +56,11 @@ fn Listed(page: DisplaysReady, press: EventHandler<DisplaysInput>) -> Element {
                 DisplayCard {
                     key: "{display.id.0}",
                     others: displays.iter().filter(|other| other.id != display.id).cloned().collect::<Vec<_>>(),
+                    level: brightness.level_of(&display.id),
                     display,
                     availability,
                     press,
+                    dim,
                 }
             }
         }
@@ -60,10 +72,13 @@ fn Listed(page: DisplaysReady, press: EventHandler<DisplaysInput>) -> Element {
 fn DisplayCard(
     display: Monitor,
     others: Vec<Monitor>,
+    level: Option<Brightness>,
     availability: Availability,
     press: EventHandler<DisplaysInput>,
+    dim: EventHandler<(OutputId, Brightness)>,
 ) -> Element {
     let id = display.id.clone();
+    let dimmed = display.id.clone();
     let change = EventHandler::new(move |edit: DisplayEdit| {
         press.call(DisplaysInput::Change(DisplayChange {
             output: id.clone(),
@@ -73,6 +88,9 @@ fn DisplayCard(
     rsx! {
         div { "data-display": "{display.id.0}",
             FieldGroup { title: Some(display.name.clone()),
+                if let Some(level) = level {
+                    BrightnessRow { level, dim: move |level| dim.call((dimmed.clone(), level)) }
+                }
                 ResolutionRow { display: display.clone(), availability, pick: move |scale| change.call(DisplayEdit::Scale(scale)) }
                 RefreshRow { display: display.clone(), availability, pick: move |rate| change.call(DisplayEdit::Refresh(rate)) }
                 RotationRow { display: display.clone(), availability, pick: move |turn| change.call(DisplayEdit::Rotate(turn)) }
@@ -80,6 +98,31 @@ fn DisplayCard(
                     PlaceRow { display: display.clone(), others, availability, press }
                 }
                 ModeRow { display: display.clone(), availability, pick: move |size| change.call(DisplayEdit::Size(size)) }
+            }
+        }
+    }
+}
+
+/// The display's brightness, for a display the shell lists one for.
+#[component]
+fn BrightnessRow(level: Brightness, dim: EventHandler<Brightness>) -> Element {
+    rsx! {
+        FieldRow { label: TextLine::from("Brightness"), availability: Availability::Enabled,
+            div { class: "key-slider",
+                div { class: "key-slider-track",
+                    Slider {
+                        label: "Brightness".to_owned(),
+                        value: Fraction(level.fraction()),
+                        step: Fraction(10),
+                        size: ControlSize::Small,
+                        onchange: move |at: Fraction| {
+                            let next = Brightness::of_fraction(at.0);
+                            if next != level {
+                                dim.call(next);
+                            }
+                        },
+                    }
+                }
             }
         }
     }

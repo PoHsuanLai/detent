@@ -2,6 +2,7 @@
 //! rotation and place beside the others. Pure; the compositor is the window's (`detent-ui`).
 
 mod arrange;
+mod brightness;
 mod looks;
 mod model;
 mod modes;
@@ -10,6 +11,7 @@ mod step;
 mod words;
 
 pub use arrange::{ArrangeSide, place_beside, side_of};
+pub use brightness::{Brightness, BrightnessList};
 pub use looks::{LooksLike, default_scale, looks_like};
 pub use model::{
     DisplayMode, DisplayPosition, DisplayRotation, DisplaysStatus, Millimetres, ModePreference,

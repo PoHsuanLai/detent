@@ -7,4 +7,4 @@ mod watch;
 
 pub(crate) use bus::{is_running, system_connection};
 pub(crate) use unavailable::Unavailable;
-pub(crate) use watch::{every, next, watch_service};
+pub(crate) use watch::{every, next, watch_on, watch_service};

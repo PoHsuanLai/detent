@@ -10,7 +10,7 @@ use std::pin::Pin;
 use zbus::export::futures_core::Stream;
 use zbus::fdo::DBusProxy;
 use zbus::message::Type as MessageType;
-use zbus::{MatchRule, Message, MessageStream};
+use zbus::{Connection, MatchRule, Message, MessageStream};
 
 /// Tells `out` each time `stream` yields, until the stream ends or nobody listens.
 async fn relay(mut stream: impl Stream<Item: Send> + Unpin + Send + 'static, out: Ticker) {
@@ -52,8 +52,17 @@ pub(crate) async fn watch_service(
     matters: Matters,
 ) -> Result<Ticks, Missing> {
     let connection = system_connection(bus).await?;
+    watch_on(&connection, name, matters).await
+}
+
+/// [`watch_service`] on a connection already made (the session bus, for the shell's names).
+pub(crate) async fn watch_on(
+    connection: &Connection,
+    name: &'static str,
+    matters: Matters,
+) -> Result<Ticks, Missing> {
     let subscribed = async {
-        let owners = DBusProxy::new(&connection)
+        let owners = DBusProxy::new(connection)
             .await?
             .receive_name_owner_changed_with_args(&[(0, name)])
             .await?;
@@ -61,7 +70,7 @@ pub(crate) async fn watch_service(
             .msg_type(MessageType::Signal)
             .sender(name)?
             .build();
-        let signals = MessageStream::for_match_rule(rule, &connection, None).await?;
+        let signals = MessageStream::for_match_rule(rule, connection, None).await?;
         Ok::<_, zbus::Error>((owners, signals))
     };
     let (owners, signals) = match within(Deadline::READ, peer::DESKTOP, subscribed).await {

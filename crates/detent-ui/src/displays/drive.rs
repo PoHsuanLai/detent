@@ -3,7 +3,10 @@
 
 use super::link::DisplaysLink;
 use crate::env::Env;
-use detent_model::{DisplaysEffect, DisplaysInput, DisplaysState, displays_step};
+use detent_model::{
+    Brightness, BrightnessList, DisplaysEffect, DisplaysInput, DisplaysState, OutputId,
+    displays_step,
+};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;
@@ -15,6 +18,8 @@ pub(super) struct Driver {
     link: Arc<dyn DisplaysLink>,
     toasts: ToastHub,
     pub(super) state: Signal<DisplaysState>,
+    /// The displays the shell lists a brightness for, and where each stands.
+    pub(super) brightness: Signal<BrightnessList>,
 }
 
 /// The page's state, following the compositor for as long as the page is shown.
@@ -24,12 +29,20 @@ pub(super) fn use_displays() -> Driver {
         link: env.displays.clone(),
         toasts: use_toasts(),
         state: use_signal(DisplaysState::default),
+        brightness: use_signal(BrightnessList::default),
     };
     use_future({
         let driver = driver.clone();
         move || {
             let driver = driver.clone();
             async move { driver.follow().await }
+        }
+    });
+    use_future({
+        let driver = driver.clone();
+        move || {
+            let driver = driver.clone();
+            async move { driver.follow_brightness().await }
         }
     });
     driver
@@ -47,6 +60,38 @@ impl Driver {
                 }
             }
         }
+    }
+
+    /// Reads the shell's brightness list now and each time it says one changed. Without a shell
+    /// the list stays empty and the page shows no sliders.
+    async fn follow_brightness(&self) {
+        let Ok(mut ticks) = self.link.brightness_changes().await else {
+            return;
+        };
+        self.reread_brightness().await;
+        while ticks.recv().await.is_some() {
+            self.reread_brightness().await;
+        }
+    }
+
+    async fn reread_brightness(&self) {
+        let mut brightness = self.brightness;
+        brightness.set(self.link.brightness().await.unwrap_or_default());
+    }
+
+    /// Moves `output`'s slider to `level` and asks the shell to set it; the shell's word on
+    /// the next change decides where the slider rests.
+    pub(super) fn set_brightness(&self, output: OutputId, level: Brightness) {
+        let mut brightness = self.brightness;
+        let next = brightness.peek().clone().with(&output, level);
+        brightness.set(next);
+        let me = self.clone();
+        spawn(async move {
+            if let Err(words) = me.link.set_brightness(output, level).await {
+                me.toasts.push(words, None);
+                me.reread_brightness().await;
+            }
+        });
     }
 
     async fn reread(&self) {

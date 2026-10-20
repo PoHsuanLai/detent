@@ -5,6 +5,7 @@
 //! The wire client is blocking, so each call runs on a thread of its own with a connection of its
 //! own, and only the real session is ever reached: a test's private bus is no compositor.
 
+use super::brightness;
 use super::link::DisplaysLink;
 use super::map::{mode_of, monitors_of, transform_of};
 use crate::deadline::{Deadline, peer};
@@ -19,7 +20,8 @@ use desktop_client::{
     Desktop, DesktopCommand, DesktopConfig, DesktopEvent, OutputName, Point, Protocol, Ticket,
 };
 use detent_model::{
-    DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, Missing, Work, mode_at,
+    Brightness, BrightnessList, DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, Missing,
+    OutputId, Work, mode_at,
 };
 use ds_peer::within;
 
@@ -190,5 +192,21 @@ impl DisplaysLink for OnCompositor {
                 Err(silent) => Err(format!("{silent}.")),
             }
         })
+    }
+
+    fn brightness(&self) -> Work<'_, Result<BrightnessList, Missing>> {
+        Box::pin(brightness::read(&self.0))
+    }
+
+    fn brightness_changes(&self) -> Work<'_, Result<Ticks, Missing>> {
+        Box::pin(brightness::changes(&self.0))
+    }
+
+    fn set_brightness(
+        &self,
+        output: OutputId,
+        level: Brightness,
+    ) -> Work<'_, Result<(), String>> {
+        Box::pin(async move { brightness::set(&self.0, &output, level).await })
     }
 }

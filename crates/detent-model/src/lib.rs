@@ -89,12 +89,12 @@ pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
 pub use discovery::{Discovery, ProgramSchema, discover, discover_under};
 pub use displays::{
-    ArrangeSide, DISPLAYS_SLUG, DisplayChange, DisplayEdit, DisplayMode, DisplayPosition,
-    DisplayRotation, DisplaysEffect, DisplaysInput, DisplaysReady, DisplaysState, DisplaysStatus,
-    LooksLike, Millimetres, ModePreference, Monitor, OutputId, PixelSize, RefreshMilliHz,
-    ScaleMilli, default_scale, displays_page, displays_step, hertz_words, is_displays, looks_like,
-    missing_words as displays_missing_words, mode_at, mode_sizes, native_size, place_beside,
-    side_of, size_words as display_size_words,
+    ArrangeSide, Brightness, BrightnessList, DISPLAYS_SLUG, DisplayChange, DisplayEdit,
+    DisplayMode, DisplayPosition, DisplayRotation, DisplaysEffect, DisplaysInput, DisplaysReady,
+    DisplaysState, DisplaysStatus, LooksLike, Millimetres, ModePreference, Monitor, OutputId,
+    PixelSize, RefreshMilliHz, ScaleMilli, default_scale, displays_page, displays_step,
+    hertz_words, is_displays, looks_like, missing_words as displays_missing_words, mode_at,
+    mode_sizes, native_size, place_beside, side_of, size_words as display_size_words,
 };
 /// Whether an agent may set a key: quire's own type, carried by each `KeySpec`.
 pub use ds_settings::schema::AgentSetting;

@@ -1,4 +1,4 @@
-//! The seven services Settings talks to, and the role the owner of each one's bus name must hold.
+//! The eight services Settings talks to, and the role the owner of each one's bus name must hold.
 
 use peephole_bus::peephole_core::{Proof, RoleName, roles};
 
@@ -20,12 +20,15 @@ pub const COMPOSITOR_BUS: &str = "org.quire.Compositor1";
 /// calls on it is `org.quire.Portal1`.
 pub const PORTAL_BUS: &str = "org.freedesktop.impl.portal.desktop.quire";
 
-/// The proof a service's owner must show. All seven run as units, so the unit manager confirms the
+/// The shell (sill): each display's brightness, which Settings lists and sets.
+pub const DISPLAYS_BUS: &str = "org.quire.Displays1";
+
+/// The proof a service's owner must show. All eight run as units, so the unit manager confirms the
 /// unit: a process that merely sits in the right cgroup, or runs the right image from a unit the
 /// person can edit, does not pass.
 pub const SERVICE_PROOF: Proof = Proof::Full;
 
-/// The role the owner of `name` must hold; none for a name that is not one of the seven (such a
+/// The role the owner of `name` must hold; none for a name that is not one of the eight (such a
 /// name is never vouched for).
 pub fn required_role(name: &str) -> Option<RoleName> {
     let role = match name {
@@ -36,6 +39,7 @@ pub fn required_role(name: &str) -> Option<RoleName> {
         MEMORY_BUS => roles::MEMORY,
         COMPOSITOR_BUS => roles::COMPOSITOR,
         PORTAL_BUS => roles::PORTAL,
+        DISPLAYS_BUS => roles::SHELL,
         _ => return None,
     };
     Some(role)
@@ -55,6 +59,7 @@ mod tests {
             (MEMORY_BUS, "memory"),
             (COMPOSITOR_BUS, "compositor"),
             (PORTAL_BUS, "portal"),
+            (DISPLAYS_BUS, "shell"),
         ];
         for (name, role) in wanted {
             let held = required_role(name).map(|role| role.to_string());
