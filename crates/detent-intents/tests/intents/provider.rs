@@ -54,6 +54,42 @@ async fn opening_a_page_tells_the_window() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn a_key_or_account_target_tells_the_window_where_to_go() {
+    let world = world("open-a-target").await;
+    for text in ["key:dock.magnification", "account:work-example"] {
+        world
+            .perform("settings.page.show", &[("page", page(text))])
+            .await
+            .expect(text);
+    }
+    world
+        .perform("settings.page.show", &[("page", page("page:dock"))])
+        .await
+        .expect("a page target");
+    let told: Vec<String> = world
+        .window
+        .told()
+        .into_iter()
+        .map(|notice| match notice {
+            Notice::OpenTarget(target) => target.to_string(),
+            Notice::OpenPage(slug) => slug.0,
+            other => panic!("unexpected {other:?}"),
+        })
+        .collect();
+    assert_eq!(told, ["key:dock.magnification", "account:work-example", "dock"]);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_key_no_schema_makes_is_not_found_as_a_target() {
+    let world = world("open-a-missing-key").await;
+    world
+        .perform("settings.page.show", &[("page", page("key:nowhere.at_all"))])
+        .await
+        .expect_err("refused");
+    assert_eq!(world.window.told(), []);
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn a_page_no_schema_makes_is_not_found() {
     let world = world("open-a-missing-page").await;
     let refusal = world

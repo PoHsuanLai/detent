@@ -6,7 +6,9 @@ use crate::env::Env;
 use crate::files::load_all;
 use crate::view::View;
 use crate::window::Window;
-use detent_model::{Notice, assistant_model_page, is_assistant_setup, opening_page};
+use detent_model::{
+    Arrival, Notice, arrival, assistant_model_page, is_assistant_setup, opening_page,
+};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds_blitz::{TokioSpawner, use_window_handle};
@@ -47,6 +49,14 @@ pub fn App() -> Element {
                         page.set(slug);
                     }
                     Notice::OpenPage(_) => {}
+                    Notice::OpenTarget(target) => match arrival(&catalogue, &target) {
+                        Some(Arrival::Page { slug, query: asked }) => {
+                            query.set(asked);
+                            page.set(slug);
+                        }
+                        Some(Arrival::Account(account)) => link.open_target(account),
+                        None => {}
+                    },
                     Notice::Reload => files.set(load_all(&told)),
                     Notice::OpenAccount(target) => link.open_target(target),
                     Notice::Raise(token) => {

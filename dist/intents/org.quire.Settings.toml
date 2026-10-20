@@ -4,8 +4,10 @@
 # provider-file rule). Names carry the app's prefix: `settings.`.
 #
 # An entity key is a page's slug (`dock`, `app:acme`) or a key's dotted path
-# (`dock.magnification`). A key can be read whenever a schema describes it; it can be set only
-# when its schema marks it `agent = "settable"`.
+# (`dock.magnification`). `settings.page.show` also takes a link's text: `page:dock`,
+# `key:dock.magnification` (the page that owns the key, with its row marked) or `account:<id>`.
+# A key can be read whenever a schema describes it; it can be set only when its schema marks it
+# `agent = "settable"`.
 vocab = 1
 app = "org.quire.Settings"
 

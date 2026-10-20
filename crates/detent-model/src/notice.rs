@@ -3,6 +3,7 @@
 //! in order. The queue is plain std (a mutex and a waker), so this crate reaches no runtime.
 
 use crate::{AccountTarget, PageSlug};
+use ds_settings::target::SettingsTarget;
 use std::collections::VecDeque;
 use std::fmt;
 use std::future::poll_fn;
@@ -21,6 +22,8 @@ pub(crate) const NOTICE_INBOX: usize = 32;
 pub enum Notice {
     /// Show this page, with an empty search.
     OpenPage(PageSlug),
+    /// Show where this target points: a page, a key's row, or an account.
+    OpenTarget(SettingsTarget),
     /// A settings file changed behind the window's back: read every file again.
     Reload,
     /// Show the Accounts page at this account's detail, or its list.

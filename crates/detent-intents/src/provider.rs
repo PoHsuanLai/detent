@@ -8,8 +8,8 @@ use crate::limits::{ACCOUNTS_CHARS, KEY_VALUE_CHARS, many_lines, one_line};
 use crate::manifest::{ManifestFault, manifest};
 use detent_files::{ConfigHome, load, save};
 use detent_model::{
-    AgentSetting, Catalogue, Control, KeyEntry, Notice, Outbox, PageSlug, TextFault, search,
-    show_value,
+    AgentSetting, Arrival, Catalogue, Control, KeyEntry, Notice, Outbox, PageSlug, TextFault,
+    arrival, search, show_value,
 };
 use docket_client::IntentProvider;
 use docket_core::{
@@ -17,6 +17,7 @@ use docket_core::{
     UndoFault, UndoToken, Undoable, ValidManifest, Value,
 };
 use ds_settings::schema::KeyPath;
+use ds_settings::target::SettingsTarget;
 use porter_core::{AppName, DataClass};
 use prov::{Actor, EntityId, Label, Labelled, Source};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -138,6 +139,23 @@ impl SettingsProvider {
         Ok(outcome(&said, Undoable::No))
     }
 
+    /// Shows the row of a key or the account a target names; a target no page holds is not found.
+    fn open_target(&self, target: SettingsTarget) -> Result<Outcome, AppRefusal> {
+        let said = match arrival(&self.catalogue, &target) {
+            Some(Arrival::Page { slug, .. }) => self
+                .catalogue
+                .page(&slug)
+                .map(|page| format!("Opened {}", page.title)),
+            Some(Arrival::Account(_)) => Some("Opened Accounts".to_owned()),
+            None => None,
+        }
+        .ok_or_else(|| not_found(&self.app, "settings.key", &target.to_string()))?;
+        self.window
+            .send(Notice::OpenTarget(target))
+            .map_err(|gone| refusal(gone.to_string()))?;
+        Ok(outcome(&said, Undoable::No))
+    }
+
     /// The accounts, a line each: labels, kinds and state, nothing that names or reaches one.
     async fn list_accounts(&self, space: prov::SpaceId) -> Result<Outcome, AppRefusal> {
         let pane = self
@@ -208,6 +226,7 @@ impl IntentProvider for SettingsProvider {
     async fn perform(&self, inv: Invocation) -> Result<Outcome, AppRefusal> {
         match ask(&inv, &self.app)? {
             Ask::OpenPage(slug) => self.open_page(slug),
+            Ask::OpenTarget(target) => self.open_target(target),
             Ask::ReadKey(path) => self.read_key(&path, inv.space),
             Ask::SetKey { key, text } => self.set_key(&key, &text),
             Ask::ListAccounts => self.list_accounts(inv.space).await,

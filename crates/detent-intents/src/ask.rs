@@ -5,6 +5,7 @@ use crate::answer::{not_found, refusal};
 use detent_model::PageSlug;
 use docket_core::{AppRefusal, Invocation, ParamName, Value};
 use ds_settings::schema::KeyPath;
+use ds_settings::target::SettingsTarget;
 use porter_core::AppName;
 
 /// What a call asks of Settings.
@@ -12,6 +13,8 @@ use porter_core::AppName;
 pub(crate) enum Ask {
     /// Show a page.
     OpenPage(PageSlug),
+    /// Show a key's row or an account (a page target is [`Ask::OpenPage`]).
+    OpenTarget(SettingsTarget),
     /// Tell the value of a key.
     ReadKey(KeyPath),
     /// Set a key to the stored form `text`.
@@ -65,12 +68,20 @@ fn text_arg(inv: &Invocation, name: &str) -> Result<String, AppRefusal> {
     }
 }
 
+/// What the `page` argument asks: the target text (`page:X`, `key:K`, `account:P`) when it is
+/// one, else a plain page slug (`dock`, `app:acme`).
+fn page_ask(text: String) -> Ask {
+    match text.parse::<SettingsTarget>() {
+        Ok(SettingsTarget::Page(id)) => Ask::OpenPage(PageSlug(id.as_str().to_owned())),
+        Ok(target) => Ask::OpenTarget(target),
+        Err(_) => Ask::OpenPage(PageSlug(text)),
+    }
+}
+
 /// What `inv` asks, or why it cannot be asked.
 pub(crate) fn ask(inv: &Invocation, app: &AppName) -> Result<Ask, AppRefusal> {
     match inv.action.as_str() {
-        "settings.page.show" => {
-            entity_arg(inv, app, "page", "settings.page").map(|slug| Ask::OpenPage(PageSlug(slug)))
-        }
+        "settings.page.show" => entity_arg(inv, app, "page", "settings.page").map(page_ask),
         "settings.key.read" => {
             entity_arg(inv, app, "key", "settings.key").map(|key| Ask::ReadKey(KeyPath(key)))
         }

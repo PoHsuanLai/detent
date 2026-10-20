@@ -53,6 +53,41 @@ async fn open_account_moves_to_that_accounts_detail() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn open_target_tells_the_window_the_target_its_text_names() {
+    let world = World::start("app-open-target", &[]).await;
+    for text in ["page:dock", "key:dock.magnification", "account:work-example"] {
+        call(
+            &world,
+            "ActivateAction",
+            ("open-target", vec![Value::from(text)], no_data()),
+        )
+        .await
+        .expect("answered");
+    }
+    call(
+        &world,
+        "ActivateAction",
+        ("open-target", vec![Value::from("nowhere")], no_data()),
+    )
+    .await
+    .expect("answered");
+    let targets: Vec<String> = world
+        .window
+        .told()
+        .into_iter()
+        .filter_map(|notice| match notice {
+            Notice::OpenTarget(target) => Some(target.to_string()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        targets,
+        ["page:dock", "key:dock.magnification", "account:work-example"],
+        "text that is no target is ignored"
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn open_page_shows_the_page_its_slug_names_and_raises() {
     let world = World::start("app-open-page", &[]).await;
     call(

@@ -7,6 +7,7 @@ use crate::serve::BUS_PEER;
 use detent_callers::{BusPeers, Refused, desktop_peers};
 use detent_model::{AccountTarget, Notice, Outbox, PageSlug};
 use ds_peer::{Deadline, within};
+use ds_settings::target::SettingsTarget;
 use std::collections::HashMap;
 use std::sync::Arc;
 use zbus::fdo;
@@ -23,6 +24,8 @@ pub(crate) const APP_NAME: &str = "org.quire.Settings";
 const OPEN_ACCOUNT: &str = "open-account";
 /// The action that shows a page, named by its slug.
 const OPEN_PAGE: &str = "open-page";
+/// The action that shows a target: `page:X`, `key:K` or `account:P`.
+const OPEN_TARGET: &str = "open-target";
 /// The platform-data key that carries the xdg-activation token.
 const TOKEN_KEY: &str = "activation-token";
 
@@ -62,6 +65,14 @@ fn page_of(parameter: &[OwnedValue]) -> Option<PageSlug> {
     }
 }
 
+/// The target an action's first parameter spells; none when it spells none.
+fn target_text_of(parameter: &[OwnedValue]) -> Option<SettingsTarget> {
+    match parameter.first().map(|value| &**value) {
+        Some(Value::Str(text)) => text.parse().ok(),
+        _ => None,
+    }
+}
+
 fn gone() -> fdo::Error {
     fdo::Error::Failed("the Settings window has gone".to_owned())
 }
@@ -88,7 +99,7 @@ impl Application {
     }
 
     /// `open-account` shows the Accounts page at the account named, `open-page` the page whose
-    /// slug is named; an unknown action is logged and does nothing. Only the callers `Activate`
+    /// slug is named, `open-target` the page, key row or account its text names; an unknown action is logged and does nothing. Only the callers `Activate`
     /// admits may ask.
     async fn activate_action(
         &self,
@@ -110,6 +121,13 @@ impl Application {
                         .map_err(|_| gone())?;
                 }
             }
+            OPEN_TARGET => match target_text_of(&parameter) {
+                Some(target) => self
+                    .window
+                    .send(Notice::OpenTarget(target))
+                    .map_err(|_| gone())?,
+                None => eprintln!("detent: open-target needs page:, key: or account: text"),
+            },
             _ => {
                 eprintln!("detent: no action {action_name:?}, ignored");
                 return Ok(());

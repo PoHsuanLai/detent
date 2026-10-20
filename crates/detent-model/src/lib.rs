@@ -5,6 +5,7 @@
 mod absence;
 mod accounts;
 mod advanced;
+mod arrival;
 mod assistant_model;
 mod assistants;
 mod bluetooth;
@@ -60,6 +61,7 @@ pub use accounts::{
     accounts_step, hold_step, reauth_help,
 };
 pub use advanced::advanced_name;
+pub use arrival::{Arrival, arrival};
 pub use assistant_model::{
     ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Pressable, SetupButton, assistant_model_page,
     assistant_of, is_assistant_model, is_assistant_setup, setup_button,
