@@ -167,54 +167,79 @@ mod tests {
         )])
     }
 
-    fn device(
-        address: &str,
-        alias: &str,
-        paired: bool,
-        connected: bool,
-        heard: bool,
-    ) -> HashMap<OwnedInterfaceName, HashMap<String, OwnedValue>> {
-        let mut properties = vec![
-            ("Address", value(address.to_owned())),
-            ("Alias", value(alias.to_owned())),
-            ("Icon", value("input-mouse".to_owned())),
-            ("Paired", value(paired)),
-            ("Connected", value(connected)),
-        ];
-        if heard {
-            properties.push(("RSSI", value(-60_i16)));
-        }
-        object("org.bluez.Device1", properties)
+    /// Whether BlueZ hears a device now (it then reports a signal strength).
+    #[derive(Clone, Copy)]
+    enum Hearing {
+        Heard,
+        Silent,
     }
 
-    fn world(powered: bool) -> Objects {
+    /// A device as BlueZ reports it.
+    struct Seen<'a> {
+        address: &'a str,
+        alias: &'a str,
+        pairing: BtPairing,
+        link: BtLink,
+        hearing: Hearing,
+    }
+
+    impl Seen<'_> {
+        fn object(&self) -> HashMap<OwnedInterfaceName, HashMap<String, OwnedValue>> {
+            let mut properties = vec![
+                ("Address", value(self.address.to_owned())),
+                ("Alias", value(self.alias.to_owned())),
+                ("Icon", value("input-mouse".to_owned())),
+                ("Paired", value(self.pairing == BtPairing::Paired)),
+                ("Connected", value(self.link == BtLink::Connected)),
+            ];
+            if matches!(self.hearing, Hearing::Heard) {
+                properties.push(("RSSI", value(-60_i16)));
+            }
+            object("org.bluez.Device1", properties)
+        }
+    }
+
+    fn world(power: BtPower) -> Objects {
+        let seen = |address, alias, pairing, link, hearing| {
+            Seen {
+                address,
+                alias,
+                pairing,
+                link,
+                hearing,
+            }
+            .object()
+        };
         HashMap::from([
             (
                 path("/org/bluez/hci0"),
-                object("org.bluez.Adapter1", vec![("Powered", value(powered))]),
+                object(
+                    "org.bluez.Adapter1",
+                    vec![("Powered", value(power == BtPower::On))],
+                ),
             ),
             (
                 path("/org/bluez/hci0/dev_A"),
-                device("AA:00", "Mouse", true, true, false),
+                seen("AA:00", "Mouse", BtPairing::Paired, BtLink::Connected, Hearing::Silent),
             ),
             (
                 path("/org/bluez/hci0/dev_B"),
-                device("BB:00", "Seen Pad", false, false, true),
+                seen("BB:00", "Seen Pad", BtPairing::Unpaired, BtLink::Disconnected, Hearing::Heard),
             ),
             (
                 path("/org/bluez/hci0/dev_C"),
-                device("CC:00", "Gone Pad", false, false, false),
+                seen("CC:00", "Gone Pad", BtPairing::Unpaired, BtLink::Disconnected, Hearing::Silent),
             ),
             (
                 path("/org/bluez/hci1/dev_D"),
-                device("DD:00", "Other Adapter", true, false, false),
+                seen("DD:00", "Other Adapter", BtPairing::Paired, BtLink::Disconnected, Hearing::Silent),
             ),
         ])
     }
 
     #[test]
     fn the_adapter_and_the_devices_under_it_make_the_status() {
-        let status = status_of(&world(true)).expect("a status");
+        let status = status_of(&world(BtPower::On)).expect("a status");
         assert_eq!(status.power, BtPower::On);
         let listed: Vec<(&str, BtPairing, BtLink)> = status
             .devices
@@ -230,7 +255,7 @@ mod tests {
             "a device nobody hears and one under another adapter are not listed"
         );
         assert_eq!(
-            status_of(&world(false)).expect("a status").power,
+            status_of(&world(BtPower::Off)).expect("a status").power,
             BtPower::Off
         );
     }
@@ -242,7 +267,7 @@ mod tests {
 
     #[test]
     fn a_device_is_found_by_its_address_with_its_adapter_and_name() {
-        let objects = world(true);
+        let objects = world(BtPower::On);
         let found = find_device(&objects, &BtAddress("BB:00".to_owned()));
         assert_eq!(
             found,
