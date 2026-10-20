@@ -14,7 +14,7 @@ Change a setting only when the person asked for it, with `settings.key.set`. If 
 | `appearance.accent` | `blue`, `purple`, `pink`, `red`, `orange`, `yellow`, `green`, `graphite` |
 | `dock.magnification` | `on`, `off` |
 | `dock.tile_size_px` | 32 to 80 |
-| `dock.magnified_size_px` | 32 to 128 |
+| `dock.magnified_size_px` | 32 to 72 |
 | `launcher.web_search` | `on`, `off` |
 | `notifications.dnd` | `on`, `off` |
 
