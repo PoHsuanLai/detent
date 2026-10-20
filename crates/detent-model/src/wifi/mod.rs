@@ -9,7 +9,7 @@ mod passphrase;
 mod step;
 mod words;
 
-pub use account::Account;
+pub use account::WifiLogin;
 pub use hidden::{HiddenForm, HiddenLogin, HiddenNetwork, HiddenSecurity};
 pub use model::{
     AccessPoint, NetworkLink, NetworkLock, Remembered, SignalBars, SignalStrength, Ssid,

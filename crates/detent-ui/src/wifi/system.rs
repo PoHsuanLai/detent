@@ -11,7 +11,7 @@ use crate::live::BusSource;
 use crate::system::{every, system_connection, watch_service};
 use crate::ticks::Ticks;
 use detent_model::{
-    Account, HiddenNetwork, JoinFailure, Missing, Passphrase, Ssid, WifiRadio, WifiStatus, Work,
+    HiddenNetwork, JoinFailure, Missing, Passphrase, Ssid, WifiLogin, WifiRadio, WifiStatus, Work,
 };
 use ds_peer::within;
 use std::collections::HashMap;
@@ -48,7 +48,7 @@ impl WifiLink for OnSystem {
         Box::pin(join(&self.0, ssid, passphrase))
     }
 
-    fn sign_in(&self, ssid: Ssid, account: Account) -> Work<'_, Result<(), JoinFailure>> {
+    fn sign_in(&self, ssid: Ssid, account: WifiLogin) -> Work<'_, Result<(), JoinFailure>> {
         Box::pin(sign_in(&self.0, ssid, account))
     }
 

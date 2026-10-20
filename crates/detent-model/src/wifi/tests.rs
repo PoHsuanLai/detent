@@ -284,7 +284,7 @@ fn a_network_that_signs_in_asks_for_an_account_and_asks_again_for_one() {
         kind: AskKind::Account,
     });
     assert_eq!(page_of(&asked).sheet, wanted);
-    let account = Account::new("  ada ", "analytical").expect("an account");
+    let account = WifiLogin::new("  ada ", "analytical").expect("an account");
     assert_eq!(account.username, "ada", "the username is trimmed");
     let (next, effects) = wifi_step(asked, WifiInput::SignIn(ssid("Campus"), account.clone()));
     assert_eq!(effects, [WifiEffect::SignIn(ssid("Campus"), account)]);
@@ -307,9 +307,9 @@ fn a_network_that_signs_in_asks_for_an_account_and_asks_again_for_one() {
 
 #[test]
 fn an_account_needs_both_a_username_and_a_password() {
-    assert_eq!(Account::new("", "secret"), None);
-    assert_eq!(Account::new("   ", "secret"), None);
-    assert_eq!(Account::new("ada", ""), None);
+    assert_eq!(WifiLogin::new("", "secret"), None);
+    assert_eq!(WifiLogin::new("   ", "secret"), None);
+    assert_eq!(WifiLogin::new("ada", ""), None);
 }
 
 #[test]
@@ -381,7 +381,7 @@ fn a_hidden_network_form_is_complete_when_its_security_has_what_it_needs() {
         (
             "an enterprise one",
             form("Back Room", HiddenSecurity::Enterprise, "ada", "secret"),
-            Account::new("ada", "secret").map(HiddenLogin::Enterprise),
+            WifiLogin::new("ada", "secret").map(HiddenLogin::Enterprise),
         ),
     ];
     for (case, filled, login) in cases {

@@ -94,7 +94,7 @@ pub use displays::{
     LooksLike, Millimetres, ModePreference, Monitor, OutputId, PixelSize, RefreshMilliHz,
     ScaleMilli, default_scale, displays_page, displays_step, hertz_words, is_displays, looks_like,
     missing_words as displays_missing_words, mode_at, mode_sizes, native_size, place_beside,
-    side_of, size_words,
+    side_of, size_words as display_size_words,
 };
 /// Whether an agent may set a key: quire's own type, carried by each `KeySpec`.
 pub use ds_settings::schema::AgentSetting;
@@ -172,10 +172,10 @@ pub use updates::{
 pub use wallpaper::{PictureMark, PictureTile, is_picture, is_wallpaper, picture_tiles};
 pub use warning::{StaleReason, Warning};
 pub use wifi::{
-    AccessPoint, Account, AskKind, AskStanding, HiddenForm, HiddenLogin, HiddenNetwork,
-    HiddenSecurity, JoinFailure, NetworkLink, NetworkLock, OTHER_FAILED, OTHER_HELP, OTHER_TITLE,
-    Passphrase, PasswordAsk, Remembered, SignalBars, SignalStrength, Ssid, WIFI_BLOCKED, WIFI_SLUG,
-    WifiEffect, WifiInput, WifiNetwork, WifiRadio, WifiReady, WifiSheet, WifiState, WifiStatus,
+    AccessPoint, AskKind, AskStanding, HiddenForm, HiddenLogin, HiddenNetwork, HiddenSecurity,
+    JoinFailure, NetworkLink, NetworkLock, OTHER_FAILED, OTHER_HELP, OTHER_TITLE, Passphrase,
+    PasswordAsk, Remembered, SignalBars, SignalStrength, Ssid, WIFI_BLOCKED, WIFI_SLUG, WifiEffect,
+    WifiInput, WifiLogin, WifiNetwork, WifiRadio, WifiReady, WifiSheet, WifiState, WifiStatus,
     WifiWire, details_rows, forget_network_body, forget_network_title, is_wifi,
     missing_words as wifi_missing_words, password_help, password_title, wifi_page, wifi_step,
 };

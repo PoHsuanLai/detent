@@ -1,7 +1,7 @@
 //! The Wi-Fi page as a machine: what the service said, what the person pressed, and what each
 //! press asks of the service.
 
-use super::account::Account;
+use super::account::WifiLogin;
 use super::hidden::HiddenNetwork;
 use super::model::{NetworkLink, NetworkLock, Remembered, Ssid, WifiRadio, WifiStatus};
 use super::passphrase::Passphrase;
@@ -106,7 +106,7 @@ pub enum WifiInput {
     /// The person gave the password and pressed Join.
     Password(Ssid, Passphrase),
     /// The person gave the username and password of a network that signs in and pressed Join.
-    SignIn(Ssid, Account),
+    SignIn(Ssid, WifiLogin),
     /// The person opened the sheet for a network that does not announce itself.
     OpenOther,
     /// The person filled that sheet and pressed Join.
@@ -133,7 +133,7 @@ pub enum WifiEffect {
     /// Join `ssid`, with the password when one was given.
     Join(Ssid, Option<Passphrase>),
     /// Join `ssid` with the account the person gave.
-    SignIn(Ssid, Account),
+    SignIn(Ssid, WifiLogin),
     /// Join a network that does not announce its name.
     JoinHidden(HiddenNetwork),
     /// Remove the kept password of `ssid`.

@@ -1,7 +1,7 @@
 //! Joining a network that does not announce its name: the form the sheet fills and the network it
 //! makes once it is complete.
 
-use super::account::Account;
+use super::account::WifiLogin;
 use super::model::Ssid;
 use super::passphrase::Passphrase;
 use std::fmt;
@@ -86,7 +86,7 @@ pub enum HiddenLogin {
     /// A password, WPA3 only.
     PersonalWpa3(Passphrase),
     /// A username and a password.
-    Enterprise(Account),
+    Enterprise(WifiLogin),
 }
 
 /// A hidden network to join.
@@ -115,7 +115,7 @@ impl HiddenForm {
                 HiddenLogin::PersonalWpa3(passphrase)
             }
             HiddenSecurity::Enterprise => {
-                HiddenLogin::Enterprise(Account::new(&self.username, &self.password)?)
+                HiddenLogin::Enterprise(WifiLogin::new(&self.username, &self.password)?)
             }
             HiddenSecurity::Personal | HiddenSecurity::PersonalWpa3 => return None,
         };

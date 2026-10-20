@@ -2,7 +2,7 @@
 //! the setting groups the network service takes for that.
 
 use super::nm::Settings;
-use detent_model::{Account, Passphrase, Ssid};
+use detent_model::{Passphrase, Ssid, WifiLogin};
 use std::collections::HashMap;
 use zbus::zvariant::Value;
 
@@ -49,7 +49,7 @@ pub(super) enum Secret {
     /// A password.
     Password(Passphrase),
     /// A username and a password.
-    Account(Account),
+    Account(WifiLogin),
 }
 
 impl Secret {
@@ -92,7 +92,7 @@ fn personal(management: &str, passphrase: &Passphrase) -> HashMap<String, Value<
 
 /// The 802.1X group of a network that signs in: PEAP with MSCHAPv2, the server's certificate
 /// checked against the computer's own authorities.
-fn sign_in(account: &Account) -> HashMap<String, Value<'static>> {
+fn sign_in(account: &WifiLogin) -> HashMap<String, Value<'static>> {
     group([
         ("eap", Value::from(vec!["peap".to_owned()])),
         ("identity", text(&account.username)),
@@ -144,7 +144,7 @@ pub(super) fn settings_for(
 #[cfg(test)]
 mod tests {
     use super::{Secret, Security, Visibility, security_of, settings_for};
-    use detent_model::{Account, Passphrase, Ssid};
+    use detent_model::{Passphrase, Ssid, WifiLogin};
 
     #[test]
     fn flags_say_how_a_network_is_secured() {
@@ -175,7 +175,7 @@ mod tests {
     #[test]
     fn a_sign_in_carries_its_account_and_a_hidden_network_says_so() {
         let ssid = Ssid("Campus".to_owned());
-        let account = Account::new("ada", "analytical").expect("an account");
+        let account = WifiLogin::new("ada", "analytical").expect("an account");
         let settings = settings_for(
             &ssid,
             Security::Eap,

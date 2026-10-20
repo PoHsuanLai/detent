@@ -2,8 +2,8 @@
 //! one this computer is on.
 
 use detent_model::{
-    Account, AskKind, Passphrase, PasswordAsk, WifiInput, WifiNetwork, details_rows, password_help,
-    password_title,
+    AskKind, Passphrase, PasswordAsk, WifiInput, WifiLogin, WifiNetwork, details_rows,
+    password_help, password_title,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -30,14 +30,14 @@ pub(super) fn PasswordSheet(ask: PasswordAsk, press: EventHandler<WifiInput>) ->
             }
         }
         AskKind::Account => {
-            if let Some(account) = Account::new(&username.peek(), &typed.peek()) {
+            if let Some(account) = WifiLogin::new(&username.peek(), &typed.peek()) {
                 press.call(WifiInput::SignIn(ssid.clone(), account));
             }
         }
     });
     let ready = match kind {
         AskKind::Password => Passphrase::new(&typed()).is_long_enough(),
-        AskKind::Account => Account::new(&username(), &typed()).is_some(),
+        AskKind::Account => WifiLogin::new(&username(), &typed()).is_some(),
     };
     rsx! {
         Sheet {
