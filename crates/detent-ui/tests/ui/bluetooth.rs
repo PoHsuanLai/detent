@@ -344,7 +344,7 @@ fn devices_are_looked_for_only_while_the_page_is_open() {
     showing(&mut harness, "the page", PAGE);
     settle(&mut harness, "looking", |_| service.looking() == 1);
 
-    click(&mut harness, &sidebar_row(3));
+    click(&mut harness, &sidebar_row(4));
     settle(&mut harness, "another page", |h| {
         page_of(h).as_deref() == Some("appearance")
     });

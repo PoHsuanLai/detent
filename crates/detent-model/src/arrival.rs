@@ -5,6 +5,7 @@ use crate::accounts::{AccountSegment, AccountTarget};
 use crate::assistant_model::is_assistant_setup;
 use crate::catalogue::Catalogue;
 use crate::page::PageSlug;
+use ds_settings::schema::PageTable;
 use ds_settings::target::SettingsTarget;
 use porter_core::{AccountId, object_segment};
 
@@ -26,16 +27,37 @@ fn account_of(id: &str) -> AccountTarget {
     })
 }
 
+/// The page `text` names, through quire's page table (an id, an alias, the old `app:` form): the
+/// catalogue's page that the table declares under that id, else the hidden first-run step (which
+/// the table resolves but the sidebar does not list), else a page only the catalogue knows by
+/// that slug.
+fn page_slug(catalogue: &Catalogue, text: &str) -> Option<PageSlug> {
+    let table = PageTable::built_in();
+    let declared = table.resolve(text);
+    declared
+        .as_ref()
+        .and_then(|id| {
+            catalogue
+                .pages
+                .iter()
+                .find(|model| table.declared(&model.page).is_some_and(|decl| decl.id == *id))
+        })
+        .or_else(|| catalogue.page(&PageSlug(text.to_owned())))
+        .map(|model| model.slug.clone())
+        .or_else(|| {
+            declared
+                .map(|id| PageSlug(id.0))
+                .filter(is_assistant_setup)
+        })
+}
+
 /// Where `target` lands, or none when no page of the window is what it names.
 pub fn arrival(catalogue: &Catalogue, target: &SettingsTarget) -> Option<Arrival> {
     match target {
-        SettingsTarget::Page(id) => {
-            let slug = PageSlug(id.as_str().to_owned());
-            (catalogue.page(&slug).is_some() || is_assistant_setup(&slug)).then(|| Arrival::Page {
-                slug,
-                query: String::new(),
-            })
-        }
+        SettingsTarget::Page(id) => page_slug(catalogue, id.as_str()).map(|slug| Arrival::Page {
+            slug,
+            query: String::new(),
+        }),
         SettingsTarget::Key(path) => catalogue
             .entries()
             .find(|(_, entry)| &entry.spec.path == path)

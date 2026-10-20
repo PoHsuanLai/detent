@@ -1,4 +1,4 @@
-//! The fixed page order and each page's slug (design/22 section 9.3).
+//! Each page's slug (design/22 section 9.3) and where quire's page table puts it in the sidebar.
 
 use crate::assistant_model::{ASSISTANT_MODEL_SLUG, is_assistant_model};
 use crate::bluetooth::{BLUETOOTH_SLUG, is_bluetooth};
@@ -6,7 +6,7 @@ use crate::displays::{DISPLAYS_SLUG, is_displays};
 use crate::updates::{SLUG as SOFTWARE_UPDATE, is_software_update};
 use crate::wallpaper::{SLUG as WALLPAPER, is_wallpaper};
 use crate::wifi::{WIFI_SLUG, is_wifi};
-use ds_settings::schema::Page;
+use ds_settings::schema::{Page, PageOrder, PageTable};
 use std::cmp::Ordering;
 
 /// A page's stable name: what the sidebar keys on and `--page` takes.
@@ -41,42 +41,28 @@ impl PageSlug {
     }
 }
 
-/// Where `page` sits in the sidebar: Wi-Fi and Bluetooth first, as on a Mac, then the fixed pages in
-/// section 9.3's order with Displays and Wallpaper after Desktop & Dock and Assistant Model right
-/// after Intelligence, Software Update, then every third-party page by app id.
-fn place(page: &Page) -> (u8, &str) {
-    match page {
-        Page::App(_) if is_wifi(page) => (0, ""),
-        Page::App(_) if is_bluetooth(page) => (1, ""),
-        Page::Appearance => (2, ""),
-        Page::Dock => (3, ""),
-        Page::App(_) if is_displays(page) => (4, ""),
-        Page::App(_) if is_wallpaper(page) => (5, ""),
-        Page::MouseAndGestures => (6, ""),
-        Page::KeyboardAndShortcuts => (7, ""),
-        Page::Notifications => (8, ""),
-        Page::Spaces => (9, ""),
-        Page::Accounts => (10, ""),
-        Page::Privacy => (11, ""),
-        Page::Power => (12, ""),
-        Page::Apps => (13, ""),
-        Page::Intelligence => (14, ""),
-        Page::App(_) if is_assistant_model(page) => (15, ""),
-        Page::Viewer => (16, ""),
-        Page::App(_) if is_software_update(page) => (17, ""),
-        Page::App(id) => (18, id),
+/// Where `page` sits in the sidebar, by quire's page table: its declared order, or none when the
+/// table declares it hidden. A page nothing declares (a third-party program's) comes after every
+/// declared one, by id.
+pub(crate) fn sidebar_place(table: &PageTable, page: &Page) -> Option<(PageOrder, String)> {
+    match table.declared(page) {
+        Some(decl) => table
+            .sidebar()
+            .any(|listed| listed.id == decl.id)
+            .then(|| (decl.order, String::new())),
+        None => Some((PageOrder(u16::MAX), page.id().0)),
     }
 }
 
 /// The sidebar order of two pages.
-pub(crate) fn sidebar_order(a: &Page, b: &Page) -> Ordering {
-    place(a).cmp(&place(b))
+pub(crate) fn sidebar_order(table: &PageTable, a: &Page, b: &Page) -> Ordering {
+    sidebar_place(table, a).cmp(&sidebar_place(table, b))
 }
 
 #[cfg(test)]
 mod tests {
     use super::{PageSlug, sidebar_order};
-    use ds_settings::schema::Page;
+    use ds_settings::schema::{Page, PageTable};
 
     #[test]
     fn pages_sort_in_the_documented_order() {
@@ -100,26 +86,27 @@ mod tests {
             Page::declared("wallpaper"),
             Page::Appearance,
         ];
-        pages.sort_by(sidebar_order);
+        let table = PageTable::built_in();
+        pages.sort_by(|a, b| sidebar_order(&table, a, b));
         let slugs: Vec<String> = pages.iter().map(|p| PageSlug::of(p).0).collect();
         assert_eq!(
             slugs,
             [
                 "wifi",
                 "bluetooth",
+                "notifications",
                 "appearance",
+                "intelligence",
+                "privacy",
                 "dock",
                 "displays",
                 "wallpaper",
-                "mouse_and_gestures",
-                "keyboard_and_shortcuts",
-                "notifications",
                 "spaces",
-                "accounts",
-                "privacy",
                 "power",
+                "accounts",
+                "keyboard_and_shortcuts",
+                "mouse_and_gestures",
                 "apps",
-                "intelligence",
                 "viewer",
                 "app:acme",
                 "app:zed"

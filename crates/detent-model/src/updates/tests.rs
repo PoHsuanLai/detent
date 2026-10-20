@@ -734,11 +734,11 @@ fn the_page_has_its_own_slug_label_and_place_and_draws_only_its_pane() {
         [
             "wifi",
             "bluetooth",
-            "displays",
-            "accounts",
-            "privacy",
             "assistant-model",
-            "software-update"
+            "privacy",
+            "displays",
+            "software-update",
+            "accounts"
         ]
     );
     let model: &PageModel = catalogue
@@ -752,7 +752,8 @@ fn the_page_has_its_own_slug_label_and_place_and_draws_only_its_pane() {
         Page::Viewer,
         Page::Power,
     ];
-    order.sort_by(crate::page::sidebar_order);
+    let table = ds_settings::schema::PageTable::built_in();
+    order.sort_by(|a, b| crate::page::sidebar_order(&table, a, b));
     let slugs: Vec<String> = order.iter().map(|p| PageSlug::of(p).0).collect();
-    assert_eq!(slugs, ["power", "viewer", "software-update", "app:zed"]);
+    assert_eq!(slugs, ["power", "software-update", "viewer", "app:zed"]);
 }

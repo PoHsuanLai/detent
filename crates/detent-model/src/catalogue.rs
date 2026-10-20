@@ -6,7 +6,7 @@ use crate::config_file::ConfigFile;
 use crate::discovery::ProgramSchema;
 use crate::displays::displays_page;
 use crate::entry::KeyEntry;
-use crate::page::{PageSlug, sidebar_order};
+use crate::page::{PageSlug, sidebar_place};
 use crate::updates::software_update_page;
 use crate::wifi::wifi_page;
 use ds_settings::schema::{Exposure, ForeignTables, KeyPath, KeySpec, Page, PageTable};
@@ -50,7 +50,7 @@ pub struct FileSpec {
     pub foreign: ForeignTables,
 }
 
-/// The whole app: pages in sidebar order, and the files behind them.
+/// The whole app: pages in the sidebar's order (`PageTable::sidebar()`), and the files behind them.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Catalogue {
     /// Pages that have at least one key, in sidebar order, and the live pages (Accounts, Privacy,
@@ -183,8 +183,13 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
             });
         }
     }
-    pages.sort_by(|a, b| sidebar_order(&a.page, &b.page));
-    pages
+    // Quire's table says which pages the sidebar lists and in what order.
+    let mut placed: Vec<_> = pages
+        .into_iter()
+        .filter_map(|model| sidebar_place(&table, &model.page).map(|place| (place, model)))
+        .collect();
+    placed.sort_by(|a, b| a.0.cmp(&b.0));
+    placed.into_iter().map(|(_, model)| model).collect()
 }
 
 fn place_in_section(sections: &mut Vec<SectionModel>, entry: &KeyEntry) {

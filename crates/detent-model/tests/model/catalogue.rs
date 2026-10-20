@@ -21,8 +21,8 @@ fn slug(name: &str) -> PageSlug {
 }
 
 #[test]
-fn pages_come_in_the_fixed_order_and_only_when_they_have_keys() {
-    let slugs: Vec<String> = real("pages_come_in_the_fixed_order")
+fn pages_come_in_the_page_tables_order_and_only_when_they_have_keys() {
+    let slugs: Vec<String> = real("pages_come_in_the_page_tables_order")
         .pages
         .iter()
         .map(|p| p.slug.0.clone())
@@ -32,19 +32,19 @@ fn pages_come_in_the_fixed_order_and_only_when_they_have_keys() {
         [
             "wifi",
             "bluetooth",
-            "appearance",
-            "dock",
-            "displays",
-            "mouse_and_gestures",
-            "keyboard_and_shortcuts",
             "notifications",
-            "spaces",
-            "accounts",
-            "privacy",
-            "power",
+            "appearance",
             "intelligence",
             "assistant-model",
-            "software-update"
+            "privacy",
+            "dock",
+            "displays",
+            "spaces",
+            "power",
+            "software-update",
+            "accounts",
+            "keyboard_and_shortcuts",
+            "mouse_and_gestures"
         ],
         "no schema names the Apps page, so it is not listed; inferd's and docket's name Intelligence; Accounts, Privacy, Assistant Model, Software Update, Wi-Fi, Bluetooth and Displays are live panes and always there"
     );

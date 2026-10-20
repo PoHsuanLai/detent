@@ -91,7 +91,7 @@ fn the_page_is_first_in_the_sidebar_and_says_plainly_when_nothing_serves_wifi() 
         Some("Bluetooth")
     );
     assert_eq!(
-        harness.text_of(&sidebar_row(5)).as_deref(),
+        harness.text_of(&sidebar_row(9)).as_deref(),
         Some("Displays")
     );
     let row = harness.text_of(".ds-field-row").unwrap_or_default();

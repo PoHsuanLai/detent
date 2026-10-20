@@ -107,14 +107,14 @@ fn answers() -> Vec<Row> {
 }
 
 #[test]
-fn the_page_is_in_the_sidebar_right_after_accounts() {
+fn the_page_is_in_the_sidebar_right_after_the_assistant_model() {
     let mut w = world("privacy-sidebar", Some(answers()));
     assert_eq!(
-        w.harness.text_of(&sidebar_row(10)).as_deref(),
-        Some("Accounts")
+        w.harness.text_of(&sidebar_row(6)).as_deref(),
+        Some("Assistant Model")
     );
     assert_eq!(
-        w.harness.text_of(&sidebar_row(11)).as_deref(),
+        w.harness.text_of(&sidebar_row(7)).as_deref(),
         Some("Privacy & Security")
     );
     listed(&mut w);
