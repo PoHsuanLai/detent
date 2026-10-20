@@ -11,8 +11,9 @@ use zbus::zvariant::{ObjectPath, OwnedObjectPath};
 /// Where the agent is served.
 pub(super) const AGENT_PATH: &str = "/org/quire/settings/bluetooth/agent";
 
-/// What the agent tells BlueZ it can do: show a number and take a yes or a no.
-pub(super) const CAPABILITY: &str = "DisplayYesNo";
+/// What the agent tells BlueZ it can do: show a number, take a yes or a no, and take typed
+/// digits (a keyboard's pairing is typed here).
+pub(super) const CAPABILITY: &str = "KeyboardDisplay";
 
 /// How the agent refuses: BlueZ reads this error as the person saying no.
 #[derive(Debug, zbus::DBusError)]
@@ -61,16 +62,33 @@ impl Agent {
         }
     }
 
-    /// Puts `ask` to the person and waits for the answer.
-    async fn put(&self, device: &ObjectPath<'_>, ask: PairingAsk) -> Result<(), AgentError> {
+    /// Puts `ask` to the person and waits for the answer; a no is BlueZ's refusal.
+    async fn put(
+        &self,
+        device: &ObjectPath<'_>,
+        ask: PairingAsk,
+    ) -> Result<PairingAnswer, AgentError> {
         let question = self.question(device, ask).await;
         let (reply, answered) = PairingReply::channel();
         self.asks
             .send(PairingRequest { question, reply })
             .map_err(|_| rejected())?;
         match answered.await {
-            Ok(PairingAnswer::Yes) => Ok(()),
             Ok(PairingAnswer::No) | Err(_) => Err(rejected()),
+            Ok(answer) => Ok(answer),
+        }
+    }
+
+    /// Puts `ask`, which wants a yes.
+    async fn confirm(&self, device: &ObjectPath<'_>, ask: PairingAsk) -> Result<(), AgentError> {
+        self.put(device, ask).await.map(|_| ())
+    }
+
+    /// Puts `ask`, which wants text typed.
+    async fn typed(&self, device: &ObjectPath<'_>, ask: PairingAsk) -> Result<String, AgentError> {
+        match self.put(device, ask).await? {
+            PairingAnswer::Typed(text) => Ok(text),
+            PairingAnswer::Yes | PairingAnswer::No => Err(rejected()),
         }
     }
 }
@@ -82,7 +100,7 @@ impl Agent {
     async fn cancel(&self) {}
 
     async fn request_authorization(&self, device: ObjectPath<'_>) -> Result<(), AgentError> {
-        self.put(&device, PairingAsk::Allow).await
+        self.confirm(&device, PairingAsk::Allow).await
     }
 
     async fn request_confirmation(
@@ -90,7 +108,7 @@ impl Agent {
         device: ObjectPath<'_>,
         passkey: u32,
     ) -> Result<(), AgentError> {
-        self.put(&device, PairingAsk::Compare(PairingCode(passkey)))
+        self.confirm(&device, PairingAsk::Compare(PairingCode(passkey)))
             .await
     }
 
@@ -114,11 +132,16 @@ impl Agent {
         Ok(())
     }
 
-    async fn request_pin_code(&self, _device: ObjectPath<'_>) -> Result<String, AgentError> {
-        Err(rejected())
+    /// A PIN of up to sixteen characters, typed by the person.
+    async fn request_pin_code(&self, device: ObjectPath<'_>) -> Result<String, AgentError> {
+        self.typed(&device, PairingAsk::PinCode).await
     }
 
-    async fn request_passkey(&self, _device: ObjectPath<'_>) -> Result<u32, AgentError> {
-        Err(rejected())
+    /// A number of up to six digits, typed by the person.
+    async fn request_passkey(&self, device: ObjectPath<'_>) -> Result<u32, AgentError> {
+        self.typed(&device, PairingAsk::Passkey)
+            .await?
+            .parse()
+            .map_err(|_| rejected())
     }
 }

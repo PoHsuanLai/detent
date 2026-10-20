@@ -4,10 +4,10 @@
 
 use crate::support::Sandbox;
 use crate::support::bluetooth::{Asked, Bluetooth};
-use crate::support::drive::{click, page_of, settle, showing, sidebar_row, title_of};
+use crate::support::drive::{click, page_of, settle, showing, sidebar_row, title_of, type_into};
 use detent_model::{
-    BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, Missing, PairingAnswer,
-    PairingAsk, PairingCode, PairingQuestion,
+    BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, Missing,
+    PairingAnswer, PairingAsk, PairingCode, PairingQuestion,
 };
 use detent_ui::Opening;
 use ds_harness::Harness;
@@ -35,6 +35,7 @@ fn device(last: u8, name: &str, kind: BtKind, link: BtLink, pairing: BtPairing) 
         kind,
         link,
         pairing,
+        battery: None,
     }
 }
 
@@ -216,6 +217,52 @@ fn a_nearby_device_pairs_after_the_person_confirms_the_number() {
     click(&mut harness, &format!("{PAIRING} [aria-label=\"Connect\"]"));
     assert_eq!(answered.try_recv().ok(), Some(PairingAnswer::Yes));
     settle(&mut harness, "the sheet closed", |h| h.count(PAIRING) == 0);
+}
+
+#[test]
+fn a_device_that_tells_its_battery_shows_it_in_its_row() {
+    let mut standing = status(BtPower::On);
+    for device in &mut standing.devices {
+        if device.name == "Quiet Mouse" {
+            device.battery = Some(BatteryLevel(80));
+        }
+    }
+    let service = Bluetooth::answering(standing);
+    let (_sandbox, mut harness) = world("bluetooth-battery", &service);
+    showing(&mut harness, "the battery", "[data-system=\"battery\"]");
+    assert_eq!(harness.count("[data-system=\"battery\"]"), 1);
+    assert_eq!(
+        harness.text_of("[data-system=\"battery\"]").as_deref(),
+        Some("80%")
+    );
+}
+
+#[test]
+fn a_pin_is_typed_into_the_sheet_and_sent_to_the_device() {
+    let service = Bluetooth::answering(status(BtPower::On));
+    let (_sandbox, mut harness) = world("bluetooth-pin", &service);
+    showing(
+        &mut harness,
+        "the nearby device",
+        "[aria-label=\"Connect Nearby Pad\"]",
+    );
+    settle(&mut harness, "a session", |_| service.looking() == 1);
+    let mut answered = service.ask(PairingQuestion {
+        address: address(3),
+        name: "Nearby Pad".to_owned(),
+        ask: PairingAsk::PinCode,
+    });
+    showing(&mut harness, "the question", PAIRING);
+    assert!(
+        answered.try_recv().is_err(),
+        "nothing is answered until the person types and presses Connect"
+    );
+    type_into(&mut harness, &format!("{PAIRING} .ds-input"), "0000");
+    click(&mut harness, &format!("{PAIRING} [aria-label=\"Connect\"]"));
+    assert_eq!(
+        answered.try_recv().ok(),
+        Some(PairingAnswer::Typed("0000".to_owned()))
+    );
 }
 
 #[test]

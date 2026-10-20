@@ -4,7 +4,9 @@
 use super::bluez::{Objects, SERVICE};
 use crate::deadline::{Deadline, peer};
 use crate::system::is_running;
-use detent_model::{BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, Missing};
+use detent_model::{
+    BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, Missing,
+};
 use ds_peer::within;
 use std::collections::HashMap;
 use zbus::Connection;
@@ -13,6 +15,7 @@ use zbus::zvariant::{OwnedObjectPath, OwnedValue};
 
 const ADAPTER: &str = "org.bluez.Adapter1";
 const DEVICE: &str = "org.bluez.Device1";
+const BATTERY: &str = "org.bluez.Battery1";
 
 type Properties = HashMap<String, OwnedValue>;
 
@@ -90,13 +93,21 @@ pub(super) fn status_of(objects: &Objects) -> Result<BtStatus, Missing> {
     let devices = objects
         .iter()
         .filter(|(path, _)| under(path, adapter_path))
-        .filter_map(|(_, interfaces)| properties_of(interfaces, DEVICE))
-        .filter_map(device_of)
+        .filter_map(|(_, interfaces)| {
+            let device = properties_of(interfaces, DEVICE)?;
+            device_of(device, properties_of(interfaces, BATTERY))
+        })
         .collect();
     Ok(BtStatus::new(power, devices))
 }
 
-fn device_of(properties: &Properties) -> Option<BtDevice> {
+/// The battery `Percentage` the device's `Battery1` interface reports, when it has one.
+fn battery_of(battery: Option<&Properties>) -> Option<BatteryLevel> {
+    let percentage = battery?.get("Percentage")?;
+    u8::try_from(percentage).ok().map(BatteryLevel)
+}
+
+fn device_of(properties: &Properties, battery: Option<&Properties>) -> Option<BtDevice> {
     let address = text(properties, "Address")?;
     let pairing = if flag(properties, "Paired") {
         BtPairing::Paired
@@ -119,6 +130,7 @@ fn device_of(properties: &Properties) -> Option<BtDevice> {
             BtLink::Disconnected
         },
         pairing,
+        battery: battery_of(battery),
     })
 }
 
@@ -220,19 +232,43 @@ mod tests {
             ),
             (
                 path("/org/bluez/hci0/dev_A"),
-                seen("AA:00", "Mouse", BtPairing::Paired, BtLink::Connected, Hearing::Silent),
+                seen(
+                    "AA:00",
+                    "Mouse",
+                    BtPairing::Paired,
+                    BtLink::Connected,
+                    Hearing::Silent,
+                ),
             ),
             (
                 path("/org/bluez/hci0/dev_B"),
-                seen("BB:00", "Seen Pad", BtPairing::Unpaired, BtLink::Disconnected, Hearing::Heard),
+                seen(
+                    "BB:00",
+                    "Seen Pad",
+                    BtPairing::Unpaired,
+                    BtLink::Disconnected,
+                    Hearing::Heard,
+                ),
             ),
             (
                 path("/org/bluez/hci0/dev_C"),
-                seen("CC:00", "Gone Pad", BtPairing::Unpaired, BtLink::Disconnected, Hearing::Silent),
+                seen(
+                    "CC:00",
+                    "Gone Pad",
+                    BtPairing::Unpaired,
+                    BtLink::Disconnected,
+                    Hearing::Silent,
+                ),
             ),
             (
                 path("/org/bluez/hci1/dev_D"),
-                seen("DD:00", "Other Adapter", BtPairing::Paired, BtLink::Disconnected, Hearing::Silent),
+                seen(
+                    "DD:00",
+                    "Other Adapter",
+                    BtPairing::Paired,
+                    BtLink::Disconnected,
+                    Hearing::Silent,
+                ),
             ),
         ])
     }

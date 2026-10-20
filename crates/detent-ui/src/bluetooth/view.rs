@@ -173,6 +173,11 @@ fn DeviceRow(
             div { class: "system-glyphs", "data-kind": "{device.kind:?}",
                 IconView { source: IconSource::from(glyph(device.kind)) }
             }
+            if let Some(level) = device.battery {
+                div { class: "system-battery", "data-system": "battery",
+                    Label { text: level.words(), role: LabelRole::Secondary }
+                }
+            }
             match (group, device.link) {
                 (Group::Mine, BtLink::Connected) => rsx! {
                     Button {

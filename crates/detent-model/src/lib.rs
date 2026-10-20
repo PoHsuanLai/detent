@@ -71,9 +71,9 @@ pub use assistants::{
     places_step,
 };
 pub use bluetooth::{
-    BLUETOOTH_SLUG, BtAddress, BtDevice, BtEffect, BtInput, BtKind, BtLink, BtPairing, BtPower,
-    BtReady, BtSheet, BtState, BtStatus, PairingAnswer, PairingAsk, PairingCode, PairingQuestion,
-    bluetooth_page, bluetooth_step, forget_body, forget_title, is_bluetooth,
+    BLUETOOTH_SLUG, BatteryLevel, BtAddress, BtDevice, BtEffect, BtInput, BtKind, BtLink,
+    BtPairing, BtPower, BtReady, BtSheet, BtState, BtStatus, PairingAnswer, PairingAsk,
+    PairingCode, PairingQuestion, bluetooth_page, bluetooth_step, forget_body, forget_title, is_bluetooth,
     missing_words as bluetooth_missing_words, pairing_body, pairing_title,
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};

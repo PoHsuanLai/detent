@@ -42,6 +42,10 @@ pub fn pairing_body(question: &PairingQuestion) -> String {
             "Type {code} on \u{201c}{}\u{201d}, then press Return.",
             question.name
         ),
+        PairingAsk::PinCode => format!("Enter the PIN for \u{201c}{}\u{201d}.", question.name),
+        PairingAsk::Passkey => {
+            format!("Enter the code shown on \u{201c}{}\u{201d}.", question.name)
+        }
     }
 }
 

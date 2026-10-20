@@ -12,6 +12,7 @@ fn device(last: u8, name: &str, link: BtLink, pairing: BtPairing) -> BtDevice {
         kind: BtKind::Audio,
         link,
         pairing,
+        battery: None,
     }
 }
 
@@ -166,4 +167,42 @@ fn the_switch_asks_and_waits_for_bluez_to_say() {
     let (next, effects) = bluetooth_step(ready(), BtInput::Switch(BtPower::Off));
     assert_eq!(effects, [BtEffect::SetPower(BtPower::Off)]);
     assert_eq!(page_of(&next).status.power, BtPower::On);
+}
+
+#[test]
+fn a_pin_is_one_to_sixteen_characters_and_a_passkey_up_to_six_digits() {
+    let cases = [
+        ("pin", PairingAsk::PinCode, "0000", true),
+        ("pin with letters", PairingAsk::PinCode, "ab12", true),
+        ("empty pin", PairingAsk::PinCode, "", false),
+        ("long pin", PairingAsk::PinCode, "12345678901234567", false),
+        ("passkey", PairingAsk::Passkey, "004217", true),
+        ("passkey letters", PairingAsk::Passkey, "12ab", false),
+        ("long passkey", PairingAsk::Passkey, "1234567", false),
+        ("a number to compare", PairingAsk::Allow, "1234", false),
+    ];
+    for (case, ask, text, want) in cases {
+        assert_eq!(ask.accepts(text), want, "{case}");
+    }
+}
+
+#[test]
+fn typing_a_pin_is_answered_to_the_device_and_the_sheet_says_what_to_type() {
+    let asked = question(PairingAsk::PinCode);
+    assert!(asked.wants_answer());
+    assert_eq!(
+        pairing_body(&asked),
+        "Enter the PIN for \u{201c}Nearby Pad\u{201d}."
+    );
+    let (open, _) = bluetooth_step(ready(), BtInput::Asked(asked));
+    let typed = PairingAnswer::Typed("0000".to_owned());
+    let (closed, effects) = bluetooth_step(open, BtInput::Answer(typed.clone()));
+    assert_eq!(effects, [BtEffect::Answer(typed)]);
+    assert_eq!(page_of(&closed).sheet, BtSheet::Closed);
+}
+
+#[test]
+fn a_battery_reads_as_a_percentage() {
+    assert_eq!(BatteryLevel(80).words(), "80%");
+    assert_eq!(BatteryLevel(250).words(), "100%");
 }

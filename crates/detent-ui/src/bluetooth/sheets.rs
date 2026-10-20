@@ -10,6 +10,7 @@ use ds::components::controls::button_model::{Answers, ButtonRole};
 use ds::components::overlays::sheet_width::SheetWidth;
 use ds::prelude::*;
 use ds::root::common::Common;
+use ds::style::tokens::control_size::ControlSize;
 
 /// Asks before a device is forgotten.
 #[component]
@@ -43,13 +44,22 @@ pub(super) fn ForgetSheet(name: String, press: EventHandler<BtInput>) -> Element
     }
 }
 
-/// What a device asks while pairing: Connect says yes, Cancel says no. A number to type on the
-/// device has nothing to answer, so it has Cancel only.
+/// What a device asks while pairing: Connect says yes (or sends what was typed), Cancel says no.
+/// A number to type on the device has nothing to answer, so it has Cancel only.
 #[component]
 pub(super) fn PairingSheet(question: PairingQuestion, press: EventHandler<BtInput>) -> Element {
+    let mut typed = use_signal(String::new);
     let close = EventHandler::new(move |()| press.call(BtInput::Cancel));
     let title = pairing_title(&question);
-    let yes = EventHandler::new(move |()| press.call(BtInput::Answer(PairingAnswer::Yes)));
+    let ask = question.ask;
+    let answer = EventHandler::new(move |()| {
+        if !ask.takes_text() {
+            press.call(BtInput::Answer(PairingAnswer::Yes));
+        } else if ask.accepts(&typed.peek()) {
+            press.call(BtInput::Answer(PairingAnswer::Typed(typed.peek().clone())));
+        }
+    });
+    let ready = !ask.takes_text() || ask.accepts(&typed());
     rsx! {
         Sheet {
             label: title.clone(),
@@ -58,6 +68,16 @@ pub(super) fn PairingSheet(question: PairingQuestion, press: EventHandler<BtInpu
             div { class: "system-sheet", "data-system": "pairing",
                 Label { text: title, role: LabelRole::Primary, style: LabelStyle::Headline }
                 Label { text: pairing_body(&question), role: LabelRole::Secondary }
+                if ask.takes_text() {
+                    TextField {
+                        label: "Code",
+                        value: String::new(),
+                        kind: FieldKind::Plain,
+                        size: ControlSize::Small,
+                        oninput: move |text: String| typed.set(text),
+                        onsubmit: move |_: String| answer.call(()),
+                    }
+                }
                 div { class: "system-sheet-buttons",
                     Button {
                         label: "Cancel",
@@ -68,9 +88,10 @@ pub(super) fn PairingSheet(question: PairingQuestion, press: EventHandler<BtInpu
                     if question.wants_answer() {
                         Button {
                             label: "Connect",
-                        common: Common { aria_label: Some("Connect".to_owned()), ..Common::default() },
+                            common: Common { aria_label: Some("Connect".to_owned()), ..Common::default() },
                             answers: Answers::Return,
-                            onclick: move |_| yes.call(()),
+                            availability: if ready { Availability::Enabled } else { Availability::Disabled },
+                            onclick: move |_| answer.call(()),
                         }
                     }
                 }

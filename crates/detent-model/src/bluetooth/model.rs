@@ -65,6 +65,17 @@ impl BtKind {
     }
 }
 
+/// A device's battery, in percent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BatteryLevel(pub u8);
+
+impl BatteryLevel {
+    /// The level as the row reads it (`80%`).
+    pub fn words(self) -> String {
+        format!("{}%", self.0.min(100))
+    }
+}
+
 /// One device.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BtDevice {
@@ -78,6 +89,8 @@ pub struct BtDevice {
     pub link: BtLink,
     /// Whether this computer is paired with it.
     pub pairing: BtPairing,
+    /// Its battery, when it tells.
+    pub battery: Option<BatteryLevel>,
 }
 
 /// The switch and the devices, the connected ones first, then by name.
@@ -141,6 +154,35 @@ pub enum PairingAsk {
     Allow,
     /// Type this number on the device. Nothing is answered here.
     Show(PairingCode),
+    /// Type the PIN the device is set to (a keyboard shows one, an older device has a fixed one).
+    PinCode,
+    /// Type the six-digit number the device shows.
+    Passkey,
+}
+
+/// The most characters a PIN has: BlueZ takes sixteen.
+const PIN_LONGEST: usize = 16;
+/// The most digits a passkey has.
+const PASSKEY_LONGEST: usize = 6;
+
+impl PairingAsk {
+    /// Whether the person types the answer: a PIN or a passkey.
+    pub fn takes_text(self) -> bool {
+        matches!(self, PairingAsk::PinCode | PairingAsk::Passkey)
+    }
+
+    /// Whether `text` is a PIN or a passkey this question takes; a question that wants no typing
+    /// takes nothing.
+    pub fn accepts(self, text: &str) -> bool {
+        let length = text.chars().count();
+        match self {
+            PairingAsk::PinCode => (1..=PIN_LONGEST).contains(&length),
+            PairingAsk::Passkey => {
+                (1..=PASSKEY_LONGEST).contains(&length) && text.chars().all(|c| c.is_ascii_digit())
+            }
+            PairingAsk::Compare(_) | PairingAsk::Allow | PairingAsk::Show(_) => false,
+        }
+    }
 }
 
 /// A pairing question, for the device that asks it.
@@ -155,10 +197,12 @@ pub struct PairingQuestion {
 }
 
 /// The person's answer to a pairing question.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PairingAnswer {
     /// Yes: the number matches, or pairing is allowed.
     Yes,
     /// No.
     No,
+    /// The PIN or the passkey the person typed.
+    Typed(String),
 }

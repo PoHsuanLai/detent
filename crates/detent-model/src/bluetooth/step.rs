@@ -215,10 +215,13 @@ impl BtReady {
 }
 
 impl PairingQuestion {
-    /// Whether the question wants an answer (the number to type needs none).
+    /// Whether the question wants an answer (the number to type on the device needs none).
     pub fn wants_answer(&self) -> bool {
         match self.ask {
-            PairingAsk::Compare(_) | PairingAsk::Allow => true,
+            PairingAsk::Compare(_)
+            | PairingAsk::Allow
+            | PairingAsk::PinCode
+            | PairingAsk::Passkey => true,
             PairingAsk::Show(_) => false,
         }
     }
