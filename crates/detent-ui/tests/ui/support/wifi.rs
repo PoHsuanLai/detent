@@ -2,7 +2,7 @@
 //! and moves its own standing the way the real service would.
 
 use detent_model::{
-    Account, HiddenNetwork, JoinFailure, Missing, NetworkLink, Passphrase, Remembered, Ssid,
+    HiddenNetwork, JoinFailure, Missing, NetworkLink, Passphrase, Remembered, Ssid, WifiLogin,
     WifiRadio, WifiStatus, Work,
 };
 use detent_ui::{Ticker, Ticks, WifiLink};
@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 pub enum Asked {
     Radio(WifiRadio),
     Join(Ssid, Option<Passphrase>),
-    SignIn(Ssid, Account),
+    SignIn(Ssid, WifiLogin),
     JoinHidden(HiddenNetwork),
     Forget(Ssid),
 }
@@ -129,7 +129,7 @@ impl WifiLink for Wifi {
         self.finish_join(&ssid)
     }
 
-    fn sign_in(&self, ssid: Ssid, account: Account) -> Work<'_, Result<(), JoinFailure>> {
+    fn sign_in(&self, ssid: Ssid, account: WifiLogin) -> Work<'_, Result<(), JoinFailure>> {
         self.record(Asked::SignIn(ssid.clone(), account));
         self.finish_join(&ssid)
     }

@@ -3,7 +3,7 @@
 
 use crate::ticks::Ticks;
 use detent_model::{
-    Account, HiddenNetwork, JoinFailure, Missing, Passphrase, Ssid, WifiRadio, WifiStatus, Work,
+    HiddenNetwork, JoinFailure, Missing, Passphrase, Ssid, WifiLogin, WifiRadio, WifiStatus, Work,
 };
 use std::fmt::Debug;
 
@@ -23,7 +23,7 @@ pub trait WifiLink: Debug + Send + Sync {
     fn join(&self, ssid: Ssid, passphrase: Option<Passphrase>)
     -> Work<'_, Result<(), JoinFailure>>;
     /// Joins `ssid`, a network that signs in with an account, and answers when the join has ended.
-    fn sign_in(&self, ssid: Ssid, account: Account) -> Work<'_, Result<(), JoinFailure>>;
+    fn sign_in(&self, ssid: Ssid, account: WifiLogin) -> Work<'_, Result<(), JoinFailure>>;
     /// Joins a network that does not announce its name, and answers when the join has ended.
     fn join_hidden(&self, network: HiddenNetwork) -> Work<'_, Result<(), JoinFailure>>;
     /// Removes the kept password of `ssid`, so the computer no longer joins it by itself.

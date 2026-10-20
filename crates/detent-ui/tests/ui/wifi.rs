@@ -9,8 +9,8 @@ use crate::support::drive::{
 };
 use crate::support::wifi::{Asked, Wifi};
 use detent_model::{
-    AccessPoint, Account, HiddenLogin, HiddenNetwork, JoinFailure, Missing, NetworkLink,
-    NetworkLock, Passphrase, SignalStrength, Ssid, WifiRadio, WifiStatus, WifiWire,
+    AccessPoint, HiddenLogin, HiddenNetwork, JoinFailure, Missing, NetworkLink, NetworkLock,
+    Passphrase, SignalStrength, Ssid, WifiLogin, WifiRadio, WifiStatus, WifiWire,
 };
 use detent_ui::Opening;
 use ds_harness::Harness;
@@ -299,7 +299,7 @@ fn a_network_that_signs_in_asks_for_a_username_and_a_password() {
         service.asked(),
         [Asked::SignIn(
             ssid("Campus"),
-            Account::new("ada", "analytical").expect("an account")
+            WifiLogin::new("ada", "analytical").expect("an account")
         )]
     );
     settle(&mut harness, "the sheet closed", |h| h.count(PASSWORD) == 0);

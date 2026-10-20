@@ -6,7 +6,8 @@ use crate::system::Unavailable;
 use detent_model::{
     ArrangeSide, DisplayChange, DisplayEdit, DisplayRotation, DisplaysInput, DisplaysReady,
     DisplaysState, Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli, default_scale,
-    displays_missing_words, hertz_words, looks_like, mode_sizes, native_size, side_of, size_words,
+    display_size_words, displays_missing_words, hertz_words, looks_like, mode_sizes, native_size,
+    side_of,
 };
 use dioxus::prelude::*;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -95,7 +96,7 @@ fn ResolutionRow(
     let items: Vec<MenuItem<ScaleMilli>> = looks
         .iter()
         .map(|look| {
-            let size = size_words(look.size);
+            let size = display_size_words(look.size);
             let label = if look.scale == default {
                 format!("Default for display ({size})")
             } else {
@@ -107,7 +108,7 @@ fn ResolutionRow(
     let now = looks
         .iter()
         .find(|look| look.scale == display.scale)
-        .map(|look| format!("Looks like {}", size_words(look.size)));
+        .map(|look| format!("Looks like {}", display_size_words(look.size)));
     rsx! {
         FieldRow { label: TextLine::from("Resolution"), help: now.map(TextLine::from), availability,
             PopUpButton::<ScaleMilli> {
@@ -130,7 +131,7 @@ fn ModeRow(display: Monitor, availability: Availability, pick: EventHandler<Pixe
     let items: Vec<MenuItem<PixelSize>> = sizes
         .iter()
         .map(|size| {
-            let words = size_words(*size);
+            let words = display_size_words(*size);
             let label = if native == Some(*size) {
                 format!("{words} (Native)")
             } else {

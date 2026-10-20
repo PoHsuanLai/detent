@@ -10,7 +10,7 @@ use super::read::{access_point_at, device_at, saved, wifi_device, wireless_at};
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::system::{next, system_connection};
-use detent_model::{Account, HiddenLogin, HiddenNetwork, JoinFailure, Passphrase, Ssid};
+use detent_model::{HiddenLogin, HiddenNetwork, JoinFailure, Passphrase, Ssid, WifiLogin};
 use ds_peer::within;
 use zbus::Connection;
 use zbus::zvariant::{ObjectPath, OwnedObjectPath};
@@ -93,7 +93,7 @@ pub(super) async fn join(
 pub(super) async fn sign_in(
     bus: &BusSource,
     ssid: Ssid,
-    account: Account,
+    account: WifiLogin,
 ) -> Result<(), JoinFailure> {
     run(
         bus,
