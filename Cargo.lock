@@ -1399,6 +1399,7 @@ dependencies = [
  "docket-settings",
  "ds-helpers",
  "ds-settings",
+ "keycap-client",
  "porter-core",
  "porter-infer",
  "regex",

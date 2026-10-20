@@ -75,6 +75,7 @@ fn a_desktop_group_lists_exactly_what_the_desktop_handles() {
     let handled = |action: StandardAction| action != StandardAction::EmojiAndSymbols;
     for group in ShortcutGroup::ALL {
         let listed = group.listed(handled);
+        // Every action the stub refuses is a desktop one, so the app-menu rule never shows here.
         for action in group.all_actions() {
             let expected = !group.is_desktop() || handled(action);
             assert_eq!(
@@ -98,9 +99,11 @@ fn the_page_lists_every_handled_action_and_no_unhandled_desktop_one() {
             "{action:?} is handled but not listed"
         );
     }
-    for group in ShortcutGroup::ALL.iter().filter(|group| group.is_desktop()) {
+    for group in ShortcutGroup::ALL {
         for action in group.actions() {
-            assert!(keycap_client::handler(action).is_some(), "{action:?}");
+            if group.is_desktop_action(action) {
+                assert!(keycap_client::handler(action).is_some(), "{action:?}");
+            }
         }
     }
     assert!(!shown.contains(&StandardAction::EmojiAndSymbols));
@@ -114,6 +117,23 @@ fn the_page_lists_every_handled_action_and_no_unhandled_desktop_one() {
         !groups.contains(&ShortcutGroup::Input),
         "an empty group is not drawn"
     );
+}
+
+#[test]
+fn an_apps_own_window_action_stays_though_the_desktop_does_not_handle_it() {
+    let nothing = |_: StandardAction| false;
+    let windows = ShortcutGroup::Windows.listed(nothing);
+    for kept in [
+        StandardAction::Hide,
+        StandardAction::Minimize,
+        StandardAction::Close,
+        StandardAction::Quit,
+    ] {
+        assert!(windows.contains(&kept), "{kept:?}");
+    }
+    for gone in [StandardAction::NextApp, StandardAction::ForceQuit] {
+        assert!(!windows.contains(&gone), "{gone:?}");
+    }
 }
 
 #[test]

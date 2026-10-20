@@ -101,6 +101,18 @@ const DOCUMENTS: &[A] = &[
     A::Cancel,
 ];
 const SYSTEM: &[A] = &[A::LockScreen, A::LogOut];
+/// The window actions of an app's own menus (as on a Mac: the app menu's Hide and Quit, the
+/// Window menu's Minimize, the File menu's Close): every app handles these itself, though they
+/// are listed with the desktop's app switching.
+const APP_MENU: &[A] = &[
+    A::Hide,
+    A::HideOthers,
+    A::Minimize,
+    A::MinimizeAll,
+    A::Close,
+    A::CloseAll,
+    A::Quit,
+];
 
 impl ShortcutGroup {
     /// Every group, in the order the list draws them.
@@ -148,7 +160,13 @@ impl ShortcutGroup {
         self.listed(|_| true)
     }
 
-    /// The group's actions with those `handled` keeps; an app group keeps every one.
+    /// Whether `action` in this group is the desktop's to handle, not each app's.
+    pub fn is_desktop_action(self, action: A) -> bool {
+        self.is_desktop() && !APP_MENU.contains(&action)
+    }
+
+    /// The group's actions with those `handled` keeps; an app's action is kept whatever
+    /// `handled` says.
     pub fn listed(self, handled: impl Fn(A) -> bool) -> Vec<A> {
         let fixed = match self {
             ShortcutGroup::Launcher => LAUNCHER,
@@ -169,7 +187,7 @@ impl ShortcutGroup {
             .iter()
             .copied()
             .chain(numbered)
-            .filter(|action| !self.is_desktop() || handled(*action))
+            .filter(|action| !self.is_desktop_action(*action) || handled(*action))
             .collect()
     }
 }
