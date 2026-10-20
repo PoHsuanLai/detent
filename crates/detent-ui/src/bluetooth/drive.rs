@@ -26,7 +26,9 @@ pub(super) fn use_bluetooth() -> Driver {
     let driver = Driver {
         link: env.bluetooth.clone(),
         toasts: use_toasts(),
-        waiting: Arc::default(),
+        // Kept across renders: the task that hears a question and the click that answers it hold
+        // drivers from different renders.
+        waiting: use_hook(Arc::default),
         state: use_signal(BtState::default),
     };
     use_future({

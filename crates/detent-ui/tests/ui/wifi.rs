@@ -3,7 +3,9 @@
 //! without a service.
 
 use crate::support::Sandbox;
-use crate::support::drive::{click, page_of, settle, showing, sidebar_row, title_of, type_into};
+use crate::support::drive::{
+    click, keys, page_of, settle, showing, sidebar_row, title_of, type_into,
+};
 use crate::support::wifi::{Asked, Wifi};
 use detent_model::{
     AccessPoint, JoinFailure, Missing, NetworkLink, NetworkLock, Passphrase, SignalStrength, Ssid,
@@ -233,11 +235,8 @@ fn a_new_secured_network_asks_for_its_password_and_joins_with_it() {
         Some("true"),
         "a WPA password has eight characters at least"
     );
-    type_into(
-        &mut harness,
-        &format!("{PASSWORD} .ds-input"),
-        "er than that",
-    );
+    // More keys into the field that has focus: a second click would move the caret.
+    keys(&mut harness, "er than that");
     assert_ne!(
         harness.attr(&join, "aria-disabled").as_deref(),
         Some("true")

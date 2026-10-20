@@ -119,6 +119,11 @@ pub fn showing(harness: &mut Harness, what: &str, selector: &'static str) {
 /// Types `text` into the field matching `selector`: a click to focus it, then one key per letter.
 pub fn type_into(harness: &mut Harness, selector: &str, text: &str) {
     click(harness, selector);
+    keys(harness, text);
+}
+
+/// Types `text` into whatever has focus, one key per letter, with no click to move the caret.
+pub fn keys(harness: &mut Harness, text: &str) {
     for letter in text.chars() {
         harness.send(Input::key(ShortcutKey::Char(letter)));
     }

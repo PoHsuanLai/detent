@@ -248,8 +248,8 @@ fn a_search_narrows_the_sidebar_and_picks_the_page_to_show() {
     let unknown = landing(&all, &idle, &slug("nowhere")).expect("a page");
     assert_eq!(
         unknown.slug,
-        slug("appearance"),
-        "an unknown page falls back to the first"
+        slug("wifi"),
+        "an unknown page falls back to the first listed"
     );
 }
 
