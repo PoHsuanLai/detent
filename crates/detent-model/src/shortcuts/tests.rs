@@ -61,13 +61,66 @@ fn saved(effects: &[ShortcutsEffect]) -> Vec<(String, Vec<Chord>)> {
 fn every_standard_action_is_in_exactly_one_group() {
     let listed: Vec<StandardAction> = ShortcutGroup::ALL
         .iter()
-        .flat_map(|group| group.actions())
+        .flat_map(|group| group.all_actions())
         .collect();
     for action in StandardAction::all() {
         let times = listed.iter().filter(|listed| **listed == action).count();
         assert_eq!(times, 1, "{action:?} is listed {times} times");
     }
     assert_eq!(listed.len(), StandardAction::all().count());
+}
+
+#[test]
+fn a_desktop_group_lists_exactly_what_the_desktop_handles() {
+    let handled = |action: StandardAction| action != StandardAction::EmojiAndSymbols;
+    for group in ShortcutGroup::ALL {
+        let listed = group.listed(handled);
+        for action in group.all_actions() {
+            let expected = !group.is_desktop() || handled(action);
+            assert_eq!(
+                listed.contains(&action),
+                expected,
+                "{action:?} in {group:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn the_page_lists_every_handled_action_and_no_unhandled_desktop_one() {
+    let shown: Vec<StandardAction> = ShortcutGroup::ALL
+        .iter()
+        .flat_map(|group| group.actions())
+        .collect();
+    for (action, _) in keycap_client::handled_actions() {
+        assert!(
+            shown.contains(&action),
+            "{action:?} is handled but not listed"
+        );
+    }
+    for group in ShortcutGroup::ALL.iter().filter(|group| group.is_desktop()) {
+        for action in group.actions() {
+            assert!(keycap_client::handler(action).is_some(), "{action:?}");
+        }
+    }
+    assert!(!shown.contains(&StandardAction::EmojiAndSymbols));
+    assert!(!shown.contains(&StandardAction::NextInputSource));
+    let groups: Vec<ShortcutGroup> = ShortcutsState::standard()
+        .sections()
+        .iter()
+        .map(|section| section.group)
+        .collect();
+    assert!(
+        !groups.contains(&ShortcutGroup::Input),
+        "an empty group is not drawn"
+    );
+}
+
+#[test]
+fn an_app_group_keeps_every_action() {
+    for group in [ShortcutGroup::Text, ShortcutGroup::Documents] {
+        assert_eq!(group.actions(), group.all_actions());
+    }
 }
 
 #[test]

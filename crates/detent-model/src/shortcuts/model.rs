@@ -171,11 +171,13 @@ impl ShortcutsState {
         &self.problems
     }
 
-    /// The groups and their rows, as the keymap in force has them.
+    /// The groups and their rows, as the keymap in force has them; a group with nothing the
+    /// desktop handles is left out.
     pub fn sections(&self) -> Vec<ShortcutSection> {
         let live = self.live();
         ShortcutGroup::ALL
             .iter()
+            .filter(|group| !group.actions().is_empty())
             .map(|group| ShortcutSection {
                 group: *group,
                 rows: group

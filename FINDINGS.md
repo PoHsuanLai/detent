@@ -296,6 +296,7 @@ Open items, each with its closing condition:
   own bindings (`system_bindings`, the base of "Standard") and `watch`. The person's file is read
   as text here, not through `person()`, so a save keeps its comments and unreadable lines.
   Tests use `KeymapFiles::under`, which points the source at a socket that does not exist.
+- The desktop's groups (Launcher, Apps and windows, Window tiling, Spaces, Screenshots, Input, System) list only what `keycap_client::handled_actions()` says the desktop handles, so a shortcut that does nothing cannot be shown or rebound. Gone today: Emoji and symbols, Next input source (the whole Input group, so it is not drawn), App windows, Hide, Hide others, Minimize, Minimize all, Close, Close all, Quit. Text and Documents (the apps' own) are unchanged.
 - Actions of apps are not listed; a change to one in the person's file is kept as it is.
 - The page is listed only while some schema names it (sill's does); like Spaces it is not forced.
 

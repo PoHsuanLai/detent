@@ -1,6 +1,7 @@
 //! The groups the list is drawn in, and the actions of each.
 
 use chordkit::{SpaceNumber, StandardAction as A};
+use keycap_client::handler;
 
 /// One titled group of the list.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -130,8 +131,25 @@ impl ShortcutGroup {
         }
     }
 
-    /// The actions of the group, in the order they are listed.
+    /// Whether the group is the desktop's own (it lists only what the desktop handles) rather
+    /// than an app's (every app handles its own).
+    pub fn is_desktop(self) -> bool {
+        !matches!(self, ShortcutGroup::Text | ShortcutGroup::Documents)
+    }
+
+    /// The actions of the group, in the order they are listed: a desktop group lists only the
+    /// actions our desktop handles, so no row is a shortcut that does nothing.
     pub fn actions(self) -> Vec<A> {
+        self.listed(|action| handler(action).is_some())
+    }
+
+    /// The actions of the group, handled or not.
+    pub fn all_actions(self) -> Vec<A> {
+        self.listed(|_| true)
+    }
+
+    /// The group's actions with those `handled` keeps; an app group keeps every one.
+    pub fn listed(self, handled: impl Fn(A) -> bool) -> Vec<A> {
         let fixed = match self {
             ShortcutGroup::Launcher => LAUNCHER,
             ShortcutGroup::Windows => WINDOWS,
@@ -147,6 +165,11 @@ impl ShortcutGroup {
             .filter_map(SpaceNumber::new)
             .map(A::SwitchToSpace)
             .filter(|_| self == ShortcutGroup::Spaces);
-        fixed.iter().copied().chain(numbered).collect()
+        fixed
+            .iter()
+            .copied()
+            .chain(numbered)
+            .filter(|action| !self.is_desktop() || handled(*action))
+            .collect()
     }
 }

@@ -14,6 +14,7 @@ chordkit = { workspace = true }
 docket-settings = { workspace = true }
 ds-helpers = { workspace = true }
 ds-settings = { workspace = true }
+keycap-client = { workspace = true }
 porter-core = { workspace = true }
 porter-infer = { workspace = true }
 regex = { workspace = true }
