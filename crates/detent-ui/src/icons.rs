@@ -1,6 +1,8 @@
 //! The glyph beside each page in the sidebar.
 
-use detent_model::{is_assistant_model, is_software_update, is_wallpaper};
+use detent_model::{
+    is_assistant_model, is_bluetooth, is_displays, is_software_update, is_wallpaper, is_wifi,
+};
 use ds::prelude::Icon;
 use ds_settings::schema::Page;
 
@@ -22,6 +24,9 @@ pub fn icon_of(page: &Page) -> Icon {
         Page::App(_) if is_software_update(page) => Icon::Download,
         Page::App(_) if is_wallpaper(page) => Icon::Image,
         Page::App(_) if is_assistant_model(page) => Icon::Sparkles,
+        Page::App(_) if is_wifi(page) => Icon::Wifi,
+        Page::App(_) if is_bluetooth(page) => Icon::Bluetooth,
+        Page::App(_) if is_displays(page) => Icon::Monitor,
         Page::App(_) => Icon::Window,
     }
 }

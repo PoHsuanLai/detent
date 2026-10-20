@@ -308,3 +308,38 @@
   justify-content: space-between;
   gap: var(--s-10);
 }
+
+.system-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-14);
+}
+
+.system-glyphs {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+}
+
+.system-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-10);
+  padding: var(--s-14);
+}
+
+.system-sheet-buttons {
+  display: flex;
+  align-self: flex-end;
+  gap: var(--s-8);
+}
+
+.system-note {
+  padding: 0 var(--s-14);
+}
+
+.system-detail {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-10);
+}

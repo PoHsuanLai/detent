@@ -4,10 +4,12 @@
 #![allow(dead_code)]
 
 pub mod accountd;
+pub mod bluetooth;
 pub mod bus;
 pub mod compositor;
 pub mod computers;
 pub mod desk;
+pub mod displays;
 pub mod drive;
 pub mod engines;
 pub mod handover;
@@ -19,14 +21,17 @@ pub mod portal;
 pub mod spaces;
 pub mod syncd;
 pub mod updates;
+pub mod wifi;
 
+use bluetooth::Bluetooth;
 use detent_files::{ConfigHome, DataHome, StateHome};
-use detent_model::{OriginRule, Outbox, inbox};
+use detent_model::{Missing, OriginRule, Outbox, inbox};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{
     App, BusSource, Desk, Env, FirstRunApp, Lender, NoPictures, Opening, Pictures, Quiet,
     ReasonFeed, Vouch,
 };
+use displays::Displays;
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
 use ds_settings::SystemPrefsSource;
@@ -36,6 +41,7 @@ use lending::Units;
 use porter_client::LendingConfig;
 use std::sync::Arc;
 use updates::{Leaves, Service};
+use wifi::Wifi;
 
 pub const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
@@ -56,6 +62,9 @@ pub struct Sandbox {
     leaves: Leaves,
     engines: Arc<dyn Desk>,
     pictures: Arc<dyn Pictures>,
+    wifi: Wifi,
+    bluetooth: Bluetooth,
+    displays: Displays,
 }
 
 impl Sandbox {
@@ -77,6 +86,10 @@ impl Sandbox {
             engines: Arc::new(Quiet),
             // No folder is read and no chooser is opened, whatever this computer has.
             pictures: Arc::new(NoPictures),
+            // No network, no Bluetooth and no display, whatever this computer has.
+            wifi: Wifi::missing(Missing::NoService),
+            bluetooth: Bluetooth::missing(Missing::NoService),
+            displays: Displays::missing(Missing::NoService),
         }
     }
 
@@ -113,6 +126,21 @@ impl Sandbox {
     /// This world with the update service in this standing.
     pub fn with_service(self, updates: Service) -> Sandbox {
         Sandbox { updates, ..self }
+    }
+
+    /// This world with the network service in this standing.
+    pub fn with_wifi(self, wifi: Wifi) -> Sandbox {
+        Sandbox { wifi, ..self }
+    }
+
+    /// This world with BlueZ in this standing.
+    pub fn with_bluetooth(self, bluetooth: Bluetooth) -> Sandbox {
+        Sandbox { bluetooth, ..self }
+    }
+
+    /// This world with the compositor's displays in this standing.
+    pub fn with_displays(self, displays: Displays) -> Sandbox {
+        Sandbox { displays, ..self }
     }
 
     /// The log-out the Software Update page starts, to read how often it was asked.
@@ -189,6 +217,9 @@ impl Sandbox {
         .with_lender(self.lender())
         .with_updates(Arc::new(self.updates.clone()))
         .with_log_out(Arc::new(self.leaves.clone()))
+        .with_wifi(Arc::new(self.wifi.clone()))
+        .with_bluetooth(Arc::new(self.bluetooth.clone()))
+        .with_displays(Arc::new(self.displays.clone()))
         .with_engines(self.engines.clone())
         .with_pictures(self.pictures.clone())
         .with_os_release(self.os_release_path())

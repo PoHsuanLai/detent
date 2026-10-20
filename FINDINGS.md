@@ -497,6 +497,14 @@ recommended; the person chooses, or skips and is asked when a turn needs one.
   `CommandLine`/`CopyState` in `ds`, porter at 58add48) before it compiles. The note against a real
   session (a real install and restart) is a manual check.
 
+## Wi-Fi, Bluetooth and Displays (`detent-model/src/wifi/`, `detent-ui/src/wifi/`, `detent-ui/src/system/`)
+
+The pages quire v0.3.36 declares (`wifi`, `bluetooth`, `displays`). Each is a pure machine in `detent-model` and a link trait in `detent-ui` whose real implementation is the only code that reaches the system.
+
+- **Wi-Fi** reads and drives the network service on the system bus (the radio, the wireless device's access points, the saved connections; joining a new network adds a connection with the password and deletes it again when the network refuses it). Missing: forgetting a network, a hidden network's name, a network that signs in with an account (it is said to need a sign-in this computer cannot do), "Ask to join networks" (the service has no such setting), a network's address details.
+- **Bluetooth** reads BlueZ's object tree in one answer and serves a pairing agent (yes or no on a number, allow, a number to type on the device) while the page is open; discovery runs for as long as the page is shown. Missing: a device typed a PIN on this computer (the agent refuses PIN and passkey entry), batteries, a device's details sheet. A device nobody hears is listed only when paired (BlueZ remembers unpaired ones for a while).
+- **Displays** goes through `desktop-client`, so a change is a program's change to the compositor: applied at once, with the shell's own "Keep these display settings?" countdown (15 seconds, reverts by itself). Offered: resolution as the scales 1, 1.25, 1.5, 1.75, 2, 2.5 and 3 over the display's current mode ("Default for display" is the scale that brings its density nearest 115 points per inch), refresh rate at the current size, rotation, and which side of another display it sits on. Not offered, for lack of a protocol word or a decision: another mode's size (only the display's current mode and scale are changed), mirroring and flipping (a flipped display reads as its rotation), switching a display off, a main display, brightness and colour, a freely dragged arrangement (the compositor takes positions, the page offers the four sides), the compositor's own default scale (it is derived here from the density because the protocol does not carry it). The window reads the environment's Wayland display itself (`desktop_client::client::WaylandRoute::Environment`), since the route cannot be cloned into `Env`; casement hides output management from a program the person has refused.
+
 ## Not in v1
 
 - **Live modules** (design/22 section 9.4, `org.quire.SettingsModule1` over D-Bus): only inferd's

@@ -95,3 +95,32 @@ pub fn scroll_into_view(harness: &mut Harness, selector: &str) {
     }
     panic!("{selector} never came into view");
 }
+
+/// Lets the window run until `done` holds: the pages follow their service on the harness's
+/// virtual clock.
+///
+/// # Panics
+/// If it never does: the failure carries the document.
+pub fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
+    for _ in 0..200 {
+        if done(harness) {
+            return;
+        }
+        harness.advance(Duration::from_millis(50));
+    }
+    panic!("{what} never happened:\n{}", harness.html());
+}
+
+/// Lets the window run until something matches `selector`.
+pub fn showing(harness: &mut Harness, what: &str, selector: &'static str) {
+    settle(harness, what, |h| h.count(selector) > 0);
+}
+
+/// Types `text` into the field matching `selector`: a click to focus it, then one key per letter.
+pub fn type_into(harness: &mut Harness, selector: &str, text: &str) {
+    click(harness, selector);
+    for letter in text.chars() {
+        harness.send(Input::key(ShortcutKey::Char(letter)));
+    }
+    harness.advance(SETTLE);
+}

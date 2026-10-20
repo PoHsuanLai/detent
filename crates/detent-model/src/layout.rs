@@ -1,9 +1,12 @@
 //! What a page draws, top to bottom, before its Advanced disclosure (design/22 section 5).
 
 use crate::assistant_model::is_assistant_model;
+use crate::bluetooth::is_bluetooth;
 use crate::catalogue::{PageModel, SectionModel};
+use crate::displays::is_displays;
 use crate::memory_consent::MEMORY_SECTION;
 use crate::updates::is_software_update;
+use crate::wifi::is_wifi;
 use ds_settings::schema::Page;
 
 /// One thing a page draws.
@@ -42,6 +45,12 @@ pub enum Block {
     /// The assistant's model: inferd's picker, reduced to the one row the assistant is routed by.
     /// Not in any file.
     AssistantModel,
+    /// The Wi-Fi switch, the network this computer is on and the ones in range. Not in any file.
+    Wifi,
+    /// The Bluetooth switch and the devices. Not in any file.
+    Bluetooth,
+    /// Each display's resolution, refresh rate, rotation and place. Not in any file.
+    Displays,
 }
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
@@ -88,6 +97,13 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
         Page::App(_) if is_assistant_model(&page.page) => {
             return std::iter::once(Block::AssistantModel).collect();
         }
+        Page::App(_) if is_wifi(&page.page) => return std::iter::once(Block::Wifi).collect(),
+        Page::App(_) if is_bluetooth(&page.page) => {
+            return std::iter::once(Block::Bluetooth).collect();
+        }
+        Page::App(_) if is_displays(&page.page) => {
+            return std::iter::once(Block::Displays).collect();
+        }
         Page::Intelligence => {}
         _ => return sections.collect(),
     }
@@ -117,6 +133,7 @@ mod tests {
     fn page(kind: Page, titles: &[&str]) -> PageModel {
         PageModel {
             slug: PageSlug::of(&kind),
+            title: kind.label().to_owned(),
             page: kind,
             sections: titles
                 .iter()
@@ -144,6 +161,9 @@ mod tests {
                 Block::Shortcuts => "<shortcuts>",
                 Block::SoftwareUpdate => "<updates>",
                 Block::AssistantModel => "<assistant>",
+                Block::Wifi => "<wifi>",
+                Block::Bluetooth => "<bluetooth>",
+                Block::Displays => "<displays>",
             })
             .collect()
     }
@@ -221,6 +241,20 @@ mod tests {
         for (case, kind, titles, want) in CASES {
             let drawn = blocks(&page(kind.clone(), titles));
             assert_eq!(names(&drawn), *want, "{case}");
+        }
+    }
+
+    #[test]
+    fn the_computers_own_pages_draw_only_their_live_block() {
+        use crate::{bluetooth_page, displays_page, wifi_page};
+        let cases = [
+            (wifi_page(), "<wifi>"),
+            (bluetooth_page(), "<bluetooth>"),
+            (displays_page(), "<displays>"),
+        ];
+        for (kind, want) in cases {
+            let drawn = blocks(&page(kind.clone(), &[]));
+            assert_eq!(names(&drawn), [want], "{kind:?}");
         }
     }
 

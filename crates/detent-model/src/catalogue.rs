@@ -1,12 +1,15 @@
 //! Every key of every schema, grouped by page then section (design/22 section 9.3 item 1).
 
 use crate::assistant_model::assistant_model_page;
+use crate::bluetooth::bluetooth_page;
 use crate::config_file::ConfigFile;
 use crate::discovery::ProgramSchema;
+use crate::displays::displays_page;
 use crate::entry::KeyEntry;
 use crate::page::{PageSlug, sidebar_order};
 use crate::updates::software_update_page;
-use ds_settings::schema::{Exposure, ForeignTables, KeyPath, KeySpec, Page};
+use crate::wifi::wifi_page;
+use ds_settings::schema::{Exposure, ForeignTables, KeyPath, KeySpec, Page, PageTable};
 
 /// The keys of one section that share an exposure, in schema order.
 #[derive(Debug, Clone, PartialEq)]
@@ -24,6 +27,9 @@ pub struct PageModel {
     pub page: Page,
     /// Its sidebar key.
     pub slug: PageSlug,
+    /// What the sidebar and the titlebar call it: the declared title of a declared page, else the
+    /// page's own name.
+    pub title: String,
     /// The sections that hold a basic key, holding only those keys, in the order the schemas
     /// first mention them. A section with no basic key is not here.
     pub sections: Vec<SectionModel>,
@@ -47,8 +53,8 @@ pub struct FileSpec {
 /// The whole app: pages in sidebar order, and the files behind them.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Catalogue {
-    /// Pages that have at least one key, in sidebar order, and the Accounts, Assistant Model and
-    /// Software Update pages, which are live panes and need none.
+    /// Pages that have at least one key, in sidebar order, and the live pages (Accounts, Privacy,
+    /// Assistant Model, Software Update, Wi-Fi, Bluetooth, Displays), which need none.
     pub pages: Vec<PageModel>,
     /// Every settings file the keys read and write.
     pub files: Vec<FileSpec>,
@@ -122,7 +128,17 @@ fn group_files(programs: &[ProgramSchema]) -> Vec<FileSpec> {
         })
 }
 
+/// The name a person reads for `page`: a declared page's title (Wi-Fi, Software Update), else
+/// the page's own label.
+fn title_of(table: &PageTable, page: &Page) -> String {
+    match page {
+        Page::App(_) => table.title_of(page).0,
+        fixed => fixed.label().to_owned(),
+    }
+}
+
 fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
+    let table = PageTable::built_in();
     let mut pages: Vec<PageModel> = entries.iter().fold(Vec::new(), |mut pages, entry| {
         let slug = PageSlug::of(&entry.spec.page);
         let at = match pages.iter().position(|p| p.slug == slug) {
@@ -130,6 +146,7 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
             None => {
                 pages.push(PageModel {
                     page: entry.spec.page.clone(),
+                    title: title_of(&table, &entry.spec.page),
                     slug,
                     sections: Vec::new(),
                     advanced: Vec::new(),
@@ -145,17 +162,21 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
         pages
     });
     // Accounts is accountd's live pane, Privacy the compositor's list, Assistant Model inferd's
-    // picker row and Software Update the update service's (no file names any of them), so all
-    // four pages are always there.
+    // picker row, Software Update the update service's, and Wi-Fi, Bluetooth and Displays the
+    // computer's own (no file names any of them), so all seven pages are always there.
     for live in [
         Page::Accounts,
         Page::Privacy,
         assistant_model_page(),
         software_update_page(),
+        wifi_page(),
+        bluetooth_page(),
+        displays_page(),
     ] {
         if !pages.iter().any(|page| page.page == live) {
             pages.push(PageModel {
                 slug: PageSlug::of(&live),
+                title: title_of(&table, &live),
                 page: live,
                 sections: Vec::new(),
                 advanced: Vec::new(),

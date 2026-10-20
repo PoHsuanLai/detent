@@ -30,8 +30,11 @@ fn pages_come_in_the_fixed_order_and_only_when_they_have_keys() {
     assert_eq!(
         slugs,
         [
+            "wifi",
+            "bluetooth",
             "appearance",
             "dock",
+            "displays",
             "mouse_and_gestures",
             "keyboard_and_shortcuts",
             "notifications",
@@ -43,7 +46,7 @@ fn pages_come_in_the_fixed_order_and_only_when_they_have_keys() {
             "assistant-model",
             "software-update"
         ],
-        "no schema names the Apps page, so it is not listed; inferd's and docket's name Intelligence; Accounts, Privacy, Assistant Model and Software Update are live panes and always there"
+        "no schema names the Apps page, so it is not listed; inferd's and docket's name Intelligence; Accounts, Privacy, Assistant Model, Software Update, Wi-Fi, Bluetooth and Displays are live panes and always there"
     );
 }
 

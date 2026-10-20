@@ -7,12 +7,14 @@ mod accounts;
 mod advanced;
 mod assistant_model;
 mod assistants;
+mod bluetooth;
 mod catalogue;
 mod coding_agents;
 mod computers;
 mod config_file;
 mod control;
 mod discovery;
+mod displays;
 mod engine_install;
 mod engines;
 mod entry;
@@ -20,6 +22,7 @@ mod first_run;
 mod layout;
 mod live;
 mod memory_consent;
+mod missing;
 mod navigation;
 mod notice;
 #[cfg(test)]
@@ -42,6 +45,7 @@ mod text_form;
 mod updates;
 mod wallpaper;
 mod warning;
+mod wifi;
 mod words;
 mod work;
 
@@ -64,6 +68,12 @@ pub use assistants::{
     Confirm, ModelOffer, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, offers_for,
     places_step,
 };
+pub use bluetooth::{
+    BLUETOOTH_SLUG, BtAddress, BtDevice, BtEffect, BtInput, BtKind, BtLink, BtPairing, BtPower,
+    BtReady, BtSheet, BtState, BtStatus, PairingAnswer, PairingAsk, PairingCode, PairingQuestion,
+    bluetooth_page, bluetooth_step, forget_body, forget_title, is_bluetooth,
+    missing_words as bluetooth_missing_words, pairing_body, pairing_title,
+};
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use coding_agents::{
     AgentOffer, AgentReason, AgentStanding, CHOOSE_DIRECTLY, GROUP as CODING_AGENTS_GROUP,
@@ -76,6 +86,13 @@ pub use computers::{
 pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
 pub use discovery::{Discovery, ProgramSchema, discover, discover_under};
+pub use displays::{
+    ArrangeSide, DISPLAYS_SLUG, DisplayChange, DisplayEdit, DisplayMode, DisplayPosition,
+    DisplayRotation, DisplaysEffect, DisplaysInput, DisplaysReady, DisplaysState, DisplaysStatus,
+    LooksLike, Millimetres, ModePreference, Monitor, OutputId, PixelSize, RefreshMilliHz,
+    ScaleMilli, default_scale, displays_page, displays_step, hertz_words, is_displays, looks_like,
+    missing_words as displays_missing_words, place_beside, side_of,
+};
 /// Whether an agent may set a key: quire's own type, carried by each `KeySpec`.
 pub use ds_settings::schema::AgentSetting;
 pub use engine_install::{
@@ -98,14 +115,15 @@ pub use memory_consent::{
     CONFIRM, Confinement, ConsentState, MEMORY_SECTION, SettingPair, Trouble,
     holds_memory_settings, is_memory_setting, tells_confinement, to_confirm, waiting_note,
 };
-pub use navigation::{landing, visible_pages};
+pub use missing::Missing;
+pub use navigation::{landing, opening_page, visible_pages};
 pub use notice::{Inbox, Notice, Outbox, Receiver, WindowGone, inbox};
 pub use origin::{OriginRule, SchemaOrigin};
 pub use outside::{
     AGENTS_OWN, Assistant, Entry, assistants_of, model_choice, model_menu, model_word, way_choice,
     way_menu,
 };
-pub use page::{PageSlug, page_title};
+pub use page::PageSlug;
 pub use picker::{
     Applying, AutoPool, AwaitingAccount, Busy, Choice, ChoiceGap, ChoiceReadiness, ChoiceSection,
     Clearing, Described, Gate, KindRows, LocalAsk, LocalEngine, LocalModel, LocalView, MenuLine,
@@ -150,5 +168,12 @@ pub use updates::{
 };
 pub use wallpaper::{PictureMark, PictureTile, is_picture, is_wallpaper, picture_tiles};
 pub use warning::{StaleReason, Warning};
+pub use wifi::{
+    AccessPoint, AskStanding, JoinFailure, NetworkLink, NetworkLock, Passphrase, PasswordAsk,
+    Remembered, SignalBars, SignalStrength, Ssid, WIFI_BLOCKED, WIFI_SLUG, WifiEffect, WifiInput,
+    WifiNetwork, WifiRadio, WifiReady, WifiSheet, WifiState, WifiStatus, WifiWire, details_rows,
+    is_wifi, missing_words as wifi_missing_words, password_help, password_title, wifi_page,
+    wifi_step,
+};
 pub use words::{humanize, word_label};
 pub use work::Work;

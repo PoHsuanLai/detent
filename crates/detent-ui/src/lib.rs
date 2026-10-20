@@ -7,12 +7,14 @@ mod advanced_view;
 mod app;
 mod assistant_model;
 mod assistants;
+mod bluetooth;
 mod chooser;
 mod computers;
 mod controls;
 mod deadline;
 #[cfg(test)]
 mod deadline_tests;
+mod displays;
 mod engine_install;
 mod engines;
 mod env;
@@ -35,15 +37,19 @@ mod sharing;
 mod shortcuts;
 mod sidebar;
 mod spaces;
+mod system;
 mod ticks;
 #[cfg(test)]
 mod ticks_tests;
 mod updates;
 mod view;
+mod wifi;
 mod window;
 
 pub use accounts::read_accounts;
 pub use app::App;
+pub use bluetooth::{BluetoothLink, BtSession, PairingReply, PairingRequest};
+pub use displays::DisplaysLink;
 pub use engine_install::{Desk, Quiet};
 pub use env::{Env, Opening};
 pub use first_run::FirstRunApp;
@@ -54,6 +60,7 @@ pub use marks::ProviderMarks;
 pub use pictures::{NoPictures, Pictures};
 pub use ticks::{Gone, Ticker, Ticks};
 pub use updates::{Departure, InstallRefusal, UpdateTicks, UpdatesLink};
+pub use wifi::WifiLink;
 
 /// The app's own layout stylesheet: tokens only.
 pub const STYLE: &str = include_str!("style.css");

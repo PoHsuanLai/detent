@@ -132,7 +132,7 @@ pub fn search(catalogue: &Catalogue, query: &str) -> Search {
     let pages = catalogue
         .pages
         .iter()
-        .filter(|page| spells(page.page.label(), &words))
+        .filter(|page| spells(&page.title, &words))
         .map(|page| page.slug.clone())
         .collect();
     Search::Results(Found { hits, pages })

@@ -32,3 +32,13 @@ pub fn landing<'a>(
         .or_else(|| search.first_page().and_then(listed))
         .or_else(|| visible.first().copied())
 }
+
+/// The page the window opens on when nothing asks for another: Appearance, the first page of how
+/// the desktop looks, else the first page listed.
+pub fn opening_page(catalogue: &Catalogue) -> Option<PageSlug> {
+    let appearance = PageSlug::of(&ds_settings::schema::Page::Appearance);
+    catalogue
+        .page(&appearance)
+        .or_else(|| catalogue.pages.first())
+        .map(|page| page.slug.clone())
+}

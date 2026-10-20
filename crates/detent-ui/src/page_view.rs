@@ -4,6 +4,8 @@ use crate::accounts::AccountsPane;
 use crate::advanced_view::AdvancedView;
 use crate::assistant_model::AssistantModelPane;
 use crate::assistants::Assistants;
+use crate::bluetooth::BluetoothPane;
+use crate::displays::DisplaysPane;
 use crate::env::Env;
 use crate::files::{Edit, Files};
 use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
@@ -15,6 +17,7 @@ use crate::section_view::SectionView;
 use crate::shortcuts::ShortcutsPane;
 use crate::spaces::SpacesPane;
 use crate::updates::SoftwareUpdatePane;
+use crate::wifi::WifiPane;
 use detent_model::{Block, PageSlug, blocks, holds_memory_settings, modules_read};
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
@@ -71,6 +74,9 @@ pub fn PageView(
                     Block::Shortcuts => rsx! { ShortcutsPane {} },
                     Block::SoftwareUpdate => rsx! { SoftwareUpdatePane {} },
                     Block::AssistantModel => rsx! { AssistantModelPane {} },
+                    Block::Wifi => rsx! { WifiPane {} },
+                    Block::Bluetooth => rsx! { BluetoothPane {} },
+                    Block::Displays => rsx! { DisplaysPane {} },
                     Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
                     Block::ModelPicker => rsx! {

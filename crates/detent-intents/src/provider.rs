@@ -131,7 +131,7 @@ impl SettingsProvider {
             .catalogue
             .page(&slug)
             .ok_or_else(|| not_found(&self.app, "settings.page", &slug.0))?;
-        let said = format!("Opened {}", page.page.label());
+        let said = format!("Opened {}", page.title);
         self.window
             .send(Notice::OpenPage(slug))
             .map_err(|gone| refusal(gone.to_string()))?;
@@ -283,8 +283,8 @@ impl IntentProvider for SettingsProvider {
                 .catalogue
                 .pages
                 .iter()
-                .filter(|page| matches(page.page.label(), &page.slug.0))
-                .filter_map(|page| page_ref(&self.app, &page.slug.0, page.page.label()))
+                .filter(|page| matches(&page.title, &page.slug.0))
+                .filter_map(|page| page_ref(&self.app, &page.slug.0, &page.title))
                 .take(LISTED)
                 .collect(),
             (action @ ("settings.key.read" | "settings.key.set"), "key") => self

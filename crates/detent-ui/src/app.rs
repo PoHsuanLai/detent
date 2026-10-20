@@ -6,7 +6,7 @@ use crate::env::Env;
 use crate::files::load_all;
 use crate::view::View;
 use crate::window::Window;
-use detent_model::{Notice, assistant_model_page, is_assistant_setup, page_title};
+use detent_model::{Notice, assistant_model_page, is_assistant_setup, opening_page};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds_blitz::{TokioSpawner, use_window_handle};
@@ -18,7 +18,7 @@ use std::sync::Arc;
 pub fn App() -> Element {
     let env = use_context::<Env>();
     let catalogue = env.catalogue.clone();
-    let first = catalogue.pages.first().map(|page| page.slug.clone());
+    let first = opening_page(&catalogue);
     let opening = env.opening.clone();
     let page = use_signal(|| opening.page.clone().or(first).unwrap_or_default());
     let query = use_signal(|| opening.query.clone());
@@ -76,7 +76,8 @@ pub fn App() -> Element {
         view.current
             .as_ref()
             .and_then(|slug| catalogue.page(slug))
-            .map_or_else(|| "Settings".to_owned(), |page| page_title(&page.page))
+            .map_or("Settings", |page| page.title.as_str())
+            .to_owned()
     };
     rsx! {
         Ds {

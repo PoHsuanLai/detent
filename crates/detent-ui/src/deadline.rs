@@ -27,6 +27,12 @@ pub(crate) mod peer {
     pub(crate) const PORTAL: &str = "The screen sharing service";
     /// The update service.
     pub(crate) const UPDATES: &str = "Software Update";
+    /// The network service behind Wi-Fi.
+    pub(crate) const NETWORK: &str = "Wi-Fi";
+    /// The Bluetooth service.
+    pub(crate) const BLUETOOTH: &str = "Bluetooth";
+    /// The desktop's display management.
+    pub(crate) const DISPLAYS: &str = "Displays";
     /// The person's own service manager.
     pub(crate) const SERVICES: &str = "This computer's services";
 }
