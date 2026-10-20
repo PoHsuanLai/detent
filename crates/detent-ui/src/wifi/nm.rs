@@ -54,8 +54,9 @@ pub(super) trait Device {
     #[zbus(property)]
     fn state(&self) -> zbus::Result<u32>;
 
-    #[zbus(signal)]
-    fn state_changed(&self, new_state: u32, old_state: u32, reason: u32) -> zbus::Result<()>;
+    /// Named apart from the `State` property, whose change stream would take the same name.
+    #[zbus(signal, name = "StateChanged")]
+    fn state_change(&self, new_state: u32, old_state: u32, reason: u32) -> zbus::Result<()>;
 }
 
 #[proxy(

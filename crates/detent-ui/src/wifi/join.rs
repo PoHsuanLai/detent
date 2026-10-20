@@ -143,7 +143,7 @@ async fn joining(
         .await
         .map_err(unavailable)?;
     // Subscribed before the join starts, so no state falls between starting and listening.
-    let mut changes = device.receive_state_changed().await.map_err(unavailable)?;
+    let mut changes = device.receive_state_change().await.map_err(unavailable)?;
     let access = access_for(connection, &device_path, ssid).await;
     let security = access
         .as_ref()

@@ -37,7 +37,7 @@ pub(super) async fn managed(connection: &Connection) -> Result<Objects, Missing>
 }
 
 fn properties_of<'a>(
-    interfaces: &'a HashMap<zbus::zvariant::OwnedInterfaceName, Properties>,
+    interfaces: &'a HashMap<zbus::names::OwnedInterfaceName, Properties>,
     interface: &str,
 ) -> Option<&'a Properties> {
     interfaces
@@ -143,7 +143,8 @@ mod tests {
     use super::{Objects, find_device, status_of};
     use detent_model::{BtAddress, BtLink, BtPairing, BtPower, Missing};
     use std::collections::HashMap;
-    use zbus::zvariant::{OwnedInterfaceName, OwnedObjectPath, OwnedValue, Value};
+    use zbus::names::OwnedInterfaceName;
+    use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
 
     fn value(value: impl Into<Value<'static>>) -> OwnedValue {
         OwnedValue::try_from(value.into()).expect("a plain value")

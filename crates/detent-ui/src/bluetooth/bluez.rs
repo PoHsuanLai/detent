@@ -1,8 +1,9 @@
 //! BlueZ's objects as this page calls them: the adapter, a device and the agent manager.
 
 use std::collections::HashMap;
+use zbus::names::OwnedInterfaceName;
 use zbus::proxy;
-use zbus::zvariant::{ObjectPath, OwnedInterfaceName, OwnedObjectPath, OwnedValue};
+use zbus::zvariant::{ObjectPath, OwnedObjectPath, OwnedValue};
 
 /// The name BlueZ owns.
 pub(super) const SERVICE: &str = "org.bluez";

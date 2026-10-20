@@ -809,6 +809,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "casement-protocols"
+version = "0.1.0"
+dependencies = [
+ "bitflags",
+ "serde",
+ "thiserror 2.0.21",
+ "wayland-backend",
+ "wayland-client",
+ "wayland-protocols",
+ "wayland-scanner",
+]
+
+[[package]]
 name = "cc"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1294,6 +1307,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "desktop-client"
+version = "0.1.0"
+dependencies = [
+ "casement-protocols",
+ "rustix",
+ "thiserror 2.0.21",
+ "wayland-client",
+ "wayland-protocols",
+ "wayland-protocols-wlr",
+]
+
+[[package]]
 name = "detent"
 version = "0.1.0"
 dependencies = [
@@ -1391,6 +1416,7 @@ version = "0.1.0"
 dependencies = [
  "almanac-core",
  "chordkit",
+ "desktop-client",
  "detent-callers",
  "detent-files",
  "detent-model",
