@@ -25,7 +25,7 @@ fn a_page_to_open_is_shown_and_clears_the_search() {
         .expect("the window is listening");
     harness.advance(SETTLE);
     assert_eq!(page_of(&harness).as_deref(), Some("dock"));
-    assert_eq!(title_of(&harness).as_deref(), Some("Dock"));
+    assert_eq!(title_of(&harness).as_deref(), Some("Desktop & Dock"));
     assert!(
         harness.count(".ds-sidebar .ds-row") > narrowed,
         "no search is left narrowing the sidebar"

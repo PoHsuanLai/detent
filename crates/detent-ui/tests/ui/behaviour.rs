@@ -27,7 +27,7 @@ fn clicking_a_page_shows_it() {
 
     click(&mut harness, &sidebar_row(2));
     assert_eq!(page_of(&harness).as_deref(), Some("dock"));
-    assert_eq!(title_of(&harness).as_deref(), Some("Dock"));
+    assert_eq!(title_of(&harness).as_deref(), Some("Desktop & Dock"));
     assert_eq!(
         harness.attr(&sidebar_row(2), "aria-selected").as_deref(),
         Some("true"),
