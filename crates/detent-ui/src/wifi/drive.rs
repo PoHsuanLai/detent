@@ -83,6 +83,29 @@ impl Driver {
                     me.reread().await;
                 });
             }
+            WifiEffect::SignIn(ssid, account) => {
+                spawn(async move {
+                    let done = me.link.sign_in(ssid.clone(), account).await;
+                    me.feed(WifiInput::Joined(ssid, done));
+                    me.reread().await;
+                });
+            }
+            WifiEffect::JoinHidden(network) => {
+                spawn(async move {
+                    let ssid = network.ssid.clone();
+                    let done = me.link.join_hidden(network).await;
+                    me.feed(WifiInput::Joined(ssid, done));
+                    me.reread().await;
+                });
+            }
+            WifiEffect::Forget(ssid) => {
+                spawn(async move {
+                    match me.link.forget(ssid).await {
+                        Ok(()) => me.reread().await,
+                        Err(words) => me.feed(WifiInput::Refused(words)),
+                    }
+                });
+            }
             WifiEffect::Tell(words) => self.toasts.push(words, None),
         }
     }

@@ -1,7 +1,8 @@
 //! The network service on the system bus, as the Wi-Fi page's link. It is only ever looked for,
 //! never started.
 
-use super::join::join;
+use super::join::{join, join_hidden, sign_in};
+use super::known::forget;
 use super::link::WifiLink;
 use super::nm::{ManagerProxy, SERVICE};
 use super::read::{read, wifi_device, wireless_at};
@@ -9,7 +10,9 @@ use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::system::{every, system_connection, watch_service};
 use crate::ticks::Ticks;
-use detent_model::{JoinFailure, Missing, Passphrase, Ssid, WifiRadio, WifiStatus, Work};
+use detent_model::{
+    Account, HiddenNetwork, JoinFailure, Missing, Passphrase, Ssid, WifiRadio, WifiStatus, Work,
+};
 use ds_peer::within;
 use std::collections::HashMap;
 
@@ -43,6 +46,18 @@ impl WifiLink for OnSystem {
         passphrase: Option<Passphrase>,
     ) -> Work<'_, Result<(), JoinFailure>> {
         Box::pin(join(&self.0, ssid, passphrase))
+    }
+
+    fn sign_in(&self, ssid: Ssid, account: Account) -> Work<'_, Result<(), JoinFailure>> {
+        Box::pin(sign_in(&self.0, ssid, account))
+    }
+
+    fn join_hidden(&self, network: HiddenNetwork) -> Work<'_, Result<(), JoinFailure>> {
+        Box::pin(join_hidden(&self.0, network))
+    }
+
+    fn forget(&self, ssid: Ssid) -> Work<'_, Result<(), String>> {
+        Box::pin(forget(&self.0, ssid))
     }
 }
 

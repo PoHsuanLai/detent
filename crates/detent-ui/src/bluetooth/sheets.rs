@@ -71,7 +71,7 @@ pub(super) fn PairingSheet(question: PairingQuestion, press: EventHandler<BtInpu
                 if ask.takes_text() {
                     TextField {
                         label: "Code",
-                        value: String::new(),
+                        value: typed(),
                         kind: FieldKind::Plain,
                         size: ControlSize::Small,
                         oninput: move |text: String| typed.set(text),

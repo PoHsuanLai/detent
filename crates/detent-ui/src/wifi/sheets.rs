@@ -1,8 +1,9 @@
-//! The two sheets over the Wi-Fi page: the password of a network, and the details of the one this
-//! computer is on.
+//! Two sheets over the Wi-Fi page: the password (or account) of a network, and the details of the
+//! one this computer is on.
 
 use detent_model::{
-    Passphrase, PasswordAsk, WifiInput, WifiNetwork, details_rows, password_help, password_title,
+    Account, AskKind, Passphrase, PasswordAsk, WifiInput, WifiNetwork, details_rows, password_help,
+    password_title,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -12,20 +13,32 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 
-/// Asks for the password of a network: Join waits until it is long enough to be one.
+/// Asks for the password of a network, or the username and password of one that signs in: Join
+/// waits until what was typed could be one.
 #[component]
 pub(super) fn PasswordSheet(ask: PasswordAsk, press: EventHandler<WifiInput>) -> Element {
     let mut typed = use_signal(String::new);
-    let title = password_title(&ask.ssid.0);
+    let mut username = use_signal(String::new);
+    let title = password_title(&ask.ssid.0, ask.kind);
     let close = EventHandler::new(move |()| press.call(WifiInput::CloseSheet));
-    let ssid = ask.ssid.clone();
-    let join = EventHandler::new(move |()| {
-        let passphrase = Passphrase::new(&typed.peek());
-        if passphrase.is_long_enough() {
-            press.call(WifiInput::Password(ssid.clone(), passphrase));
+    let (ssid, kind) = (ask.ssid.clone(), ask.kind);
+    let join = EventHandler::new(move |()| match kind {
+        AskKind::Password => {
+            let passphrase = Passphrase::new(&typed.peek());
+            if passphrase.is_long_enough() {
+                press.call(WifiInput::Password(ssid.clone(), passphrase));
+            }
+        }
+        AskKind::Account => {
+            if let Some(account) = Account::new(&username.peek(), &typed.peek()) {
+                press.call(WifiInput::SignIn(ssid.clone(), account));
+            }
         }
     });
-    let long_enough = Passphrase::new(&typed()).is_long_enough();
+    let ready = match kind {
+        AskKind::Password => Passphrase::new(&typed()).is_long_enough(),
+        AskKind::Account => Account::new(&username(), &typed()).is_some(),
+    };
     rsx! {
         Sheet {
             label: title.clone(),
@@ -34,12 +47,24 @@ pub(super) fn PasswordSheet(ask: PasswordAsk, press: EventHandler<WifiInput>) ->
             on_return: join,
             div { class: "system-sheet", "data-system": "password",
                 Label { text: title, role: LabelRole::Primary, style: LabelStyle::Headline }
-                Label { text: password_help(ask.standing), role: LabelRole::Secondary }
+                Label { text: password_help(ask.standing, kind), role: LabelRole::Secondary }
+                if kind == AskKind::Account {
+                    TextField {
+                        label: "Username",
+                        value: username(),
+                        kind: FieldKind::Plain,
+                        size: ControlSize::Small,
+                        common: Common { id: Some("wifi-username".to_owned()), ..Common::default() },
+                        oninput: move |text: String| username.set(text),
+                        onsubmit: move |_: String| join.call(()),
+                    }
+                }
                 TextField {
                     label: "Password",
                     value: String::new(),
                     kind: FieldKind::Secure,
                     size: ControlSize::Small,
+                    common: Common { id: Some("wifi-password".to_owned()), ..Common::default() },
                     oninput: move |text: String| typed.set(text),
                     onsubmit: move |_: String| join.call(()),
                 }
@@ -54,7 +79,7 @@ pub(super) fn PasswordSheet(ask: PasswordAsk, press: EventHandler<WifiInput>) ->
                         label: "Join",
                         common: Common { aria_label: Some("Join".to_owned()), ..Common::default() },
                         answers: Answers::Return,
-                        availability: if long_enough { Availability::Enabled } else { Availability::Disabled },
+                        availability: if ready { Availability::Enabled } else { Availability::Disabled },
                         onclick: move |_| join.call(()),
                     }
                 }

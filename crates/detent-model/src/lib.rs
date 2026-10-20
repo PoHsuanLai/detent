@@ -73,8 +73,8 @@ pub use assistants::{
 pub use bluetooth::{
     BLUETOOTH_SLUG, BatteryLevel, BtAddress, BtDevice, BtEffect, BtInput, BtKind, BtLink,
     BtPairing, BtPower, BtReady, BtSheet, BtState, BtStatus, PairingAnswer, PairingAsk,
-    PairingCode, PairingQuestion, bluetooth_page, bluetooth_step, forget_body, forget_title, is_bluetooth,
-    missing_words as bluetooth_missing_words, pairing_body, pairing_title,
+    PairingCode, PairingQuestion, bluetooth_page, bluetooth_step, forget_body, forget_title,
+    is_bluetooth, missing_words as bluetooth_missing_words, pairing_body, pairing_title,
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use coding_agents::{
@@ -171,11 +171,12 @@ pub use updates::{
 pub use wallpaper::{PictureMark, PictureTile, is_picture, is_wallpaper, picture_tiles};
 pub use warning::{StaleReason, Warning};
 pub use wifi::{
-    AccessPoint, AskStanding, JoinFailure, NetworkLink, NetworkLock, Passphrase, PasswordAsk,
-    Remembered, SignalBars, SignalStrength, Ssid, WIFI_BLOCKED, WIFI_SLUG, WifiEffect, WifiInput,
-    WifiNetwork, WifiRadio, WifiReady, WifiSheet, WifiState, WifiStatus, WifiWire, details_rows,
-    is_wifi, missing_words as wifi_missing_words, password_help, password_title, wifi_page,
-    wifi_step,
+    AccessPoint, Account, AskKind, AskStanding, HiddenForm, HiddenLogin, HiddenNetwork,
+    HiddenSecurity, JoinFailure, NetworkLink, NetworkLock, OTHER_FAILED, OTHER_HELP, OTHER_TITLE,
+    Passphrase, PasswordAsk, Remembered, SignalBars, SignalStrength, Ssid, WIFI_BLOCKED, WIFI_SLUG,
+    WifiEffect, WifiInput, WifiNetwork, WifiRadio, WifiReady, WifiSheet, WifiState, WifiStatus,
+    WifiWire, details_rows, forget_network_body, forget_network_title, is_wifi,
+    missing_words as wifi_missing_words, password_help, password_title, wifi_page, wifi_step,
 };
 pub use words::{humanize, word_label};
 pub use work::Work;

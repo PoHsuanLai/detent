@@ -1,7 +1,9 @@
 //! The Wi-Fi page: the switch, the network this computer is on with its Details, and the networks
-//! in range, each with its lock and its signal and a Join button.
+//! in range, each with its lock and its signal and a Join button; known ones can be forgotten, and
+//! a network that hides its name is joined from Other.
 
 use super::drive::use_wifi;
+use super::network_sheets::{ForgetSheet, OtherSheet};
 use super::sheets::{DetailsSheet, PasswordSheet};
 use crate::system::Unavailable;
 use detent_model::{
@@ -74,11 +76,9 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
                     JoinedNetwork { network: joined, press }
                 }
                 if !known.is_empty() {
-                    Networks { title: "Known Networks", networks: known, busy: busy.clone(), press }
+                    Networks { title: "Known Networks", networks: known, busy: busy.clone(), closing: Closing::Plain, press }
                 }
-                if !new.is_empty() {
-                    Networks { title: "Other Networks", networks: new, busy: busy.clone(), press }
-                }
+                Networks { title: "Other Networks", networks: new, busy: busy.clone(), closing: Closing::OtherRow, press }
             }
             match page.sheet.clone() {
                 WifiSheet::Closed => rsx! {},
@@ -88,6 +88,8 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
                         DetailsSheet { network, press }
                     }
                 },
+                WifiSheet::Forget(ssid) => rsx! { ForgetSheet { name: ssid.0, press } },
+                WifiSheet::Other => rsx! { OtherSheet { press } },
             }
         }
     }
@@ -101,7 +103,7 @@ fn Glyphs(network: WifiNetwork) -> Element {
         SignalBars::Fair => Icon::WifiHigh,
         SignalBars::Good => Icon::Wifi,
     };
-    let locked = network.lock == NetworkLock::Secured;
+    let locked = network.lock != NetworkLock::Open;
     rsx! {
         div {
             class: "system-glyphs",
@@ -147,12 +149,22 @@ enum RowWork {
     Held,
 }
 
+/// What ends a card of networks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Closing {
+    /// The last network.
+    Plain,
+    /// The row that joins a network by its name.
+    OtherRow,
+}
+
 /// A card of networks, each with a Join button.
 #[component]
 fn Networks(
     title: String,
     networks: Vec<WifiNetwork>,
     busy: Option<Ssid>,
+    closing: Closing,
     press: EventHandler<WifiInput>,
 ) -> Element {
     rsx! {
@@ -168,6 +180,26 @@ fn Networks(
                     network,
                     press,
                 }
+            }
+            if closing == Closing::OtherRow {
+                OtherRow { press }
+            }
+        }
+    }
+}
+
+/// The row that opens the sheet for a network that does not announce its name.
+#[component]
+fn OtherRow(press: EventHandler<WifiInput>) -> Element {
+    rsx! {
+        FieldRow {
+            label: TextLine::from("Other\u{2026}"),
+            help: Some(TextLine::from("Join a network by its name")),
+            Button {
+                label: "Connect\u{2026}",
+                bezel: Bezel::Inline,
+                common: Common { aria_label: Some("Join another network".to_owned()), ..Common::default() },
+                onclick: move |_| press.call(WifiInput::OpenOther),
             }
         }
     }
@@ -192,7 +224,18 @@ fn NetworkRow(network: WifiNetwork, work: RowWork, press: EventHandler<WifiInput
                 bezel: Bezel::Inline,
                 availability,
                 common: Common { aria_label: Some(format!("Join {}", ssid.0)), ..Common::default() },
-                onclick: move |_| press.call(WifiInput::Pick(ssid.clone())),
+                onclick: {
+                    let ssid = ssid.clone();
+                    move |_| press.call(WifiInput::Pick(ssid.clone()))
+                },
+            }
+            if network.remembered == Remembered::Yes {
+                Button {
+                    label: "Forget\u{2026}",
+                    bezel: Bezel::Inline,
+                    common: Common { aria_label: Some(format!("Forget {}", ssid.0)), ..Common::default() },
+                    onclick: move |_| press.call(WifiInput::AskForget(ssid.clone())),
+                }
             }
         }
     }

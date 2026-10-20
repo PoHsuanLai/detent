@@ -2,7 +2,8 @@
 //! and moves its own standing the way the real service would.
 
 use detent_model::{
-    JoinFailure, Missing, NetworkLink, Passphrase, Ssid, WifiRadio, WifiStatus, Work,
+    Account, HiddenNetwork, JoinFailure, Missing, NetworkLink, Passphrase, Remembered, Ssid,
+    WifiRadio, WifiStatus, Work,
 };
 use detent_ui::{Ticker, Ticks, WifiLink};
 use std::sync::{Arc, Mutex};
@@ -12,6 +13,9 @@ use std::sync::{Arc, Mutex};
 pub enum Asked {
     Radio(WifiRadio),
     Join(Ssid, Option<Passphrase>),
+    SignIn(Ssid, Account),
+    JoinHidden(HiddenNetwork),
+    Forget(Ssid),
 }
 
 #[derive(Debug)]
@@ -70,6 +74,28 @@ impl Wifi {
         }
         self.tick();
     }
+
+    fn record(&self, asked: Asked) {
+        self.0.asked.lock().expect("lock").push(asked);
+    }
+
+    /// Ends a join of `ssid` the way the service would: it fails as it was told to, or the
+    /// network is joined and every other is left.
+    fn finish_join(&self, ssid: &Ssid) -> Work<'_, Result<(), JoinFailure>> {
+        let failure = self.0.join_fails.lock().expect("lock").take();
+        if failure.is_none() {
+            self.change(|status| {
+                for network in &mut status.networks {
+                    network.link = if &network.ssid == ssid {
+                        NetworkLink::Joined
+                    } else {
+                        NetworkLink::Idle
+                    };
+                }
+            });
+        }
+        Box::pin(std::future::ready(failure.map_or(Ok(()), Err)))
+    }
 }
 
 impl WifiLink for Wifi {
@@ -99,23 +125,30 @@ impl WifiLink for Wifi {
         ssid: Ssid,
         passphrase: Option<Passphrase>,
     ) -> Work<'_, Result<(), JoinFailure>> {
-        self.0
-            .asked
-            .lock()
-            .expect("lock")
-            .push(Asked::Join(ssid.clone(), passphrase));
-        let failure = self.0.join_fails.lock().expect("lock").take();
-        if failure.is_none() {
-            self.change(|status| {
-                for network in &mut status.networks {
-                    network.link = if network.ssid == ssid {
-                        NetworkLink::Joined
-                    } else {
-                        NetworkLink::Idle
-                    };
+        self.record(Asked::Join(ssid.clone(), passphrase));
+        self.finish_join(&ssid)
+    }
+
+    fn sign_in(&self, ssid: Ssid, account: Account) -> Work<'_, Result<(), JoinFailure>> {
+        self.record(Asked::SignIn(ssid.clone(), account));
+        self.finish_join(&ssid)
+    }
+
+    fn join_hidden(&self, network: HiddenNetwork) -> Work<'_, Result<(), JoinFailure>> {
+        let ssid = network.ssid.clone();
+        self.record(Asked::JoinHidden(network));
+        self.finish_join(&ssid)
+    }
+
+    fn forget(&self, ssid: Ssid) -> Work<'_, Result<(), String>> {
+        self.record(Asked::Forget(ssid.clone()));
+        self.change(|status| {
+            for network in &mut status.networks {
+                if network.ssid == ssid {
+                    network.remembered = Remembered::No;
                 }
-            });
-        }
-        Box::pin(std::future::ready(failure.map_or(Ok(()), Err)))
+            }
+        });
+        Box::pin(std::future::ready(Ok(())))
     }
 }

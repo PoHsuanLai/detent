@@ -119,6 +119,7 @@ fn picking_a_network_joins_at_once_or_asks_for_the_password() {
             WifiSheet::Password(PasswordAsk {
                 ssid: ssid("Neighbour"),
                 standing: AskStanding::First,
+                kind: AskKind::Password,
             }),
         ),
         ("the one it is on", "Office", None, WifiSheet::Closed),
@@ -164,7 +165,8 @@ fn a_refused_password_asks_again_and_says_so() {
         page_of(&next).sheet,
         WifiSheet::Password(PasswordAsk {
             ssid: ssid("Neighbour"),
-            standing: AskStanding::Wrong
+            standing: AskStanding::Wrong,
+            kind: AskKind::Password,
         })
     );
 }
@@ -261,4 +263,157 @@ fn the_details_rows_name_the_network_its_security_and_its_signal() {
             ("Signal", "Good (90 percent)".to_owned()),
         ]
     );
+}
+
+#[test]
+fn a_network_that_signs_in_asks_for_an_account_and_asks_again_for_one() {
+    let status = status(
+        vec![point(
+            "Campus",
+            70,
+            NetworkLock::Enterprise,
+            NetworkLink::Idle,
+        )],
+        &[],
+    );
+    let (asked, effects) = wifi_step(ready_with(status), WifiInput::Pick(ssid("Campus")));
+    assert_eq!(effects, []);
+    let wanted = WifiSheet::Password(PasswordAsk {
+        ssid: ssid("Campus"),
+        standing: AskStanding::First,
+        kind: AskKind::Account,
+    });
+    assert_eq!(page_of(&asked).sheet, wanted);
+    let account = Account::new("  ada ", "analytical").expect("an account");
+    assert_eq!(account.username, "ada", "the username is trimmed");
+    let (next, effects) = wifi_step(asked, WifiInput::SignIn(ssid("Campus"), account.clone()));
+    assert_eq!(effects, [WifiEffect::SignIn(ssid("Campus"), account)]);
+    assert_eq!(page_of(&next).sheet, WifiSheet::Closed);
+    assert_eq!(page_of(&next).joining, Some(ssid("Campus")));
+    let (again, effects) = wifi_step(
+        next,
+        WifiInput::Joined(ssid("Campus"), Err(JoinFailure::WrongPassword)),
+    );
+    assert_eq!(effects, []);
+    assert_eq!(
+        page_of(&again).sheet,
+        WifiSheet::Password(PasswordAsk {
+            ssid: ssid("Campus"),
+            standing: AskStanding::Wrong,
+            kind: AskKind::Account,
+        })
+    );
+}
+
+#[test]
+fn an_account_needs_both_a_username_and_a_password() {
+    assert_eq!(Account::new("", "secret"), None);
+    assert_eq!(Account::new("   ", "secret"), None);
+    assert_eq!(Account::new("ada", ""), None);
+}
+
+#[test]
+fn forgetting_asks_first_and_only_confirming_forgets() {
+    let (asked, effects) = wifi_step(ready_with(world()), WifiInput::AskForget(ssid("Home")));
+    assert_eq!(effects, []);
+    assert_eq!(page_of(&asked).sheet, WifiSheet::Forget(ssid("Home")));
+    let (cancelled, effects) = wifi_step(asked.clone(), WifiInput::CloseSheet);
+    assert_eq!(
+        (page_of(&cancelled).sheet.clone(), effects),
+        (WifiSheet::Closed, vec![])
+    );
+    let (confirmed, effects) = wifi_step(asked, WifiInput::ConfirmForget);
+    assert_eq!(effects, [WifiEffect::Forget(ssid("Home"))]);
+    assert_eq!(page_of(&confirmed).sheet, WifiSheet::Closed);
+    let (_, effects) = wifi_step(ready_with(world()), WifiInput::ConfirmForget);
+    assert_eq!(effects, [], "nothing is forgotten without the question");
+}
+
+fn form(name: &str, security: HiddenSecurity, username: &str, password: &str) -> HiddenForm {
+    HiddenForm {
+        name: name.to_owned(),
+        security,
+        username: username.to_owned(),
+        password: password.to_owned(),
+    }
+}
+
+#[test]
+fn a_hidden_network_form_is_complete_when_its_security_has_what_it_needs() {
+    let long_name = "n".repeat(33);
+    let cases = [
+        ("no name", form("", HiddenSecurity::Open, "", ""), None),
+        (
+            "a name too long for the air",
+            form(&long_name, HiddenSecurity::Open, "", ""),
+            None,
+        ),
+        (
+            "an open one",
+            form("Back Room", HiddenSecurity::Open, "", ""),
+            Some(HiddenLogin::Open),
+        ),
+        (
+            "a short password",
+            form("Back Room", HiddenSecurity::Personal, "", "short"),
+            None,
+        ),
+        (
+            "wpa2 or wpa3",
+            form("Back Room", HiddenSecurity::Personal, "", "correct horse"),
+            Some(HiddenLogin::Personal(Passphrase::new("correct horse"))),
+        ),
+        (
+            "wpa3 only",
+            form(
+                "Back Room",
+                HiddenSecurity::PersonalWpa3,
+                "",
+                "correct horse",
+            ),
+            Some(HiddenLogin::PersonalWpa3(Passphrase::new("correct horse"))),
+        ),
+        (
+            "an enterprise one without a username",
+            form("Back Room", HiddenSecurity::Enterprise, "", "secret"),
+            None,
+        ),
+        (
+            "an enterprise one",
+            form("Back Room", HiddenSecurity::Enterprise, "ada", "secret"),
+            Account::new("ada", "secret").map(HiddenLogin::Enterprise),
+        ),
+    ];
+    for (case, filled, login) in cases {
+        assert_eq!(filled.network().map(|n| n.login), login, "{case}");
+    }
+}
+
+#[test]
+fn a_hidden_network_is_joined_from_its_sheet_and_a_refusal_is_said_not_asked_again() {
+    let (open, _) = wifi_step(ready_with(world()), WifiInput::OpenOther);
+    assert_eq!(page_of(&open).sheet, WifiSheet::Other);
+    let network = form("Back Room", HiddenSecurity::Personal, "", "correct horse")
+        .network()
+        .expect("complete");
+    let (next, effects) = wifi_step(open, WifiInput::JoinOther(network.clone()));
+    assert_eq!(effects, [WifiEffect::JoinHidden(network)]);
+    assert_eq!(page_of(&next).sheet, WifiSheet::Closed);
+    assert_eq!(page_of(&next).joining, Some(ssid("Back Room")));
+    let (after, effects) = wifi_step(
+        next,
+        WifiInput::Joined(ssid("Back Room"), Err(JoinFailure::WrongPassword)),
+    );
+    assert_eq!(effects, [WifiEffect::Tell(OTHER_FAILED.to_owned())]);
+    assert_eq!(page_of(&after).sheet, WifiSheet::Closed);
+    assert_eq!(page_of(&after).joining, None);
+}
+
+#[test]
+fn a_form_never_prints_its_password() {
+    let shown = format!(
+        "{:?}",
+        form("Back Room", HiddenSecurity::Personal, "", "correct horse")
+    );
+    assert!(!shown.contains("correct horse"), "{shown}");
 }

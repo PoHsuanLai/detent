@@ -1,5 +1,6 @@
 //! The Wi-Fi page over a network service that answers from memory: the switch, the networks, joining
-//! one (with a password sheet for a new secured one), the details of the current one, and the page
+//! one (with a password sheet for a new secured one, an account sheet for one that signs in, and a
+//! sheet for one that hides its name), forgetting one, the details of the current one, and the page
 //! without a service.
 
 use crate::support::Sandbox;
@@ -8,8 +9,8 @@ use crate::support::drive::{
 };
 use crate::support::wifi::{Asked, Wifi};
 use detent_model::{
-    AccessPoint, JoinFailure, Missing, NetworkLink, NetworkLock, Passphrase, SignalStrength, Ssid,
-    WifiRadio, WifiStatus, WifiWire,
+    AccessPoint, Account, HiddenLogin, HiddenNetwork, JoinFailure, Missing, NetworkLink,
+    NetworkLock, Passphrase, SignalStrength, Ssid, WifiRadio, WifiStatus, WifiWire,
 };
 use detent_ui::Opening;
 use ds_harness::Harness;
@@ -19,6 +20,8 @@ const TOGGLE: &str = "[data-system=\"wifi\"] .ds-toggle";
 const JOINED: &str = "#wifi-joined";
 const PASSWORD: &str = "[data-system=\"password\"]";
 const DETAILS: &str = "[data-system=\"details\"]";
+const FORGET: &str = "[data-system=\"forget\"]";
+const OTHER: &str = "[data-system=\"other\"]";
 const SECURED: &str = "[data-lock=\"secured\"]";
 const OPEN: &str = "[data-lock=\"open\"]";
 
@@ -253,6 +256,105 @@ fn a_new_secured_network_asks_for_its_password_and_joins_with_it() {
     settle(&mut harness, "Neighbour joined", |h| {
         h.text_of(JOINED).unwrap_or_default().contains("Neighbour")
     });
+}
+
+#[test]
+fn a_network_that_signs_in_asks_for_a_username_and_a_password() {
+    let mut wire = WifiWire {
+        radio: WifiRadio::On,
+        access_points: vec![point(
+            "Office",
+            90,
+            NetworkLock::Secured,
+            NetworkLink::Joined,
+        )],
+        saved: vec![ssid("Office")],
+    };
+    wire.access_points.push(point(
+        "Campus",
+        70,
+        NetworkLock::Enterprise,
+        NetworkLink::Idle,
+    ));
+    let service = Wifi::answering(WifiStatus::of_wire(wire));
+    let (_sandbox, mut harness) = world("wifi-sign-in", &service);
+    listed(&mut harness);
+    click(&mut harness, &join_button("Campus"));
+    showing(&mut harness, "the sign-in sheet", PASSWORD);
+    assert_eq!(
+        service.asked(),
+        [],
+        "nothing is asked until the person signs in"
+    );
+    let join = format!("{PASSWORD} [aria-label=\"Join\"]");
+    type_into(&mut harness, "#wifi-username", "ada");
+    assert_eq!(
+        harness.attr(&join, "aria-disabled").as_deref(),
+        Some("true"),
+        "the password is missing"
+    );
+    type_into(&mut harness, "#wifi-password", "analytical");
+    click(&mut harness, &join);
+    assert_eq!(
+        service.asked(),
+        [Asked::SignIn(
+            ssid("Campus"),
+            Account::new("ada", "analytical").expect("an account")
+        )]
+    );
+    settle(&mut harness, "the sheet closed", |h| h.count(PASSWORD) == 0);
+}
+
+#[test]
+fn a_known_network_is_forgotten_only_after_the_person_confirms() {
+    let service = Wifi::answering(status(WifiRadio::On));
+    let (_sandbox, mut harness) = world("wifi-forget", &service);
+    listed(&mut harness);
+    let forget = "[aria-label=\"Forget Home\"]";
+    assert_eq!(harness.count(forget), 1);
+    assert_eq!(
+        harness.count("[aria-label=\"Forget Neighbour\"]"),
+        0,
+        "a network that is not known has nothing to forget"
+    );
+    click(&mut harness, forget);
+    showing(&mut harness, "the question", FORGET);
+    assert_eq!(
+        service.asked(),
+        [],
+        "nothing is forgotten until the person says so"
+    );
+    click(&mut harness, &format!("{FORGET} [aria-label=\"Forget\"]"));
+    assert_eq!(service.asked(), [Asked::Forget(ssid("Home"))]);
+    settle(&mut harness, "the sheet closed", |h| h.count(FORGET) == 0);
+    settle(&mut harness, "Home no longer known", |h| {
+        h.count(forget) == 0
+    });
+}
+
+#[test]
+fn a_network_that_hides_its_name_is_joined_from_the_other_row() {
+    let service = Wifi::answering(status(WifiRadio::On));
+    let (_sandbox, mut harness) = world("wifi-hidden", &service);
+    listed(&mut harness);
+    click(&mut harness, "[aria-label=\"Join another network\"]");
+    showing(&mut harness, "the sheet", OTHER);
+    let join = format!("{OTHER} [aria-label=\"Join\"]");
+    assert_eq!(
+        harness.attr(&join, "aria-disabled").as_deref(),
+        Some("true"),
+        "a network has a name"
+    );
+    type_into(&mut harness, "#wifi-name", "Back Room");
+    click(&mut harness, &join);
+    assert_eq!(
+        service.asked(),
+        [Asked::JoinHidden(HiddenNetwork {
+            ssid: ssid("Back Room"),
+            login: HiddenLogin::Open,
+        })]
+    );
+    settle(&mut harness, "the sheet closed", |h| h.count(OTHER) == 0);
 }
 
 #[test]

@@ -44,13 +44,15 @@ pub enum WifiRadio {
     Blocked,
 }
 
-/// Whether joining a network needs a password.
+/// What joining a network needs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NetworkLock {
     /// No password.
     Open,
     /// A password.
     Secured,
+    /// A username and a password.
+    Enterprise,
 }
 
 /// A network's relation to this computer. The order is the order of how joined it is.

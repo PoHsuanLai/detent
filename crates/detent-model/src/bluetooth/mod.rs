@@ -7,8 +7,8 @@ mod step;
 mod words;
 
 pub use model::{
-    BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus,
-    PairingAnswer, PairingAsk, PairingCode, PairingQuestion,
+    BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, PairingAnswer,
+    PairingAsk, PairingCode, PairingQuestion,
 };
 pub use page::{BLUETOOTH_SLUG, bluetooth_page, is_bluetooth};
 pub use step::{BtEffect, BtInput, BtReady, BtSheet, BtState, bluetooth_step};

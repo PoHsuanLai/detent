@@ -3,16 +3,17 @@
 //! failed. A password the network refuses is a failure the page asks again about, and the
 //! connection that held it is not kept.
 
-use super::nm::{ManagerProxy, SavedConnectionProxy, Settings};
+use super::known::delete_saved;
+use super::nm::ManagerProxy;
+use super::profile::{Secret, Security, Visibility, security_of, settings_for};
 use super::read::{access_point_at, device_at, saved, wifi_device, wireless_at};
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::system::{next, system_connection};
-use detent_model::{JoinFailure, Passphrase, Ssid};
+use detent_model::{Account, HiddenLogin, HiddenNetwork, JoinFailure, Passphrase, Ssid};
 use ds_peer::within;
-use std::collections::HashMap;
 use zbus::Connection;
-use zbus::zvariant::{ObjectPath, OwnedObjectPath, Value};
+use zbus::zvariant::{ObjectPath, OwnedObjectPath};
 
 const NOT_AVAILABLE: &str = "Wi-Fi isn\u{2019}t available right now. Try again in a moment.";
 const TOO_LONG: &str = "Joining took too long. Try again in a moment.";
@@ -45,70 +46,29 @@ fn could_not(ssid: &Ssid) -> JoinFailure {
     ))
 }
 
-/// How a network is secured, from its access point's flags.
+/// What a join is for: the network, what the person gave, and where to find the network.
+struct Attempt {
+    ssid: Ssid,
+    secret: Secret,
+    reach: Reach,
+}
+
+/// Whether the network is in the list of access points, or only named.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Security {
-    Open,
-    Psk,
-    Sae,
-    /// A sign-in or an old scheme this page does not do.
-    Unsupported,
+enum Reach {
+    /// Its access points are in range; they say how it is secured.
+    InRange,
+    /// It does not announce itself; the person said how it is secured.
+    Hidden(Security),
 }
 
-/// The security `flags`, `wpa` and `rsn` of an access point describe.
-pub(super) fn security_of(flags: u32, wpa: u32, rsn: u32) -> Security {
-    const PRIVACY: u32 = 0x1;
-    const PSK: u32 = 0x100;
-    const ENTERPRISE: u32 = 0x200;
-    const SAE: u32 = 0x400;
-    let keys = wpa | rsn;
-    if keys & ENTERPRISE != 0 && keys & (PSK | SAE) == 0 {
-        Security::Unsupported
-    } else if keys & PSK != 0 {
-        Security::Psk
-    } else if keys & SAE != 0 {
-        Security::Sae
-    } else if flags & PRIVACY != 0 || keys != 0 {
-        Security::Unsupported
-    } else {
-        Security::Open
+impl Reach {
+    fn visibility(self) -> Visibility {
+        match self {
+            Reach::InRange => Visibility::Announced,
+            Reach::Hidden(_) => Visibility::Hidden,
+        }
     }
-}
-
-/// What a new connection to `ssid` is made of.
-pub(super) fn settings_for(
-    ssid: &Ssid,
-    security: Security,
-    passphrase: Option<&Passphrase>,
-) -> Settings {
-    let text = |value: &str| Value::from(value.to_owned());
-    let mut settings = Settings::new();
-    settings.insert(
-        "connection".to_owned(),
-        HashMap::from([
-            ("type".to_owned(), text("802-11-wireless")),
-            ("id".to_owned(), text(&ssid.0)),
-        ]),
-    );
-    let mut wireless =
-        HashMap::from([("ssid".to_owned(), Value::from(ssid.0.as_bytes().to_vec()))]);
-    let key_management = match (security, passphrase) {
-        (Security::Psk, Some(_)) => Some("wpa-psk"),
-        (Security::Sae, Some(_)) => Some("sae"),
-        _ => None,
-    };
-    if let (Some(management), Some(passphrase)) = (key_management, passphrase) {
-        wireless.insert("security".to_owned(), text("802-11-wireless-security"));
-        settings.insert(
-            "802-11-wireless-security".to_owned(),
-            HashMap::from([
-                ("key-mgmt".to_owned(), text(management)),
-                ("psk".to_owned(), text(&passphrase.clone().into_text())),
-            ]),
-        );
-    }
-    settings.insert("802-11-wireless".to_owned(), wireless);
-    settings
 }
 
 /// Joins `ssid` and answers when the device is on it or the join has failed.
@@ -117,11 +77,64 @@ pub(super) async fn join(
     ssid: Ssid,
     passphrase: Option<Passphrase>,
 ) -> Result<(), JoinFailure> {
+    let secret = Secret::of(passphrase);
+    run(
+        bus,
+        Attempt {
+            ssid,
+            secret,
+            reach: Reach::InRange,
+        },
+    )
+    .await
+}
+
+/// Joins `ssid`, a network in range that signs in with an account.
+pub(super) async fn sign_in(
+    bus: &BusSource,
+    ssid: Ssid,
+    account: Account,
+) -> Result<(), JoinFailure> {
+    run(
+        bus,
+        Attempt {
+            ssid,
+            secret: Secret::Account(account),
+            reach: Reach::InRange,
+        },
+    )
+    .await
+}
+
+/// Joins a network that does not announce its name, secured the way the person said.
+pub(super) async fn join_hidden(
+    bus: &BusSource,
+    network: HiddenNetwork,
+) -> Result<(), JoinFailure> {
+    let (secret, security) = match network.login {
+        HiddenLogin::Open => (Secret::Kept, Security::Open),
+        HiddenLogin::Personal(passphrase) => (Secret::Password(passphrase), Security::Psk),
+        HiddenLogin::PersonalWpa3(passphrase) => (Secret::Password(passphrase), Security::Sae),
+        HiddenLogin::Enterprise(account) => (Secret::Account(account), Security::Eap),
+    };
+    run(
+        bus,
+        Attempt {
+            ssid: network.ssid,
+            secret,
+            reach: Reach::Hidden(security),
+        },
+    )
+    .await
+}
+
+/// Joins as `attempt` says, within the deadline for an action.
+async fn run(bus: &BusSource, attempt: Attempt) -> Result<(), JoinFailure> {
     let connection = system_connection(bus).await.map_err(unavailable)?;
     match within(
         Deadline::ACTION,
         peer::NETWORK,
-        joining(&connection, &ssid, passphrase),
+        joining(&connection, &attempt),
     )
     .await
     {
@@ -130,11 +143,8 @@ pub(super) async fn join(
     }
 }
 
-async fn joining(
-    connection: &Connection,
-    ssid: &Ssid,
-    passphrase: Option<Passphrase>,
-) -> Result<(), JoinFailure> {
+async fn joining(connection: &Connection, attempt: &Attempt) -> Result<(), JoinFailure> {
+    let ssid = &attempt.ssid;
     let manager = ManagerProxy::new(connection).await.map_err(unavailable)?;
     let device_path = wifi_device(connection, &manager)
         .await
@@ -144,18 +154,23 @@ async fn joining(
         .map_err(unavailable)?;
     // Subscribed before the join starts, so no state falls between starting and listening.
     let mut changes = device.receive_state_change().await.map_err(unavailable)?;
-    let access = access_for(connection, &device_path, ssid).await;
-    let security = access
-        .as_ref()
-        .map_or(Security::Open, |(_, security)| *security);
+    let access = match attempt.reach {
+        Reach::InRange => access_for(connection, &device_path, ssid).await,
+        Reach::Hidden(_) => None,
+    };
+    let security = match attempt.reach {
+        Reach::Hidden(security) => security,
+        Reach::InRange => access
+            .as_ref()
+            .map_or(Security::Open, |(_, security)| *security),
+    };
     let added = start(
         connection,
         &manager,
         &device_path,
-        ssid,
+        attempt,
         access.map(|(path, _)| path),
         security,
-        passphrase,
     )
     .await?;
     let mut under_way = false;
@@ -172,7 +187,7 @@ async fn joining(
         }
     };
     if let (Err(_), Some(path)) = (&ended, added) {
-        forget(connection, &path).await;
+        delete_saved(connection, &path).await;
     }
     ended
 }
@@ -211,11 +226,11 @@ async fn start(
     connection: &Connection,
     manager: &ManagerProxy<'_>,
     device_path: &OwnedObjectPath,
-    ssid: &Ssid,
+    attempt: &Attempt,
     access: Option<OwnedObjectPath>,
     security: Security,
-    passphrase: Option<Passphrase>,
 ) -> Result<Option<OwnedObjectPath>, JoinFailure> {
+    let ssid = &attempt.ssid;
     let remembered: Vec<OwnedObjectPath> = saved(connection)
         .await
         .into_iter()
@@ -224,7 +239,7 @@ async fn start(
         .collect();
     let device = ObjectPath::from(device_path);
     let none = ObjectPath::default();
-    if passphrase.is_none()
+    if !attempt.secret.is_given()
         && let Some(path) = remembered.first()
     {
         manager
@@ -239,13 +254,13 @@ async fn start(
             ssid.0
         )));
     }
-    if passphrase.is_some() {
+    if attempt.secret.is_given() {
         for old in &remembered {
-            forget(connection, old).await;
+            delete_saved(connection, old).await;
         }
     }
     let specific = access.as_ref().map(ObjectPath::from).unwrap_or_default();
-    let settings = settings_for(ssid, security, passphrase.as_ref());
+    let settings = settings_for(ssid, security, &attempt.secret, attempt.reach.visibility());
     let (added, _active) = manager
         .add_and_activate_connection(settings, &device, &specific)
         .await
@@ -281,20 +296,10 @@ fn verdict(state: u32, reason: u32, under_way: bool, security: Security, ssid: &
     }
 }
 
-/// Deletes the saved connection at `path`; one that is already gone is as good.
-async fn forget(connection: &Connection, path: &OwnedObjectPath) {
-    let Ok(builder) = SavedConnectionProxy::builder(connection).path(path.clone()) else {
-        return;
-    };
-    if let Ok(saved) = builder.build().await {
-        let _ = saved.delete().await;
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{Security, Verdict, security_of, settings_for, verdict};
-    use detent_model::{JoinFailure, Passphrase, Ssid};
+    use super::{Security, Verdict, verdict};
+    use detent_model::{JoinFailure, Ssid};
 
     #[test]
     fn the_device_state_ends_a_join_or_does_not() {
@@ -360,34 +365,5 @@ mod tests {
                 "{case}"
             );
         }
-    }
-
-    #[test]
-    fn flags_say_how_a_network_is_secured() {
-        const CASES: &[(&str, u32, u32, u32, Security)] = &[
-            ("open", 0, 0, 0, Security::Open),
-            ("wpa2 personal", 1, 0, 0x108, Security::Psk),
-            ("wpa3", 1, 0, 0x400, Security::Sae),
-            ("wpa2 and wpa3", 1, 0, 0x500, Security::Psk),
-            ("enterprise", 1, 0, 0x200, Security::Unsupported),
-            ("wep", 1, 0, 0, Security::Unsupported),
-        ];
-        for (case, flags, wpa, rsn, want) in CASES {
-            assert_eq!(security_of(*flags, *wpa, *rsn), *want, "{case}");
-        }
-    }
-
-    #[test]
-    fn a_secured_connection_carries_its_password_and_an_open_one_has_no_security_group() {
-        let ssid = Ssid("Home".to_owned());
-        let secured = settings_for(
-            &ssid,
-            Security::Psk,
-            Some(&Passphrase::new("correct horse")),
-        );
-        assert!(secured.contains_key("802-11-wireless-security"));
-        let open = settings_for(&ssid, Security::Open, None);
-        assert!(!open.contains_key("802-11-wireless-security"));
-        assert!(open.contains_key("802-11-wireless"));
     }
 }

@@ -6,6 +6,7 @@ use super::nm::{
     AccessPointProxy, DeviceProxy, ManagerProxy, SERVICE, SavedConnectionProxy,
     SavedConnectionsProxy, WirelessProxy,
 };
+use super::profile::{Security, security_of};
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::system::{is_running, system_connection};
@@ -138,15 +139,13 @@ fn link_of(state: u32) -> NetworkLink {
     }
 }
 
-/// `Flags`' privacy bit.
-const PRIVACY: u32 = 0x1;
-
-/// An access point with no privacy flag and no protection flags needs no secret to join.
+/// What joining an access point needs, from its flags: an access point with no privacy flag and
+/// no protection flags needs no secret to join.
 fn lock_of(flags: u32, wpa: u32, rsn: u32) -> NetworkLock {
-    if flags & PRIVACY != 0 || wpa != 0 || rsn != 0 {
-        NetworkLock::Secured
-    } else {
-        NetworkLock::Open
+    match security_of(flags, wpa, rsn) {
+        Security::Open => NetworkLock::Open,
+        Security::Eap => NetworkLock::Enterprise,
+        Security::Psk | Security::Sae | Security::Unsupported => NetworkLock::Secured,
     }
 }
 
@@ -223,7 +222,8 @@ mod tests {
             ("open", 0, 0, 0, NetworkLock::Open),
             ("privacy", 1, 0, 0, NetworkLock::Secured),
             ("wpa", 0, 0x100, 0, NetworkLock::Secured),
-            ("rsn", 0, 0, 0x200, NetworkLock::Secured),
+            ("rsn", 0, 0, 0x100, NetworkLock::Secured),
+            ("enterprise", 0, 0, 0x200, NetworkLock::Enterprise),
         ];
         for (case, flags, wpa, rsn, want) in CASES {
             assert_eq!(lock_of(*flags, *wpa, *rsn), *want, "{case}");
