@@ -68,7 +68,7 @@ dependencies = [
 [[package]]
 name = "accesskit_xplat"
 version = "0.2.0"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 dependencies = [
  "accesskit",
  "accesskit_macos",
@@ -544,7 +544,7 @@ dependencies = [
 [[package]]
 name = "blitz-dom"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 dependencies = [
  "accesskit",
  "anyrender",
@@ -555,7 +555,7 @@ dependencies = [
  "color",
  "cssparser",
  "cursor-icon",
- "debug_timer 0.1.3 (git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341)",
+ "debug_timer 0.1.3 (git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856)",
  "euclid",
  "html-escape",
  "image",
@@ -588,7 +588,7 @@ dependencies = [
 [[package]]
 name = "blitz-html"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 dependencies = [
  "blitz-dom",
  "blitz-traits",
@@ -612,7 +612,7 @@ dependencies = [
 [[package]]
 name = "blitz-paint"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 dependencies = [
  "anyrender",
  "anyrender_svg",
@@ -633,7 +633,7 @@ dependencies = [
 [[package]]
 name = "blitz-shell"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 dependencies = [
  "accesskit",
  "accesskit_xplat",
@@ -655,7 +655,7 @@ dependencies = [
 [[package]]
 name = "blitz-traits"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 dependencies = [
  "atomic_refcell",
  "bitflags",
@@ -852,7 +852,7 @@ checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 [[package]]
 name = "chordkit"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=7b80eddb86559909eeb63b882d5563d36f5bad37#7b80eddb86559909eeb63b882d5563d36f5bad37"
+source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=eb0deff12add543565ec41eecffda646ede43cf0#eb0deff12add543565ec41eecffda646ede43cf0"
 dependencies = [
  "thiserror 2.0.21",
 ]
@@ -860,7 +860,7 @@ dependencies = [
 [[package]]
 name = "chordkit-file"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=7b80eddb86559909eeb63b882d5563d36f5bad37#7b80eddb86559909eeb63b882d5563d36f5bad37"
+source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=eb0deff12add543565ec41eecffda646ede43cf0#eb0deff12add543565ec41eecffda646ede43cf0"
 dependencies = [
  "libc",
  "thiserror 2.0.21",
@@ -869,7 +869,7 @@ dependencies = [
 [[package]]
 name = "chordkit-gnome"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=7b80eddb86559909eeb63b882d5563d36f5bad37#7b80eddb86559909eeb63b882d5563d36f5bad37"
+source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=eb0deff12add543565ec41eecffda646ede43cf0#eb0deff12add543565ec41eecffda646ede43cf0"
 dependencies = [
  "chordkit",
  "chordkit-file",
@@ -878,7 +878,7 @@ dependencies = [
 [[package]]
 name = "chordkit-kde"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=7b80eddb86559909eeb63b882d5563d36f5bad37#7b80eddb86559909eeb63b882d5563d36f5bad37"
+source = "git+https://github.com/PoHsuanLai/chordkit.git?rev=eb0deff12add543565ec41eecffda646ede43cf0#eb0deff12add543565ec41eecffda646ede43cf0"
 dependencies = [
  "chordkit",
  "chordkit-file",
@@ -1268,7 +1268,7 @@ checksum = "da220af51a1a335e9a930beaaef53d261e41ea9eecfb3d973a3ddae1a7284b9c"
 [[package]]
 name = "debug_timer"
 version = "0.1.3"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 
 [[package]]
 name = "derive_more"
@@ -1613,7 +1613,7 @@ dependencies = [
 [[package]]
 name = "dioxus-native"
 version = "0.7.0"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 dependencies = [
  "android-activity",
  "anyrender",
@@ -1645,7 +1645,7 @@ dependencies = [
 [[package]]
 name = "dioxus-native-dom"
 version = "0.7.0"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 dependencies = [
  "blitz-dom",
  "blitz-traits",
@@ -2537,13 +2537,14 @@ dependencies = [
 [[package]]
 name = "glifo"
 version = "0.2.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=3e43d4af1f1955f2efc2cd52e50350811a1386ca#3e43d4af1f1955f2efc2cd52e50350811a1386ca"
+source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
 dependencies = [
  "bytemuck",
  "foldhash 0.2.0",
  "hashbrown 0.17.1",
  "log",
  "peniko",
+ "png",
  "skrifa",
  "smallvec",
  "vello_common",
@@ -3198,7 +3199,7 @@ dependencies = [
 [[package]]
 name = "keycap-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=52c66c7c768eac3b9ad6749f22ec3a43b08bd48f#52c66c7c768eac3b9ad6749f22ec3a43b08bd48f"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=ab8021b2531b262fe452e55e574a5a80917848ac#ab8021b2531b262fe452e55e574a5a80917848ac"
 dependencies = [
  "chordkit",
  "chordkit-file",
@@ -3209,7 +3210,7 @@ dependencies = [
 [[package]]
 name = "keycap-protocol"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=52c66c7c768eac3b9ad6749f22ec3a43b08bd48f#52c66c7c768eac3b9ad6749f22ec3a43b08bd48f"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=ab8021b2531b262fe452e55e574a5a80917848ac#ab8021b2531b262fe452e55e574a5a80917848ac"
 dependencies = [
  "serde",
  "serde_json",
@@ -5450,7 +5451,7 @@ dependencies = [
 [[package]]
 name = "stylo_taffy"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=4b2367921b33981189e4255184dad74c96fc3341#4b2367921b33981189e4255184dad74c96fc3341"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=851fa7dda55f4086f49ec221a7ac5fcfb1493856#851fa7dda55f4086f49ec221a7ac5fcfb1493856"
 dependencies = [
  "bitflags",
  "stylo",
@@ -6058,7 +6059,7 @@ dependencies = [
 [[package]]
 name = "vello_common"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=3e43d4af1f1955f2efc2cd52e50350811a1386ca#3e43d4af1f1955f2efc2cd52e50350811a1386ca"
+source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
 dependencies = [
  "bytemuck",
  "fearless_simd",
@@ -6073,7 +6074,7 @@ dependencies = [
 [[package]]
 name = "vello_cpu"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=3e43d4af1f1955f2efc2cd52e50350811a1386ca#3e43d4af1f1955f2efc2cd52e50350811a1386ca"
+source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
 dependencies = [
  "bytemuck",
  "crossbeam-channel",
@@ -6088,7 +6089,7 @@ dependencies = [
 [[package]]
 name = "vello_hybrid"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=3e43d4af1f1955f2efc2cd52e50350811a1386ca#3e43d4af1f1955f2efc2cd52e50350811a1386ca"
+source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
 dependencies = [
  "bytemuck",
  "glifo",
@@ -6103,7 +6104,7 @@ dependencies = [
 [[package]]
 name = "vello_sparse_shaders"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=3e43d4af1f1955f2efc2cd52e50350811a1386ca#3e43d4af1f1955f2efc2cd52e50350811a1386ca"
+source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
 dependencies = [
  "wesl",
  "wesl-macros",
