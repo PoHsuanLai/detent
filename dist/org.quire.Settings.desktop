@@ -11,3 +11,5 @@ Categories=Settings;DesktopSettings;
 Keywords=settings;preferences;appearance;dock;mouse;
 StartupWMClass=org.quire.Settings
 X-Keycap-Profile=keymap-aware
+X-Quire-BusNames=org.quire.Settings;
+X-Quire-IntentsApp=org.quire.Settings
