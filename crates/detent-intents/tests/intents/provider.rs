@@ -76,14 +76,20 @@ async fn a_key_or_account_target_tells_the_window_where_to_go() {
             other => panic!("unexpected {other:?}"),
         })
         .collect();
-    assert_eq!(told, ["key:dock.magnification", "account:work-example", "dock"]);
+    assert_eq!(
+        told,
+        ["key:dock.magnification", "account:work-example", "dock"]
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn a_key_no_schema_makes_is_not_found_as_a_target() {
     let world = world("open-a-missing-key").await;
     world
-        .perform("settings.page.show", &[("page", page("key:nowhere.at_all"))])
+        .perform(
+            "settings.page.show",
+            &[("page", page("key:nowhere.at_all"))],
+        )
         .await
         .expect_err("refused");
     assert_eq!(world.window.told(), []);

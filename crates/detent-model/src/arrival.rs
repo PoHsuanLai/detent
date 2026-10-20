@@ -36,15 +36,13 @@ pub fn arrival(catalogue: &Catalogue, target: &SettingsTarget) -> Option<Arrival
                 query: String::new(),
             })
         }
-        SettingsTarget::Key(path) => {
-            catalogue
-                .entries()
-                .find(|(_, entry)| &entry.spec.path == path)
-                .map(|(page, entry)| Arrival::Page {
-                    slug: page.slug.clone(),
-                    query: entry.spec.label.0.clone(),
-                })
-        }
+        SettingsTarget::Key(path) => catalogue
+            .entries()
+            .find(|(_, entry)| &entry.spec.path == path)
+            .map(|(page, entry)| Arrival::Page {
+                slug: page.slug.clone(),
+                query: entry.spec.label.0.clone(),
+            }),
         SettingsTarget::Account(account) => Some(Arrival::Account(account_of(&account.0))),
     }
 }
@@ -68,7 +66,10 @@ mod tests {
 
     #[test]
     fn a_key_the_catalogue_lacks_lands_nowhere() {
-        assert_eq!(arrival(&Catalogue::default(), &target("key:dock.size")), None);
+        assert_eq!(
+            arrival(&Catalogue::default(), &target("key:dock.size")),
+            None
+        );
     }
 
     #[test]
