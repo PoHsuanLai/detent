@@ -1,6 +1,6 @@
 //! The networks this computer keeps a password for: removing them.
 
-use super::nm::SavedConnectionProxy;
+use airwaves_nm::ConnectionSettingsProxy;
 use super::read::saved;
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
@@ -14,7 +14,7 @@ const NOT_AVAILABLE: &str = "Wi-Fi isn\u{2019}t available right now. Try again i
 
 /// Deletes the saved connection at `path`; one that is already gone is as good.
 pub(super) async fn delete_saved(connection: &Connection, path: &OwnedObjectPath) {
-    let Ok(builder) = SavedConnectionProxy::builder(connection).path(path.clone()) else {
+    let Ok(builder) = ConnectionSettingsProxy::builder(connection).path(path.clone()) else {
         return;
     };
     if let Ok(saved) = builder.build().await {

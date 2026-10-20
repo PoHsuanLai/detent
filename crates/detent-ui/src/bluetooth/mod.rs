@@ -3,7 +3,6 @@
 
 mod actions;
 mod agent;
-mod bluez;
 mod drive;
 mod link;
 mod read;

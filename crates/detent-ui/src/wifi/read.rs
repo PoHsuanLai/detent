@@ -2,9 +2,9 @@
 //! networks with a kept password. Every read runs under one deadline, so a service that hangs
 //! mid-list costs one failed read.
 
-use super::nm::{
-    AccessPointProxy, DeviceProxy, ManagerProxy, SERVICE, SavedConnectionProxy,
-    SavedConnectionsProxy, WirelessProxy,
+use airwaves_nm::{
+    AccessPointProxy, ConnectionSettingsProxy, DeviceProxy, NetworkManagerProxy, SERVICE,
+    SettingsProxy, WirelessDeviceProxy,
 };
 use super::profile::{Security, security_of};
 use crate::deadline::{Deadline, peer};
@@ -41,7 +41,7 @@ pub(super) async fn read(bus: &BusSource) -> Result<WifiStatus, Missing> {
 }
 
 async fn wire_of(connection: &Connection) -> Result<WifiWire, Missing> {
-    let manager = ManagerProxy::new(connection).await.map_err(failed)?;
+    let manager = NetworkManagerProxy::new(connection).await.map_err(failed)?;
     let radio = radio_of(&manager).await;
     let device = wifi_device(connection, &manager).await?;
     Ok(WifiWire {
@@ -55,7 +55,7 @@ async fn wire_of(connection: &Connection) -> Result<WifiWire, Missing> {
     })
 }
 
-async fn radio_of(manager: &ManagerProxy<'_>) -> WifiRadio {
+async fn radio_of(manager: &NetworkManagerProxy<'_>) -> WifiRadio {
     let enabled = manager.wireless_enabled().await.unwrap_or(false);
     let hardware = manager.wireless_hardware_enabled().await.unwrap_or(true);
     match (hardware, enabled) {
@@ -68,7 +68,7 @@ async fn radio_of(manager: &ManagerProxy<'_>) -> WifiRadio {
 /// The first wireless device, or `NoDevice` for a computer without one.
 pub(super) async fn wifi_device(
     connection: &Connection,
-    manager: &ManagerProxy<'_>,
+    manager: &NetworkManagerProxy<'_>,
 ) -> Result<OwnedObjectPath, Missing> {
     for path in manager.get_all_devices().await.map_err(failed)? {
         let device = device_at(connection, &path).await?;
@@ -94,8 +94,8 @@ pub(super) async fn device_at<'a>(
 pub(super) async fn wireless_at<'a>(
     connection: &'a Connection,
     path: &OwnedObjectPath,
-) -> Result<WirelessProxy<'a>, Missing> {
-    WirelessProxy::builder(connection)
+) -> Result<WirelessDeviceProxy<'a>, Missing> {
+    WirelessDeviceProxy::builder(connection)
         .path(path.clone())
         .map_err(failed)?
         .build()
@@ -182,7 +182,7 @@ async fn access_point(
 
 /// The saved connections that name a wireless network, with that network.
 pub(super) async fn saved(connection: &Connection) -> Vec<(OwnedObjectPath, Ssid)> {
-    let Ok(connections) = SavedConnectionsProxy::new(connection).await else {
+    let Ok(connections) = SettingsProxy::new(connection).await else {
         return Vec::new();
     };
     let Ok(paths) = connections.connections().await else {
@@ -199,7 +199,7 @@ pub(super) async fn saved(connection: &Connection) -> Vec<(OwnedObjectPath, Ssid
 
 /// A saved connection's wireless network name; a wired or VPN connection has none.
 async fn saved_ssid(connection: &Connection, path: &OwnedObjectPath) -> Option<Ssid> {
-    let saved = SavedConnectionProxy::builder(connection)
+    let saved = ConnectionSettingsProxy::builder(connection)
         .path(path.clone())
         .ok()?
         .build()

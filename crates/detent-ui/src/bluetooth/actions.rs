@@ -1,7 +1,7 @@
 //! What the page asks of BlueZ: the switch, and connecting, pairing and forgetting a device. Each
 //! call runs under a deadline, and a failure is a sentence for the person.
 
-use super::bluez::{AdapterProxy, DeviceProxy};
+use airwaves_bluez::{Adapter1Proxy, Device1Proxy};
 use super::read::{find_device, managed};
 use crate::deadline::{Deadline, peer};
 use detent_model::{BtAddress, BtPower};
@@ -30,8 +30,8 @@ async fn locate(
 async fn device_at<'a>(
     connection: &'a Connection,
     path: &OwnedObjectPath,
-) -> Result<DeviceProxy<'a>, String> {
-    DeviceProxy::builder(connection)
+) -> Result<Device1Proxy<'a>, String> {
+    Device1Proxy::builder(connection)
         .path(path.clone())
         .map_err(|_| NOT_AVAILABLE.to_owned())?
         .build()
@@ -58,7 +58,7 @@ pub(super) async fn set_power(connection: &Connection, power: BtPower) -> Result
         .await
         .map_err(|_| NOT_AVAILABLE.to_owned())?;
     let adapter = super::read::adapter_path(&objects).ok_or_else(|| NOT_AVAILABLE.to_owned())?;
-    let proxy = AdapterProxy::builder(connection)
+    let proxy = Adapter1Proxy::builder(connection)
         .path(adapter)
         .map_err(|_| NOT_AVAILABLE.to_owned())?
         .build()
@@ -135,7 +135,7 @@ fn pair_failure(refused: &str, name: &str) -> String {
 
 pub(super) async fn forget(connection: &Connection, address: &BtAddress) -> Result<(), String> {
     let (adapter, path, name) = locate(connection, address).await?;
-    let proxy = AdapterProxy::builder(connection)
+    let proxy = Adapter1Proxy::builder(connection)
         .path(adapter)
         .map_err(|_| NOT_AVAILABLE.to_owned())?
         .build()

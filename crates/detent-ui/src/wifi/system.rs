@@ -4,7 +4,7 @@
 use super::join::{join, join_hidden, sign_in};
 use super::known::forget;
 use super::link::WifiLink;
-use super::nm::{ManagerProxy, SERVICE};
+use airwaves_nm::{NetworkManagerProxy, SERVICE};
 use super::read::{read, wifi_device, wireless_at};
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
@@ -64,7 +64,7 @@ impl WifiLink for OnSystem {
 async fn set_radio(bus: &BusSource, radio: WifiRadio) -> Result<(), String> {
     let unavailable = |_| NOT_AVAILABLE.to_owned();
     let connection = system_connection(bus).await.map_err(unavailable)?;
-    let manager = ManagerProxy::new(&connection)
+    let manager = NetworkManagerProxy::new(&connection)
         .await
         .map_err(|_| NOT_AVAILABLE.to_owned())?;
     let on = radio == WifiRadio::On;
@@ -84,7 +84,7 @@ async fn scan(bus: &BusSource) {
         return;
     };
     let asked = async {
-        let manager = ManagerProxy::new(&connection).await.ok()?;
+        let manager = NetworkManagerProxy::new(&connection).await.ok()?;
         let device = wifi_device(&connection, &manager).await.ok()?;
         let wireless = wireless_at(&connection, &device).await.ok()?;
         wireless.request_scan(HashMap::new()).await.ok()

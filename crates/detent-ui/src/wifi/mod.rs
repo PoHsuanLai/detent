@@ -6,7 +6,6 @@ mod join;
 mod known;
 mod link;
 mod network_sheets;
-mod nm;
 mod profile;
 mod read;
 mod sheets;

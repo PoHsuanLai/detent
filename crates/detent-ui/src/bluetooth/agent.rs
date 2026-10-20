@@ -1,8 +1,8 @@
 //! The agent this window serves to BlueZ while the page is open: when a device pairs, BlueZ asks
 //! the agent of the program that started the pairing, and the agent asks the person.
 
-use super::bluez::DeviceProxy;
 use super::link::{PairingReply, PairingRequest};
+use airwaves_bluez::{AgentError, Device1Proxy};
 use detent_model::{BtAddress, PairingAnswer, PairingAsk, PairingCode, PairingQuestion};
 use tokio::sync::mpsc;
 use zbus::Connection;
@@ -10,19 +10,6 @@ use zbus::zvariant::{ObjectPath, OwnedObjectPath};
 
 /// Where the agent is served.
 pub(super) const AGENT_PATH: &str = "/org/quire/settings/bluetooth/agent";
-
-/// What the agent tells BlueZ it can do: show a number, take a yes or a no, and take typed
-/// digits (a keyboard's pairing is typed here).
-pub(super) const CAPABILITY: &str = "KeyboardDisplay";
-
-/// How the agent refuses: BlueZ reads this error as the person saying no.
-#[derive(Debug, zbus::DBusError)]
-#[zbus(prefix = "org.bluez.Error")]
-pub(super) enum AgentError {
-    #[zbus(error)]
-    ZBus(zbus::Error),
-    Rejected(String),
-}
 
 fn rejected() -> AgentError {
     AgentError::Rejected("The person said no.".to_owned())
@@ -37,7 +24,7 @@ pub(super) struct Agent {
 impl Agent {
     /// The question `ask` puts for the device at `device`.
     async fn question(&self, device: &ObjectPath<'_>, ask: PairingAsk) -> PairingQuestion {
-        let proxy = match DeviceProxy::builder(&self.connection)
+        let proxy = match Device1Proxy::builder(&self.connection)
             .path(OwnedObjectPath::from(device.clone()))
         {
             Ok(builder) => builder.build().await.ok(),

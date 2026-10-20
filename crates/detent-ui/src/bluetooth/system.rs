@@ -3,7 +3,7 @@
 //! program that started a pairing.
 
 use super::actions;
-use super::bluez::SERVICE;
+use airwaves_bluez::SERVICE;
 use super::link::{BluetoothLink, BtSession};
 use super::read::{managed, status_of};
 use super::session::open;

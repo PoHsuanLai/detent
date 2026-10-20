@@ -1,7 +1,7 @@
 //! The connection a new join adds: how a network is secured, what the person gave to join it, and
 //! the setting groups the network service takes for that.
 
-use super::nm::Settings;
+use airwaves_nm::ConnectionToAdd;
 use detent_model::{Passphrase, Ssid, WifiLogin};
 use std::collections::HashMap;
 use zbus::zvariant::Value;
@@ -108,8 +108,8 @@ pub(super) fn settings_for(
     security: Security,
     secret: &Secret,
     visibility: Visibility,
-) -> Settings {
-    let mut settings = Settings::new();
+) -> ConnectionToAdd {
+    let mut settings = ConnectionToAdd::new();
     settings.insert(
         "connection".to_owned(),
         group([("type", text("802-11-wireless")), ("id", text(&ssid.0))]),

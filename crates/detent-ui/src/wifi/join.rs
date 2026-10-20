@@ -4,7 +4,7 @@
 //! connection that held it is not kept.
 
 use super::known::delete_saved;
-use super::nm::ManagerProxy;
+use airwaves_nm::NetworkManagerProxy;
 use super::profile::{Secret, Security, Visibility, security_of, settings_for};
 use super::read::{access_point_at, device_at, saved, wifi_device, wireless_at};
 use crate::deadline::{Deadline, peer};
@@ -145,7 +145,7 @@ async fn run(bus: &BusSource, attempt: Attempt) -> Result<(), JoinFailure> {
 
 async fn joining(connection: &Connection, attempt: &Attempt) -> Result<(), JoinFailure> {
     let ssid = &attempt.ssid;
-    let manager = ManagerProxy::new(connection).await.map_err(unavailable)?;
+    let manager = NetworkManagerProxy::new(connection).await.map_err(unavailable)?;
     let device_path = wifi_device(connection, &manager)
         .await
         .map_err(unavailable)?;
@@ -224,7 +224,7 @@ async fn access_for(
 /// Starts the join; the path of the connection it made, when it made one.
 async fn start(
     connection: &Connection,
-    manager: &ManagerProxy<'_>,
+    manager: &NetworkManagerProxy<'_>,
     device_path: &OwnedObjectPath,
     attempt: &Attempt,
     access: Option<OwnedObjectPath>,
