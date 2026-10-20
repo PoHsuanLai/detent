@@ -2,9 +2,9 @@
 //! session is dropped.
 
 use super::agent::{AGENT_PATH, Agent};
-use airwaves_bluez::{Adapter1Proxy, AgentManager1Proxy, Capability};
 use super::link::BtSession;
 use super::read::{adapter_path, managed};
+use airwaves_bluez::{Adapter1Proxy, AgentManager1Proxy, Capability};
 use detent_model::Missing;
 use tokio::sync::mpsc;
 use zbus::Connection;

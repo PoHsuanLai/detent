@@ -1,9 +1,9 @@
 //! Reading BlueZ: one `GetManagedObjects` answer holds the adapter, every device and each one's
 //! properties, so a read is one moment.
 
-use airwaves_bluez::{Objects, SERVICE};
 use crate::deadline::{Deadline, peer};
 use crate::system::is_running;
+use airwaves_bluez::{Objects, SERVICE};
 use detent_model::{
     BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, Missing,
 };

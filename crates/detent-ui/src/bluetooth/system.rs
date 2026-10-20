@@ -3,13 +3,13 @@
 //! program that started a pairing.
 
 use super::actions;
-use airwaves_bluez::SERVICE;
 use super::link::{BluetoothLink, BtSession};
 use super::read::{managed, status_of};
 use super::session::open;
 use crate::live::BusSource;
 use crate::system::{system_connection, watch_service};
 use crate::ticks::Ticks;
+use airwaves_bluez::SERVICE;
 use detent_model::{BtAddress, BtPower, BtStatus, Missing, Work};
 use std::collections::HashMap;
 use tokio::sync::OnceCell;

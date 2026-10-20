@@ -4,12 +4,12 @@
 //! connection that held it is not kept.
 
 use super::known::delete_saved;
-use airwaves_nm::NetworkManagerProxy;
 use super::profile::{Secret, Security, Visibility, security_of, settings_for};
 use super::read::{access_point_at, device_at, saved, wifi_device, wireless_at};
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::system::{next, system_connection};
+use airwaves_nm::NetworkManagerProxy;
 use detent_model::{HiddenLogin, HiddenNetwork, JoinFailure, Passphrase, Ssid, WifiLogin};
 use ds_peer::within;
 use zbus::Connection;
@@ -145,7 +145,9 @@ async fn run(bus: &BusSource, attempt: Attempt) -> Result<(), JoinFailure> {
 
 async fn joining(connection: &Connection, attempt: &Attempt) -> Result<(), JoinFailure> {
     let ssid = &attempt.ssid;
-    let manager = NetworkManagerProxy::new(connection).await.map_err(unavailable)?;
+    let manager = NetworkManagerProxy::new(connection)
+        .await
+        .map_err(unavailable)?;
     let device_path = wifi_device(connection, &manager)
         .await
         .map_err(unavailable)?;

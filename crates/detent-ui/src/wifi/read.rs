@@ -2,14 +2,14 @@
 //! networks with a kept password. Every read runs under one deadline, so a service that hangs
 //! mid-list costs one failed read.
 
-use airwaves_nm::{
-    AccessPointProxy, ConnectionSettingsProxy, DeviceProxy, NetworkManagerProxy, SERVICE,
-    SettingsProxy, WirelessDeviceProxy,
-};
 use super::profile::{Security, security_of};
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::system::{is_running, system_connection};
+use airwaves_nm::{
+    AccessPointProxy, ConnectionSettingsProxy, DeviceProxy, NetworkManagerProxy, SERVICE,
+    SettingsProxy, WirelessDeviceProxy,
+};
 use detent_model::{
     AccessPoint, Missing, NetworkLink, NetworkLock, SignalStrength, Ssid, WifiRadio, WifiStatus,
     WifiWire,

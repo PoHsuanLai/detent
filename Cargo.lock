@@ -93,6 +93,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "airwaves-bluez"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/airwaves?tag=v0.1.0#1f226c8032d729bff8cd978bc54deb554da66ca2"
+dependencies = [
+ "zbus",
+]
+
+[[package]]
+name = "airwaves-nm"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/airwaves?tag=v0.1.0#1f226c8032d729bff8cd978bc54deb554da66ca2"
+dependencies = [
+ "zbus",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1415,6 +1431,8 @@ version = "0.1.0"
 name = "detent-ui"
 version = "0.1.0"
 dependencies = [
+ "airwaves-bluez",
+ "airwaves-nm",
  "almanac-core",
  "chordkit",
  "desktop-client",

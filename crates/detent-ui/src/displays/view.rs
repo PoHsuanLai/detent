@@ -4,10 +4,10 @@
 use super::drive::use_displays;
 use crate::system::Unavailable;
 use detent_model::{
-    ArrangeSide, Brightness, BrightnessList, DisplayChange, DisplayEdit, DisplayRotation, DisplaysInput, DisplaysReady,
-    DisplaysState, Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli, default_scale,
-    display_size_words, displays_missing_words, hertz_words, looks_like, mode_sizes, native_size,
-    side_of,
+    ArrangeSide, Brightness, BrightnessList, DisplayChange, DisplayEdit, DisplayRotation,
+    DisplaysInput, DisplaysReady, DisplaysState, Monitor, OutputId, PixelSize, RefreshMilliHz,
+    ScaleMilli, default_scale, display_size_words, displays_missing_words, hertz_words, looks_like,
+    mode_sizes, native_size, side_of,
 };
 use dioxus::prelude::*;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};

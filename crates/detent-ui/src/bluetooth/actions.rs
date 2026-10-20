@@ -1,9 +1,9 @@
 //! What the page asks of BlueZ: the switch, and connecting, pairing and forgetting a device. Each
 //! call runs under a deadline, and a failure is a sentence for the person.
 
-use airwaves_bluez::{Adapter1Proxy, Device1Proxy};
 use super::read::{find_device, managed};
 use crate::deadline::{Deadline, peer};
+use airwaves_bluez::{Adapter1Proxy, Device1Proxy};
 use detent_model::{BtAddress, BtPower};
 use ds_peer::within;
 use zbus::Connection;

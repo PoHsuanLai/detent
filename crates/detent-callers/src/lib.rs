@@ -24,8 +24,8 @@ pub use peephole_bus::peephole_core::{Proof, Refused, Requirement, RoleName, rol
 pub use peephole_bus::{BusPeers, access_denied};
 pub use peers::desktop_peers;
 pub use services::{
-    ACCOUNTS_BUS, COMPOSITOR_BUS, DISPLAYS_BUS, INFERENCE_BUS, MEMORY_BUS, PORTAL_BUS, SERVICE_PROOF, SYNC_BUS,
-    UPDATES_BUS, required_role,
+    ACCOUNTS_BUS, COMPOSITOR_BUS, DISPLAYS_BUS, INFERENCE_BUS, MEMORY_BUS, PORTAL_BUS,
+    SERVICE_PROOF, SYNC_BUS, UPDATES_BUS, required_role,
 };
 #[cfg(feature = "testing")]
 pub use testing::{introduce_service, private_peers};

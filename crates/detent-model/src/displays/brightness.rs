@@ -78,10 +78,12 @@ mod tests {
         rows.iter().map(|(n, p)| ((*n).to_owned(), *p)).collect()
     }
 
+    /// What the bus said, then each display with what its slider shows.
+    type Case = (Vec<(&'static str, u32)>, Vec<(&'static str, Option<u8>)>);
+
     #[test]
     fn the_answer_becomes_levels() {
-        // (what the bus said, [(display, what the slider shows)])
-        let cases: Vec<(Vec<(&str, u32)>, Vec<(&str, Option<u8>)>)> = vec![
+        let cases: Vec<Case> = vec![
             (vec![], vec![("eDP-1", None)]),
             (
                 vec![("eDP-1", 50), ("HDMI-A-2", 49)],
@@ -89,7 +91,10 @@ mod tests {
             ),
             (vec![("eDP-1", 400)], vec![("eDP-1", Some(100))]),
             (vec![("eDP-1", 0)], vec![("eDP-1", Some(0))]),
-            (vec![("eDP-1", 30), ("eDP-1", 70)], vec![("eDP-1", Some(30))]),
+            (
+                vec![("eDP-1", 30), ("eDP-1", 70)],
+                vec![("eDP-1", Some(30))],
+            ),
         ];
         for (rows, shown) in cases {
             let list = BrightnessList::of_wire(&wire(&rows));

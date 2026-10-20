@@ -202,11 +202,7 @@ impl DisplaysLink for OnCompositor {
         Box::pin(brightness::changes(&self.0))
     }
 
-    fn set_brightness(
-        &self,
-        output: OutputId,
-        level: Brightness,
-    ) -> Work<'_, Result<(), String>> {
+    fn set_brightness(&self, output: OutputId, level: Brightness) -> Work<'_, Result<(), String>> {
         Box::pin(async move { brightness::set(&self.0, &output, level).await })
     }
 }

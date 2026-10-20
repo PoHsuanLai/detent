@@ -1,10 +1,10 @@
 //! The networks this computer keeps a password for: removing them.
 
-use airwaves_nm::ConnectionSettingsProxy;
 use super::read::saved;
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::system::system_connection;
+use airwaves_nm::ConnectionSettingsProxy;
 use detent_model::Ssid;
 use ds_peer::within;
 use zbus::Connection;

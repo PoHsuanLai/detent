@@ -4,12 +4,12 @@
 use super::join::{join, join_hidden, sign_in};
 use super::known::forget;
 use super::link::WifiLink;
-use airwaves_nm::{NetworkManagerProxy, SERVICE};
 use super::read::{read, wifi_device, wireless_at};
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::system::{every, system_connection, watch_service};
 use crate::ticks::Ticks;
+use airwaves_nm::{NetworkManagerProxy, SERVICE};
 use detent_model::{
     HiddenNetwork, JoinFailure, Missing, Passphrase, Ssid, WifiLogin, WifiRadio, WifiStatus, Work,
 };
