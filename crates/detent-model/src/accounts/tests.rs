@@ -20,6 +20,7 @@ fn row(text: &str) -> ModuleRow {
 
 fn spec(key: &str, label: &str, kind: KeyKind) -> KeySpec {
     KeySpec {
+        control: None,
         path: path(key),
         kind,
         default: toml::Value::Boolean(false),

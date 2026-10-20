@@ -65,6 +65,7 @@ fn agents() -> Agents {
 
 fn menu(key: &str, kind: KeyKind) -> KeySpec {
     KeySpec {
+        control: None,
         path: path(key),
         kind,
         default: toml::Value::String(String::new()),

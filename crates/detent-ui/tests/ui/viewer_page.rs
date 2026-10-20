@@ -27,6 +27,7 @@ fn key_in(
     exposure: Exposure,
 ) -> KeySpec {
     KeySpec {
+        control: None,
         path: KeyPath(path.to_owned()),
         kind,
         default,
@@ -55,6 +56,7 @@ fn bounded(min: i64, max: i64, unit: &str) -> KeyKind {
 /// A scratch stand-in for anyview's schema.
 fn anyview() -> Schema {
     Schema {
+        pages: Vec::new(),
         app: AppId("anyview".to_owned()),
         file: FilePath(FILE.to_owned()),
         foreign: Default::default(),

@@ -238,6 +238,7 @@ impl Accountd {
 
 fn spec(path: String, section: &str, label: &str, kind: KeyKind, default: toml::Value) -> KeySpec {
     KeySpec {
+        control: None,
         path: KeyPath(path),
         kind,
         default,

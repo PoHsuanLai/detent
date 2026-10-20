@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 
 fn spec(key: &str, kind: KeyKind) -> KeySpec {
     KeySpec {
+        control: None,
         path: KeyPath(key.to_owned()),
         kind,
         default: toml::Value::Boolean(false),

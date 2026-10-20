@@ -8,6 +8,7 @@ const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
 fn schema(app: &str, file: &str, version: u16) -> Schema {
     Schema {
+        pages: Vec::new(),
         app: AppId(app.to_owned()),
         file: FilePath(file.to_owned()),
         version,

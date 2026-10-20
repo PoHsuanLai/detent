@@ -9,6 +9,7 @@ use std::cell::Cell;
 
 fn row(name: &str) -> KeySpec {
     KeySpec {
+        control: None,
         path: KeyPath(name.to_owned()),
         kind: KeyKind::Text,
         default: toml::Value::String(String::new()),

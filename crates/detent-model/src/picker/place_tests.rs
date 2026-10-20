@@ -59,6 +59,7 @@ fn models() -> Vec<(&'static str, Option<ChoicePlace>, Option<&'static str>)> {
 fn spec(key: &str, kind: KeyKind, note: Option<&str>) -> KeySpec {
     let all = models();
     KeySpec {
+        control: None,
         path: KeyPath(key.to_owned()),
         kind,
         default: toml::Value::String(String::new()),

@@ -146,6 +146,7 @@ mod tests {
 
     fn spec(kind: KeyKind, default: Value) -> KeySpec {
         KeySpec {
+            control: None,
             path: KeyPath("x.y".to_owned()),
             kind,
             default,

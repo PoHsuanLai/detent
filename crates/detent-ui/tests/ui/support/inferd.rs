@@ -161,6 +161,7 @@ impl Inferd {
     fn pool_spec(&self) -> KeySpec {
         let models = WORDS[2..].to_vec();
         KeySpec {
+            control: None,
             path: KeyPath(POOL_KEY.to_owned()),
             kind: KeyKind::List(Box::new(KeyKind::Menu {
                 variants: models
@@ -216,6 +217,7 @@ impl Inferd {
             false => (format!("{slot}: {}", tier_word(tier)), "Models".to_owned()),
         };
         KeySpec {
+            control: None,
             path: KeyPath(format!("ai.model.{kind}.{tier}")),
             kind: KeyKind::Menu {
                 variants: words

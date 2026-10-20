@@ -74,5 +74,7 @@ fn overlay(spec: &FileSpec, table: &toml::Table) -> Loaded<FileValues> {
         value: FileValues::from_parts(values, as_written),
         unknown: unknown_keys(table, &spec.keys, &spec.foreign),
         invalid,
+        // Settings shows a value as written, so nothing here is clamped.
+        clamped: Vec::new(),
     }
 }

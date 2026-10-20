@@ -12,6 +12,7 @@ fn path(text: &str) -> KeyPath {
 
 fn menu(key: &str, label: &str) -> KeySpec {
     KeySpec {
+        control: None,
         path: path(key),
         kind: KeyKind::Menu {
             variants: ["", "auto", "local/qwen", "local/holo"]

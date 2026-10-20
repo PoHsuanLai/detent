@@ -15,6 +15,7 @@ const LOUPE: &str = "org.gnome.Loupe";
 
 fn spec(path: &str, label: &str, kind: KeyKind) -> KeySpec {
     KeySpec {
+        control: None,
         path: KeyPath(path.to_owned()),
         kind,
         default: toml::Value::Boolean(false),

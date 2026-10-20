@@ -66,6 +66,7 @@ fn places(models: &[(&str, &str)]) -> BTreeMap<ChoiceWord, ChoicePlace> {
 
 fn spec(key: &str, label: &str, kind: KeyKind, models: &[(&str, &str)]) -> KeySpec {
     KeySpec {
+        control: None,
         path: path(key),
         kind,
         default: toml::Value::String(String::new()),
