@@ -246,7 +246,7 @@ kind = "dock"
 
 [[key]]
 path = "dock.magnified_size_px"
-default = 96
+default = 72
 label = "Magnified size"
 help = "The size of the icon under the pointer."
 section = "Magnification"
@@ -257,7 +257,7 @@ kind = "bounded"
 
 [key.kind.v]
 min = 32
-max = 128
+max = 72
 unit = "px"
 
 [key.page]
@@ -265,7 +265,7 @@ kind = "dock"
 
 [[key]]
 path = "dock.influence_radius_px"
-default = 96
+default = 72
 label = "Zoom reach"
 help = "How far from the pointer icons still grow."
 section = "Magnification"
@@ -381,40 +381,6 @@ default = "on"
 label = "Show indicators for open apps"
 help = "A dot under each app that has a window."
 section = "Indicators"
-exposure = "basic"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["on", "off"]
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "dock.bounce"
-default = "on"
-label = "Bounce for attention"
-help = "Apps that need you bounce their icon."
-section = "Animation"
-exposure = "basic"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["on", "off"]
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "dock.launch_animation"
-default = "on"
-label = "Animate opening apps"
-help = "An icon bounces while its app starts."
-section = "Animation"
 exposure = "basic"
 
 [key.kind]
@@ -588,44 +554,6 @@ kind = "bounded"
 [key.kind.v]
 min = 0
 max = 2000
-unit = "ms"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "dock.bounce_period_ms"
-default = 500
-label = "Bounce period"
-help = "One bounce, up and down."
-section = "Animation"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 100
-max = 2000
-unit = "ms"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "dock.bounce_launch_cap_ms"
-default = 10000
-label = "Launch bounce limit"
-help = "The longest an opening app bounces."
-section = "Animation"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 60000
 unit = "ms"
 
 [key.page]
@@ -1011,7 +939,7 @@ exposure = "advanced"
 kind = "toggle"
 
 [key.kind.v]
-variants = ["memory", "off"]
+variants = ["off", "memory"]
 
 [key.page]
 kind = "appearance"
@@ -1748,7 +1676,7 @@ kind = "appearance"
 
 [[key]]
 path = "menus.item_height_px"
-default = 22
+default = 28
 label = "Item height"
 help = "The height of one menu item."
 section = "Menus"
@@ -1843,7 +1771,7 @@ kind = "appearance"
 
 [[key]]
 path = "menus.highlight_radius_px"
-default = 5
+default = 8
 label = "Highlight radius"
 help = "The corner radius of the selected item's highlight."
 section = "Menus"
@@ -1900,7 +1828,7 @@ kind = "keyboard_and_shortcuts"
 
 [[key]]
 path = "switcher.icon_size_px"
-default = 96
+default = 64
 label = "Icon size"
 help = "The size of an app icon in the switcher."
 section = "App switcher"
@@ -1919,7 +1847,7 @@ kind = "keyboard_and_shortcuts"
 
 [[key]]
 path = "switcher.cell_size_px"
-default = 112
+default = 80
 label = "Cell size"
 help = "The size of one app's cell."
 section = "App switcher"
@@ -2312,7 +2240,7 @@ kind = "notifications"
 path = "notifications.server"
 default = "own"
 label = "Serve notifications"
-help = "Show other apps' notifications. Off leaves them to another notification daemon."
+help = "Show other apps' notifications. Off leaves them to another notifications app."
 section = "Notifications"
 exposure = "advanced"
 
@@ -2379,7 +2307,7 @@ kind = "notifications"
 
 [[key]]
 path = "notifications.center_width_px"
-default = 384
+default = 360
 label = "Notification center width"
 help = "The width of the notification center's column."
 section = "Notification center"
@@ -2492,7 +2420,7 @@ kind = "appearance"
 
 [[key]]
 path = "control_center.modules"
-default = ["wifi", "bluetooth", "focus", "display", "keyboard_brightness", "sound", "now_playing", "appearance", "battery"]
+default = ["wifi", "bluetooth", "focus", "display", "keyboard_brightness", "sound", "now_playing", "appearance", "battery", "terminal"]
 label = "Modules"
 help = "Which modules show, in order."
 section = "Control center"
@@ -2505,7 +2433,7 @@ kind = "list"
 kind = "menu"
 
 [key.kind.v.v]
-variants = ["wifi", "bluetooth", "focus", "display", "keyboard_brightness", "sound", "now_playing", "appearance", "battery"]
+variants = ["wifi", "bluetooth", "focus", "display", "keyboard_brightness", "sound", "now_playing", "appearance", "battery", "terminal"]
 
 [key.page]
 kind = "appearance"
@@ -2613,88 +2541,22 @@ variants = ["show", "hide"]
 kind = "appearance"
 
 [[key]]
-path = "spaces.default_card_accent"
-default = "chosen"
-label = "Default accent"
-help = "The accent you picked, or the Space's own hue."
+path = "spaces.default_grain"
+default = 0
+label = "Default grain"
+help = "The grain of a Space that has no look of its own (none by default; every preset takes it)."
 section = "Defaults"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["chosen", "space_hue"]
-
-[key.page]
-kind = "spaces"
-
-[[key]]
-path = "display.scale"
-default = "auto"
-label = "Choose display scale automatically"
-help = "Auto: the first time a display is connected, sill sets the scale its size and resolution call for (about 109 points per inch), and never changes it again. Manual: sill never changes a scale."
-section = "Displays"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["auto", "manual"]
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "display.scale_overrides"
-default = ""
-label = "Scale per display"
-help = "`<display> = <scale>` pairs separated by semicolons, e.g. `BNQ-8074-1f2e3d4c5b6a7980 = 1.75`; the display names are in ~/.local/state/sill/displays.json. A pair is applied when it is added or changed, even under Manual."
-section = "Displays"
-exposure = "advanced"
-
-[key.kind]
-kind = "text"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "display.density_target_ppi"
-default = 109
-label = "Target density"
-help = "The points per inch the automatic scale aims for. 109 is a 27-inch 2560 x 1440 display; lower makes everything larger."
-section = "Displays"
 exposure = "advanced"
 
 [key.kind]
 kind = "bounded"
 
 [key.kind.v]
-min = 72
-max = 220
-unit = "ppi"
+min = 0
+max = 100
 
 [key.page]
-kind = "appearance"
-
-[[key]]
-path = "display.scale_rounding"
-default = "prefer_whole"
-label = "Scale rounding"
-help = "Round a sharp display up to a whole scale (crisper, like a Mac's default) or to the nearest step (more space)."
-section = "Displays"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["prefer_whole", "nearest"]
-
-[key.page]
-kind = "appearance"
+kind = "spaces"
 
 [[key]]
 path = "display.brightness_keys_target"
@@ -2909,23 +2771,6 @@ variants = ["sheet", "popover"]
 kind = "appearance"
 
 [[key]]
-path = "session.lock_clock"
-default = "h24"
-label = "Lock screen clock"
-help = "How sill's own lock screen writes the time: 24-hour, or 12-hour without AM or PM."
-section = "Lock screen"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["h24", "h12"]
-
-[key.page]
-kind = "accounts"
-
-[[key]]
 path = "session.lock_grace_s"
 default = 5
 label = "Require the password after the display turns off"
@@ -2945,119 +2790,10 @@ unit = "s"
 kind = "power"
 
 [[key]]
-path = "widgets.center"
-default = ["calendar", "up_next", "battery"]
-label = "Notification Center widgets"
-help = "Which widgets show under the notifications, in order."
-section = "Widgets"
-exposure = "advanced"
-
-[key.kind]
-kind = "list"
-
-[key.kind.v]
-kind = "segmented"
-
-[key.kind.v.v]
-variants = ["calendar", "up_next", "battery", "now_playing", "world_clock"]
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "widgets.desktop"
-default = "off"
-label = "Show widgets on the desktop"
-help = "Widgets on the desktop, under the windows (`sill widgets toggle-desktop`)."
-section = "Widgets"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["off", "on"]
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "widgets.desktop_widgets"
-default = ["calendar", "battery"]
-label = "Desktop widgets"
-help = "Which widgets the desktop shows; they are placed on a grid and can be moved."
-section = "Widgets"
-exposure = "advanced"
-
-[key.kind]
-kind = "list"
-
-[key.kind.v]
-kind = "segmented"
-
-[key.kind.v.v]
-variants = ["calendar", "up_next", "battery", "now_playing", "world_clock"]
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "widgets.desktop_cell_px"
-default = 164
-label = "Desktop grid cell"
-help = "The side of one cell of the desktop's widget grid; a small widget is one cell."
-section = "Widgets"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 120
-max = 240
-unit = "px"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "widgets.desktop_gap_px"
-default = 16
-label = "Desktop grid gap"
-help = "The space between cells of the desktop's widget grid and around it."
-section = "Widgets"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 48
-unit = "px"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "widgets.world_clocks"
-default = ""
-label = "World clock cities"
-help = "Time zones for the World Clock widget, separated by `;`: `Europe/London; America/New_York`."
-section = "Widgets"
-exposure = "advanced"
-
-[key.kind]
-kind = "text"
-
-[key.page]
-kind = "dock"
-
-[[key]]
 path = "calendar.sources"
 default = "auto"
 label = "Calendars"
-help = "`auto` reads `~/.calendars` (vdirsyncer and khal) and `~/.local/share/sill/calendars`; `off` reads none; or `.ics` files and folders separated by `;`."
+help = "`auto` reads `~/.calendars` (vdirsyncer and khal), `~/.local/share/sill/calendars` and the calendars porter mirrors into `~/.local/share/porter/vdir`; `off` reads none; or `.ics` files and folders separated by `;`."
 section = "Calendar"
 exposure = "advanced"
 
@@ -3192,7 +2928,7 @@ kind = "keyboard_and_shortcuts"
 path = "screenshot.tool"
 default = "auto"
 label = "Screenshot program"
-help = "What `sill screenshot` runs: `auto` is the desktop's own, `off` runs nothing, or a command line run by `/bin/sh -c` with the kind (`area`, `window`, `screen`) as $1 and the folder as $2."
+help = "What `sill screenshot` runs: `auto` asks the desktop portal, `off` runs nothing, or a command line run by `/bin/sh -c` with the kind (`area`, `window`, `screen`) as $1 and the folder as $2."
 section = "Screenshots"
 exposure = "advanced"
 
@@ -3387,7 +3123,7 @@ kind = "dock"
 path = "idle.screen_off_ac_min"
 default = 15
 label = "Turn the display off on power after"
-help = 'Minutes without input before the displays go off while on AC power; 0 never.'
+help = "Minutes without input before the displays go off while on AC power; 0 never."
 section = "Idle"
 exposure = "advanced"
 
@@ -3406,7 +3142,7 @@ kind = "power"
 path = "idle.screen_off_battery_min"
 default = 15
 label = "Turn the display off on battery after"
-help = 'Minutes without input before the displays go off on battery; 0 never.'
+help = "Minutes without input before the displays go off on battery; 0 never."
 section = "Idle"
 exposure = "advanced"
 
@@ -3425,7 +3161,7 @@ kind = "power"
 path = "idle.suspend_ac_min"
 default = 30
 label = "Sleep on power after"
-help = 'Minutes without input before the computer sleeps while on AC power; 0 never.'
+help = "Minutes without input before the computer sleeps while on AC power; 0 never."
 section = "Idle"
 exposure = "advanced"
 
@@ -3444,7 +3180,7 @@ kind = "power"
 path = "idle.suspend_battery_min"
 default = 15
 label = "Sleep on battery after"
-help = 'Minutes without input before the computer sleeps on battery; 0 never.'
+help = "Minutes without input before the computer sleeps on battery; 0 never."
 section = "Idle"
 exposure = "advanced"
 
@@ -3532,3 +3268,177 @@ unit = "s"
 
 [key.page]
 kind = "power"
+
+[[key]]
+path = "keyboard.overrides"
+default = []
+label = "Per-app profiles"
+help = "One row per app: the desktop-entry id and the keycap profile its windows use. Beats the profile the app declares and its category; a name keycap does not define uses the default profile."
+section = "Profiles"
+exposure = "advanced"
+
+[key.kind]
+kind = "rows"
+
+[[key.kind.v.columns]]
+name = "app"
+label = "App"
+
+[key.kind.v.columns.kind]
+kind = "text"
+
+[key.kind.v.columns.kind.v]
+
+[[key.kind.v.columns]]
+name = "profile"
+label = "Profile"
+
+[key.kind.v.columns.kind]
+kind = "text"
+
+[key.kind.v.columns.kind.v]
+pattern = "[a-z0-9_-]{1,64}"
+
+[key.page]
+kind = "keyboard_and_shortcuts"
+
+[[key]]
+path = "companion.summon"
+default = "double_tap_command"
+label = "Press ⌘ twice to ask"
+help = "`double_tap_command` opens the assistant when the command key is pressed twice; `off` leaves the key alone."
+section = "Assistant"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["double_tap_command", "off"]
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "companion.in_field"
+default = "prompt"
+label = "In a text field"
+help = "Whether a summon in a text field makes the field the prompt (`prompt`) or opens the launcher (`launcher`)."
+section = "Assistant"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["prompt", "launcher"]
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "companion.double_tap_ms"
+default = 350
+label = "Double-tap speed"
+help = "How long the second press of the command key may follow the first."
+section = "Assistant"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 150
+max = 600
+unit = "ms"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "companion.app_wait_ms"
+default = 80
+label = "Time an app has to take a summon"
+help = "How long the focused app has to take a summon into its own prompt before the launcher opens instead."
+section = "Assistant"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 40
+max = 500
+unit = "ms"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "companion.notify"
+default = "needs_you"
+label = "Notify when it needs you"
+help = "`needs_you` posts a notification when a task waits for you; `never` does not."
+section = "Assistant"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["needs_you", "never"]
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "companion.confirm_arm_ms"
+default = 600
+label = "Confirmation buttons wait"
+help = "How long the buttons of a question wait before they take a press. Never less than half a second: the compositor refuses an answer that comes sooner."
+section = "Confirmations"
+exposure = "advanced"
+
+[key.kind]
+kind = "bounded"
+
+[key.kind.v]
+min = 500
+max = 1500
+unit = "ms"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "voice.hold_to_talk"
+default = "hold_command"
+label = "Hold ⌘ to talk"
+help = "`hold_command` listens while the command key is held and asks the assistant what it heard; `off` never listens."
+section = "Voice"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["hold_command", "off"]
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "wallpaper.picture"
+default = ""
+label = "Picture"
+help = "The picture on the desktop. Empty shows the plain desktop colour."
+section = "Wallpaper"
+exposure = "basic"
+control = "picture"
+
+[key.kind]
+kind = "text"
+
+[key.page]
+kind = "app"
+v = "wallpaper"

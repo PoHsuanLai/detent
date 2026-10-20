@@ -39,6 +39,7 @@ fn pages_come_in_the_page_tables_order_and_only_when_they_have_keys() {
             "privacy",
             "dock",
             "displays",
+            "wallpaper",
             "spaces",
             "power",
             "software-update",
@@ -46,7 +47,7 @@ fn pages_come_in_the_page_tables_order_and_only_when_they_have_keys() {
             "keyboard_and_shortcuts",
             "mouse_and_gestures"
         ],
-        "no schema names the Apps page, so it is not listed; inferd's and docket's name Intelligence; Accounts, Privacy, Assistant Model, Software Update, Wi-Fi, Bluetooth and Displays are live panes and always there"
+        "no schema names the Apps page, so it is not listed; sill's wallpaper.picture lists Wallpaper; inferd's and docket's name Intelligence; Accounts, Privacy, Assistant Model, Software Update, Wi-Fi, Bluetooth and Displays are live panes and always there"
     );
 }
 
@@ -59,7 +60,7 @@ fn a_page_lists_its_basic_sections_and_one_advanced_group_after_them() {
     };
     assert_eq!(
         titles(&appearance.sections),
-        ["Appearance", "Icons"],
+        ["Appearance", "Icons", "Time"],
         "only sections with a basic key are headers of their own"
     );
     let advanced = titles(&appearance.advanced);

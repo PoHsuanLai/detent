@@ -266,11 +266,11 @@ fn a_write_that_fails_says_so_and_leaves_the_file_alone() {
 fn reduce_motion_is_a_switch_that_is_on_for_reduced() {
     let sandbox = Sandbox::new("reduce-motion");
     let mut harness = sandbox.harness(opening("appearance"));
-    let switch = ".section .ds-toggle";
+    let switch = ".section .ds-toggle[*|aria-label=\"Reduce motion\"]";
     assert_eq!(
         harness.count(switch),
         1,
-        "the only two-word key on the page shown that is on and off"
+        "a two-word key that is on and off is one switch"
     );
     assert_eq!(
         harness.attr(switch, "aria-checked").as_deref(),

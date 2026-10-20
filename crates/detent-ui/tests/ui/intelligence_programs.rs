@@ -63,17 +63,18 @@ const BASIC: &[(&str, &[&str])] = &[
 ];
 
 /// The names of the advanced sheet rows, each "<Name>...": a section's title, except where a basic
-/// section has the same title, then what its sheet holds ("Code editors", "Apply tidying").
+/// section has the same title, then what its sheet holds ("Assistant Details", "Apply tidying").
 const ADVANCED: &[&str] = &[
-    "Code editors",
-    "Limits",
     "Apply tidying",
     "History",
     "Run limits",
     "Timing",
     "Window detail",
+    "Assistant Details",
+    "Limits",
     "Automatic",
     "Structured output",
+    "Confirmations",
 ];
 
 #[test]

@@ -37,18 +37,15 @@ fn page_slug(catalogue: &Catalogue, text: &str) -> Option<PageSlug> {
     declared
         .as_ref()
         .and_then(|id| {
-            catalogue
-                .pages
-                .iter()
-                .find(|model| table.declared(&model.page).is_some_and(|decl| decl.id == *id))
+            catalogue.pages.iter().find(|model| {
+                table
+                    .declared(&model.page)
+                    .is_some_and(|decl| decl.id == *id)
+            })
         })
         .or_else(|| catalogue.page(&PageSlug(text.to_owned())))
         .map(|model| model.slug.clone())
-        .or_else(|| {
-            declared
-                .map(|id| PageSlug(id.0))
-                .filter(is_assistant_setup)
-        })
+        .or_else(|| declared.map(|id| PageSlug(id.0)).filter(is_assistant_setup))
 }
 
 /// Where `target` lands, or none when no page of the window is what it names.

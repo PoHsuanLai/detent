@@ -7,7 +7,6 @@ use crate::updates::{SLUG as SOFTWARE_UPDATE, is_software_update};
 use crate::wallpaper::{SLUG as WALLPAPER, is_wallpaper};
 use crate::wifi::{WIFI_SLUG, is_wifi};
 use ds_settings::schema::{Page, PageOrder, PageTable};
-use std::cmp::Ordering;
 
 /// A page's stable name: what the sidebar keys on and `--page` takes.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
@@ -54,8 +53,9 @@ pub(crate) fn sidebar_place(table: &PageTable, page: &Page) -> Option<(PageOrder
     }
 }
 
-/// The sidebar order of two pages.
-pub(crate) fn sidebar_order(table: &PageTable, a: &Page, b: &Page) -> Ordering {
+/// The sidebar order of two pages (what the order tests sort by).
+#[cfg(test)]
+pub(crate) fn sidebar_order(table: &PageTable, a: &Page, b: &Page) -> std::cmp::Ordering {
     sidebar_place(table, a).cmp(&sidebar_place(table, b))
 }
 

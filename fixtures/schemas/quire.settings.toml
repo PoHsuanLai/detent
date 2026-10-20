@@ -9,6 +9,7 @@ label = "Theme"
 help = "Follow the desktop, or force light or dark mode."
 section = "Appearance"
 exposure = "basic"
+agent = "settable"
 
 [key.kind]
 kind = "segmented"
@@ -26,6 +27,7 @@ label = "Accent"
 help = "The colour of buttons, selection, switches and focus rings across the desktop."
 section = "Appearance"
 exposure = "basic"
+agent = "settable"
 
 [key.kind]
 kind = "menu"
@@ -49,6 +51,23 @@ kind = "toggle"
 
 [key.kind.v]
 variants = ["standard", "reduced"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "appearance.transparency"
+default = "system"
+label = "Reduce transparency"
+help = "Make blurred and translucent areas solid. Windows, menus and panels stop showing what is behind them."
+section = "Appearance"
+exposure = "basic"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["system", "reduced"]
 
 [key.page]
 kind = "appearance"
@@ -341,6 +360,23 @@ kind = "toggle"
 
 [key.kind.v]
 variants = ["same_as_light", "adaptive"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
+path = "region.hours"
+default = "auto"
+label = "Time format"
+help = "Write times with a 12-hour or a 24-hour clock everywhere. Automatic follows the language and region of the session."
+section = "Time"
+exposure = "basic"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["auto", "12", "24"]
 
 [key.page]
 kind = "appearance"
