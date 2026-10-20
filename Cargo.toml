@@ -36,6 +36,9 @@ ds-lint     = { path = "../quire/crates/ds-lint" }
 # A deadline for every call to another process (`Deadline`, `within`).
 ds-peer     = { path = "../quire/crates/ds-peer" }
 ds-settings = { path = "../quire/crates/ds-settings" }  # detent-ui adds the `dioxus` feature for `use_environment`
+# The typed desktop client for wlroots-style compositors (own repo, a sibling checkout): the Displays page
+# reads the output heads and applies a change through it, as sill's desktop arm does.
+desktop-client = { path = "../casement-protocols/desktop-client", features = ["client"] }
 # docket (private repo, by path like quire): the app side of the intents wire. `docket-client`'s `dbus`
 # feature serves `org.quire.IntentProvider1`; `prov` and `porter-core` are the label and name types
 # its signatures use, taken from the same porter checkout docket takes.
