@@ -3225,18 +3225,19 @@ dependencies = [
 [[package]]
 name = "keycap-client"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=ab8021b2531b262fe452e55e574a5a80917848ac#ab8021b2531b262fe452e55e574a5a80917848ac"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=ffcc2dbb0c9b6fffd123f94777352cb59250282d#ffcc2dbb0c9b6fffd123f94777352cb59250282d"
 dependencies = [
  "chordkit",
  "chordkit-file",
  "keycap-protocol",
  "rustix",
+ "shell-verbs",
 ]
 
 [[package]]
 name = "keycap-protocol"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/keycap?rev=ab8021b2531b262fe452e55e574a5a80917848ac#ab8021b2531b262fe452e55e574a5a80917848ac"
+source = "git+https://github.com/PoHsuanLai/keycap?rev=ffcc2dbb0c9b6fffd123f94777352cb59250282d#ffcc2dbb0c9b6fffd123f94777352cb59250282d"
 dependencies = [
  "serde",
  "serde_json",
@@ -5129,6 +5130,11 @@ dependencies = [
  "digest 0.10.7",
  "keccak",
 ]
+
+[[package]]
+name = "shell-verbs"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/casement-protocols?rev=79aef3be4bead802ef5748178b0e25a589624a9d#79aef3be4bead802ef5748178b0e25a589624a9d"
 
 [[package]]
 name = "shlex"
