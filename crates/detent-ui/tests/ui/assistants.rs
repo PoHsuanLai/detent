@@ -440,6 +440,16 @@ fn each_refusal_reads_as_a_sentence_and_changes_nothing() {
                 .replace('\u{2019}', "'")
                 .contains(&sentence)
         });
+        // The toast sits over the sheet's buttons and holds while the pointer is on it: the
+        // pointer moves to the row's words, and the next press waits for the toast to go.
+        let words = c
+            .harness
+            .centre("#ds-field-help-studio")
+            .expect("the row is shown");
+        c.harness.send(Input::pointer_move(words));
+        settle(&mut c.harness, "the toast goes", |h| {
+            h.count(".ds-toast") == 0
+        });
     }
     assert_eq!(
         c.fake.changes(),

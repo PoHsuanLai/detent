@@ -21,7 +21,6 @@ use ds::components::lists::list::model::ListStyle;
 use ds::components::overlays::empty_state::EmptyState;
 use ds::prelude::*;
 use ds::root::common::Common;
-use ds::root::pass_through::ExtraClass;
 use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::ActionWeight;
 use porter_core::sheet::ProviderGroup;
@@ -172,7 +171,6 @@ fn account_item(
                 state,
                 common: Common {
                     id: Some(row_id("account", &key.0)),
-                    extra_class: ExtraClass::parse("account-row").ok(),
                     ..Common::default()
                 },
                 onclick: move |_| onselect.call(picked.clone()),

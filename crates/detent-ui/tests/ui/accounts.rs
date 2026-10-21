@@ -176,7 +176,7 @@ fn start_syncing(
     });
     // Each module answers on its own; the list is whole once every served one has.
     settle(&mut harness, "every module's rows", |h| {
-        expected == 0 || h.count(".account-row") >= expected
+        expected == 0 || h.count(".account-row-body") >= expected
     });
     World {
         accountd,
@@ -254,7 +254,7 @@ fn the_list_has_a_row_per_account_of_every_module_with_its_state() {
     ] {
         assert!(html.contains(text), "{text}");
     }
-    assert_eq!(w.harness.count(".account-row"), 4);
+    assert_eq!(w.harness.count(".account-row-body"), 4);
     assert!(
         html.contains("Sign-in keys"),
         "the client ids have a disclosure"
@@ -267,7 +267,7 @@ fn the_list_has_a_row_per_account_of_every_module_with_its_state() {
 fn a_pane_with_only_accountd_shows_identities_and_no_ai_or_sync_part() {
     let w = world_of("accounts-only-accountd", identities(), Scheme::Light);
     let html = w.harness.html();
-    assert_eq!(w.harness.count(".account-row"), 2);
+    assert_eq!(w.harness.count(".account-row-body"), 2);
     for text in ["Home cloud", "Work mail"] {
         assert!(html.contains(text), "{text}");
     }
@@ -336,7 +336,7 @@ fn the_list_stays_beside_the_detail_of_the_account_chosen_in_it() {
     // Only an account that is not fine has a dot after its words.
     assert_eq!(
         w.harness
-            .count(".account-row .ds-badge[data-content=\"dot\"]"),
+            .count(".account-row-body .ds-badge[data-content=\"dot\"]"),
         1
     );
     assert_eq!(
@@ -445,7 +445,7 @@ fn continue_as_runs_syncds_row_on_one_press() {
 #[test]
 fn one_module_vanishing_leaves_the_others_shown() {
     let mut w = world("accounts-vanish");
-    assert_eq!(w.harness.count(".account-row"), 4);
+    assert_eq!(w.harness.count(".account-row-body"), 4);
     w.stop(Module::Syncd);
     settle(&mut w.harness, "sync to leave the list", |h| {
         !h.html().contains("Home sync")
@@ -692,7 +692,7 @@ fn a_program_that_took_accountds_name_is_not_read_and_is_sent_nothing() {
         h.html().contains("could not be confirmed")
     });
     assert_eq!(
-        harness.count(".account-row"),
+        harness.count(".account-row-body"),
         0,
         "none of its rows are shown"
     );
@@ -727,7 +727,9 @@ fn the_program_that_holds_accountds_role_is_read() {
     let mut harness = Sandbox::new("accounts-owner-vouched")
         .on_bus_vouched(&bus.address, vouch)
         .harness(accounts());
-    settle(&mut harness, "the rows", |h| h.count(".account-row") == 2);
+    settle(&mut harness, "the rows", |h| {
+        h.count(".account-row-body") == 2
+    });
     assert!(accountd.calls() > 0);
 }
 
@@ -1104,7 +1106,7 @@ fn the_remove_answer_is_legible_in_light_and_dark() {
 fn every_button_says_which_account_or_app_it_is_for() {
     let mut w = world("accounts-names");
     assert_eq!(
-        w.harness.count(".account-row [aria-label^=\"Manage\"]"),
+        w.harness.count(".ds-row [aria-label^=\"Manage\"]"),
         0,
         "a row is chosen by pressing it, with no button of its own"
     );
@@ -1228,7 +1230,7 @@ fn the_minus_waits_for_a_selection_then_asks_before_removing_the_selected_accoun
         Some("disabled"),
         "nothing is selected"
     );
-    click(&mut w.harness, "[aria-posinset=\"3\"] .account-row");
+    click(&mut w.harness, "[aria-posinset=\"3\"] .account-row-body");
     settle(&mut w.harness, "the minus", |h| {
         h.attr(MINUS, "data-availability").as_deref() != Some("disabled")
     });
@@ -1271,7 +1273,7 @@ fn mirrored_files() -> Vec<Held> {
 }
 
 const FILES: &str = "home/files";
-const RING: &str = ".account-row .ds-progress[data-style=\"ring\"]";
+const RING: &str = ".ds-row .ds-progress[data-style=\"ring\"]";
 
 #[test]
 fn a_synced_dataset_says_when_it_synced_and_how_full_the_storage_is_and_a_ring_turns_while_it_works()
@@ -1396,7 +1398,8 @@ fn the_sign_in_step_lists_what_is_signed_in_and_offers_add_account_and_skip() {
             .on_bus(&bus.address)
             .harness(setup_opening());
         settle(&mut harness, "the step's rows", |h| {
-            h.count(".accounts-setup .account-row") == rows.len() && h.count(".accounts-setup") == 1
+            h.count(".accounts-setup .account-row-body") == rows.len()
+                && h.count(".accounts-setup") == 1
         });
         let disabled = |h: &Harness, button: &str| {
             h.attr(button, "data-availability").as_deref() == Some("disabled")

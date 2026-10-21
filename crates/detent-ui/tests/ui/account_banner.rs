@@ -67,7 +67,7 @@ fn world(name: &str, rows: Vec<Held>, chosen: &str) -> World {
         .on_bus(&bus.address)
         .harness_in(opening, ds::prelude::Scheme::Light);
     settle(&mut harness, "the list", |h| {
-        h.count(".account-row") >= count
+        h.count(".account-row-body") >= count
     });
     click(
         &mut harness,

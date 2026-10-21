@@ -65,7 +65,6 @@ fn rows_of(rows: &[SignedIn], marks: &ProviderMarks) -> Vec<ListItem<String>> {
                         content,
                         common: Common {
                             id: Some(row_id("signed-in", &row.key.0)),
-                            extra_class: ExtraClass::parse("account-row").ok(),
                             ..Common::default()
                         },
                     }
