@@ -3,6 +3,7 @@
 //! and the transition a person's choices make.
 
 mod add_account;
+mod attention;
 mod grant;
 mod heard;
 mod hold;
@@ -22,6 +23,7 @@ mod sync_status;
 mod target;
 
 pub use add_account::{AddEnd, Adding};
+pub use attention::Attention;
 pub use grant::{AccountPermission, GrantDecision, GrantSentence};
 pub use hold::{DatasetName, HoldCounts, KEEP_HELP, SyncHold};
 pub use hold_step::{HoldEffect, HoldInput, Holds, hold_step};

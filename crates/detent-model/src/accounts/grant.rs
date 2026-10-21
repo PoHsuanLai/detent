@@ -128,7 +128,7 @@ const MONTHS: [&str; 12] = [
 ];
 
 /// "8 Oct" for the day `YYYY-MM-DD`; none for text of another shape.
-fn day_words(day: &str) -> Option<String> {
+pub(super) fn day_words(day: &str) -> Option<String> {
     let mut parts = day.split('-');
     let (_year, month, date) = (parts.next()?, parts.next()?, parts.next()?);
     let month: usize = month.parse().ok()?;
