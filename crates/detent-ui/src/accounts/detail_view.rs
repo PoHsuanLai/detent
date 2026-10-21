@@ -3,13 +3,14 @@
 //! them), the apps with access, Sign in again and Remove.
 
 use super::adapter::{ActionButton, HoldBanner};
+use super::attention_view::AttentionBanner;
 use super::avatar_view::{AccountAvatar, AvatarPlace};
 use super::grants_view::AppsWithAccess;
 use super::list_view::Note;
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Account, AccountKey, AccountService, AccountSync, DatasetName, HoldInput, Holds, ModuleId,
-    ModuleRow, SyncBook, SyncHold, reauth_help, sign_in_words,
+    Account, AccountKey, AccountService, AccountSync, Attention, DatasetName, HoldInput, Holds,
+    ModuleId, ModuleRow, SyncBook, SyncHold, reauth_help, sign_in_words,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -57,22 +58,31 @@ pub(super) fn AccountDetail(
     on: Handlers,
 ) -> Element {
     let availability = availability_of(busy);
+    let attention = Attention::of(&account);
     rsx! {
         div { class: "accounts-detail", "data-accounts": "detail", "data-account": "{account.key.0}",
+            if let Some(attention) = attention.clone() {
+                AttentionBanner {
+                    account: account.clone(),
+                    attention,
+                    availability,
+                    onsign_in: move |row| on.ran.call(row),
+                }
+            }
             Header { account: account.clone(), marks, book: book.clone() }
             FieldGroup {
                 FieldRow {
                     label: TextLine::from("Status"),
                     Label { text: account.status.label(), role: LabelRole::Secondary }
                 }
-                if let Some(expiry) = account.expires.clone() {
+                if let (None, Some(expiry)) = (&attention, account.expires.clone()) {
                     FieldRow {
                         label: TextLine::from(expiry.label),
                         help: Some(TextLine::from(expiry.help)),
                         Label { text: expiry.text, role: LabelRole::Secondary }
                     }
                 }
-                if let Some((path, name)) = account.reauth.clone() {
+                if let (None, Some((path, name))) = (&attention, account.reauth.clone()) {
                     FieldRow {
                         label: TextLine::from(name.clone()),
                         help: Some(TextLine::from(reauth_help(account.sign_in))),

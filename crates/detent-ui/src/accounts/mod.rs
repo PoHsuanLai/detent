@@ -6,6 +6,7 @@
 
 mod adapter;
 mod add_io;
+mod attention_view;
 mod avatar_view;
 mod detail_view;
 mod drive;

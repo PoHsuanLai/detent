@@ -7,8 +7,8 @@ use super::avatar_view::{AccountAvatar, AvatarPlace};
 use crate::key_row::row_id;
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Account, AccountKey, AccountStatus, AccountsPane as Pane, Adding, ClientEntry, ClientText,
-    ClientValue, ModuleId, ModuleRow, SecretStanding, SyncBook,
+    Account, AccountKey, AccountStatus, AccountsPane as Pane, Adding, Attention, ClientEntry,
+    ClientText, ClientValue, ModuleId, ModuleRow, SecretStanding, SyncBook,
 };
 use dioxus::prelude::*;
 use ds::base::vocab::RowState;
@@ -110,19 +110,22 @@ fn second_line(account: &Account) -> String {
         .map_or_else(|| account.status.label(), |provider| provider.name.clone())
 }
 
-/// A dot after the words of an account that is not fine, named by how it stands.
+/// A dot after the words of an account that is not fine, named by how it stands; an account that
+/// is fine but about to be signed out has one too, named by what is coming.
 #[component]
-fn StandingDot(status: AccountStatus) -> Element {
-    match status {
-        AccountStatus::Ok => rsx! {},
-        _ => rsx! {
-            Badge {
-                content: BadgeContent::Dot,
-                tone: BadgeTone::Alert,
-                size: ControlSize::Mini,
-                common: Common { aria_label: Some(status.label()), ..Common::default() },
-            }
-        },
+fn StandingDot(status: AccountStatus, attention: Option<Attention>) -> Element {
+    let name = match (&status, attention) {
+        (AccountStatus::Ok, None) => return rsx! {},
+        (AccountStatus::Ok, Some(attention)) => attention.badge_label().to_owned(),
+        _ => status.label(),
+    };
+    rsx! {
+        Badge {
+            content: BadgeContent::Dot,
+            tone: BadgeTone::Alert,
+            size: ControlSize::Mini,
+            common: Common { aria_label: Some(name), ..Common::default() },
+        }
     }
 }
 
@@ -155,7 +158,7 @@ fn account_item(
                 Label { text: account.label.clone(), role: LabelRole::Primary }
                 Label { text: second_line(account), role: LabelRole::Secondary, style: LabelStyle::Footnote }
             }
-            StandingDot { status: account.status.clone() }
+            StandingDot { status: account.status.clone(), attention: Attention::of(account) }
         }
     };
     let picked = key.clone();
