@@ -1959,6 +1959,7 @@ dependencies = [
  "keyboard-types 0.7.0",
  "parley",
  "peniko",
+ "quire-emoji",
  "raw-window-handle",
  "thiserror 2.0.21",
  "tokio",
@@ -4681,6 +4682,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "quire-emoji"
+version = "0.1.0"
+dependencies = [
+ "fontique",
 ]
 
 [[package]]
