@@ -40,7 +40,7 @@ fn in_order(html: &str, texts: &[&str]) {
 const BASIC: &[(&str, &[&str])] = &[
     (
         "Assistant",
-        &["Asks first", "Other apps", "Coding Agents", "Undo history"],
+        &["Permissions", "Other apps", "Coding Agents", "Undo history"],
     ),
     (
         "Models",
@@ -328,7 +328,7 @@ fn rows_that_do_not_fit_are_shown_as_written_and_never_rewritten() {
 fn a_rows_help_is_behind_its_info_button_and_escape_closes_it() {
     let sandbox = Sandbox::new("programs-help");
     let mut harness = sandbox.harness(intelligence());
-    let about = "[aria-label=\"About Asks first\"]";
+    let about = "[aria-label=\"About Permissions\"]";
     let card = ".ds-field-help-card";
     scroll_into_view(&mut harness, about);
     assert_eq!(
@@ -340,7 +340,7 @@ fn a_rows_help_is_behind_its_info_button_and_escape_closes_it() {
     assert_eq!(harness.count(card), 1, "pressing the button shows the help");
     let shown = harness.text_of(card).unwrap_or_default();
     assert!(
-        shown.contains("Choose how often the assistant checks with you"),
+        shown.contains("Auto does what you allowed and asks before sending or deleting"),
         "the card holds that row's help: {shown:?}"
     );
     harness.send(Input::key(ShortcutKey::Escape));

@@ -84,7 +84,7 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
             (
                 "Assistant",
                 vec![
-                    "agent.strictness",
+                    "agent.permissions",
                     "agent.mcp.expose",
                     "agent.acp.agents",
                     "agent.undo.keep_h"
