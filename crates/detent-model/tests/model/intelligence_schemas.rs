@@ -84,10 +84,20 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
             (
                 "Assistant",
                 vec![
-                    "agent.permissions",
+                    "agent.start_mode",
                     "agent.mcp.expose",
                     "agent.acp.agents",
                     "agent.undo.keep_h"
+                ]
+            ),
+            (
+                "Auto",
+                vec![
+                    "agent.auto.inside",
+                    "agent.auto.other",
+                    "agent.auto.send",
+                    "agent.auto.delete",
+                    "agent.auto.screen",
                 ]
             ),
             (
@@ -98,6 +108,16 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
                     "cua.default_mode",
                     "cua.autopause",
                     "cua.accessibility"
+                ]
+            ),
+            (
+                "Manual",
+                vec![
+                    "agent.manual.inside",
+                    "agent.manual.other",
+                    "agent.manual.send",
+                    "agent.manual.delete",
+                    "agent.manual.screen",
                 ]
             ),
             (

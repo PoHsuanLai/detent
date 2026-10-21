@@ -40,7 +40,32 @@ fn in_order(html: &str, texts: &[&str]) {
 const BASIC: &[(&str, &[&str])] = &[
     (
         "Assistant",
-        &["Permissions", "Other apps", "Coding Agents", "Undo history"],
+        &[
+            "New conversations start in",
+            "Other apps",
+            "Coding Agents",
+            "Undo history",
+        ],
+    ),
+    (
+        "Auto",
+        &[
+            "Changes it can undo, within what you asked",
+            "Other changes it can undo",
+            "Sending",
+            "Deleting",
+            "Using another app's window",
+        ],
+    ),
+    (
+        "Manual",
+        &[
+            "Changes it can undo, within what you asked",
+            "Other changes it can undo",
+            "Sending",
+            "Deleting",
+            "Using another app's window",
+        ],
     ),
     (
         "Models",
@@ -328,7 +353,7 @@ fn rows_that_do_not_fit_are_shown_as_written_and_never_rewritten() {
 fn a_rows_help_is_behind_its_info_button_and_escape_closes_it() {
     let sandbox = Sandbox::new("programs-help");
     let mut harness = sandbox.harness(intelligence());
-    let about = "[aria-label=\"About Permissions\"]";
+    let about = "[aria-label=\"About New conversations start in\"]";
     let card = ".ds-field-help-card";
     scroll_into_view(&mut harness, about);
     assert_eq!(
@@ -340,7 +365,9 @@ fn a_rows_help_is_behind_its_info_button_and_escape_closes_it() {
     assert_eq!(harness.count(card), 1, "pressing the button shows the help");
     let shown = harness.text_of(card).unwrap_or_default();
     assert!(
-        shown.contains("Auto does what you allowed and asks before sending or deleting"),
+        shown.contains(
+            "You can switch any conversation between Auto and Manual from where you type"
+        ),
         "the card holds that row's help: {shown:?}"
     );
     harness.send(Input::key(ShortcutKey::Escape));
