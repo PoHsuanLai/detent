@@ -3,6 +3,8 @@
 
 mod desk;
 mod system;
+mod thumbs;
 
 pub use desk::{NoPictures, Pictures};
 pub(crate) use system::OnDisk;
+pub use thumbs::{ThumbFault, Thumbnails};

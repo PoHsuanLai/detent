@@ -24,11 +24,11 @@ pub mod updates;
 pub mod wifi;
 
 use bluetooth::Bluetooth;
-use detent_files::{ConfigHome, DataHome, StateHome};
+use detent_files::{CacheHome, ConfigHome, DataHome, StateHome};
 use detent_model::{Missing, OriginRule, Outbox, inbox};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{
-    App, BusSource, Desk, Env, FirstRunApp, Lender, NoPictures, Opening, Pictures, Quiet,
+    App, BusSource, Desk, Env, FirstRunApp, Homes, Lender, NoPictures, Opening, Pictures, Quiet,
     ReasonFeed, Vouch,
 };
 use displays::Displays;
@@ -206,9 +206,12 @@ impl Sandbox {
     pub fn env(&self, opening: Opening, scheme: Scheme) -> Env {
         Env::discover(
             &[self.scratch.join("data/quire/settings")],
-            self.config_home(),
-            self.data_home(),
-            &self.state_home(),
+            Homes {
+                config: self.config_home(),
+                data: self.data_home(),
+                state: self.state_home(),
+                cache: CacheHome(self.scratch.join("cache")),
+            },
             SystemPrefsSource::Fixed(SystemPrefs::default().with_scheme(scheme)),
             opening,
             self.bus.clone(),

@@ -1,9 +1,10 @@
 //! The pictures the Wallpaper page offers: the ones the system ships, in its backgrounds folders,
 //! and the ones the person added, copied into detent's own data folder so they stay when the
-//! original moves.
+//! original moves. A wallpaper package (a folder of one picture per screen size) is one picture.
 
+use crate::packages::package_in;
 use crate::values::DataHome;
-use detent_model::is_picture;
+use detent_model::{Picture, is_picture};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -44,8 +45,14 @@ impl PictureDirs {
         )
     }
 
+    /// The folders the pictures are in: the system's, then the added ones. What the window may
+    /// read pictures from is these and nothing else.
+    pub fn folders(&self) -> Vec<PathBuf> {
+        self.system.iter().chain([&self.added]).cloned().collect()
+    }
+
     /// Every picture in the folders, the system's first, each folder in name order.
-    pub fn list(&self) -> Vec<PathBuf> {
+    pub fn list(&self) -> Vec<Picture> {
         let mut found = Vec::new();
         for folder in self.system.iter().chain([&self.added]) {
             walk(folder, DEPTH, &mut found);
@@ -77,18 +84,23 @@ impl PictureDirs {
     }
 }
 
-/// The pictures in `folder` and the folders under it down to `depth`, appended to `found`.
-fn walk(folder: &Path, depth: usize, found: &mut Vec<PathBuf>) {
+/// The pictures in `folder` and the folders under it down to `depth`, appended to `found`. A
+/// wallpaper package is taken whole and not looked into.
+fn walk(folder: &Path, depth: usize, found: &mut Vec<Picture>) {
     let Ok(read) = std::fs::read_dir(folder) else {
         return;
     };
     let mut entries: Vec<PathBuf> = read.filter_map(|entry| Some(entry.ok()?.path())).collect();
     entries.sort();
     for path in entries {
-        if path.is_dir() && depth > 1 {
-            walk(&path, depth - 1, found);
+        if path.is_dir() {
+            match package_in(&path) {
+                Some(package) => found.push(package),
+                None if depth > 1 => walk(&path, depth - 1, found),
+                None => {}
+            }
         } else if path.is_file() && is_picture(&path) {
-            found.push(path);
+            found.push(Picture::file(path));
         }
     }
 }

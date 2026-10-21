@@ -11,8 +11,10 @@ use cli::Run;
 use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles};
 use detent_intents::{ServeFault, SettingsProvider, hand_over_session, serve_session};
 use detent_model::{PageSlug, inbox, is_assistant_setup};
-use detent_ui::{App, BusSource, Env, FirstRunApp, Opening};
-use ds_blitz::{AppConfig, AppId, Decorations, LaunchError, WindowSize, enter_runtime, launch};
+use detent_ui::{App, BusSource, Env, FirstRunApp, Homes, Opening};
+use ds_blitz::{
+    AppConfig, AppId, Decorations, FileRoots, LaunchError, WindowSize, enter_runtime, launch,
+};
 use ds_settings::SystemPrefsSource;
 use std::process::ExitCode;
 use std::sync::Arc;
@@ -48,17 +50,23 @@ fn main() -> ExitCode {
 
 /// The environment both windows read, from the person's directories.
 fn environment(opening: Opening) -> Result<Env, ExitCode> {
-    let (Some(config_home), Some(data_home), Some(state_home)) =
-        (dirs::config_home(), dirs::data_home(), dirs::state_home())
-    else {
+    let (Some(config_home), Some(data_home), Some(state_home), Some(cache_home)) = (
+        dirs::config_home(),
+        dirs::data_home(),
+        dirs::state_home(),
+        dirs::cache_home(),
+    ) else {
         eprintln!("detent: neither XDG_CONFIG_HOME nor HOME is set, nowhere to keep settings");
         return Err(ExitCode::FAILURE);
     };
     let env = Env::discover(
         &dirs::schema_dirs(),
-        config_home,
-        data_home,
-        &state_home,
+        Homes {
+            config: config_home,
+            data: data_home,
+            state: state_home,
+            cache: cache_home,
+        },
         SystemPrefsSource::Portal,
         opening,
         BusSource::Session,
@@ -130,9 +138,12 @@ fn settings(opening: Opening) -> ExitCode {
             None
         }
     };
+    // The folders the Wallpaper page draws pictures from; the window reads no other `file:` URL.
+    let roots = FileRoots::new(env.pictures.roots());
     let config = AppConfig::new("Settings", window_size(wanted.as_ref()))
         .with_app_id(AppId("org.quire.Settings".to_owned()))
         .with_decorations(Decorations::Client)
+        .with_file_roots(roots)
         .with_context(env);
     ended(launch(App, config))
 }

@@ -35,13 +35,47 @@ pub enum PictureMark {
     Other,
 }
 
+/// One picture on offer, as the folders list it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Picture {
+    /// The file the key stores.
+    pub path: PathBuf,
+    /// The name it carries itself (a wallpaper package names its picture); none: the file's name.
+    pub title: Option<String>,
+    /// The file drawn small in its tile when that is not `path` itself (a package's screenshot).
+    pub preview: Option<PathBuf>,
+}
+
+impl Picture {
+    /// A plain picture file: named by its file, drawn from itself.
+    pub fn file(path: PathBuf) -> Picture {
+        Picture {
+            path,
+            title: None,
+            preview: None,
+        }
+    }
+
+    /// This picture under `title`, drawn small from `preview`.
+    pub fn packaged(path: PathBuf, title: String, preview: Option<PathBuf>) -> Picture {
+        Picture {
+            path,
+            title: Some(title),
+            preview,
+        }
+    }
+}
+
 /// One picture of the grid.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PictureTile {
     /// Where the file is: the value the key stores.
     pub path: PathBuf,
-    /// Its name under the picture: the file's name without its ending, words apart.
+    /// Its name under the picture: its own title, else the file's name without its ending, words
+    /// apart.
     pub name: String,
+    /// The file the tile's small picture is made from.
+    pub preview: PathBuf,
     /// Whether it is the current one.
     pub mark: PictureMark,
 }
@@ -56,39 +90,39 @@ fn name_of(path: &Path) -> String {
 /// The grid for the pictures `found`, sorted by name, with `current` marked. The current picture
 /// is always in the grid, even when it lies outside every folder looked in, so the person sees
 /// what is on the desktop; an empty `current` marks none.
-pub fn picture_tiles(found: &[PathBuf], current: &str) -> Vec<PictureTile> {
+pub fn picture_tiles(found: &[Picture], current: &str) -> Vec<PictureTile> {
     let current_path = (!current.is_empty()).then(|| PathBuf::from(current));
-    let mut paths: Vec<PathBuf> = found
+    let mut pictures: Vec<Picture> = found
         .iter()
-        .filter(|path| is_picture(path))
+        .filter(|picture| is_picture(&picture.path))
         .cloned()
         .collect();
-    paths.extend(
-        current_path
-            .iter()
-            .filter(|path| !paths.contains(path))
-            .cloned()
-            .collect::<Vec<_>>(),
-    );
-    paths.sort_by_key(|path| (name_of(path).to_lowercase(), path.clone()));
-    paths.dedup();
-    paths
+    if let Some(path) = &current_path
+        && !pictures.iter().any(|picture| &picture.path == path)
+    {
+        pictures.push(Picture::file(path.clone()));
+    }
+    let mut tiles: Vec<PictureTile> = pictures
         .into_iter()
-        .map(|path| PictureTile {
-            mark: if current_path.as_ref() == Some(&path) {
+        .map(|picture| PictureTile {
+            mark: if current_path.as_ref() == Some(&picture.path) {
                 PictureMark::Current
             } else {
                 PictureMark::Other
             },
-            name: name_of(&path),
-            path,
+            name: picture.title.unwrap_or_else(|| name_of(&picture.path)),
+            preview: picture.preview.unwrap_or_else(|| picture.path.clone()),
+            path: picture.path,
         })
-        .collect()
+        .collect();
+    tiles.sort_by_key(|tile| (tile.name.to_lowercase(), tile.path.clone()));
+    tiles.dedup_by(|later, earlier| later.path == earlier.path);
+    tiles
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{PictureMark, is_picture, is_wallpaper, picture_tiles};
+    use super::{Picture, PictureMark, is_picture, is_wallpaper, picture_tiles};
     use ds_settings::schema::Page;
     use std::path::{Path, PathBuf};
 
@@ -114,8 +148,10 @@ mod tests {
         assert!(!is_wallpaper(&Page::declared("displays")));
     }
 
-    fn paths(list: &[&str]) -> Vec<PathBuf> {
-        list.iter().map(PathBuf::from).collect()
+    fn paths(list: &[&str]) -> Vec<Picture> {
+        list.iter()
+            .map(|path| Picture::file(PathBuf::from(path)))
+            .collect()
     }
 
     fn summary(found: &[&str], current: &str) -> Vec<(String, PictureMark)> {
@@ -163,5 +199,33 @@ mod tests {
                 .collect();
             assert_eq!(got, *want, "{case}");
         }
+    }
+
+    #[test]
+    fn a_packaged_picture_keeps_its_title_and_is_drawn_from_its_preview() {
+        let found = [
+            Picture::packaged(
+                PathBuf::from("/w/Dune/contents/images/5120x2880.png"),
+                "Dune".to_owned(),
+                Some(PathBuf::from("/w/Dune/contents/screenshot.png")),
+            ),
+            Picture::file(PathBuf::from("/s/a_sky.png")),
+        ];
+        let tiles = picture_tiles(&found, "");
+        let got: Vec<(&str, &str)> = tiles
+            .iter()
+            .map(|tile| {
+                (
+                    tile.name.as_str(),
+                    tile.preview.to_str().unwrap_or_default(),
+                )
+            })
+            .collect();
+        let want = [
+            ("Dune", "/w/Dune/contents/screenshot.png"),
+            ("a sky", "/s/a_sky.png"),
+        ];
+        // "a sky" sorts before "dune" (case-insensitive).
+        assert_eq!(got, [want[1], want[0]]);
     }
 }

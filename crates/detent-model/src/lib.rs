@@ -172,7 +172,7 @@ pub use updates::{
     UpdatesPage, UpdatesReady, UpdatesShown, UpdatesState, is_software_update, updates_shown,
     updates_step,
 };
-pub use wallpaper::{PictureMark, PictureTile, is_picture, is_wallpaper, picture_tiles};
+pub use wallpaper::{Picture, PictureMark, PictureTile, is_picture, is_wallpaper, picture_tiles};
 pub use warning::{StaleReason, Warning};
 pub use wifi::{
     AccessPoint, AskKind, AskStanding, HiddenForm, HiddenLogin, HiddenNetwork, HiddenSecurity,

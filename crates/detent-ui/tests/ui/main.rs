@@ -29,6 +29,7 @@ mod snapshots;
 mod software_update;
 mod spaces;
 mod support;
+mod thumbnails;
 mod viewer_page;
 mod wallpaper_page;
 mod wifi;

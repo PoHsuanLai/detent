@@ -116,3 +116,39 @@ fn a_closed_chooser_writes_nothing() {
     assert_eq!(fake.asked(), 1);
     assert_eq!(sandbox.read(FILE), None);
 }
+
+#[test]
+fn each_tile_draws_the_small_picture_made_from_its_own_preview_and_a_failed_one_is_plain() {
+    let fake = Fake::with(&["/pics/sky.jpg", "/pics/huge.png"])
+        .and_packaged(
+            "/w/Dune/contents/images/5120x2880.png",
+            "Dune Dusk",
+            "/w/Dune/contents/screenshot.png",
+        )
+        .cannot_shrink("/pics/huge.png");
+    let sandbox = world("wallpaper-small", &fake);
+    let harness = sandbox.harness(opening());
+    let html = harness.html();
+
+    // The package is one tile, titled by the package, drawn from its screenshot.
+    assert_eq!(harness.count(".ds-radio-group-item"), 3);
+    assert!(html.contains("Dune Dusk"), "{html}");
+    for source in ["/pics/sky.jpg", "/w/Dune/contents/screenshot.png"] {
+        let small = Fake::small_of(source);
+        assert!(
+            html.contains(&small),
+            "{source} is drawn from {small}:\n{html}"
+        );
+    }
+    assert_eq!(
+        fake.made().len(),
+        3,
+        "a small picture was asked for once per tile: {:?}",
+        fake.made()
+    );
+    assert!(
+        !html.contains(&Fake::small_of("/pics/huge.png")),
+        "a picture that cannot be made small has no picture, only its name:\n{html}"
+    );
+    assert!(html.contains("huge"), "but it is still a tile");
+}

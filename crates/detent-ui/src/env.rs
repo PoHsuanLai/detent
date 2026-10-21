@@ -9,10 +9,12 @@ use crate::inference::ReasonFeed;
 use crate::lender::Lender;
 use crate::live::BusSource;
 use crate::marks::ProviderMarks;
-use crate::pictures::{OnDisk, Pictures};
+use crate::pictures::{OnDisk, Pictures, Thumbnails};
 use crate::updates::{Departure, OnBus, PowerMenu, UpdatesLink};
 use crate::wifi::{OnSystem as WifiOnSystem, WifiLink};
-use detent_files::{ConfigHome, DataHome, FirstRunMark, KeymapFiles, PictureDirs, StateHome};
+use detent_files::{
+    CacheHome, ConfigHome, DataHome, FirstRunMark, KeymapFiles, PictureDirs, StateHome,
+};
 use detent_model::{Catalogue, Inbox, OriginRule, PageSlug, Warning, discover};
 use ds_helpers::Environment;
 use ds_settings::SystemPrefsSource;
@@ -87,22 +89,44 @@ pub struct Env {
     pub pictures: Arc<dyn Pictures>,
 }
 
+/// The person's own folders the app reads and writes: settings, data, state and cache (or
+/// scratch folders standing in for them).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Homes {
+    /// Where the settings files are.
+    pub config: ConfigHome,
+    /// Where docket's agents and the added pictures are.
+    pub data: DataHome,
+    /// Where the first-run mark is.
+    pub state: StateHome,
+    /// Where the Wallpaper page's small pictures are kept.
+    pub cache: CacheHome,
+}
+
 impl Env {
     /// The environment after scanning `schema_dirs` for schemas.
     pub fn discover(
         schema_dirs: &[PathBuf],
-        config_home: ConfigHome,
-        data_home: DataHome,
-        state_home: &StateHome,
+        homes: Homes,
         system: SystemPrefsSource,
         opening: Opening,
         bus: BusSource,
     ) -> Env {
+        let Homes {
+            config: config_home,
+            data: data_home,
+            state: state_home,
+            cache: cache_home,
+        } = homes;
         let found = discover(schema_dirs);
         let keymap = KeymapFiles::under(&config_home);
         let updates = Arc::new(OnBus(bus.clone()));
         let engines = Arc::new(System::new(bus.clone(), &data_home.0));
-        let pictures = Arc::new(OnDisk::new(bus.clone(), PictureDirs::standard(&data_home)));
+        let pictures = Arc::new(OnDisk::new(
+            bus.clone(),
+            PictureDirs::standard(&data_home),
+            Thumbnails::under(&cache_home),
+        ));
         let wifi = Arc::new(WifiOnSystem(bus.clone()));
         let bluetooth = Arc::new(BluetoothOnSystem::new(bus.clone()));
         let displays = Arc::new(OnCompositor(bus.clone()));
@@ -111,7 +135,7 @@ impl Env {
             warnings: found.warnings,
             config_home,
             data_home,
-            first_run: FirstRunMark::under(state_home),
+            first_run: FirstRunMark::under(&state_home),
             system,
             opening,
             inbox: Inbox::default(),

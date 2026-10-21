@@ -65,6 +65,19 @@ porter-client = { path = "../porter/crates/porter-client", default-features = fa
 porter-provider = { path = "../porter/crates/porter-provider" }
 porter-infer = { path = "../porter/crates/porter-infer" }
 
+# The viewer's parts, as sill's launcher takes them (sill's Cargo.toml): by path from the sibling checkout
+# until anyview's revision is pinned in quire's `docs/workspace-deps.toml`. The Wallpaper page makes the
+# small picture of each wallpaper with them: `anyview-platform` is the shared freedesktop thumbnail cache
+# (no `quire-desktop`: no bus), `anyview-image` decodes and scales, `anyview-core` is the vocabulary
+# (file paths, stamps, sniffing) and `anyview-fs` opens a path as an input.
+anyview-core     = { path = "../anyview/crates/anyview-core" }
+anyview-fs       = { path = "../anyview/crates/anyview-fs" }
+anyview-image    = { path = "../anyview/crates/anyview-image" }
+anyview-platform = { path = "../anyview/crates/anyview-platform" }
+# The name of a thumbnail in that cache is the MD5 of the file's address (the specification's rule);
+# the cache keeps its path private, so this finds it as sill's launcher does. Already in the lock through anyview.
+md-5 = "0.10"
+
 # A rows column's pattern: the whole cell must match it.
 regex = { version = "1", default-features = false, features = ["std", "perf", "unicode"] }
 
@@ -243,6 +256,12 @@ dioxus-core-types = { git = "https://github.com/PoHsuanLai/dioxus", rev = "a615f
 generational-box = { git = "https://github.com/PoHsuanLai/dioxus", rev = "a615fd9f09e272c688a45e366161c576cecf0439" }
 subsecond = { git = "https://github.com/PoHsuanLai/dioxus", rev = "a615fd9f09e272c688a45e366161c576cecf0439" }
 subsecond-types = { git = "https://github.com/PoHsuanLai/dioxus", rev = "a615fd9f09e272c688a45e366161c576cecf0439" }
+
+# anyview pins quire by git rev; its ds crates resolve to the ../quire checkout here, so detent builds one copy.
+[patch."https://github.com/PoHsuanLai/quire.git"]
+ds-core = { path = "../quire/crates/ds-core" }
+ds-core-derive = { path = "../quire/crates/ds-core-derive" }
+ds-helpers = { path = "../quire/crates/ds-helpers" }
 
 # porter takes stoker by git rev (porter ARCHITECTURE section 1); the sibling checkout is the one copy of cua-action.
 [patch."https://github.com/PoHsuanLai/stoker"]

@@ -22,6 +22,11 @@ impl ConfigHome {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataHome(pub PathBuf);
 
+/// `$XDG_CACHE_HOME` (or a scratch directory standing in for it): where the small pictures of the
+/// Wallpaper page are kept, in the shared `thumbnails` folder every file manager reads.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CacheHome(pub PathBuf);
+
 /// The current value of every key of a file that has one: what the file says where the key's
 /// control can hold it, and the key's default elsewhere.
 ///

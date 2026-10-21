@@ -1,6 +1,6 @@
 //! Where the schemas and the settings are, read from the environment once, here at the edge.
 
-use detent_files::{ConfigHome, DataHome, StateHome};
+use detent_files::{CacheHome, ConfigHome, DataHome, StateHome};
 use std::ffi::OsString;
 use std::path::PathBuf;
 
@@ -51,6 +51,16 @@ fn data_home_from(xdg: Option<OsString>, home: Option<OsString>) -> Option<DataH
 /// The person's data home, `None` when neither variable is usable.
 pub fn data_home() -> Option<DataHome> {
     data_home_from(std::env::var_os("XDG_DATA_HOME"), std::env::var_os("HOME"))
+}
+
+/// `$XDG_CACHE_HOME`, else `$HOME/.cache`.
+fn cache_home_from(xdg: Option<OsString>, home: Option<OsString>) -> Option<CacheHome> {
+    base_from(xdg, home, ".cache").map(CacheHome)
+}
+
+/// The person's cache home, `None` when neither variable is usable.
+pub fn cache_home() -> Option<CacheHome> {
+    cache_home_from(std::env::var_os("XDG_CACHE_HOME"), std::env::var_os("HOME"))
 }
 
 /// `dirs` without a directory already listed, in order: `$XDG_DATA_HOME` is often also in
@@ -107,7 +117,10 @@ pub fn application_dirs() -> Vec<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::{application_dirs_from, config_home_from, data_home_from, state_home_from, unique};
+    use super::{
+        application_dirs_from, cache_home_from, config_home_from, data_home_from, state_home_from,
+        unique,
+    };
     use detent_files::DataHome;
     use std::ffi::OsString;
     use std::path::PathBuf;
@@ -119,6 +132,7 @@ mod tests {
         let config: Home = |xdg, home| config_home_from(xdg, home).map(|h| h.0);
         let state: Home = |xdg, home| state_home_from(xdg, home).map(|h| h.0);
         let data: Home = |xdg, home| data_home_from(xdg, home).map(|h| h.0);
+        let cache: Home = |xdg, home| cache_home_from(xdg, home).map(|h| h.0);
         // `(directory, XDG variable, HOME, the home)`.
         type Case<'a> = (
             &'a str,
@@ -167,6 +181,21 @@ mod tests {
                 Some("/home/ada/.local/share"),
             ),
             ("data", data, None, None, None),
+            (
+                "cache",
+                cache,
+                Some("/xdg"),
+                Some("/home/ada"),
+                Some("/xdg"),
+            ),
+            (
+                "cache",
+                cache,
+                None,
+                Some("/home/ada"),
+                Some("/home/ada/.cache"),
+            ),
+            ("cache", cache, None, None, None),
             // An empty or relative variable is no variable (it is not the working directory).
             (
                 "config",
