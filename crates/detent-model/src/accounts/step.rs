@@ -19,11 +19,11 @@ pub enum AccountsInput {
     Found(ModuleId, Result<Described, Absence>),
     /// A module was read again after a change; a failed read keeps what is shown.
     Reread(ModuleId, Result<Described, Absence>),
-    /// The person opened an account.
+    /// A link asked for an account: it is chosen, as if the person had chosen it in the list.
     Open(AccountKey),
-    /// The person chose an account in the list.
+    /// The person chose an account in the list; its detail is beside the list.
     Select(AccountKey),
-    /// The person went back to the list.
+    /// Nothing is chosen: a link asked for the list.
     Back,
     /// The person turned a service on or off.
     Switched {
@@ -209,14 +209,16 @@ fn ready_step(
     let mut effects = Vec::new();
     let idle = ready.pending.is_none();
     match input {
-        AccountsInput::Open(key) if ready.pane.account(&key).is_some() => {
+        // The page is a list beside the chosen account's detail: choosing an account shows it.
+        AccountsInput::Open(key) | AccountsInput::Select(key)
+            if ready.pane.account(&key).is_some() =>
+        {
+            ready.selected = Some(key.clone());
             ready.screen = AccountsScreen::Detail(key);
-        }
-        AccountsInput::Select(key) if ready.pane.account(&key).is_some() => {
-            ready.selected = Some(key);
         }
         AccountsInput::Back => {
             ready.screen = AccountsScreen::List;
+            ready.selected = None;
             ready.confirming = None;
         }
         AccountsInput::Switched { row, on } if idle => {

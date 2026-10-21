@@ -207,16 +207,24 @@ fn the_sign_in_client_ids_are_text_rows_held_apart_from_the_accounts() {
 }
 
 #[test]
-fn the_pane_opens_on_the_list_and_an_account_opens_and_closes() {
-    let (state, effects) = apply(
-        ready(),
-        [AccountsInput::Open(AccountKey("home".to_owned()))],
-    );
-    assert!(effects.is_empty());
-    let up = state_of(state.clone());
-    assert_eq!(up.open().map(|a| a.label.as_str()), Some("Home cloud"));
-    let back = state_of(apply(state, [AccountsInput::Back]).0);
-    assert_eq!(back.screen, AccountsScreen::List);
+fn the_pane_opens_on_the_list_and_an_account_chosen_shows_beside_it_until_none_is() {
+    for input in [
+        AccountsInput::Open(AccountKey("home".to_owned())),
+        AccountsInput::Select(AccountKey("home".to_owned())),
+    ] {
+        let (state, effects) = apply(ready(), [input.clone()]);
+        assert!(effects.is_empty(), "{input:?}");
+        let up = state_of(state.clone());
+        assert_eq!(up.open().map(|a| a.label.as_str()), Some("Home cloud"));
+        assert_eq!(
+            up.selected,
+            Some(AccountKey("home".to_owned())),
+            "{input:?}"
+        );
+        let back = state_of(apply(state, [AccountsInput::Back]).0);
+        assert_eq!(back.screen, AccountsScreen::List);
+        assert_eq!(back.selected, None);
+    }
 }
 
 #[test]
@@ -747,4 +755,19 @@ fn a_missing_or_unknown_sign_in_row_gets_the_plain_line_and_the_expiry_row_decid
             "Sign in to the account again."
         );
     }
+}
+
+#[test]
+fn an_account_reads_its_spend_rows_and_names_the_datasets_the_sync_service_runs_for_it() {
+    let mut rows = described();
+    rows.keys
+        .push(fixed("accounts.home.spend.month", "This month", "2500"));
+    rows.keys
+        .push(fixed("accounts.home.spend.cap", "Cap", "5000"));
+    let pane = AccountsPane::of(ModuleId::Accountd, &rows);
+    let home = &pane.accounts[0];
+    assert_eq!(home.spend.bar().map(|bar| bar.permille), Some(500));
+    assert_eq!(pane.accounts[1].spend.bar(), None);
+    // Photos sync is on; the calendar service is off and storage is not a mirrored service.
+    assert_eq!(pane.datasets(), [DatasetName("home/photos".to_owned())]);
 }

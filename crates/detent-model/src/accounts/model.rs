@@ -6,6 +6,7 @@ use super::grant::{AccountPermission, GrantFact, GrantScope, grant_path};
 use super::module::{ModuleId, ModuleRow, Sources};
 use super::sign_in_client::{SignInClient, wait_for_keys};
 use super::sign_in_help::sign_in_of;
+use super::spend::{AccountSpend, Cents};
 use crate::Absence;
 use crate::picker::Described;
 use crate::words::humanize;
@@ -31,6 +32,9 @@ const SYNC_LEAVES: [&str; 2] = ["files", "photos"];
 
 /// Between an account's id and an app's number in the path of a row that names an app using it.
 const USED_BY: &str = ".used_by.";
+
+/// Between an account's id and `month` or `cap` in the path of a spend row.
+const SPEND: &str = ".spend.";
 
 /// The path of syncd's row that starts "Continue as" for a new account.
 const SYNC_ADD: &str = "accounts.sync.add";
@@ -223,6 +227,9 @@ pub struct Account {
     pub remove: Option<(KeyPath, String)>,
     /// The apps using the identity, by the names a person knows them by; read-only.
     pub used_by: Vec<String>,
+    /// This month's cost and the cap, for an account that costs money; empty when the module
+    /// publishes neither.
+    pub spend: AccountSpend,
 }
 
 impl Account {
@@ -331,6 +338,8 @@ pub(super) enum Row<'a> {
     GrantSince(&'a str, &'a str),
     GrantScope(&'a str, &'a str),
     UsedBy(&'a str),
+    SpendMonth(&'a str),
+    SpendCap(&'a str),
     AccountService(&'a str, bool),
     Sync(bool),
     Grant,
@@ -364,6 +373,14 @@ pub(super) fn classify<'a>(
                 let row = match tail.rsplit_once('.')? {
                     (grant, "since") => Row::GrantSince(grant, variant),
                     (grant, "scope") => Row::GrantScope(grant, variant),
+                    _ => return None,
+                };
+                return Some((key(id), row));
+            }
+            if let Some((id, leaf)) = rest.split_once(SPEND) {
+                let row = match leaf {
+                    "month" => Row::SpendMonth(variant),
+                    "cap" => Row::SpendCap(variant),
                     _ => return None,
                 };
                 return Some((key(id), row));
@@ -427,6 +444,7 @@ fn account_of<'a>(
                 sign_out: None,
                 remove: None,
                 used_by: Vec::new(),
+                spend: AccountSpend::default(),
             });
             accounts.len() - 1
         });
@@ -546,6 +564,8 @@ impl AccountsPane {
                     scope: None,
                 }),
                 Row::UsedBy(app) => account.used_by.push(app.to_owned()),
+                Row::SpendMonth(word) => account.spend.spent = Cents::parse(word),
+                Row::SpendCap(word) => account.spend.cap = Cents::parse(word),
                 Row::Reauth => account.reauth = Some((spec.path.clone(), action_name(spec))),
                 Row::SignOut => account.sign_out = Some((spec.path.clone(), action_name(spec))),
                 Row::Remove => account.remove = Some((spec.path.clone(), action_name(spec))),

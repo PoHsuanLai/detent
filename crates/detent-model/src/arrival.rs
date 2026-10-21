@@ -1,7 +1,7 @@
 //! Where a [`SettingsTarget`] lands in the window: the page, with the search that marks the row,
 //! or the Accounts page at an account. Pure: it only reads the catalogue.
 
-use crate::accounts::{AccountSegment, AccountTarget};
+use crate::accounts::{AccountSegment, AccountTarget, is_accounts_setup};
 use crate::assistant_model::is_assistant_setup;
 use crate::catalogue::Catalogue;
 use crate::page::PageSlug;
@@ -29,8 +29,8 @@ fn account_of(id: &str) -> AccountTarget {
 
 /// The page `text` names, through quire's page table (an id, an alias, the old `app:` form): the
 /// catalogue's page that the table declares under that id, else the hidden first-run step (which
-/// the table resolves but the sidebar does not list), else a page only the catalogue knows by
-/// that slug.
+/// the table resolves but the sidebar does not list), else the accounts step (which only detent
+/// declares), else a page only the catalogue knows by that slug.
 fn page_slug(catalogue: &Catalogue, text: &str) -> Option<PageSlug> {
     let table = PageTable::built_in();
     let declared = table.resolve(text);
@@ -46,6 +46,7 @@ fn page_slug(catalogue: &Catalogue, text: &str) -> Option<PageSlug> {
         .or_else(|| catalogue.page(&PageSlug(text.to_owned())))
         .map(|model| model.slug.clone())
         .or_else(|| declared.map(|id| PageSlug(id.0)).filter(is_assistant_setup))
+        .or_else(|| Some(PageSlug(text.to_owned())).filter(is_accounts_setup))
 }
 
 /// Where `target` lands, or none when no page of the window is what it names.
@@ -92,14 +93,17 @@ mod tests {
     }
 
     #[test]
-    fn the_setup_step_is_a_page() {
-        assert_eq!(
-            arrival(&Catalogue::default(), &target("page:assistant-model-setup")),
-            Some(Arrival::Page {
-                slug: PageSlug("assistant-model-setup".to_owned()),
-                query: String::new(),
-            })
-        );
+    fn the_setup_steps_are_pages() {
+        for slug in ["assistant-model-setup", "accounts-setup"] {
+            assert_eq!(
+                arrival(&Catalogue::default(), &target(&format!("page:{slug}"))),
+                Some(Arrival::Page {
+                    slug: PageSlug(slug.to_owned()),
+                    query: String::new(),
+                }),
+                "{slug}"
+            );
+        }
     }
 
     #[test]

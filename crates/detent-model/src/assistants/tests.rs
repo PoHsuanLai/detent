@@ -175,7 +175,7 @@ fn the_question_names_the_account_and_the_provider_in_dockets_words() {
 
 mod offers {
     use super::name;
-    use crate::accounts::{Account, AccountKey, AccountStatus, AccountsPane, Place};
+    use crate::accounts::{Account, AccountKey, AccountSpend, AccountStatus, AccountsPane, Place};
     use crate::assistants::{PlaceRef, offers_for};
     use crate::picker::{Busy, ChoiceSection, KindRows, ModelRow, Ready};
     use ds_settings::schema::{KeyPath, WordLabels};
@@ -232,6 +232,7 @@ mod offers {
             sign_out: None,
             remove: None,
             used_by: Vec::new(),
+            spend: AccountSpend::default(),
         });
         pane
     }

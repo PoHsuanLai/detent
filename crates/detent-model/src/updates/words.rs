@@ -37,7 +37,11 @@ fn counted(count: i64, unit: &str) -> String {
 /// How long before `now` the moment `then` was: "just now", "5 minutes ago", "yesterday". A
 /// moment that is not yet past (the clocks differ a little) is "just now".
 pub(crate) fn age_words(now: UnixSeconds, then: UnixSeconds) -> String {
-    let seconds = now.0.saturating_sub(then.0);
+    elapsed_words(now.0.saturating_sub(then.0))
+}
+
+/// `seconds` ago, in the same words as [`age_words`], for an age a service already measured.
+pub(crate) fn elapsed_words(seconds: i64) -> String {
     match seconds {
         ..MINUTE => "just now".to_owned(),
         MINUTE..HOUR => format!("{} ago", counted(seconds / MINUTE, "minute")),

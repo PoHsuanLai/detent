@@ -121,6 +121,7 @@ fn a_hold_belongs_to_its_account_and_sits_on_its_sync_row() {
             sign_out: None,
             remove: None,
             used_by: Vec::new(),
+            spend: AccountSpend::default(),
         });
         pane.accounts.remove(0)
     };

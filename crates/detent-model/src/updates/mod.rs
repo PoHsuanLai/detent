@@ -23,7 +23,7 @@ pub use step::{
     NotesState, UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState,
     updates_step,
 };
-pub(crate) use words::age_words;
+pub(crate) use words::{age_words, elapsed_words};
 
 #[cfg(test)]
 mod tests;
