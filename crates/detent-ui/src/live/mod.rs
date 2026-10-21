@@ -12,6 +12,7 @@ mod pinned;
 mod read;
 #[cfg(test)]
 mod read_tests;
+mod sync_status;
 mod vouch;
 
 pub(crate) use activate::start;
@@ -22,4 +23,5 @@ pub(crate) use holds::{confirm_discard, follow_holds, hold_now, sync_now};
 pub(crate) use io::{absence_of_bus, connect, next_owner, owner_changes, plain};
 pub(crate) use pinned::{Pinned, pinned, pinned_starting};
 pub(crate) use read::words_of;
+pub(crate) use sync_status::sync_status;
 pub use vouch::Vouch;

@@ -66,19 +66,26 @@ fn the_markup_lint_is_clean_on_every_page() {
     }
 }
 
-/// The assistant's first-run step is no page of the sidebar, so it is rendered by its slug.
+/// The first-run steps are no page of the sidebar, so each is rendered by its slug.
 #[test]
-fn the_markup_lint_is_clean_on_the_assistants_first_run_step() {
-    let sandbox = Sandbox::new("coherence-assistant-setup");
-    let opening = Opening {
-        page: Some(PageSlug(detent_model::ASSISTANT_SETUP_SLUG.to_owned())),
-        query: String::new(),
-    };
-    let html = render(sandbox.env(opening, ds::prelude::Scheme::Light));
-    assert!(
-        html.contains("assistant-setup"),
-        "the step was not rendered, so there is nothing to lint: {html}"
-    );
-    let offences = markup(&html, &css(), &LintConfig::new(&ds::kits()));
-    assert!(offences.is_empty(), "{offences:#?}");
+fn the_markup_lint_is_clean_on_the_first_run_steps() {
+    // (the step's slug, a class that only its markup carries)
+    let steps = [
+        (detent_model::ASSISTANT_SETUP_SLUG, "assistant-setup"),
+        (detent_model::ACCOUNTS_SETUP_SLUG, "accounts-setup"),
+    ];
+    for (slug, marker) in steps {
+        let sandbox = Sandbox::new(&format!("coherence-{marker}"));
+        let opening = Opening {
+            page: Some(PageSlug(slug.to_owned())),
+            query: String::new(),
+        };
+        let html = render(sandbox.env(opening, ds::prelude::Scheme::Light));
+        assert!(
+            html.contains(marker),
+            "the step was not rendered, so there is nothing to lint: {html}"
+        );
+        let offences = markup(&html, &css(), &LintConfig::new(&ds::kits()));
+        assert!(offences.is_empty(), "{slug}: {offences:#?}");
+    }
 }

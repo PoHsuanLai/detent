@@ -108,15 +108,37 @@
 
 .accounts,
 .accounts-list,
-.accounts-detail {
+.accounts-detail,
+.accounts-apps {
   display: flex;
   flex-direction: column;
   gap: var(--s-14);
 }
 
-.accounts-back {
+.accounts-split {
+  height: 40em;
+}
+
+.accounts-sources,
+.accounts-rest {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.accounts-rest {
+  padding: 0 var(--s-14);
+}
+
+.accounts-header {
   display: flex;
+  align-items: center;
+  gap: var(--s-14);
   padding: 0 var(--s-4);
+}
+
+.accounts-header-words {
+  display: flex;
+  flex-direction: column;
 }
 
 .accounts-add,
@@ -135,6 +157,7 @@
   display: flex;
   align-items: center;
   gap: var(--s-10);
+  min-width: 0;
 }
 
 .account-row-words {
@@ -217,6 +240,32 @@
   align-self: stretch;
   justify-content: space-between;
   gap: var(--s-10);
+}
+
+.accounts-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-14);
+  padding: var(--s-22);
+  text-align: center;
+}
+
+.accounts-setup-card {
+  align-self: stretch;
+  text-align: start;
+}
+
+.accounts-setup-buttons {
+  display: flex;
+  align-self: stretch;
+  justify-content: space-between;
+  gap: var(--s-10);
+}
+
+.accounts-skip,
+.accounts-continue {
+  flex: none;
 }
 
 .assistant-skip,

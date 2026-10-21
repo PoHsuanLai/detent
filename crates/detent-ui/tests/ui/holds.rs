@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-const HOME: &str = "[aria-label=\"Manage Home cloud\"]";
+const HOME: &str = "#account-home";
 const BANNER: &str = ".accounts-hold .ds-inline-banner";
 const KEEP: &str = ".accounts-hold [data-answers=\"return\"]";
 const REMOVE: &str = ".accounts-hold [data-role=\"destructive\"]";

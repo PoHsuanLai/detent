@@ -8,17 +8,29 @@ use super::follow_module::follow_module;
 use super::hold_drive::{drive_holds, drive_sync_now};
 use super::link::AccountLink;
 use super::list_view::{AccountList, ClientIds, FootHandlers};
+use super::sync_read::use_sync_book;
 use crate::env::Env;
 use crate::live::follow_holds;
 use crate::marks::ProviderMarks;
 use detent_model::{
     Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds, ModuleId,
-    ModuleRow,
+    ModuleRow, SyncBook,
 };
 use dioxus::prelude::*;
+use ds::components::chrome::split_view::model::{Collapsing, PaneSize, PaneSpec, SplitPane};
+use ds::components::chrome::split_view::view::SplitView;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
+use ds::components::overlays::empty_state::EmptyState;
 use ds::prelude::*;
+
+/// The list's widths beside the detail: 280 to start, held between 220 and 380, never folded.
+const SOURCES: PaneSpec = PaneSpec {
+    preferred: PaneSize::Fixed(Px(280.0)),
+    min: PaneSize::Fixed(Px(220.0)),
+    max: PaneSize::Fixed(Px(380.0)),
+    collapsing: Collapsing::Never,
+};
 
 /// The accounts as a list and a detail screen, or one row that says the account service is not
 /// there.
@@ -71,10 +83,18 @@ pub fn AccountsPane() -> Element {
         }
     });
 
+    // What the sync service says of the accounts' datasets, read again once "Sync now" was asked.
+    let again = use_signal(|| 0_u32);
+    let book = use_sync_book(env.bus.clone(), state, again);
     let send_sync = EventHandler::new({
         let bus = env.bus.clone();
         move |dataset: DatasetName| {
-            spawn(drive_sync_now(bus.clone(), toasts, dataset));
+            let mut again = again;
+            let (bus, toasts) = (bus.clone(), toasts);
+            spawn(async move {
+                drive_sync_now(bus, toasts, dataset).await;
+                again += 1;
+            });
         }
     });
 
@@ -91,7 +111,7 @@ pub fn AccountsPane() -> Element {
         AccountsState::Probing(_) => rsx! {},
         AccountsState::Unavailable(absence, _) => rsx! { Unavailable { absence } },
         AccountsState::Ready(ready) => rsx! {
-            Ready { ready: *ready, holds: holds(), marks: env.marks.clone(), send, send_hold, send_sync }
+            Ready { ready: *ready, holds: holds(), marks: env.marks.clone(), book: book(), send, send_hold, send_sync }
         },
     }
 }
@@ -101,6 +121,7 @@ fn Ready(
     ready: AccountsReady,
     holds: Holds,
     marks: ProviderMarks,
+    book: SyncBook,
     send: EventHandler<AccountsInput>,
     send_hold: EventHandler<HoldInput>,
     send_sync: EventHandler<DatasetName>,
@@ -112,7 +133,6 @@ fn Ready(
         Availability::Enabled
     };
     let on = Handlers {
-        back: EventHandler::new(move |()| send.call(AccountsInput::Back)),
         switched: EventHandler::new(move |(row, on)| {
             send.call(AccountsInput::Switched { row, on });
         }),
@@ -140,35 +160,51 @@ fn Ready(
                 .as_ref()
                 .map(|(path, _)| ModuleRow::new(account.module, path.clone()))
         });
+    let list = rsx! {
+        div { class: "accounts-sources",
+            AccountList {
+                pane: ready.pane.clone(),
+                selected: ready.selected.clone(),
+                adding: ready.adding,
+                availability,
+                marks: marks.clone(),
+                book: book.clone(),
+                onselect: move |key| send.call(AccountsInput::Select(key)),
+                on: FootHandlers {
+                    add: EventHandler::new(move |()| send.call(AccountsInput::AddAccount)),
+                    add_key: EventHandler::new(move |()| send.call(AccountsInput::AddAiKey)),
+                    continue_as: EventHandler::new(move |row| send.call(AccountsInput::Ran(row))),
+                    remove: EventHandler::new(move |()| {
+                        if let Some(row) = removal_row.clone() {
+                            send.call(AccountsInput::AskRemove(row));
+                        }
+                    }),
+                },
+            }
+        }
+    };
     rsx! {
         div { class: "accounts", "data-accounts": "ready",
-            if let Some(account) = ready.open().cloned() {
-                AccountDetail { account, busy, holds, marks, on }
-            } else {
-                AccountList {
-                    pane: ready.pane.clone(),
-                    selected: ready.selected.clone(),
-                    adding: ready.adding,
-                    availability,
-                    marks,
-                    onselect: move |key| send.call(AccountsInput::Select(key)),
-                    onopen: move |key| send.call(AccountsInput::Open(key)),
-                    on: FootHandlers {
-                        add: EventHandler::new(move |()| send.call(AccountsInput::AddAccount)),
-                        add_key: EventHandler::new(move |()| send.call(AccountsInput::AddAiKey)),
-                        continue_as: EventHandler::new(move |row| send.call(AccountsInput::Ran(row))),
-                        remove: EventHandler::new(move |()| {
-                            if let Some(row) = removal_row.clone() {
-                                send.call(AccountsInput::AskRemove(row));
+            div { class: "accounts-split",
+                SplitView {
+                    label: "Accounts",
+                    panes: vec![SplitPane::new(SOURCES, list)],
+                    div { class: "accounts-rest",
+                        if let Some(account) = ready.open().cloned() {
+                            AccountDetail { account, busy, holds, marks, book, on }
+                        } else if !ready.pane.accounts.is_empty() {
+                            EmptyState {
+                                title: "No account chosen",
+                                description: "Choose an account to see its services and the apps that use it.",
                             }
-                        }),
-                    },
+                        }
+                    }
                 }
-                ClientIds {
-                    pane: ready.pane.clone(),
-                    onedit: move |(row, text)| send.call(AccountsInput::ClientEdited { row, text }),
-                    onclear: move |row| send.call(AccountsInput::SecretCleared(row)),
-                }
+            }
+            ClientIds {
+                pane: ready.pane.clone(),
+                onedit: move |(row, text)| send.call(AccountsInput::ClientEdited { row, text }),
+                onclear: move |row| send.call(AccountsInput::SecretCleared(row)),
             }
             if let Some(question) = asked {
                 RemoveAlert {

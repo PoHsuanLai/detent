@@ -11,7 +11,7 @@ use std::path::PathBuf;
 #[derive(Debug, Parser)]
 #[command(name = "detent", version)]
 pub struct Cli {
-    /// Open on this page (`appearance`, `dock`, `mouse_and_gestures`, `software-update`, `assistant-model`, ...); `assistant-model-setup` opens the first-run step that asks for the assistant's model.
+    /// Open on this page (`appearance`, `dock`, `mouse_and_gestures`, `software-update`, `assistant-model`, ...); `assistant-model-setup` opens the first-run step that asks for the assistant's model, and `accounts-setup` the one that asks the person to sign in to their accounts.
     #[arg(long)]
     page: Option<String>,
     /// Open with this in the search field.
@@ -97,6 +97,11 @@ mod tests {
             (
                 &["detent", "--page", "assistant-model-setup"],
                 Some("assistant-model-setup"),
+                "",
+            ),
+            (
+                &["detent", "--page", "accounts-setup"],
+                Some("accounts-setup"),
                 "",
             ),
         ];

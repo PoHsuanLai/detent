@@ -36,12 +36,12 @@ fn held_in_status(status: &HashMap<String, OwnedValue>) -> Option<HoldCounts> {
 
 /// The sync service, only when it is on the bus and its owner is the sync service: a program that
 /// took the name is not listened to and is told nothing. The calls go to that owner.
-async fn syncd_running(bus: &BusSource) -> Option<Pinned> {
+pub(super) async fn syncd_running(bus: &BusSource) -> Option<Pinned> {
     pinned(bus, Daemon::syncd().name).await.ok()
 }
 
 /// The sync service's side, called by the owner that was confirmed.
-async fn sync_of(syncd: &Pinned) -> Option<SyncProxy<'_>> {
+pub(super) async fn sync_of(syncd: &Pinned) -> Option<SyncProxy<'_>> {
     SyncProxy::builder(&syncd.connection)
         .destination(syncd.destination())
         .ok()?

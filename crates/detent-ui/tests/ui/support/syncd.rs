@@ -23,6 +23,19 @@ enum SyncFault {
 /// What is held now, by dataset: files gone, files held.
 type Held = Arc<Mutex<BTreeMap<String, (u64, u64)>>>;
 
+/// What `Status` says of a dataset besides a hold: how long since it synced, how much is left, and
+/// the storage the account has used and may use.
+#[derive(Clone, Copy)]
+pub struct Standing {
+    pub anchor_age: i64,
+    pub pending: u64,
+    pub conflicts: u64,
+    pub used: u64,
+    pub total: Option<u64>,
+}
+
+type Standings = Arc<Mutex<BTreeMap<String, Standing>>>;
+
 fn counts(discard: u64, held: u64) -> Details {
     let mut details = Details::new();
     for (key, count) in [("discard", discard), ("held", held)] {
@@ -38,6 +51,7 @@ fn counts(discard: u64, held: u64) -> Details {
 #[derive(Clone, Default)]
 pub struct Syncd {
     held: Held,
+    standing: Standings,
     /// Every dataset `ConfirmDiscard` was called with, in order.
     pub confirmed: Arc<Mutex<Vec<String>>>,
     /// How many times `Watch` was called.
@@ -96,6 +110,14 @@ impl Syncd {
             .expect("signal");
     }
 
+    /// `Status` answers `standing` for `dataset` from now on.
+    pub fn stands(&self, dataset: &str, standing: Standing) {
+        self.standing
+            .lock()
+            .expect("standing")
+            .insert(dataset.to_owned(), standing);
+    }
+
     /// Forgets a hold without telling anyone: the window's picture of it is now stale.
     pub fn forget(&self, dataset: &str) {
         self.held.lock().expect("held").remove(dataset);
@@ -124,6 +146,26 @@ impl Syncd {
 
     async fn status(&self, dataset: &str) -> Details {
         let mut details = Details::new();
+        if let Some(standing) = self.standing.lock().expect("standing").get(dataset) {
+            let number = |count: u64| Value::from(count).try_to_owned().expect("a number");
+            details.insert(
+                "anchor_age".to_owned(),
+                Value::from(standing.anchor_age)
+                    .try_to_owned()
+                    .expect("a number"),
+            );
+            details.insert("pending".to_owned(), number(standing.pending));
+            details.insert("conflicts".to_owned(), number(standing.conflicts));
+            let mut quota = Details::new();
+            quota.insert("used".to_owned(), number(standing.used));
+            if let Some(total) = standing.total {
+                quota.insert("total".to_owned(), number(total));
+            }
+            details.insert(
+                "quota".to_owned(),
+                Value::from(quota).try_to_owned().expect("nested"),
+            );
+        }
         if let Some((discard, held)) = self.held.lock().expect("held").get(dataset) {
             let nested = Value::from(counts(*discard, *held));
             details.insert(

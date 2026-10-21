@@ -74,20 +74,6 @@ pub(crate) fn OpenButton(label: String, subject: String, onpress: EventHandler<(
     }
 }
 
-/// The button that goes back to the list.
-#[component]
-pub(super) fn BackButton(label: String, onpress: EventHandler<()>) -> Element {
-    rsx! {
-        Button {
-            label,
-            icon: Some(Icon::ChevronLeft),
-            bezel: Bezel::Inline,
-            size: ControlSize::Small,
-            onclick: move |_| onpress.call(()),
-        }
-    }
-}
-
 /// The question before an account is removed or an assistant signed out: a critical alert whose
 /// destructive button is never the default, so Return keeps the account signed in.
 #[component]

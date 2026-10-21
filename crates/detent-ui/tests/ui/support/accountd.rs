@@ -4,6 +4,7 @@
 #![allow(dead_code)]
 
 use super::bus::PrivateBus;
+use super::syncd::Syncd;
 use ds_settings::live::{
     Access, Caller, LiveError, LiveModule, LiveSchema, Served, Verdict, serve,
 };
@@ -13,6 +14,7 @@ use ds_settings::schema::{
 };
 use porter_dbus::names::{
     ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH, SYNC_BUS,
+    SYNC_PATH,
 };
 use std::sync::{Arc, Mutex};
 
@@ -75,6 +77,8 @@ pub struct Held {
     pub grant_facts: Vec<(String, String, String)>,
     /// The names of the apps using the identity: the read-only `used_by` rows.
     pub used_by: Vec<String>,
+    /// This month's cost and the cap, in cents: the read-only `spend.month` and `spend.cap` rows.
+    pub spend: Option<(u64, u64)>,
 }
 
 impl Held {
@@ -93,12 +97,19 @@ impl Held {
             group: None,
             grant_facts: Vec::new(),
             used_by: Vec::new(),
+            spend: None,
         }
     }
 
     /// The apps using the identity, by name.
     pub fn used_by(mut self, apps: &[&str]) -> Held {
         self.used_by = apps.iter().map(|a| (*a).to_owned()).collect();
+        self
+    }
+
+    /// What the account has cost this month and the cap, in cents.
+    pub fn spending(mut self, month: u64, cap: u64) -> Held {
+        self.spend = Some((month, cap));
         self
     }
 
@@ -172,6 +183,9 @@ pub struct Accountd {
     module: Module,
     /// Whether the module has syncd's `accounts.sync.add` row.
     continue_as: bool,
+    /// The sync service's own object, served on this module's connection, when the module is
+    /// syncd's.
+    sync1: Option<Syncd>,
 }
 
 impl Accountd {
@@ -184,6 +198,7 @@ impl Accountd {
         Accountd {
             module,
             continue_as: false,
+            sync1: None,
             accounts: Arc::new(Mutex::new(accounts)),
             client: Arc::default(),
             secret: Arc::new(Mutex::new(SECRET.to_owned())),
@@ -199,6 +214,12 @@ impl Accountd {
         self
     }
 
+    /// Serves `Sync1` beside the module, so `Status` answers what `sync1` stands for.
+    pub fn with_status(mut self, sync1: Syncd) -> Accountd {
+        self.sync1 = Some(sync1);
+        self
+    }
+
     /// Serves the module on `bus`, owning its daemon's bus name; the connection must be kept alive.
     pub async fn serve_on(&self, bus: &PrivateBus) -> zbus::Connection {
         self.serve_announcing(bus).await.0
@@ -210,6 +231,13 @@ impl Accountd {
         let served = serve(&connection, self.module.path(), self.clone())
             .await
             .expect("serves");
+        if let Some(sync1) = &self.sync1 {
+            connection
+                .object_server()
+                .at(SYNC_PATH, sync1.clone())
+                .await
+                .expect("serves Sync1");
+        }
         connection
             .request_name(self.module.bus())
             .await
@@ -354,6 +382,10 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
     }
     for (n, app) in held.used_by.iter().enumerate() {
         rows.push(fixed(&format!("used_by.{n}"), "Used by", app));
+    }
+    if let Some((month, cap)) = held.spend {
+        rows.push(fixed("spend.month", "This month", &month.to_string()));
+        rows.push(fixed("spend.cap", "Cap", &cap.to_string()));
     }
     for (grant, what) in &held.grants {
         rows.push(spec(

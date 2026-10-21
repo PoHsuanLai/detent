@@ -1,19 +1,23 @@
 //! The root: the environment, the frame with the page's title, and the window inside it.
 
-use crate::accounts::AccountLink;
+use crate::accounts::{AccountLink, AccountsSetup};
 use crate::assistant_model::AssistantSetup;
 use crate::env::Env;
 use crate::files::load_all;
 use crate::view::View;
 use crate::window::Window;
 use detent_model::{
-    Arrival, Notice, arrival, assistant_model_page, is_assistant_setup, opening_page,
+    Arrival, Notice, arrival, assistant_model_page, is_accounts_setup, is_assistant_setup,
+    opening_page,
 };
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds_blitz::{TokioSpawner, use_window_handle};
 use ds_settings::{AppName, ConfigRoot, Store, use_environment};
 use std::sync::Arc;
+
+/// The title of the window that asks the person to sign in, a step of the first run.
+const ACCOUNTS_TITLE: &str = "Accounts";
 
 /// The Settings app. Reads its [`Env`] from the context the launcher provides.
 #[component]
@@ -43,7 +47,9 @@ pub fn App() -> Element {
             while let Some(notice) = notices.recv().await {
                 match notice {
                     Notice::OpenPage(slug)
-                        if catalogue.page(&slug).is_some() || is_assistant_setup(&slug) =>
+                        if catalogue.page(&slug).is_some()
+                            || is_assistant_setup(&slug)
+                            || is_accounts_setup(&slug) =>
                     {
                         query.set(String::new());
                         page.set(slug);
@@ -79,9 +85,12 @@ pub fn App() -> Element {
     );
     let now = appearance();
     let view = View::of(&catalogue, &query(), &page());
-    let setup = is_assistant_setup(&page());
-    let title = if setup {
+    let assistant_setup = is_assistant_setup(&page());
+    let accounts_setup = is_accounts_setup(&page());
+    let title = if assistant_setup {
         assistant_model_page().label().to_owned()
+    } else if accounts_setup {
+        ACCOUNTS_TITLE.to_owned()
     } else {
         view.current
             .as_ref()
@@ -98,8 +107,10 @@ pub fn App() -> Element {
             stack: Some(now.material_stack()),
             window: WindowFrame::titlebar(title, TrafficLights::Shown),
             style { {crate::STYLE} }
-            if setup {
+            if assistant_setup {
                 AssistantSetup {}
+            } else if accounts_setup {
+                AccountsSetup {}
             } else {
                 Window { page, query, files, view }
             }

@@ -1,17 +1,19 @@
 //! The list of accounts, and the sign-in client ids under it.
 
 use super::adapter::{
-    ActionButton, AddAccountButton, AddKeyButton, ClientField, OpenButton, RemoveAccountButton,
+    ActionButton, AddAccountButton, AddKeyButton, ClientField, RemoveAccountButton,
 };
+use super::avatar_view::{AccountAvatar, AvatarPlace};
 use crate::key_row::row_id;
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Account, AccountKey, AccountsPane as Pane, Adding, ClientEntry, ClientText, ClientValue,
-    ModuleId, ModuleRow, SecretStanding,
+    Account, AccountKey, AccountStatus, AccountsPane as Pane, Adding, ClientEntry, ClientText,
+    ClientValue, ModuleId, ModuleRow, SecretStanding, SyncBook,
 };
 use dioxus::prelude::*;
 use ds::base::vocab::RowState;
 use ds::components::content::label::{LabelRole, LabelStyle};
+use ds::components::controls::badge::{Badge, BadgeContent, BadgeTone};
 use ds::components::controls::disclosure::Disclosure;
 use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -19,6 +21,7 @@ use ds::components::lists::list::model::ListStyle;
 use ds::components::overlays::empty_state::EmptyState;
 use ds::prelude::*;
 use ds::root::common::Common;
+use ds::root::pass_through::ExtraClass;
 use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::ActionWeight;
 use porter_core::sheet::ProviderGroup;
@@ -62,8 +65,8 @@ fn items_of(
     pane: &Pane,
     selected: Option<&AccountKey>,
     marks: &ProviderMarks,
+    book: &SyncBook,
     onselect: EventHandler<AccountKey>,
-    onopen: EventHandler<AccountKey>,
 ) -> Vec<ListItem<String>> {
     let grouped = ProviderGroup::ALL.into_iter().flat_map(|group| {
         let accounts: Vec<&Account> = pane
@@ -78,7 +81,7 @@ fn items_of(
         });
         let rows = accounts
             .into_iter()
-            .map(|account| account_item(account, selected, marks, onselect, onopen));
+            .map(|account| account_item(account, selected, marks, book, onselect));
         heading.into_iter().chain(rows).collect::<Vec<_>>()
     });
     let synced: Vec<&Account> = pane
@@ -94,27 +97,43 @@ fn items_of(
     });
     let sync_rows = synced
         .into_iter()
-        .map(|account| account_item(account, selected, marks, onselect, onopen));
+        .map(|account| account_item(account, selected, marks, book, onselect));
     grouped.chain(heading).chain(sync_rows).collect::<Vec<_>>()
+}
+
+/// The line under an account's name: the kind of account it is ("Fastmail"), or how it stands
+/// when the module names no kind.
+fn second_line(account: &Account) -> String {
+    account
+        .provider
+        .as_ref()
+        .map_or_else(|| account.status.label(), |provider| provider.name.clone())
+}
+
+/// A dot after the words of an account that is not fine, named by how it stands.
+#[component]
+fn StandingDot(status: AccountStatus) -> Element {
+    match status {
+        AccountStatus::Ok => rsx! {},
+        _ => rsx! {
+            Badge {
+                content: BadgeContent::Dot,
+                tone: BadgeTone::Alert,
+                size: ControlSize::Mini,
+                common: Common { aria_label: Some(status.label()), ..Common::default() },
+            }
+        },
+    }
 }
 
 fn account_item(
     account: &Account,
     selected: Option<&AccountKey>,
     marks: &ProviderMarks,
+    book: &SyncBook,
     onselect: EventHandler<AccountKey>,
-    onopen: EventHandler<AccountKey>,
 ) -> ListItem<String> {
     let key = account.key.clone();
-    let provider = account.provider.as_ref();
-    let mark = provider.map(|p| marks.of(&p.id));
-    let kind = provider.map_or_else(String::new, |p| p.name.clone());
-    let standing = account.status.label();
-    let detail = if kind.is_empty() {
-        standing
-    } else {
-        format!("{kind}, {standing}")
-    };
     let state = RowState {
         selection: if selected == Some(&key) {
             Selection::Selected
@@ -125,16 +144,21 @@ fn account_item(
     };
     let content = rsx! {
         div { class: "account-row-body",
-            if let Some(mark) = mark {
-                ProviderMark { provider: mark.provider, face: mark.face, size: ControlSize::Regular }
+            AccountAvatar {
+                label: account.label.clone(),
+                provider: account.provider.clone(),
+                marks: marks.clone(),
+                place: AvatarPlace::Row,
+                work: book.work_of(account),
             }
             div { class: "account-row-words",
                 Label { text: account.label.clone(), role: LabelRole::Primary }
-                Label { text: detail, role: LabelRole::Secondary, style: LabelStyle::Footnote }
+                Label { text: second_line(account), role: LabelRole::Secondary, style: LabelStyle::Footnote }
             }
+            StandingDot { status: account.status.clone() }
         }
     };
-    let (picked, opened) = (key.clone(), key.clone());
+    let picked = key.clone();
     ListItem::row(
         key.0.clone(),
         account.label.clone(),
@@ -144,16 +168,10 @@ fn account_item(
                 content,
                 state,
                 common: Common {
-                    extra_class: ds::root::pass_through::ExtraClass::parse("account-row").ok(),
+                    id: Some(row_id("account", &key.0)),
+                    extra_class: ExtraClass::parse("account-row").ok(),
                     ..Common::default()
                 },
-                accessory: Accessory::Slot(rsx! {
-                    OpenButton {
-                        label: "Manage",
-                        subject: account.label.clone(),
-                        onpress: move |()| onopen.call(opened.clone()),
-                    }
-                }),
                 onclick: move |_| onselect.call(picked.clone()),
             }
         },
@@ -161,7 +179,7 @@ fn account_item(
 }
 
 /// The accounts in groups, one row each, and the foot that adds and removes; the empty state
-/// when there are none. A row's Manage button opens the account.
+/// when there are none. A press on a row chooses it, and its detail shows beside the list.
 #[component]
 pub(super) fn AccountList(
     pane: Pane,
@@ -169,8 +187,8 @@ pub(super) fn AccountList(
     adding: Adding,
     availability: Availability,
     marks: ProviderMarks,
+    book: SyncBook,
     onselect: EventHandler<AccountKey>,
-    onopen: EventHandler<AccountKey>,
     on: FootHandlers,
 ) -> Element {
     let removal = match selected.as_ref().and_then(|key| pane.account(key)) {
@@ -189,7 +207,7 @@ pub(super) fn AccountList(
             MoreRows { pane, adding, availability, on }
         };
     }
-    let items = items_of(&pane, selected.as_ref(), &marks, onselect, onopen);
+    let items = items_of(&pane, selected.as_ref(), &marks, &book, onselect);
     rsx! {
         div { class: "accounts-list", "data-accounts": "list",
             List::<String> {
@@ -198,7 +216,7 @@ pub(super) fn AccountList(
                 style: ListStyle::Grouped,
                 cursor: selected.as_ref().map(|key| key.0.clone()),
                 onselect: move |id: String| onselect.call(AccountKey(id)),
-                onpick: move |id: String| onopen.call(AccountKey(id)),
+                onpick: move |id: String| onselect.call(AccountKey(id)),
             }
             ListFoot { adding, availability, removal, on }
             MoreRows { pane: pane.clone(), adding, availability, on }

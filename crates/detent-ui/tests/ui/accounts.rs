@@ -6,28 +6,48 @@ use crate::support::Sandbox;
 use crate::support::accountd::{Accountd, Held, Module, Policy, SECRET};
 use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
+use crate::support::syncd::{Standing, Syncd};
 use detent_callers::{RoleCheck, RoleName, introduce_service, private_peers, roles};
 use detent_model::PageSlug;
 use detent_ui::{Opening, Vouch};
 use ds::prelude::Scheme;
-use ds_harness::{Backdrop, Harness};
+use ds_harness::{Backdrop, Harness, Input};
 use ds_settings::live::{LiveClient, LiveError, Served};
 use ds_settings::schema::KeyPath;
 use porter_dbus::names::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
 use std::time::Duration;
 
-const HOME: &str = "[aria-label=\"Manage Home cloud\"]";
-const KEY: &str = "[aria-label=\"Manage Claude key\"]";
-const SYNC: &str = "[aria-label=\"Manage Home sync\"]";
-const WORK: &str = "[aria-label=\"Manage Work mail\"]";
+/// An account: its row in the list and the id its detail names.
+#[derive(Clone, Copy)]
+struct Acct {
+    row: &'static str,
+    id: &'static str,
+}
+
+const HOME: Acct = Acct {
+    row: "#account-home",
+    id: "home",
+};
+const KEY: Acct = Acct {
+    row: "#account-claude-key",
+    id: "claude-key",
+};
+const SYNC: Acct = Acct {
+    row: "#account-sync-home",
+    id: "sync/home",
+};
+const WORK: Acct = Acct {
+    row: "#account-work-example",
+    id: "work.example",
+};
 const LLM: &str = "[aria-label=\"Llm\"] .ds-toggle";
 const KEEP_FILES: &str = "[aria-label=\"Keep this account's files on this computer\"] .ds-toggle";
 const UPLOAD_PHOTOS: &str =
     "[aria-label=\"Upload new photos from a folder on this computer to Google Photos\"] .ds-toggle";
-const REVOKE: &str = "[aria-label=\"Photos allowed: llm\"] .ds-field-row-control .ds-button";
+const REVOKE: &str = "[aria-label=\"Revoke Photos allowed: llm\"]";
+const PERMIT: &str = "#permission-accounts-claude-key-grant-g1";
 const SIGN_IN: &str = "[aria-label=\"Sign in again\"] .ds-field-row-control .ds-button";
 const REMOVE: &str = "[aria-label=\"Remove account\"] .ds-field-row-control .ds-button";
-const BACK: &str = ".accounts-back .ds-button";
 const CONTINUE_AS: &str = ".accounts-more [aria-label=\"Continue as\u{2026}\"]";
 const ADD_KEY: &str = ".accounts-more [aria-label=\"Add AI Key\u{2026}\"]";
 
@@ -74,7 +94,8 @@ fn keys() -> Vec<Held> {
     vec![
         Held::new("claude-key", "Claude key", "ok", &["llm"])
             .in_group("intelligence")
-            .granting("g1", "Photos allowed: llm"),
+            .granting("g1", "Photos allowed: llm")
+            .spending(2500, 5000),
     ]
 }
 
@@ -88,6 +109,8 @@ struct World {
     accountd: Accountd,
     inferd: Accountd,
     syncd: Accountd,
+    /// What the sync service's `Status` answers; set a dataset's standing to change it.
+    sync1: Syncd,
     harness: Harness,
     rt: tokio::runtime::Runtime,
     _bus: PrivateBus,
@@ -114,15 +137,29 @@ fn world_of(name: &str, rows: Vec<Held>, scheme: Scheme) -> World {
 
 /// The page with the modules in `served` running; the others are not on the bus.
 fn start(name: &str, scheme: Scheme, rows: Vec<Held>, served: &[Module]) -> World {
+    start_syncing(name, scheme, rows, served, syncing(), Syncd::default())
+}
+
+/// The same, with syncd's accounts `mirrored` and the sync service answering `sync1`.
+fn start_syncing(
+    name: &str,
+    scheme: Scheme,
+    rows: Vec<Held>,
+    served: &[Module],
+    mirrored: Vec<Held>,
+    sync1: Syncd,
+) -> World {
     let rt = runtime();
     let bus = PrivateBus::start(name);
     let held = |module: Module, count: usize| if served.contains(&module) { count } else { 0 };
     let expected = held(Module::Accountd, rows.len())
         + held(Module::Inferd, keys().len())
-        + held(Module::Syncd, syncing().len());
+        + held(Module::Syncd, mirrored.len());
     let accountd = Accountd::new(Policy::Allow, rows);
     let inferd = Accountd::on(Module::Inferd, Policy::Allow, keys());
-    let syncd = Accountd::on(Module::Syncd, Policy::Allow, syncing()).continuing_as();
+    let syncd = Accountd::on(Module::Syncd, Policy::Allow, mirrored)
+        .continuing_as()
+        .with_status(sync1.clone());
     let mut daemons = Vec::new();
     for module in served {
         let fake = match module {
@@ -146,6 +183,7 @@ fn start(name: &str, scheme: Scheme, rows: Vec<Held>, served: &[Module]) -> Worl
         accountd,
         inferd,
         syncd,
+        sync1,
         harness,
         rt,
         _bus: bus,
@@ -183,10 +221,19 @@ impl World {
     }
 }
 
-fn open(w: &mut World, button: &str) {
-    click(&mut w.harness, button);
+/// Rests the pointer on the permit's row, so the strip shows under it, and presses Revoke.
+fn press_revoke(w: &mut World) {
+    let at = w.harness.centre(REVOKE).expect("the strip is laid out");
+    w.harness.send(Input::pointer_move(at));
+    w.harness.advance(Duration::from_millis(200));
+    click(&mut w.harness, REVOKE);
+}
+
+/// Chooses `account` in the list and waits for its detail beside it.
+fn open(w: &mut World, account: Acct) {
+    click(&mut w.harness, account.row);
     settle(&mut w.harness, "the account", |h| {
-        h.count(".accounts-detail") == 1
+        h.attr(".accounts-detail", "data-account").as_deref() == Some(account.id)
     });
 }
 
@@ -238,7 +285,7 @@ fn a_pane_with_only_accountd_shows_identities_and_no_ai_or_sync_part() {
 }
 
 #[test]
-fn an_identity_lists_the_apps_using_it_read_only_and_goes_back() {
+fn an_identity_lists_the_apps_using_it_read_only() {
     let mut w = world("accounts-detail");
     detail(&mut w);
     let html = w.harness.html();
@@ -263,9 +310,41 @@ fn an_identity_lists_the_apps_using_it_read_only_and_goes_back() {
         0,
         "the apps are a plain list"
     );
-    click(&mut w.harness, BACK);
-    assert_eq!(w.harness.count(".accounts-list"), 1);
-    assert_eq!(w.harness.count(".accounts-detail"), 0);
+}
+
+#[test]
+fn the_list_stays_beside_the_detail_of_the_account_chosen_in_it() {
+    let mut w = world("accounts-two-columns");
+    assert_eq!(
+        w.harness.count(".accounts-detail"),
+        0,
+        "nothing is chosen yet:\n{}",
+        w.harness.html()
+    );
+    assert!(w.harness.html().contains("No account chosen"));
+    // Each choice shows its own account's detail, and the list is there throughout.
+    for account in [HOME, KEY, WORK, SYNC] {
+        open(&mut w, account);
+        assert_eq!(w.harness.count(".accounts-list"), 1, "{}", account.id);
+        assert_eq!(w.harness.count(".accounts-detail"), 1, "{}", account.id);
+        assert_eq!(
+            w.harness.attr(account.row, "aria-selected").as_deref(),
+            Some("true"),
+            "{} is the chosen row",
+            account.id
+        );
+    }
+    // Only an account that is not fine has a dot after its words.
+    assert_eq!(
+        w.harness
+            .count(".account-row .ds-badge[data-content=\"dot\"]"),
+        1
+    );
+    assert_eq!(
+        w.harness
+            .count("#account-work-example .ds-badge[data-content=\"dot\"]"),
+        1
+    );
 }
 
 #[test]
@@ -278,7 +357,7 @@ fn an_ai_key_shows_inferds_permits_with_revoke_and_revoking_goes_to_inferd() {
         w.harness.attr(REVOKE, "aria-label").as_deref(),
         Some("Revoke Photos allowed: llm")
     );
-    click(&mut w.harness, REVOKE);
+    press_revoke(&mut w);
     settle(&mut w.harness, "the revoke", |_| {
         !w.inferd.sets().is_empty()
     });
@@ -397,7 +476,6 @@ fn the_expiry_is_a_read_only_line_in_the_modules_words() {
         );
     }
     // An account whose sign-in does not expire has no such row.
-    click(&mut w.harness, BACK);
     detail(&mut w);
     assert_eq!(w.harness.count(row), 0);
 }
@@ -514,7 +592,7 @@ fn confirming_the_removal_removes_the_account_and_returns_to_the_list() {
 #[test]
 fn an_account_with_a_dotted_id_opens_and_removes_by_its_whole_id() {
     let mut w = world("accounts-dotted");
-    click(&mut w.harness, WORK);
+    click(&mut w.harness, WORK.row);
     settle(&mut w.harness, "the account", |h| {
         h.attr(".accounts-detail", "data-account").as_deref() == Some("work.example")
     });
@@ -907,23 +985,37 @@ fn the_account_type_is_drawn_with_the_providers_mark() {
         .on_bus(&bus.address)
         .harness(accounts());
     settle(&mut harness, "the list", |h| h.count(".accounts-list") == 1);
-    click(&mut harness, "[aria-label=\"Manage Ollama\"]");
+    // The list draws each account's mark, and says the kind of account under its name.
+    assert_eq!(
+        harness.count(".accounts-list .ds-provider[data-kind=\"face\"]"),
+        1
+    );
+    assert_eq!(
+        harness.count(".accounts-list .ds-provider[data-kind=\"letter\"]"),
+        1
+    );
+    assert!(
+        harness
+            .text_of(".accounts-list")
+            .unwrap_or_default()
+            .contains("Fastmail")
+    );
+    click(&mut harness, "#account-local-ai");
     settle(&mut harness, "the account", |h| {
-        h.count(".accounts-detail") == 1
+        h.attr(".accounts-detail", "data-account").as_deref() == Some("local-ai")
     });
     assert_eq!(
-        harness.count(".ds-provider[data-kind=\"face\"]"),
+        harness.count(".accounts-detail .ds-provider[data-kind=\"face\"]"),
         1,
         "a provider whose file gives a face is drawn from it:\n{}",
         harness.html()
     );
-    click(&mut harness, BACK);
-    click(&mut harness, "[aria-label=\"Manage Fastmail\"]");
+    click(&mut harness, "#account-mail");
     settle(&mut harness, "the account", |h| {
         h.attr(".accounts-detail", "data-account").as_deref() == Some("mail")
     });
     assert_eq!(
-        harness.count(".ds-provider[data-kind=\"letter\"]"),
+        harness.count(".accounts-detail .ds-provider[data-kind=\"letter\"]"),
         1,
         "one without a face keeps its named mark"
     );
@@ -1006,19 +1098,10 @@ fn the_remove_answer_is_legible_in_light_and_dark() {
 #[test]
 fn every_button_says_which_account_or_app_it_is_for() {
     let mut w = world("accounts-names");
-    for name in [
-        "Manage Home cloud",
-        "Manage Work mail",
-        "Manage Claude key",
-        "Manage Home sync",
-    ] {
-        let selector = format!(".account-row [aria-label=\"{name}\"]");
-        assert_eq!(w.harness.count(&selector), 1, "{name}");
-    }
     assert_eq!(
-        w.harness.count("[aria-label=\"Manage\"]"),
+        w.harness.count(".account-row [aria-label^=\"Manage\"]"),
         0,
-        "no bare Manage"
+        "a row is chosen by pressing it, with no button of its own"
     );
     detail(&mut w);
     for (selector, name) in [
@@ -1030,7 +1113,6 @@ fn every_button_says_which_account_or_app_it_is_for() {
             Some(name)
         );
     }
-    click(&mut w.harness, BACK);
     open(&mut w, KEY);
     assert_eq!(
         w.harness.attr(REVOKE, "aria-label").as_deref(),
@@ -1050,16 +1132,30 @@ fn sign_in_again_says_a_browser_only_for_an_account_whose_row_says_browser() {
     let plain = w.harness.html();
     assert!(plain.contains("Sign in to the account again."), "{plain}");
     assert!(!plain.contains("in your browser"));
-    click(&mut w.harness, BACK);
-    settle(&mut w.harness, "the list", |h| {
-        h.count(".accounts-list") == 1
-    });
     open(&mut w, WORK);
     assert!(
         w.harness
             .html()
             .contains("Sign in to the account again in your browser.")
     );
+}
+
+#[test]
+fn the_header_names_the_account_and_says_how_it_signs_in_only_when_the_module_does() {
+    let mut w = world("accounts-header");
+    // The account, and the words the module's `sign_in` row gives it (none: the row is missing).
+    let cases = [(HOME, None), (WORK, Some("Signs in through the browser"))];
+    for (account, how) in cases {
+        open(&mut w, account);
+        let words = w.harness.text_of(".accounts-header").unwrap_or_default();
+        match how {
+            Some(how) => assert!(words.contains(how), "{}: {words}", account.id),
+            None => assert!(!words.contains("Signs in"), "{}: {words}", account.id),
+        }
+        let avatars = w.harness.count(".accounts-header .ds-avatar")
+            + w.harness.count(".accounts-header .ds-provider");
+        assert_eq!(avatars, 1, "{}: one large avatar", account.id);
+    }
 }
 
 fn grouped() -> Vec<Held> {
@@ -1142,7 +1238,8 @@ fn the_minus_waits_for_a_selection_then_asks_before_removing_the_selected_accoun
 }
 
 #[test]
-fn a_permit_says_since_when_and_for_how_long_from_the_rows_keyed_by_its_grant() {
+fn a_permit_says_the_day_it_was_allowed_or_that_it_lasts_a_session_from_the_rows_keyed_by_its_grant()
+ {
     let mut w = world("accounts-grant-facts");
     {
         let mut held = w.inferd.accounts.lock().expect("accounts");
@@ -1156,7 +1253,179 @@ fn a_permit_says_since_when_and_for_how_long_from_the_rows_keyed_by_its_grant() 
     w.announce(Module::Inferd, "accounts.claude-key.grant.g2", "added");
     open(&mut w, KEY);
     settle(&mut w.harness, "the second permit", |h| {
-        h.html().contains("Since 2026-10-09. This session only")
+        h.html().contains("This session")
     });
-    assert!(w.harness.html().contains("Since 2026-10-08. Always"));
+    assert!(w.harness.html().contains("Allowed on 8 Oct"));
+}
+
+/// syncd's account with its files switch on, so the sync service keeps `home/files`.
+fn mirrored_files() -> Vec<Held> {
+    let mut held = Held::new("home", "Home sync", "ok", &[]).syncing();
+    held.sync[0].1 = true;
+    vec![held]
+}
+
+const FILES: &str = "home/files";
+const RING: &str = ".account-row .ds-progress[data-style=\"ring\"]";
+
+#[test]
+fn a_synced_dataset_says_when_it_synced_and_how_full_the_storage_is_and_a_ring_turns_while_it_works()
+ {
+    let idle = Standing {
+        anchor_age: 300,
+        pending: 0,
+        conflicts: 0,
+        used: 2_100_000_000,
+        total: Some(15_000_000_000),
+    };
+    let sync1 = Syncd::default();
+    sync1.stands(FILES, idle);
+    let mut w = start_syncing(
+        "accounts-sync-status",
+        Scheme::Light,
+        identities(),
+        &[Module::Accountd, Module::Inferd, Module::Syncd],
+        mirrored_files(),
+        sync1,
+    );
+    open(&mut w, SYNC);
+    settle(&mut w.harness, "the sync line", |h| {
+        h.html().contains("Synced 5 minutes ago. 2.1 GB of 15 GB")
+    });
+    assert_eq!(w.harness.count(RING), 0, "nothing is moving");
+
+    // Items are left to send: the avatar in the list and the one at the head of the detail turn.
+    w.sync1.stands(FILES, Standing { pending: 4, ..idle });
+    w.announce(Module::Syncd, "accounts.home.sync.files", "on");
+    settle(&mut w.harness, "the ring", |h| h.count(RING) == 1);
+    assert_eq!(
+        w.harness
+            .count("#account-sync-home .ds-progress[data-style=\"ring\"]"),
+        1,
+        "the ring is on the account that syncs"
+    );
+    assert_eq!(
+        w.harness
+            .count(".accounts-header .ds-progress[data-style=\"ring\"]"),
+        1
+    );
+    assert!(w.harness.html().contains("Syncing 4 items"));
+
+    // It catches up: the ring goes away and the line is the age again.
+    w.sync1.stands(FILES, idle);
+    w.announce(Module::Syncd, "accounts.home.sync.files", "on");
+    settle(&mut w.harness, "the ring to stop", |h| h.count(RING) == 0);
+}
+
+#[test]
+fn an_ai_account_shows_this_months_spend_against_its_cap_as_a_bar() {
+    let mut w = world("accounts-spend");
+    open(&mut w, KEY);
+    let bar = "[aria-label=\"Spent this month\"]";
+    assert_eq!(
+        w.harness.attr(bar, "aria-valuenow").as_deref(),
+        Some("50"),
+        "{}",
+        w.harness.html()
+    );
+    assert!(w.harness.html().contains("$25.00 of $50.00 this month"));
+    // An account that publishes no spend rows has no bar.
+    open(&mut w, HOME);
+    assert_eq!(w.harness.count(bar), 0);
+}
+
+#[test]
+fn resting_the_pointer_on_an_app_names_the_services_it_uses() {
+    let mut w = world("accounts-app-card");
+    {
+        let mut held = w.inferd.accounts.lock().expect("accounts");
+        let key = held.first_mut().expect("the key");
+        *key = key
+            .clone()
+            .granting("g3", "Companion can use Language model")
+            .granted_on("g3", "2026-10-08", "always")
+            .granting("g4", "Companion can use Speech");
+    }
+    w.announce(Module::Inferd, "accounts.claude-key.grant.g4", "added");
+    open(&mut w, KEY);
+    let row = "#permission-accounts-claude-key-grant-g3";
+    settle(&mut w.harness, "the permit rows", |h| {
+        h.count(row) == 1 && h.html().contains("Allowed on 8 Oct")
+    });
+    let at = w.harness.centre(row).expect("the row is laid out");
+    w.harness.send(Input::pointer_move(at));
+    settle(&mut w.harness, "the card", |h| {
+        h.html().contains("Uses Language model, Speech")
+    });
+    assert!(
+        w.harness
+            .text_of(".ds-hovercard")
+            .unwrap_or_default()
+            .contains("Companion")
+    );
+}
+
+fn setup_opening() -> Opening {
+    Opening {
+        page: Some(PageSlug("accounts-setup".to_owned())),
+        query: String::new(),
+    }
+}
+
+#[test]
+fn the_sign_in_step_lists_what_is_signed_in_and_offers_add_account_and_skip() {
+    const ADD_ACCOUNT: &str = ".accounts-setup > [aria-label=\"Add Account\u{2026}\"]";
+    const SKIP: &str = ".accounts-skip";
+    const CONTINUE: &str = ".accounts-continue";
+    // (the world, the accounts held, whether Continue waits)
+    let cases = [
+        ("accounts-setup-nothing", Vec::new(), true),
+        ("accounts-setup-signed-in", identities(), false),
+    ];
+    for (name, rows, waits) in cases {
+        let rt = runtime();
+        let bus = PrivateBus::start(name);
+        let fake = Accountd::new(Policy::Allow, rows.clone());
+        let _daemon = rt.block_on(fake.serve_on(&bus));
+        let mut harness = Sandbox::new(name)
+            .on_bus(&bus.address)
+            .harness(setup_opening());
+        settle(&mut harness, "the step's rows", |h| {
+            h.count(".accounts-setup .account-row") == rows.len() && h.count(".accounts-setup") == 1
+        });
+        let disabled = |h: &Harness, button: &str| {
+            h.attr(button, "data-availability").as_deref() == Some("disabled")
+        };
+        assert!(!disabled(&harness, SKIP), "{name}: Skip is always there");
+        assert_eq!(disabled(&harness, CONTINUE), waits, "{name}");
+        assert_eq!(
+            harness.html().contains("Nothing is signed in yet"),
+            rows.is_empty(),
+            "{name}"
+        );
+        for held in &rows {
+            assert!(
+                harness.html().contains(&held.label),
+                "{name}: {}",
+                held.label
+            );
+        }
+        // Add Account… is the same ask the page makes; a service that refuses is told calmly.
+        click(&mut harness, ADD_ACCOUNT);
+        settle(&mut harness, "the line", |h| {
+            h.html()
+                .contains("Could not add an account. Try again later.")
+        });
+        settle(&mut harness, "the button", |h| {
+            h.attr(ADD_ACCOUNT, "data-availability").as_deref() != Some("disabled")
+        });
+        // Skip leaves nothing behind.
+        click(&mut harness, SKIP);
+        assert!(fake.sets().is_empty(), "{name}");
+        let text = harness.text_of(".accounts-setup").unwrap_or_default();
+        for word in ["accountd", "OAuth", "daemon", "MCP", "ACP"] {
+            assert!(!text.contains(word), "{name}: {word} is in: {text}");
+        }
+        drop(rt);
+    }
 }
