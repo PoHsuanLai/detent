@@ -2,7 +2,7 @@
 //! the provider is about to end it. Its button runs the account's Sign in again row.
 
 use super::adapter::ActionButton;
-use detent_model::{Account, Attention, ModuleRow};
+use detent_model::{Account, Attention, ModuleRow, reauth_help};
 use dioxus::prelude::*;
 use ds::components::overlays::inline_banner::InlineBanner;
 use ds::prelude::*;
@@ -34,6 +34,7 @@ pub(super) fn AttentionBanner(
         InlineBanner {
             severity,
             text: TextLine::from(attention.words(&account)),
+            detail: Some(TextLine::from(reauth_help(account.sign_in))),
             common: Common {
                 data: DataName::parse("accounts")
                     .map(|name| vec![DataAttr::new(name, "attention")])

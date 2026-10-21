@@ -459,13 +459,17 @@ fn one_module_vanishing_leaves_the_others_shown() {
 }
 
 #[test]
-fn the_expiry_is_a_read_only_line_in_the_modules_words() {
-    let mut w = world("accounts-expires");
+fn an_expiry_without_a_date_stays_a_read_only_line_in_the_modules_words() {
+    let rows = vec![
+        Held::new("work.example", "Work mail", "ok", &[])
+            .expiring("Google signs this account out soon"),
+    ];
+    let mut w = world_of("accounts-expires", rows, Scheme::Light);
     open(&mut w, WORK);
     let row = "[aria-label=\"Sign-in\"]";
     assert_eq!(w.harness.count(row), 1, "{}", w.harness.html());
     let html = w.harness.html();
-    assert!(html.contains("Signed out by Google on 2026-10-14"));
+    assert!(html.contains("Google signs this account out soon"));
     assert!(html.contains("starts another 7"));
     for control in [".ds-toggle", ".ds-button"] {
         assert_eq!(
@@ -474,9 +478,11 @@ fn the_expiry_is_a_read_only_line_in_the_modules_words() {
             "the expiry row has no {control}"
         );
     }
-    // An account whose sign-in does not expire has no such row.
-    detail(&mut w);
-    assert_eq!(w.harness.count(row), 0);
+    assert_eq!(
+        w.harness.count("[data-accounts=\"attention\"]"),
+        0,
+        "no date, no banner"
+    );
 }
 
 #[test]
