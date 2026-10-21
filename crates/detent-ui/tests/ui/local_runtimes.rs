@@ -166,8 +166,9 @@ fn managing_a_runtime_opens_its_account_in_the_accounts_pane() {
         h.count(".accounts-detail") == 1
     });
     assert_eq!(page_of(&w.harness).as_deref(), Some("accounts"));
-    let html = w.harness.html();
-    assert!(html.contains("Ollama") && !html.contains("LM Studio"));
+    // The list beside it names every runtime; the detail is Ollama's alone.
+    let detail = w.harness.text_of(".accounts-detail").expect("the detail");
+    assert!(detail.contains("Ollama") && !detail.contains("LM Studio"));
 }
 
 #[test]

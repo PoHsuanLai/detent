@@ -45,7 +45,6 @@ const KEEP_FILES: &str = "[aria-label=\"Keep this account's files on this comput
 const UPLOAD_PHOTOS: &str =
     "[aria-label=\"Upload new photos from a folder on this computer to Google Photos\"] .ds-toggle";
 const REVOKE: &str = "[aria-label=\"Revoke Photos allowed: llm\"]";
-const PERMIT: &str = "#permission-accounts-claude-key-grant-g1";
 const SIGN_IN: &str = "[aria-label=\"Sign in again\"] .ds-field-row-control .ds-button";
 const REMOVE: &str = "[aria-label=\"Remove account\"] .ds-field-row-control .ds-button";
 const CONTINUE_AS: &str = ".accounts-more [aria-label=\"Continue as\u{2026}\"]";

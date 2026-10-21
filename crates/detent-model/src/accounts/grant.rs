@@ -180,9 +180,17 @@ mod tests {
         }
     }
 
+    /// A grant's label, its date, its scope, and the words shown for it.
+    type Case<'a> = (
+        &'a str,
+        Option<&'a str>,
+        Option<GrantScope>,
+        Option<&'a str>,
+    );
+
     #[test]
     fn a_permission_says_when_it_was_allowed_or_that_it_lasts_one_session() {
-        const CASES: &[(&str, Option<&str>, Option<GrantScope>, Option<&str>)] = &[
+        const CASES: &[Case] = &[
             (
                 "Mail can use Language model",
                 Some("2026-10-08"),
