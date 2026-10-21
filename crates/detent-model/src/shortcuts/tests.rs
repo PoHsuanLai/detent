@@ -106,16 +106,17 @@ fn the_page_lists_every_handled_action_and_no_unhandled_desktop_one() {
             }
         }
     }
-    assert!(!shown.contains(&StandardAction::EmojiAndSymbols));
-    assert!(!shown.contains(&StandardAction::NextInputSource));
+    // The shell handles both since keycap a66556b (shell-verbs), so the Input group lists them.
+    assert!(shown.contains(&StandardAction::EmojiAndSymbols));
+    assert!(shown.contains(&StandardAction::NextInputSource));
     let groups: Vec<ShortcutGroup> = ShortcutsState::standard()
         .sections()
         .iter()
         .map(|section| section.group)
         .collect();
     assert!(
-        !groups.contains(&ShortcutGroup::Input),
-        "an empty group is not drawn"
+        groups.contains(&ShortcutGroup::Input),
+        "a group with handled actions is drawn"
     );
 }
 
