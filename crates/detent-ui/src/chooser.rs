@@ -12,6 +12,15 @@ const PORTAL_PATH: &str = "/org/freedesktop/portal/desktop";
 const CHOOSER: &str = "org.freedesktop.portal.FileChooser";
 const REQUEST: &str = "org.freedesktop.portal.Request";
 
+/// The name of the one filter a picture request offers.
+const PICTURES_FILTER: &str = "Pictures";
+
+/// The kinds of file the filter lets through (the portal's type 1 is a MIME type).
+const PICTURE_KINDS: &[&str] = &["image/png", "image/jpeg", "image/webp"];
+
+/// The portal's code for a filter entry that names a MIME type.
+const KIND_IS_MIME: u32 = 1;
+
 /// What the person is asked for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Want {
@@ -41,16 +50,63 @@ impl Want {
     /// The chooser's options for it.
     fn options(self) -> HashMap<&'static str, Value<'static>> {
         let mut options = HashMap::from([("handle_token", Value::from(self.token()))]);
-        if self == Want::Folder {
-            options.insert("directory", Value::from(true));
+        match self {
+            Want::Folder => {
+                options.insert("directory", Value::from(true));
+            }
+            Want::Picture => {
+                // Without the filter, every file is offered and a refused one is a silent no-op.
+                let (filters, current) = picture_filters();
+                options.insert("filters", filters);
+                options.insert("current_filter", current);
+            }
         }
         options
     }
 }
 
+/// The portal's `filters` (`a(sa(us))`: one "Pictures" filter of MIME types) and the same filter
+/// as its `current_filter` (`(sa(us))`).
+fn picture_filters() -> (Value<'static>, Value<'static>) {
+    let filter = || {
+        (
+            PICTURES_FILTER,
+            PICTURE_KINDS
+                .iter()
+                .map(|kind| (KIND_IS_MIME, *kind))
+                .collect::<Vec<(u32, &'static str)>>(),
+        )
+    };
+    (Value::from(vec![filter()]), Value::from(filter()))
+}
+
+/// What asking the person came to.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Asked {
+    /// They chose a file on this computer: its path.
+    Path(String),
+    /// They closed the chooser, or chose nothing that is a file here.
+    Closed,
+    /// There is no chooser to ask.
+    Unavailable,
+}
+
 /// Asks the person for a folder or a picture, and waits for the answer; `None` when the chooser
 /// is closed, there is none, or what was chosen is not a file on this computer.
 pub(crate) async fn choose(bus: &BusSource, want: Want) -> Option<String> {
+    match ask(bus, want).await {
+        Asked::Path(path) => Some(path),
+        Asked::Closed | Asked::Unavailable => None,
+    }
+}
+
+/// Asks the person for a folder or a picture, and says how it ended.
+pub(crate) async fn ask(bus: &BusSource, want: Want) -> Asked {
+    ask_through(bus, want).await.unwrap_or(Asked::Unavailable)
+}
+
+/// `ask`, with `None` for any step of reaching the chooser that failed.
+async fn ask_through(bus: &BusSource, want: Want) -> Option<Asked> {
     let connection = connect(bus).await.ok()?;
     // The path the portal will give the request, from the name of this connection and the token.
     let sender = connection
@@ -77,10 +133,14 @@ pub(crate) async fn choose(bus: &BusSource, want: Want) -> Option<String> {
     let answer = std::future::poll_fn(|cx| std::pin::Pin::new(&mut answers).poll_next(cx)).await?;
     let (code, results): (u32, HashMap<String, OwnedValue>) = answer.body().deserialize().ok()?;
     if code != 0 {
-        return None;
+        return Some(Asked::Closed);
     }
     let uris = Vec::<String>::try_from(results.get("uris")?.try_clone().ok()?).ok()?;
-    path_of(uris.first()?)
+    Some(
+        uris.first()
+            .and_then(|uri| path_of(uri))
+            .map_or(Asked::Closed, Asked::Path),
+    )
 }
 
 /// The path a `file://` address names, with its `%XX` escapes read; `None` for any other address.

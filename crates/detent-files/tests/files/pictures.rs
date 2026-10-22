@@ -1,7 +1,7 @@
 //! The pictures the Wallpaper page offers, over scratch folders.
 
 use detent_files::PictureDirs;
-use detent_model::Picture;
+use detent_model::{Picture, PictureFrom};
 use detent_testkit::Scratch;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -53,7 +53,18 @@ fn the_system_pictures_come_first_and_an_added_one_is_kept_under_its_own_name() 
         system.join("b.jpg"),
         "a picture already in a folder is not copied"
     );
-    assert_eq!(dirs.list().len(), 4);
+    let listed = dirs.list();
+    assert_eq!(listed.len(), 4);
+    let added: Vec<&PathBuf> = listed
+        .iter()
+        .filter(|picture| picture.from == PictureFrom::Added)
+        .map(|picture| &picture.path)
+        .collect();
+    assert_eq!(
+        added,
+        [&scratch.join("added/b 2.jpg"), &scratch.join("added/b.jpg")],
+        "the added folder's pictures say so"
+    );
 }
 
 /// A package named `title` (none: no `KPlugin.Name`) with the size files `sizes` under

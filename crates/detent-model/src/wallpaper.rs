@@ -12,8 +12,8 @@ pub fn is_wallpaper(page: &Page) -> bool {
     matches!(page, Page::App(id) if id == SLUG)
 }
 
-/// What the desktop can draw as a wallpaper (png and jpeg), by the end of the file's name.
-const PICTURE_ENDINGS: &[&str] = &["png", "jpg", "jpeg"];
+/// What the desktop can draw as a wallpaper (png, jpeg and webp), by the end of the file's name.
+const PICTURE_ENDINGS: &[&str] = &["png", "jpg", "jpeg", "webp"];
 
 /// Whether `path` names a picture the desktop can draw.
 pub fn is_picture(path: &Path) -> bool {
@@ -35,9 +35,21 @@ pub enum PictureMark {
     Other,
 }
 
+/// Whose folder a picture lies in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PictureFrom {
+    /// The system's backgrounds folders.
+    #[default]
+    System,
+    /// The folder of the pictures the person added.
+    Added,
+}
+
 /// One picture on offer, as the folders list it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Picture {
+    /// Whose folder it lies in.
+    pub from: PictureFrom,
     /// The file the key stores.
     pub path: PathBuf,
     /// The name it carries itself (a wallpaper package names its picture); none: the file's name.
@@ -50,15 +62,22 @@ impl Picture {
     /// A plain picture file: named by its file, drawn from itself.
     pub fn file(path: PathBuf) -> Picture {
         Picture {
+            from: PictureFrom::System,
             path,
             title: None,
             preview: None,
         }
     }
 
+    /// This picture, listed from `from`'s folder (a new one is the system's until placed).
+    pub fn placed(self, from: PictureFrom) -> Picture {
+        Picture { from, ..self }
+    }
+
     /// This picture under `title`, drawn small from `preview`.
     pub fn packaged(path: PathBuf, title: String, preview: Option<PathBuf>) -> Picture {
         Picture {
+            from: PictureFrom::System,
             path,
             title: Some(title),
             preview,
@@ -87,52 +106,106 @@ fn name_of(path: &Path) -> String {
         .unwrap_or_default()
 }
 
-/// The grid for the pictures `found`, sorted by name, with `current` marked. The current picture
-/// is always in the grid, even when it lies outside every folder looked in, so the person sees
-/// what is on the desktop; an empty `current` marks none.
-pub fn picture_tiles(found: &[Picture], current: &str) -> Vec<PictureTile> {
-    let current_path = (!current.is_empty()).then(|| PathBuf::from(current));
-    let mut pictures: Vec<Picture> = found
-        .iter()
-        .filter(|picture| is_picture(&picture.path))
-        .cloned()
-        .collect();
-    if let Some(path) = &current_path
-        && !pictures.iter().any(|picture| &picture.path == path)
-    {
-        pictures.push(Picture::file(path.clone()));
+/// The tile of `picture`, marked when its path is `current`.
+fn tile_of(picture: Picture, current: Option<&PathBuf>) -> PictureTile {
+    PictureTile {
+        mark: if current == Some(&picture.path) {
+            PictureMark::Current
+        } else {
+            PictureMark::Other
+        },
+        name: picture.title.unwrap_or_else(|| name_of(&picture.path)),
+        preview: picture.preview.unwrap_or_else(|| picture.path.clone()),
+        path: picture.path,
     }
-    let mut tiles: Vec<PictureTile> = pictures
-        .into_iter()
-        .map(|picture| PictureTile {
-            mark: if current_path.as_ref() == Some(&picture.path) {
-                PictureMark::Current
-            } else {
-                PictureMark::Other
-            },
-            name: picture.title.unwrap_or_else(|| name_of(&picture.path)),
-            preview: picture.preview.unwrap_or_else(|| picture.path.clone()),
-            path: picture.path,
-        })
-        .collect();
+}
+
+/// `tiles` sorted by name, a path once.
+fn sorted(mut tiles: Vec<PictureTile>) -> Vec<PictureTile> {
     tiles.sort_by_key(|tile| (tile.name.to_lowercase(), tile.path.clone()));
     tiles.dedup_by(|later, earlier| later.path == earlier.path);
     tiles
 }
 
+/// What the Wallpaper page shows: the picture on the desktop, then the person's own pictures,
+/// then the system's.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct PictureSections {
+    /// The picture on the desktop now, listed or not; none when no picture is stored.
+    pub current: Option<PictureTile>,
+    /// The pictures the person added, by name.
+    pub added: Vec<PictureTile>,
+    /// The system's pictures, by name.
+    pub system: Vec<PictureTile>,
+}
+
+/// The place of the current tile among `tiles`, or `None` when it is not one of them.
+pub fn current_place(tiles: &[PictureTile]) -> Option<usize> {
+    tiles
+        .iter()
+        .position(|tile| tile.mark == PictureMark::Current)
+}
+
+/// The sections for the pictures `found`, with `current` marked. The current picture is always
+/// the section's `current`, even when it lies outside every folder looked in, so the person sees
+/// what is on the desktop; an empty `current` marks none. A picture the person added is not
+/// offered twice among the system's.
+pub fn picture_sections(found: &[Picture], current: &str) -> PictureSections {
+    let current_path = (!current.is_empty()).then(|| PathBuf::from(current));
+    let pictures: Vec<Picture> = found
+        .iter()
+        .filter(|picture| is_picture(&picture.path))
+        .cloned()
+        .collect();
+    let listed = current_path.as_ref().and_then(|path| {
+        pictures
+            .iter()
+            .find(|picture| &picture.path == path)
+            .cloned()
+    });
+    let current_tile = current_path
+        .as_ref()
+        .map(|path| listed.unwrap_or_else(|| Picture::file(path.clone())))
+        .map(|picture| tile_of(picture, current_path.as_ref()));
+    let in_section = |from: PictureFrom| {
+        sorted(
+            pictures
+                .iter()
+                .filter(|picture| picture.from == from)
+                .cloned()
+                .map(|picture| tile_of(picture, current_path.as_ref()))
+                .collect(),
+        )
+    };
+    let added = in_section(PictureFrom::Added);
+    let system = in_section(PictureFrom::System)
+        .into_iter()
+        .filter(|tile| !added.iter().any(|mine| mine.path == tile.path))
+        .collect();
+    PictureSections {
+        current: current_tile,
+        added,
+        system,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{Picture, PictureMark, is_picture, is_wallpaper, picture_tiles};
+    use super::{
+        Picture, PictureFrom, PictureMark, current_place, is_picture, is_wallpaper,
+        picture_sections,
+    };
     use ds_settings::schema::Page;
     use std::path::{Path, PathBuf};
 
     #[test]
-    fn only_png_and_jpeg_files_are_pictures() {
+    fn only_png_jpeg_and_webp_files_are_pictures() {
         let cases: &[(&str, bool)] = &[
             ("/a/dune.png", true),
             ("/a/dune.JPG", true),
             ("/a/dune.jpeg", true),
-            ("/a/dune.webp", false),
+            ("/a/dune.webp", true),
+            ("/a/dune.heic", false),
             ("/a/dune", false),
             ("/a/.png", false),
         ];
@@ -148,57 +221,63 @@ mod tests {
         assert!(!is_wallpaper(&Page::declared("displays")));
     }
 
-    fn paths(list: &[&str]) -> Vec<Picture> {
-        list.iter()
-            .map(|path| Picture::file(PathBuf::from(path)))
-            .collect()
+    fn listed(system: &[&str], added: &[&str]) -> Vec<Picture> {
+        let from = |paths: &[&str], from| -> Vec<Picture> {
+            paths
+                .iter()
+                .map(|path| Picture::file(PathBuf::from(path)).placed(from))
+                .collect()
+        };
+        [
+            from(system, PictureFrom::System),
+            from(added, PictureFrom::Added),
+        ]
+        .concat()
     }
 
-    fn summary(found: &[&str], current: &str) -> Vec<(String, PictureMark)> {
-        picture_tiles(&paths(found), current)
-            .into_iter()
-            .map(|tile| (tile.name, tile.mark))
-            .collect()
+    fn names(tiles: &[super::PictureTile]) -> Vec<&str> {
+        tiles.iter().map(|tile| tile.name.as_str()).collect()
     }
 
     #[test]
-    fn the_grid_is_sorted_marks_the_current_one_and_always_holds_it() {
-        use PictureMark::{Current, Other};
-        type Case<'a> = (
-            &'a str,
-            &'a [&'a str],
-            &'a str,
-            &'a [(&'a str, PictureMark)],
-        );
-        let cases: &[Case] = &[
-            ("none", &[], "", &[]),
-            (
-                "sorted by name, nothing current",
-                &["/s/b_sky.jpg", "/s/a-dune.png", "/s/notes.txt"],
-                "",
-                &[("a dune", Other), ("b sky", Other)],
-            ),
-            (
-                "the current one is marked",
-                &["/s/b_sky.jpg", "/s/a-dune.png"],
+    fn the_sections_are_sorted_split_by_origin_and_the_current_one_is_always_known() {
+        let found = listed(
+            &[
                 "/s/b_sky.jpg",
-                &[("a dune", Other), ("b sky", Current)],
-            ),
-            (
-                "the current one outside the folders is added",
-                &["/s/a-dune.png"],
-                "/home/p/mine.png",
-                &[("a dune", Other), ("mine", Current)],
-            ),
-        ];
-        for (case, found, current, want) in cases {
-            let got = summary(found, current);
-            let got: Vec<(&str, PictureMark)> = got
-                .iter()
-                .map(|(name, mark)| (name.as_str(), *mark))
-                .collect();
-            assert_eq!(got, *want, "{case}");
-        }
+                "/s/a-dune.png",
+                "/s/notes.txt",
+                "/s/mine.png",
+            ],
+            &["/h/z.webp", "/h/mine.png"],
+        );
+
+        let none = picture_sections(&found, "");
+        assert_eq!(names(&none.system), ["a dune", "b sky", "mine"]);
+        assert_eq!(names(&none.added), ["mine", "z"]);
+        assert_eq!(none.current, None);
+
+        let added = picture_sections(&found, "/h/z.webp");
+        assert_eq!(
+            added.current.as_ref().map(|tile| tile.name.as_str()),
+            Some("z")
+        );
+        assert_eq!(current_place(&added.added), Some(1));
+        assert_eq!(
+            current_place(&added.system),
+            None,
+            "the other section has no cursor"
+        );
+
+        let outside = picture_sections(&found, "/home/p/elsewhere.png");
+        let tile = outside.current.expect("the current one is known");
+        assert_eq!(
+            (tile.name.as_str(), tile.mark),
+            ("elsewhere", PictureMark::Current)
+        );
+        assert_eq!(
+            current_place(&outside.added).or(current_place(&outside.system)),
+            None
+        );
     }
 
     #[test]
@@ -211,8 +290,9 @@ mod tests {
             ),
             Picture::file(PathBuf::from("/s/a_sky.png")),
         ];
-        let tiles = picture_tiles(&found, "");
-        let got: Vec<(&str, &str)> = tiles
+        let sections = picture_sections(&found, "");
+        let got: Vec<(&str, &str)> = sections
+            .system
             .iter()
             .map(|tile| {
                 (
@@ -221,11 +301,13 @@ mod tests {
                 )
             })
             .collect();
-        let want = [
-            ("Dune", "/w/Dune/contents/screenshot.png"),
-            ("a sky", "/s/a_sky.png"),
-        ];
         // "a sky" sorts before "dune" (case-insensitive).
-        assert_eq!(got, [want[1], want[0]]);
+        assert_eq!(
+            got,
+            [
+                ("a sky", "/s/a_sky.png"),
+                ("Dune", "/w/Dune/contents/screenshot.png")
+            ]
+        );
     }
 }

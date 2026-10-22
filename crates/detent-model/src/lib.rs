@@ -32,6 +32,7 @@ mod origin;
 mod outside;
 mod page;
 mod picker;
+mod picture_add;
 mod privacy;
 mod range;
 mod reads;
@@ -136,6 +137,7 @@ pub use picker::{
     ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup, PoolMembership,
     PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_text, step,
 };
+pub use picture_add::AddOutcome;
 pub use privacy::{
     CellKind, DesktopApp, PowerCell, PowerStanding, PrivacyEffect, PrivacyInput, PrivacyPane,
     PrivacyPower, PrivacyProgram, PrivacyReady, PrivacyState, PrivacySwitch, ProgramBook,
@@ -172,7 +174,10 @@ pub use updates::{
     UpdatesPage, UpdatesReady, UpdatesShown, UpdatesState, is_software_update, updates_shown,
     updates_step,
 };
-pub use wallpaper::{Picture, PictureMark, PictureTile, is_picture, is_wallpaper, picture_tiles};
+pub use wallpaper::{
+    Picture, PictureFrom, PictureMark, PictureSections, PictureTile, current_place, is_picture,
+    is_wallpaper, picture_sections,
+};
 pub use warning::{StaleReason, Warning};
 pub use wifi::{
     AccessPoint, AskKind, AskStanding, HiddenForm, HiddenLogin, HiddenNetwork, HiddenSecurity,

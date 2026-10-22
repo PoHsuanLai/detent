@@ -82,3 +82,22 @@ pub fn KeyRow(
         }
     }
 }
+
+/// `entry`'s control on its own, with no row around it and no label beside it: for a control
+/// that is a whole block of the page (the Wallpaper page's pictures).
+#[component]
+pub fn KeyBlock(entry: KeyEntry, files: Signal<Files>, onedit: EventHandler<Edit>) -> Element {
+    let value = value_of(&files(), &entry);
+    let sent = entry.clone();
+    rsx! {
+        if let Some(written) = written_value(&files(), &entry) {
+            FileOnlyControl { value: written }
+        } else {
+            Control {
+                entry: entry.clone(),
+                value,
+                onchange: move |value| onedit.call(Edit { entry: sent.clone(), value }),
+            }
+        }
+    }
+}

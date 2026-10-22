@@ -4,7 +4,7 @@
 use crate::support::Sandbox;
 use crate::support::drive::{click, page_of, title_of};
 use crate::support::pictures::Fake;
-use detent_model::PageSlug;
+use detent_model::{AddOutcome, PageSlug};
 use detent_ui::Opening;
 use ds_settings::schema::{
     AppId, ControlName, Exposure, FilePath, Help, KeyKind, KeyPath, KeySpec, Label, Page, Schema,
@@ -56,69 +56,130 @@ fn world(name: &str, fake: &Fake) -> Sandbox {
     sandbox
 }
 
-/// The second picture's button.
-const SECOND: &str = ".ds-radio-group-item:nth-child(2)";
+/// A section's tiles, by the heading above them.
+fn tiles_of(heading: &str) -> String {
+    format!("[*|aria-label=\"{heading}\"] .ds-cv-item")
+}
 
 #[test]
-fn the_page_offers_the_pictures_and_clicking_one_writes_its_path() {
-    let fake = Fake::with(&["/pics/sky.jpg", "/pics/dune.png"]);
+fn the_page_offers_the_pictures_in_two_sections_and_clicking_one_writes_its_path() {
+    let fake = Fake::with(&["/pics/sky.jpg", "/pics/dune.png"]).and_added("/mine/home.png");
     let sandbox = world("wallpaper-pick", &fake);
     let mut harness = sandbox.harness(opening());
     assert_eq!(page_of(&harness).as_deref(), Some("wallpaper"));
     assert_eq!(title_of(&harness).as_deref(), Some("Wallpaper"));
 
     let html = harness.html();
-    for words in ["dune", "sky", "Add Picture\u{2026}"] {
+    for words in [
+        "Your Pictures",
+        "Desktop Pictures",
+        "No picture chosen",
+        "dune",
+        "sky",
+        "home",
+        "Add Picture\u{2026}",
+    ] {
         assert!(html.contains(words), "{words} is on the page:\n{html}");
     }
-    assert_eq!(harness.count(".ds-radio-group-item"), 2);
-    assert!(
-        !html.contains("aria-checked=\"true\""),
+    assert_eq!(harness.count(&tiles_of("Your Pictures")), 1);
+    assert_eq!(harness.count(&tiles_of("Desktop Pictures")), 2);
+    assert_eq!(
+        harness.count(".ds-cv-item[*|aria-selected=\"true\"]"),
+        0,
         "none is current yet"
     );
 
     assert_eq!(sandbox.read(FILE), None, "looking writes nothing");
-    click(&mut harness, SECOND);
+    click(
+        &mut harness,
+        &format!("{}:nth-child(2)", tiles_of("Desktop Pictures")),
+    );
     let text = sandbox.read(FILE).expect("the file was written");
     assert!(text.contains("picture = \"/pics/sky.jpg\""), "{text}");
     assert_eq!(
-        harness.attr(SECOND, "aria-checked").as_deref(),
-        Some("true"),
-        "the picked one is checked"
+        harness.count(&format!(
+            "{}[*|aria-selected=\"true\"]",
+            tiles_of("Desktop Pictures")
+        )),
+        1,
+        "the picked one is selected in its own section only"
+    );
+    assert_eq!(
+        harness.count(&format!(
+            "{}[*|aria-selected=\"true\"]",
+            tiles_of("Your Pictures")
+        )),
+        0
     );
 }
 
 #[test]
-fn add_picture_asks_for_one_and_writes_the_path_it_was_given() {
+fn add_picture_keeps_the_choice_makes_it_the_wallpaper_and_shows_it_under_your_pictures() {
     let fake = Fake::with(&["/pics/dune.png"]);
-    fake.will_choose("/home/p/mine.png");
+    fake.will_choose("/data/pictures/mine.png");
     let sandbox = world("wallpaper-add", &fake);
     let mut harness = sandbox.harness(opening());
+    assert!(!harness.html().contains("Your Pictures"), "none added yet");
 
     click(&mut harness, ".key-pictures .ds-button");
     assert_eq!(fake.asked(), 1, "the person was asked once");
     let text = sandbox.read(FILE).expect("the file was written");
-    assert!(text.contains("picture = \"/home/p/mine.png\""), "{text}");
     assert!(
-        harness.html().contains("mine"),
-        "the new picture is in the grid"
+        text.contains("picture = \"/data/pictures/mine.png\""),
+        "{text}"
     );
-    assert_eq!(harness.count(".ds-radio-group-item"), 2);
+    let html = harness.html();
+    assert!(html.contains("Your Pictures"), "{html}");
+    assert_eq!(harness.count(&tiles_of("Your Pictures")), 1);
+    assert_eq!(
+        harness.count(&format!(
+            "{}[*|aria-selected=\"true\"]",
+            tiles_of("Your Pictures")
+        )),
+        1,
+        "the new picture is the current one"
+    );
+    assert!(
+        html.contains(&Fake::small_of("/data/pictures/mine.png")),
+        "its small picture is made and drawn:\n{html}"
+    );
 }
 
 #[test]
-fn a_closed_chooser_writes_nothing() {
+fn a_closed_chooser_writes_and_says_nothing_and_a_refusal_says_why() {
     let fake = Fake::with(&["/pics/dune.png"]);
-    let sandbox = world("wallpaper-closed", &fake);
+    let sandbox = world("wallpaper-refused", &fake);
     let mut harness = sandbox.harness(opening());
 
     click(&mut harness, ".key-pictures .ds-button");
     assert_eq!(fake.asked(), 1);
     assert_eq!(sandbox.read(FILE), None);
+    assert_eq!(
+        harness.count(".key-pictures-told"),
+        0,
+        "closing is not a fault"
+    );
+
+    fake.will_end(AddOutcome::NotAPicture("IMG_1.heic".to_owned()));
+    click(&mut harness, ".key-pictures .ds-button");
+    assert_eq!(sandbox.read(FILE), None);
+    let html = harness.html();
+    assert!(
+        html.contains("IMG_1.heic") && html.contains("PNG, JPEG or WebP"),
+        "the refusal is told in plain words:\n{html}"
+    );
+
+    fake.will_choose("/data/pictures/ok.png");
+    click(&mut harness, ".key-pictures .ds-button");
+    assert_eq!(
+        harness.count(".key-pictures-told"),
+        0,
+        "a success clears the words"
+    );
 }
 
 #[test]
-fn each_tile_draws_the_small_picture_made_from_its_own_preview_and_a_failed_one_is_plain() {
+fn each_tile_draws_the_small_picture_made_from_its_own_preview_and_a_failed_one_is_a_glyph() {
     let fake = Fake::with(&["/pics/sky.jpg", "/pics/huge.png"])
         .and_packaged(
             "/w/Dune/contents/images/5120x2880.png",
@@ -131,7 +192,7 @@ fn each_tile_draws_the_small_picture_made_from_its_own_preview_and_a_failed_one_
     let html = harness.html();
 
     // The package is one tile, titled by the package, drawn from its screenshot.
-    assert_eq!(harness.count(".ds-radio-group-item"), 3);
+    assert_eq!(harness.count(&tiles_of("Desktop Pictures")), 3);
     assert!(html.contains("Dune Dusk"), "{html}");
     for source in ["/pics/sky.jpg", "/w/Dune/contents/screenshot.png"] {
         let small = Fake::small_of(source);

@@ -2,11 +2,11 @@
 //! the shared thumbnail cache, and the desktop's own file chooser.
 
 use super::{Pictures, Thumbnails};
-use crate::chooser::{Want, choose};
+use crate::chooser::{Asked, Want, ask};
 use crate::live::BusSource;
 use detent_files::PictureDirs;
-use detent_model::{Picture, Work, is_picture};
-use std::path::PathBuf;
+use detent_model::{AddOutcome, Picture, Work, is_picture};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 /// The folders on disk, their small pictures, and the chooser on the bus.
@@ -28,18 +28,49 @@ impl OnDisk {
     }
 }
 
+impl OnDisk {
+    /// `chosen` among the added pictures, or the reason it could not be; each refusal is also
+    /// written to the journal.
+    fn keep(&self, chosen: &Path) -> AddOutcome {
+        let name = chosen
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        if !is_picture(chosen) {
+            eprintln!(
+                "detent: wallpaper: {} is not a kind of picture the desktop draws",
+                chosen.display()
+            );
+            return AddOutcome::NotAPicture(name);
+        }
+        match self.dirs.add(chosen) {
+            Ok(kept) => AddOutcome::Added(kept),
+            Err(fault) => {
+                eprintln!(
+                    "detent: wallpaper: could not add {}: {fault}",
+                    chosen.display()
+                );
+                AddOutcome::CouldNotCopy(name)
+            }
+        }
+    }
+}
+
 impl Pictures for OnDisk {
     fn list(&self) -> Work<'_, Vec<Picture>> {
         Box::pin(async { self.dirs.list() })
     }
 
-    fn add(&self) -> Work<'_, Option<PathBuf>> {
+    fn add(&self) -> Work<'_, AddOutcome> {
         Box::pin(async {
-            let chosen = PathBuf::from(choose(&self.bus, Want::Picture).await?);
-            if !is_picture(&chosen) {
-                return None;
+            match ask(&self.bus, Want::Picture).await {
+                Asked::Path(chosen) => self.keep(&PathBuf::from(chosen)),
+                Asked::Closed => AddOutcome::Closed,
+                Asked::Unavailable => {
+                    eprintln!("detent: wallpaper: no file chooser to ask");
+                    AddOutcome::NoChooser
+                }
             }
-            self.dirs.add(&chosen).ok()
         })
     }
 

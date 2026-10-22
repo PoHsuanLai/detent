@@ -4,7 +4,7 @@
 
 use crate::packages::package_in;
 use crate::values::DataHome;
-use detent_model::{Picture, is_picture};
+use detent_model::{Picture, PictureFrom, is_picture};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -21,7 +21,8 @@ const ADDED_FOLDER: &str = "pictures";
 /// How deep a folder of backgrounds is looked into (a release's folder holds a folder of sizes).
 const DEPTH: usize = 3;
 
-/// The most pictures one listing returns, so a folder of thousands does not stall the page.
+/// The most pictures one section of a listing returns, so a folder of thousands does not stall
+/// the page, and the system's can never push the person's own out.
 const MOST: usize = 400;
 
 /// The folders the pictures are in.
@@ -51,14 +52,19 @@ impl PictureDirs {
         self.system.iter().chain([&self.added]).cloned().collect()
     }
 
-    /// Every picture in the folders, the system's first, each folder in name order.
+    /// Every picture in the folders, the system's first, each folder in name order, each marked
+    /// with whose folder it is in. The system's and the added ones are each cut at the most.
     pub fn list(&self) -> Vec<Picture> {
-        let mut found = Vec::new();
-        for folder in self.system.iter().chain([&self.added]) {
-            walk(folder, DEPTH, &mut found);
+        let mut system = Vec::new();
+        for folder in &self.system {
+            walk(folder, DEPTH, PictureFrom::System, &mut system);
         }
-        found.truncate(MOST);
-        found
+        system.truncate(MOST);
+        let mut added = Vec::new();
+        walk(&self.added, DEPTH, PictureFrom::Added, &mut added);
+        added.truncate(MOST);
+        system.append(&mut added);
+        system
     }
 
     /// `source` among the pictures: where it is when it already lies in one of the folders, else a
@@ -84,9 +90,10 @@ impl PictureDirs {
     }
 }
 
-/// The pictures in `folder` and the folders under it down to `depth`, appended to `found`. A
+/// The pictures in `folder` and the folders under it down to `depth`, marked `from` and appended
+/// to `found`. A
 /// wallpaper package is taken whole and not looked into.
-fn walk(folder: &Path, depth: usize, found: &mut Vec<Picture>) {
+fn walk(folder: &Path, depth: usize, from: PictureFrom, found: &mut Vec<Picture>) {
     let Ok(read) = std::fs::read_dir(folder) else {
         return;
     };
@@ -95,12 +102,12 @@ fn walk(folder: &Path, depth: usize, found: &mut Vec<Picture>) {
     for path in entries {
         if path.is_dir() {
             match package_in(&path) {
-                Some(package) => found.push(package),
-                None if depth > 1 => walk(&path, depth - 1, found),
+                Some(package) => found.push(package.placed(from)),
+                None if depth > 1 => walk(&path, depth - 1, from, found),
                 None => {}
             }
         } else if path.is_file() && is_picture(&path) {
-            found.push(Picture::file(path));
+            found.push(Picture::file(path).placed(from));
         }
     }
 }

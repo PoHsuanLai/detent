@@ -2,7 +2,7 @@
 //! and writes down every time it was asked: never a real folder, never the chooser.
 #![allow(dead_code)]
 
-use detent_model::{Picture, Work};
+use detent_model::{AddOutcome, Picture, PictureFrom, Work};
 use detent_ui::Pictures;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -13,7 +13,7 @@ struct Book {
     listed: Mutex<Vec<Picture>>,
     unmakeable: Mutex<Vec<PathBuf>>,
     made: Mutex<Vec<PathBuf>>,
-    next: Mutex<Option<PathBuf>>,
+    next: Mutex<Option<AddOutcome>>,
     asked: AtomicUsize,
 }
 
@@ -30,6 +30,16 @@ impl Fake {
             .map(|path| Picture::file(PathBuf::from(path)))
             .collect();
         fake
+    }
+
+    /// A picture the person added before, listed under the added ones.
+    pub fn and_added(self, path: &str) -> Fake {
+        self.0
+            .listed
+            .lock()
+            .expect("listed")
+            .push(Picture::file(PathBuf::from(path)).placed(PictureFrom::Added));
+        self
     }
 
     /// A picture that is one file named `title`, drawn small from `preview`.
@@ -68,9 +78,14 @@ impl Fake {
         format!("/cache/thumbnails/large/{stem}.png")
     }
 
-    /// The picture the chooser gives the person's choice: it is kept among the listed ones.
+    /// The picture the chooser gives the person's choice: it is kept among the added ones.
     pub fn will_choose(&self, path: &str) {
-        *self.0.next.lock().expect("next") = Some(PathBuf::from(path));
+        *self.0.next.lock().expect("next") = Some(AddOutcome::Added(PathBuf::from(path)));
+    }
+
+    /// The way the next try to add a picture ends, when it does not add one.
+    pub fn will_end(&self, outcome: AddOutcome) {
+        *self.0.next.lock().expect("next") = Some(outcome);
     }
 
     /// How many times the person was asked for a picture.
@@ -89,16 +104,24 @@ impl Pictures for Fake {
         Box::pin(async { self.0.listed.lock().expect("listed").clone() })
     }
 
-    fn add(&self) -> Work<'_, Option<PathBuf>> {
+    fn add(&self) -> Work<'_, AddOutcome> {
         Box::pin(async {
             self.0.asked.fetch_add(1, Ordering::SeqCst);
-            let chosen = self.0.next.lock().expect("next").take()?;
-            self.0
-                .listed
+            let ended = self
+                .0
+                .next
                 .lock()
-                .expect("listed")
-                .push(Picture::file(chosen.clone()));
-            Some(chosen)
+                .expect("next")
+                .take()
+                .unwrap_or(AddOutcome::Closed);
+            if let AddOutcome::Added(chosen) = &ended {
+                self.0
+                    .listed
+                    .lock()
+                    .expect("listed")
+                    .push(Picture::file(chosen.clone()).placed(PictureFrom::Added));
+            }
+            ended
         })
     }
 
