@@ -236,7 +236,7 @@ fn an_advanced_row_writes_its_own_file_too() {
 
 const TWO_APPS: &str = "[cua]\napps = [\
     { app = \"org.mozilla.firefox\", allow = \"ask\" }, \
-    { app = \"org.gnome.Calculator\", allow = \"session\" }]\n";
+    { app = \"org.gnome.Calculator\", allow = \"always\" }]\n";
 
 /// The apps cua's file lists, as `app allow` lines.
 fn apps_of(sandbox: &Sandbox) -> Vec<String> {
@@ -281,7 +281,7 @@ fn cuas_apps_are_a_row_each_and_can_be_removed() {
     let remove = ".key-rows-row:nth-child(1) [data-variant=inline]";
     scroll_into_view(&mut harness, remove);
     click(&mut harness, remove);
-    assert_eq!(apps_of(&sandbox), ["org.gnome.Calculator session"]);
+    assert_eq!(apps_of(&sandbox), ["org.gnome.Calculator always"]);
     assert_eq!(harness.count(".key-rows-row"), 1);
 }
 
@@ -312,7 +312,7 @@ fn cuas_apps_take_a_new_row_only_when_its_app_is_a_desktop_entry_id() {
         apps_of(&sandbox),
         [
             "org.mozilla.firefox ask",
-            "org.gnome.Calculator session",
+            "org.gnome.Calculator always",
             "org.example.Notes ask"
         ]
     );
@@ -328,13 +328,13 @@ fn a_rows_choice_is_changed_in_place_and_keeps_the_other_rows() {
     scroll_into_view(&mut harness, button);
     click(&mut harness, button);
     let item = harness
-        .centre(".ds-menu-item:nth-child(3) .ds-menu-label")
+        .centre(".ds-menu-item:nth-child(2) .ds-menu-label")
         .expect("the menu is open");
     harness.send(Input::pointer_move(item));
-    click(&mut harness, ".ds-menu-item:nth-child(3) .ds-menu-label");
+    click(&mut harness, ".ds-menu-item:nth-child(2) .ds-menu-label");
     assert_eq!(
         apps_of(&sandbox),
-        ["org.mozilla.firefox always", "org.gnome.Calculator session"]
+        ["org.mozilla.firefox always", "org.gnome.Calculator always"]
     );
 }
 
