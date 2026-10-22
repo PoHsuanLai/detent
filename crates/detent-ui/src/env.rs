@@ -5,6 +5,7 @@
 use crate::bluetooth::{BluetoothLink, OnSystem as BluetoothOnSystem};
 use crate::displays::{DisplaysLink, OnCompositor};
 use crate::engine_install::{Desk, System};
+use crate::hot_corners::{CornerDesk, OnSystem as CornersOnSystem};
 use crate::inference::ReasonFeed;
 use crate::lender::Lender;
 use crate::live::BusSource;
@@ -87,6 +88,9 @@ pub struct Env {
     /// The pictures the Wallpaper page offers and the chooser that adds one: this computer's own
     /// unless a test hands in another.
     pub pictures: Arc<dyn Pictures>,
+    /// The apps' actions and the file chooser the Hot Corners sheet asks for: this computer's own
+    /// unless a test hands in another.
+    pub corners: Arc<dyn CornerDesk>,
 }
 
 /// The person's own folders the app reads and writes: settings, data, state and cache (or
@@ -127,6 +131,7 @@ impl Env {
             PictureDirs::standard(&data_home),
             Thumbnails::under(&cache_home),
         ));
+        let corners = Arc::new(CornersOnSystem::new(bus.clone(), Vec::new()));
         let wifi = Arc::new(WifiOnSystem(bus.clone()));
         let bluetooth = Arc::new(BluetoothOnSystem::new(bus.clone()));
         let displays = Arc::new(OnCompositor(bus.clone()));
@@ -155,6 +160,7 @@ impl Env {
             engines,
             programs_path: String::new(),
             pictures,
+            corners,
         }
     }
 
@@ -227,6 +233,18 @@ impl Env {
     /// This environment with the Wallpaper page working through `pictures`.
     pub fn with_pictures(self, pictures: Arc<dyn Pictures>) -> Env {
         Env { pictures, ..self }
+    }
+
+    /// This environment listing the apps' actions from the manifests in `intent_dirs`, in the order
+    /// of trust.
+    pub fn with_intent_dirs(self, intent_dirs: Vec<PathBuf>) -> Env {
+        let corners = Arc::new(CornersOnSystem::new(self.bus.clone(), intent_dirs));
+        Env { corners, ..self }
+    }
+
+    /// This environment with the Hot Corners sheet working through `corners`.
+    pub fn with_corners(self, corners: Arc<dyn CornerDesk>) -> Env {
+        Env { corners, ..self }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.

@@ -8,6 +8,7 @@ use crate::bluetooth::BluetoothPane;
 use crate::displays::DisplaysPane;
 use crate::env::Env;
 use crate::files::{Edit, Files};
+use crate::hot_corners::HotCorners;
 use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
 use crate::live::start;
 use crate::memory::MemoryConsent;
@@ -18,7 +19,9 @@ use crate::shortcuts::ShortcutsPane;
 use crate::spaces::SpacesPane;
 use crate::updates::SoftwareUpdatePane;
 use crate::wifi::WifiPane;
-use detent_model::{Block, PageSlug, blocks, holds_memory_settings, modules_read};
+use detent_model::{
+    Block, PageSlug, advanced_sections, blocks, holds_memory_settings, modules_read,
+};
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
 
@@ -60,6 +63,7 @@ pub fn PageView(
     let Some(page) = env.catalogue.page(&slug) else {
         return rsx! {};
     };
+    let advanced = advanced_sections(page);
     rsx! {
         div { class: "scroll", "data-page": "{slug.0}",
             for block in blocks(page) {
@@ -79,13 +83,14 @@ pub fn PageView(
                     Block::Displays => rsx! { DisplaysPane {} },
                     Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
+                    Block::HotCorners(entries) => rsx! { HotCorners { entries, files, onedit } },
                     Block::ModelPicker => rsx! {
                         ModelPicker { reasons: show_reason(&env, &files()) }
                     },
                 }
             }
-            if !page.advanced.is_empty() {
-                AdvancedView { slug: slug.clone(), groups: page.advanced.clone(), basic: page.sections.clone(), hits: hits.clone(), files, onedit }
+            if !advanced.is_empty() {
+                AdvancedView { slug: slug.clone(), groups: advanced, basic: page.sections.clone(), hits: hits.clone(), files, onedit }
             }
         }
     }

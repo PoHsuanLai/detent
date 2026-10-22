@@ -3,6 +3,7 @@
 
 mod agents;
 mod first_run_mark;
+mod intents;
 mod keymap;
 mod pictures;
 mod places;

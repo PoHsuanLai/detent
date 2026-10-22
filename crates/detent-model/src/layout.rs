@@ -3,7 +3,9 @@
 use crate::assistant_model::is_assistant_model;
 use crate::bluetooth::is_bluetooth;
 use crate::catalogue::{PageModel, SectionModel};
+use crate::control::Control;
 use crate::displays::is_displays;
+use crate::entry::KeyEntry;
 use crate::memory_consent::MEMORY_SECTION;
 use crate::updates::is_software_update;
 use crate::wifi::is_wifi;
@@ -51,6 +53,52 @@ pub enum Block {
     Bluetooth,
     /// Each display's resolution, refresh rate, rotation and place. Not in any file.
     Displays,
+    /// The button that opens the Hot Corners sheet, over the corner keys the page's schema marks
+    /// for it.
+    HotCorners(Vec<KeyEntry>),
+}
+
+/// The keys of `page` that the Hot Corners sheet draws, in the order the schemas give them.
+fn corner_keys(page: &PageModel) -> Vec<KeyEntry> {
+    page.sections
+        .iter()
+        .chain(&page.advanced)
+        .flat_map(|section| &section.keys)
+        .filter(|entry| entry.control == Control::HotCorners)
+        .cloned()
+        .collect()
+}
+
+/// `sections` without the corner keys, which the Hot Corners sheet draws instead of rows. A
+/// section those keys leave empty is left out.
+fn without_corner_rows(sections: &[SectionModel]) -> Vec<SectionModel> {
+    let hidden = |entry: &KeyEntry| entry.control == Control::HotCorners;
+    sections
+        .iter()
+        .filter_map(|section| {
+            let keys: Vec<KeyEntry> = section
+                .keys
+                .iter()
+                .filter(|entry| !hidden(entry))
+                .cloned()
+                .collect();
+            let emptied = keys.is_empty() && !section.keys.is_empty();
+            (!emptied).then(|| SectionModel {
+                title: section.title.clone(),
+                keys,
+            })
+        })
+        .collect()
+}
+
+/// The sections of `page` that are drawn as rows.
+pub fn basic_sections(page: &PageModel) -> Vec<SectionModel> {
+    without_corner_rows(&page.sections)
+}
+
+/// The advanced sections of `page` that are drawn as rows.
+pub fn advanced_sections(page: &PageModel) -> Vec<SectionModel> {
+    without_corner_rows(&page.advanced)
 }
 
 /// The Intelligence page's sections, in the order design/22 section 5 gives them. A section a
@@ -72,7 +120,14 @@ fn rank(title: &str) -> usize {
 /// Models (the runtimes first, then the picker), or where Models would be when no schema has that
 /// section; and Accounts, whose live pane comes first.
 pub fn blocks(page: &PageModel) -> Vec<Block> {
-    let sections = page.sections.iter().cloned().map(Block::Section);
+    let corners = corner_keys(page);
+    let drawn = page_blocks(page);
+    let sheet = (!corners.is_empty()).then_some(Block::HotCorners(corners));
+    drawn.into_iter().chain(sheet).collect()
+}
+
+fn page_blocks(page: &PageModel) -> Vec<Block> {
+    let sections = basic_sections(page).into_iter().map(Block::Section);
     match page.page {
         Page::Accounts => {
             return std::iter::once(Block::AccountsPane)
@@ -109,10 +164,9 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
     }
     // Two slots per rank: the section at the even one, the live blocks at the odd one after
     // Models (the sort is stable, so they keep this order).
-    let mut slotted: Vec<(usize, Block)> = page
-        .sections
-        .iter()
-        .map(|section| (rank(&section.title) * 2, Block::Section(section.clone())))
+    let mut slotted: Vec<(usize, Block)> = basic_sections(page)
+        .into_iter()
+        .map(|section| (rank(&section.title) * 2, Block::Section(section)))
         .collect();
     let live = rank(PICKER_AFTER) * 2 + 1;
     // Right after Assistant: the first section is about the assistant, and so is this.
@@ -164,6 +218,7 @@ mod tests {
                 Block::Wifi => "<wifi>",
                 Block::Bluetooth => "<bluetooth>",
                 Block::Displays => "<displays>",
+                Block::HotCorners(_) => "<hot corners>",
             })
             .collect()
     }

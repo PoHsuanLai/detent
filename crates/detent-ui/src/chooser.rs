@@ -26,6 +26,8 @@ const KIND_IS_MIME: u32 = 1;
 pub(crate) enum Want {
     /// A folder.
     Folder,
+    /// Any file.
+    File,
     /// A picture file.
     Picture,
 }
@@ -35,6 +37,7 @@ impl Want {
     fn token(self) -> &'static str {
         match self {
             Want::Folder => "detent_engine_folder",
+            Want::File => "detent_corner_file",
             Want::Picture => "detent_wallpaper_picture",
         }
     }
@@ -43,6 +46,7 @@ impl Want {
     fn title(self) -> &'static str {
         match self {
             Want::Folder => "Choose a Folder",
+            Want::File => "Choose a File",
             Want::Picture => "Add Picture",
         }
     }
@@ -54,6 +58,7 @@ impl Want {
             Want::Folder => {
                 options.insert("directory", Value::from(true));
             }
+            Want::File => {}
             Want::Picture => {
                 // Without the filter, every file is offered and a refused one is a silent no-op.
                 let (filters, current) = picture_filters();
@@ -91,7 +96,7 @@ pub(crate) enum Asked {
     Unavailable,
 }
 
-/// Asks the person for a folder or a picture, and waits for the answer; `None` when the chooser
+/// Asks the person for a folder, a file or a picture, and waits for the answer; `None` when the chooser
 /// is closed, there is none, or what was chosen is not a file on this computer.
 pub(crate) async fn choose(bus: &BusSource, want: Want) -> Option<String> {
     match ask(bus, want).await {

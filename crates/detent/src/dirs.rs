@@ -80,6 +80,20 @@ pub fn schema_dirs() -> Vec<PathBuf> {
     unique(ds_settings::schema::data_dirs())
 }
 
+/// Each data directory's `quire/intents`, the folders of the installed apps' manifests, in the
+/// order of `schema_dirs` (beside which they sit).
+pub fn intent_dirs() -> Vec<PathBuf> {
+    intent_dirs_beside(&schema_dirs())
+}
+
+/// The `intents` folder beside each of the `quire/settings` folders `schemas`.
+fn intent_dirs_beside(schemas: &[PathBuf]) -> Vec<PathBuf> {
+    schemas
+        .iter()
+        .filter_map(|settings| settings.parent().map(|quire| quire.join("intents")))
+        .collect()
+}
+
 /// Where the app stores export the desktop entries of what they install, after the folders the
 /// data directories name: Flatpak's system install, then snap's.
 const STORE_EXPORTS: [&str; 2] = [
@@ -118,8 +132,8 @@ pub fn application_dirs() -> Vec<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::{
-        application_dirs_from, cache_home_from, config_home_from, data_home_from, state_home_from,
-        unique,
+        application_dirs_from, cache_home_from, config_home_from, data_home_from,
+        intent_dirs_beside, state_home_from, unique,
     };
     use detent_files::DataHome;
     use std::ffi::OsString;
@@ -219,6 +233,25 @@ mod tests {
             let got = function(xdg.map(OsString::from), home.map(OsString::from));
             assert_eq!(got, want.map(PathBuf::from), "{name} {xdg:?} {home:?}");
         }
+    }
+
+    #[test]
+    fn manifests_are_looked_for_beside_each_schema_folder_in_its_order() {
+        let schemas = [
+            "/usr/share/quire/settings",
+            "/home/ada/.local/share/quire/settings",
+        ]
+        .map(PathBuf::from)
+        .to_vec();
+        assert_eq!(
+            intent_dirs_beside(&schemas),
+            [
+                "/usr/share/quire/intents",
+                "/home/ada/.local/share/quire/intents"
+            ]
+            .map(PathBuf::from)
+            .to_vec()
+        );
     }
 
     #[test]

@@ -3,6 +3,23 @@ file = "sill/settings.toml"
 version = 1
 
 [[key]]
+path = "bar.autohide"
+default = "full_screen_only"
+label = "Automatically hide and show the menu bar"
+help = "Hide the menu bar until the pointer reaches the top edge of the screen."
+section = "Bar"
+exposure = "basic"
+
+[key.kind]
+kind = "segmented"
+
+[key.kind.v]
+variants = ["always", "desktop_only", "full_screen_only", "never"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
 path = "bar.height_px"
 default = 24
 label = "Bar height"
@@ -2940,121 +2957,57 @@ kind = "keyboard_and_shortcuts"
 
 [[key]]
 path = "hot_corners.top_left"
-default = "none"
+default = []
 label = "Top left"
 help = "What the top-left corner does."
 section = "Hot Corners"
-exposure = "advanced"
+exposure = "basic"
+control = "corners"
 
 [key.kind]
-kind = "menu"
-
-[key.kind.v]
-variants = ["none", "launcher", "notification_center", "control_center", "show_desktop", "lock", "workspaces", "command"]
+kind = "text"
 
 [key.page]
 kind = "dock"
 
 [[key]]
 path = "hot_corners.top_right"
-default = "none"
+default = []
 label = "Top right"
 help = "What the top-right corner does."
 section = "Hot Corners"
-exposure = "advanced"
+exposure = "basic"
+control = "corners"
 
 [key.kind]
-kind = "menu"
-
-[key.kind.v]
-variants = ["none", "launcher", "notification_center", "control_center", "show_desktop", "lock", "workspaces", "command"]
+kind = "text"
 
 [key.page]
 kind = "dock"
 
 [[key]]
 path = "hot_corners.bottom_left"
-default = "none"
+default = []
 label = "Bottom left"
 help = "What the bottom-left corner does."
 section = "Hot Corners"
-exposure = "advanced"
+exposure = "basic"
+control = "corners"
 
 [key.kind]
-kind = "menu"
-
-[key.kind.v]
-variants = ["none", "launcher", "notification_center", "control_center", "show_desktop", "lock", "workspaces", "command"]
+kind = "text"
 
 [key.page]
 kind = "dock"
 
 [[key]]
 path = "hot_corners.bottom_right"
-default = "none"
+default = []
 label = "Bottom right"
 help = "What the bottom-right corner does."
 section = "Hot Corners"
-exposure = "advanced"
-
-[key.kind]
-kind = "menu"
-
-[key.kind.v]
-variants = ["none", "launcher", "notification_center", "control_center", "show_desktop", "lock", "workspaces", "command"]
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "hot_corners.top_left_command"
-default = ""
-label = "Top-left command"
-help = "The command the top-left corner runs when it is set to Command."
-section = "Hot Corners"
-exposure = "advanced"
-
-[key.kind]
-kind = "text"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "hot_corners.top_right_command"
-default = ""
-label = "Top-right command"
-help = "The command the top-right corner runs when it is set to Command."
-section = "Hot Corners"
-exposure = "advanced"
-
-[key.kind]
-kind = "text"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "hot_corners.bottom_left_command"
-default = ""
-label = "Bottom-left command"
-help = "The command the bottom-left corner runs when it is set to Command."
-section = "Hot Corners"
-exposure = "advanced"
-
-[key.kind]
-kind = "text"
-
-[key.page]
-kind = "dock"
-
-[[key]]
-path = "hot_corners.bottom_right_command"
-default = ""
-label = "Bottom-right command"
-help = "The command the bottom-right corner runs when it is set to Command."
-section = "Hot Corners"
-exposure = "advanced"
+exposure = "basic"
+control = "corners"
 
 [key.kind]
 kind = "text"

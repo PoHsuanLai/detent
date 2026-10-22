@@ -73,6 +73,7 @@ fn environment(opening: Opening) -> Result<Env, ExitCode> {
     )
     .with_keymap(KeymapFiles::standard())
     .with_application_dirs(dirs::application_dirs())
+    .with_intent_dirs(dirs::intent_dirs())
     .with_programs_path(std::env::var("PATH").unwrap_or_default());
     for warning in &env.warnings {
         eprintln!("detent: {warning}");

@@ -45,7 +45,9 @@ impl Control {
             Control::Text | Control::Colour | Control::Picture => {
                 Ok(toml::Value::String(text.to_owned()))
             }
-            Control::Rows(_) | Control::FileOnly(_) => Err(TextFault::FileOnly),
+            Control::HotCorners | Control::Rows(_) | Control::FileOnly(_) => {
+                Err(TextFault::FileOnly)
+            }
         }
     }
 }

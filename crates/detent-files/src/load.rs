@@ -24,7 +24,11 @@ pub fn load(home: &ConfigHome, spec: &FileSpec) -> Loaded<FileValues> {
         Err(error) => return Loaded::garbled(defaults(spec), reason_of(&error)),
     };
     match text.parse::<toml::Table>() {
-        Ok(table) => overlay(spec, &table),
+        Ok(mut table) => {
+            // A corner's command in its older spelling, read the way the program itself reads it.
+            ds_settings::schema::fold_older_commands(&mut table);
+            overlay(spec, &table)
+        }
         Err(error) => Loaded::garbled(defaults(spec), error.message().to_owned()),
     }
 }

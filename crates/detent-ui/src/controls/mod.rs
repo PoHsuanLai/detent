@@ -50,6 +50,8 @@ pub fn Control(
             rsx! { Label { text: detent_model::word_label(&labels, &word), role: LabelRole::Secondary } }
         }
         Kind::Rows(columns) => rsx! { RowsControl { columns, value, onchange } },
-        Kind::FileOnly(_) => rsx! { FileOnlyControl { value } },
+        // The corner keys are drawn by the Hot Corners sheet, never as a row; were one asked for
+        // a row, the value shows as the file holds it.
+        Kind::HotCorners | Kind::FileOnly(_) => rsx! { FileOnlyControl { value } },
     }
 }

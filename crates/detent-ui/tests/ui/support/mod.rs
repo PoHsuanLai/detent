@@ -8,6 +8,7 @@ pub mod bluetooth;
 pub mod bus;
 pub mod compositor;
 pub mod computers;
+pub mod corners;
 pub mod desk;
 pub mod displays;
 pub mod drive;
@@ -28,8 +29,8 @@ use detent_files::{CacheHome, ConfigHome, DataHome, StateHome};
 use detent_model::{Missing, OriginRule, Outbox, inbox};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{
-    App, BusSource, Desk, Env, FirstRunApp, Homes, Lender, NoPictures, Opening, Pictures, Quiet,
-    ReasonFeed, Vouch,
+    App, BusSource, CornerDesk, Desk, Env, FirstRunApp, Homes, Lender, NoCorners, NoPictures,
+    Opening, Pictures, Quiet, ReasonFeed, Vouch,
 };
 use displays::Displays;
 use ds::prelude::{Scheme, SystemPrefs};
@@ -62,6 +63,7 @@ pub struct Sandbox {
     leaves: Leaves,
     engines: Arc<dyn Desk>,
     pictures: Arc<dyn Pictures>,
+    corners: Arc<dyn CornerDesk>,
     wifi: Wifi,
     bluetooth: Bluetooth,
     displays: Displays,
@@ -86,6 +88,8 @@ impl Sandbox {
             engines: Arc::new(Quiet),
             // No folder is read and no chooser is opened, whatever this computer has.
             pictures: Arc::new(NoPictures),
+            // No manifest is read and no chooser is opened, whatever this computer has.
+            corners: Arc::new(NoCorners),
             // No network, no Bluetooth and no display, whatever this computer has.
             wifi: Wifi::missing(Missing::NoService),
             bluetooth: Bluetooth::missing(Missing::NoService),
@@ -121,6 +125,11 @@ impl Sandbox {
     /// This world with the Wallpaper page working through `pictures`.
     pub fn with_pictures(self, pictures: Arc<dyn Pictures>) -> Sandbox {
         Sandbox { pictures, ..self }
+    }
+
+    /// This world with the Hot Corners sheet working through `corners`.
+    pub fn with_corners(self, corners: Arc<dyn CornerDesk>) -> Sandbox {
+        Sandbox { corners, ..self }
     }
 
     /// This world with the update service in this standing.
@@ -225,6 +234,7 @@ impl Sandbox {
         .with_displays(Arc::new(self.displays.clone()))
         .with_engines(self.engines.clone())
         .with_pictures(self.pictures.clone())
+        .with_corners(self.corners.clone())
         .with_os_release(self.os_release_path())
         .with_application_dirs(vec![self.scratch.join("applications")])
         .with_entry_rule(self.entry_rule())

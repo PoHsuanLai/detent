@@ -60,8 +60,8 @@ fn a_page_lists_its_basic_sections_and_one_advanced_group_after_them() {
     };
     assert_eq!(
         titles(&appearance.sections),
-        ["Appearance", "Icons", "Time"],
-        "only sections with a basic key are headers of their own"
+        ["Appearance", "Icons", "Time", "Bar"],
+        "only sections with a basic key are headers of their own (Bar for bar.autohide)"
     );
     let advanced = titles(&appearance.advanced);
     assert!(advanced.contains(&"Bar".to_owned()), "{advanced:?}");

@@ -15,6 +15,7 @@ mod displays;
 mod engine_install;
 mod first_run;
 mod holds;
+mod hot_corners;
 mod intelligence;
 mod intelligence_programs;
 mod lending;

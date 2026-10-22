@@ -333,6 +333,7 @@ impl SettingsProvider {
             Control::Text
             | Control::Colour
             | Control::Picture
+            | Control::HotCorners
             | Control::Rows(_)
             | Control::FileOnly(_) => None,
             _ => self.current(entry).ok().map(|value| show_value(&value)),

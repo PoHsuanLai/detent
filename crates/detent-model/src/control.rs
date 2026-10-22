@@ -1,6 +1,7 @@
 //! The one control that draws a key (design/22 section 9.1's fixed table), and which values it
 //! accepts.
 
+use crate::hot_corners::{HOT_CORNERS_CONTROL, corner_admits};
 use crate::range::Range;
 use crate::rows::Columns;
 use ds_settings::schema::{Control as Named, KeyKind, KeySpec};
@@ -89,6 +90,10 @@ pub enum Control {
     /// A path chosen from a grid of pictures, with "Add Picture…": a text key whose schema
     /// says `control = "picture"`.
     Picture,
+    /// What a screen corner does, for each set of modifier keys: a key whose schema says
+    /// `control = "corners"`. The Desktop & Dock page draws the four corner keys as one
+    /// button that opens the Hot Corners sheet, whatever kind the schema gives them.
+    HotCorners,
     /// A list of tables: the rows editor, one cell per column.
     Rows(Columns),
     /// No component: read-only, edited in the file.
@@ -104,12 +109,24 @@ fn named_picture(spec: &KeySpec) -> bool {
         .is_some_and(|named| named == Named::Picture && named.fits(&spec.kind))
 }
 
+// The raw name `corners` is read, not `Named::named`.
+/// Whether the schema asks for the Hot Corners sheet. The sheet reads the value itself, so the
+/// key's kind does not matter.
+fn named_hot_corners(spec: &KeySpec) -> bool {
+    spec.control
+        .as_ref()
+        .is_some_and(|name| name.0 == HOT_CORNERS_CONTROL)
+}
+
 impl Control {
     /// The control for `spec`'s kind. Total: every [`KeyKind`] arm is written, so a new kind is
     /// a compile error here.
     pub fn of(spec: &KeySpec) -> Control {
         if named_picture(spec) {
             return Control::Picture;
+        }
+        if named_hot_corners(spec) {
+            return Control::HotCorners;
         }
         match &spec.kind {
             KeyKind::Fixed { variant } => Control::Readout(variant.clone()),
@@ -146,6 +163,7 @@ impl Control {
             Control::Text | Control::Colour | Control::Picture => {
                 value.is_str().then(|| value.clone())
             }
+            Control::HotCorners => corner_admits(value).then(|| value.clone()),
             Control::Rows(columns) => columns.cells(value).map(|_| value.clone()),
             Control::FileOnly(_) => Some(value.clone()),
         }
@@ -398,5 +416,30 @@ mod tests {
         let path = Value::String("/a/b.png".to_owned());
         assert_eq!(Control::Picture.admit(&path), Some(path.clone()));
         assert_eq!(Control::Picture.admit(&Value::Integer(1)), None);
+    }
+
+    #[test]
+    fn a_key_that_asks_for_the_corners_gets_them_whatever_its_kind_and_holds_words_or_a_list() {
+        use ds_settings::schema::ControlName;
+        for kind in [KeyKind::Text, KeyKind::List(Box::new(KeyKind::Text))] {
+            let mut asked = spec(kind, Value::Array(Vec::new()));
+            asked.control = Some(ControlName("corners".to_owned()));
+            assert_eq!(Control::of(&asked), Control::HotCorners);
+        }
+        let held = |text: &str| -> Value {
+            let table: toml::Table = text.parse().expect("test TOML");
+            table["v"].clone()
+        };
+        for (value, kept) in [
+            ("v = \"lock\"", true),
+            ("v = []", true),
+            ("v = [{ action = \"lock\" }]", true),
+            ("v = \"teleport\"", false),
+            ("v = 3", false),
+        ] {
+            let value = held(value);
+            let want = kept.then(|| value.clone());
+            assert_eq!(Control::HotCorners.admit(&value), want, "{value}");
+        }
     }
 }

@@ -20,6 +20,7 @@ mod engine_install;
 mod engines;
 mod entry;
 mod first_run;
+mod hot_corners;
 mod layout;
 mod live;
 mod memory_consent;
@@ -116,7 +117,15 @@ pub use entry::KeyEntry;
 pub use first_run::{
     FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
 };
-pub use layout::{Block, blocks};
+pub use hot_corners::{
+    Corner, CornerAsk, CornerChoice, CornerMenuLine, HOT_CORNERS_CONTROL, HotActionChoice,
+    HotActionGroup, HotAddFault, HotApp, HotBinding, HotDesk, HotDo, HotItem, HotKeys, HotKnown,
+    HotModifier, HotOpenForm, HotOpenKind, HotPicked, HotShown, action_groups, actions_of,
+    actions_of_all, add_row, apps_matching, binding_for, bindings_of, command_binding,
+    corner_admits, corner_label, corner_menu, corner_picked, corner_shown, corner_value,
+    remove_row, shown_rows, web_address, with_binding,
+};
+pub use layout::{Block, advanced_sections, basic_sections, blocks};
 pub use live::Live;
 pub use memory_consent::{
     CONFIRM, Confinement, ConsentState, MEMORY_SECTION, SettingPair, Trouble,
