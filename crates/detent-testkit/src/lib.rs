@@ -6,6 +6,8 @@ mod extensions;
 mod fixtures;
 mod scratch;
 
-pub use extensions::{install_look, install_torn_look};
+pub use extensions::{
+    Changes, install_file_icons, install_look, install_torn_look, install_your_changes,
+};
 pub use fixtures::{fixture_dir, seed_schemas, seed_schemas_settable};
 pub use scratch::Scratch;

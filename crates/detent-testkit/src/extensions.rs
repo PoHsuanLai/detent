@@ -38,3 +38,62 @@ pub fn install_torn_look(data_home: &Path, id: &str, name: &str) -> PathBuf {
     write(&folder, "extension.toml", &look_manifest(id, name, "Torn"));
     folder
 }
+
+/// Installs the Extension `id` with a folder of file icons holding one picture, `text.svg`.
+///
+/// # Panics
+/// If the files cannot be written.
+pub fn install_file_icons(data_home: &Path, id: &str, name: &str, summary: &str) -> PathBuf {
+    let folder = data_home.join("quire").join("extensions").join(id);
+    write(
+        &folder,
+        "extension.toml",
+        &format!(
+            "id = \"{id}\"\nname = \"{name}\"\nprotocol = 1\nsummary = \"{summary}\"\n\n\
+             [[provides]]\ncapability = \"file_icons\"\ndir = \"file-icons\"\n"
+        ),
+    );
+    write(
+        &folder.join("file-icons"),
+        "text.svg",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 8 8\"><rect width=\"8\" height=\"8\"/></svg>\n",
+    );
+    folder
+}
+
+/// Installs the person's own Extension (`user.YourChanges`) as quire writes it, holding one
+/// picture when `changes` is true, else an empty folder.
+///
+/// # Panics
+/// If the files cannot be written.
+pub fn install_your_changes(data_home: &Path, changes: Changes) -> PathBuf {
+    let folder = data_home
+        .join("quire")
+        .join("extensions")
+        .join("user.YourChanges");
+    write(
+        &folder,
+        "extension.toml",
+        "id = \"user.YourChanges\"\nname = \"Your changes\"\nprotocol = 1\nversion = \"1.0.0\"\n\
+         summary = \"The icons you chose for single file types\"\n\n\
+         [[provides]]\ncapability = \"file_icons\"\ndir = \"file-icons\"\n",
+    );
+    std::fs::create_dir_all(folder.join("file-icons")).expect("the pictures folder");
+    if changes == Changes::Held {
+        write(
+            &folder.join("file-icons"),
+            "text.svg",
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 8 8\"><rect width=\"8\" height=\"8\"/></svg>\n",
+        );
+    }
+    folder
+}
+
+/// Whether the person's own Extension holds a picture.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Changes {
+    /// One picture is set.
+    Held,
+    /// None is.
+    None,
+}

@@ -3,7 +3,9 @@
 use crate::support::Sandbox;
 use crate::support::drive::{click, page_of, scroll_into_view, sidebar_row, title_of};
 use detent_model::{Notice, PageSlug};
-use detent_testkit::{install_look, install_torn_look};
+use detent_testkit::{
+    Changes, install_file_icons, install_look, install_torn_look, install_your_changes,
+};
 use detent_ui::Opening;
 use ds_harness::Harness;
 use ds_settings::target::SettingsTarget;
@@ -11,6 +13,8 @@ use std::time::Duration;
 
 const PAPER: &str = "org.example.Paper";
 const LOOK_MENU: &str = "#key-appearance-look .ds-popup .ds-button";
+const ICONS_MENU: &str = "#key-appearance-file-icons .ds-popup .ds-button";
+const YOUR_CHANGES: &str = "#extension-user-yourchanges";
 const ROW: &str = "#extension-org-example-paper";
 
 fn opening(page: &str) -> Opening {
@@ -26,10 +30,15 @@ fn install(sandbox: &Sandbox) {
 
 /// Opens the Look menu and returns the names of its items, in order.
 fn look_menu(harness: &mut Harness) -> Vec<String> {
-    scroll_into_view(harness, LOOK_MENU);
-    click(harness, LOOK_MENU);
+    menu_items(harness, LOOK_MENU)
+}
+
+/// Opens the menu whose button is `button` and returns the names of its items, in order.
+fn menu_items(harness: &mut Harness, button: &str) -> Vec<String> {
+    scroll_into_view(harness, button);
+    click(harness, button);
     assert_eq!(
-        harness.attr(LOOK_MENU, "aria-expanded").as_deref(),
+        harness.attr(button, "aria-expanded").as_deref(),
         Some("true"),
         "the click opened the menu"
     );
@@ -37,9 +46,9 @@ fn look_menu(harness: &mut Harness) -> Vec<String> {
         .filter_map(|n| harness.text_of(&format!(".ds-menu-item:nth-child({n}) .ds-menu-label")))
         .collect();
     // A click outside an open menu only closes it (as on a Mac), so the menu is put away first.
-    click(harness, LOOK_MENU);
+    click(harness, button);
     assert_eq!(
-        harness.attr(LOOK_MENU, "aria-expanded").as_deref(),
+        harness.attr(button, "aria-expanded").as_deref(),
         Some("false"),
         "a second click closed the menu"
     );
@@ -167,4 +176,43 @@ fn an_extension_target_opens_the_extensions_page_with_its_row_marked() {
     assert_eq!(page_of(&harness).as_deref(), Some("extensions"));
     assert_eq!(harness.count(".key-hit"), 1, "{}", harness.html());
     assert_eq!(harness.count(&format!("{ROW}.key-hit")), 1);
+}
+
+#[test]
+fn an_installed_file_icons_set_is_in_the_file_icons_menu_after_standard() {
+    let sandbox = Sandbox::new("extensions-file-icons");
+    install_file_icons(
+        &sandbox.data_home().0,
+        "org.example.Dots",
+        "Dots",
+        "Round dots",
+    );
+    let mut harness = sandbox.harness(opening("appearance"));
+    assert_eq!(menu_items(&mut harness, ICONS_MENU), ["Standard", "Dots"]);
+    drop(harness);
+
+    let harness = sandbox.harness(opening("extensions"));
+    let text = harness.text_of(".extensions").unwrap_or_default();
+    assert!(
+        text.contains("File Icons") && text.contains("Dots"),
+        "{text}"
+    );
+}
+
+#[test]
+fn your_changes_is_not_in_the_menu_and_has_a_switch_only_while_it_holds_nothing() {
+    for (changes, switches) in [(Changes::None, 1), (Changes::Held, 0)] {
+        let sandbox = Sandbox::new("extensions-your-changes");
+        install_your_changes(&sandbox.data_home().0, changes);
+        let mut harness = sandbox.harness(opening("appearance"));
+        assert_eq!(menu_items(&mut harness, ICONS_MENU), ["Standard"]);
+        drop(harness);
+
+        let harness = sandbox.harness(opening("extensions"));
+        assert_eq!(harness.count(YOUR_CHANGES), 1, "the page lists it");
+        assert_eq!(
+            harness.count(&format!("{YOUR_CHANGES} .ds-toggle")),
+            switches
+        );
+    }
 }

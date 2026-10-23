@@ -125,9 +125,10 @@ pub use engines::{
 };
 pub use entry::KeyEntry;
 pub use extensions::{
-    EXTENSIONS_EMPTY_HELP, EXTENSIONS_EMPTY_TITLE, EXTENSIONS_SLUG, ExtensionGroup, ExtensionList,
-    ExtensionPower, ExtensionRow, ExtensionStanding, InstalledExtensions, NOT_AVAILABLE,
-    NOT_INSTALLED, Offer, Offers, UNREADABLE_MANIFEST, extensions_page, is_extensions, stray_word,
+    EXTENSIONS_EMPTY_HELP, EXTENSIONS_EMPTY_TITLE, EXTENSIONS_SLUG, ExtensionGroup, ExtensionKeep,
+    ExtensionList, ExtensionPower, ExtensionRow, ExtensionStanding, InstalledExtensions,
+    NOT_AVAILABLE, NOT_INSTALLED, Offer, Offers, UNREADABLE_MANIFEST, extensions_page,
+    is_extensions, stray_word,
 };
 pub use first_run::{
     FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,

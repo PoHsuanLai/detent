@@ -8,7 +8,7 @@ mod page;
 mod words;
 
 pub use list::{
-    ExtensionGroup, ExtensionList, ExtensionPower, ExtensionRow, ExtensionStanding,
+    ExtensionGroup, ExtensionKeep, ExtensionList, ExtensionPower, ExtensionRow, ExtensionStanding,
     InstalledExtensions,
 };
 pub use offers::{Offer, Offers, stray_word};

@@ -108,6 +108,24 @@ capability = "look"
 kind = "appearance"
 
 [[key]]
+path = "appearance.file_icons"
+default = "standard"
+label = "File icons"
+help = "Standard, or a set of file icons you added in Extensions. A type a set has no picture for keeps the standard icon; choosing Standard puts them all back."
+section = "Files"
+exposure = "basic"
+agent = "settable"
+
+[key.kind]
+kind = "provided"
+
+[key.kind.v]
+capability = "file_icons"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
 path = "appearance.custom_styles"
 default = "use"
 label = "Use my styles"

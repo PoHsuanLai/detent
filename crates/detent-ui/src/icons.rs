@@ -28,8 +28,7 @@ pub fn icon_of(page: &Page) -> Icon {
         Page::App(_) if is_wifi(page) => Icon::Wifi,
         Page::App(_) if is_bluetooth(page) => Icon::Bluetooth,
         Page::App(_) if is_displays(page) => Icon::Monitor,
-        // quire's page table names the glyph "puzzle", which quire has no icon for yet.
-        Page::App(_) if is_extensions(page) => Icon::Switches,
+        Page::App(_) if is_extensions(page) => Icon::Puzzle,
         Page::App(_) => Icon::Window,
     }
 }

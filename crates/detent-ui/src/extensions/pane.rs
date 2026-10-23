@@ -111,7 +111,10 @@ fn ExtensionLine(
                         },
                     }
                 },
-                None => rsx! { Label { text: NOT_AVAILABLE, role: LabelRole::Secondary } },
+                None if row.is_unusable() => rsx! {
+                    Label { text: NOT_AVAILABLE, role: LabelRole::Secondary }
+                },
+                None => rsx! {},
             }
         }
     }

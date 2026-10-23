@@ -4,8 +4,12 @@
 
 use crate::round_trip::{key, word};
 use detent_files::{ConfigHome, DataHome, ExtensionHome, load};
-use detent_model::{ConfigFile, ExtensionPower, ExtensionStanding, FileSpec, InstalledExtensions};
-use detent_testkit::{Scratch, install_look, install_torn_look};
+use detent_model::{
+    ConfigFile, ExtensionKeep, ExtensionPower, ExtensionStanding, FileSpec, InstalledExtensions,
+};
+use detent_testkit::{
+    Changes, Scratch, install_file_icons, install_look, install_torn_look, install_your_changes,
+};
 use ds_settings::schema::{FilePath, KeyKind};
 
 const TMP: &str = env!("CARGO_TARGET_TMPDIR");
@@ -161,4 +165,53 @@ fn a_stored_look_nothing_installed_has_is_kept_on_load() {
         "a choice, not a mistake"
     );
     assert!(loaded.invalid.is_empty(), "{:?}", loaded.invalid);
+}
+
+#[test]
+fn a_file_icons_set_is_offered_after_standard_and_listed_under_file_icons() {
+    let (scratch, home) = world("extensions-file-icons");
+    install_file_icons(
+        &scratch.join("data"),
+        "org.example.Dots",
+        "Dots",
+        "Round dots",
+    );
+    let read = home.read();
+    let offer = read.offers.of("file_icons");
+    assert_eq!(offer.words, ["standard", "org.example.Dots"]);
+    assert_eq!(offer.labels.of("org.example.Dots"), Some("Dots"));
+    let titles: Vec<&str> = read.list.groups.iter().map(|g| g.title.as_str()).collect();
+    assert_eq!(titles, ["File Icons"]);
+}
+
+#[test]
+fn your_changes_is_never_offered_and_has_a_switch_only_while_it_holds_nothing() {
+    for (changes, keep) in [
+        (Changes::None, ExtensionKeep::Free),
+        (Changes::Held, ExtensionKeep::Holds),
+    ] {
+        let (scratch, home) = world("extensions-your-changes");
+        install_file_icons(
+            &scratch.join("data"),
+            "org.example.Dots",
+            "Dots",
+            "Round dots",
+        );
+        install_your_changes(&scratch.join("data"), changes);
+        let read = home.read();
+        assert_eq!(
+            read.offers.of("file_icons").words,
+            ["standard", "org.example.Dots"],
+            "the person's changes are on top of the choice, never a choice"
+        );
+        let mine = read
+            .list
+            .groups
+            .iter()
+            .flat_map(|group| &group.rows)
+            .find(|row| row.id == "user.YourChanges")
+            .expect("the page lists it");
+        assert_eq!(mine.keep, keep);
+        assert_eq!(mine.power().is_some(), keep == ExtensionKeep::Free);
+    }
 }
