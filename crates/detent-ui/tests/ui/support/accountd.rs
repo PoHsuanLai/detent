@@ -63,6 +63,9 @@ pub struct Held {
     pub grants: Vec<(String, String)>,
     /// The sync toggles (`files`, `photos`) with their state: only for an account syncd mirrors.
     pub sync: Vec<(String, bool)>,
+    /// The "Show in Files" switch with its state and help line: only for an account whose drive
+    /// syncd can show.
+    pub show_in_files: Option<(bool, String)>,
     /// Whether the account is a runtime on this computer: the `place` row says so.
     pub on_this_computer: bool,
     /// The words of the read-only `expires` row, for a sign-in that expires.
@@ -90,6 +93,7 @@ impl Held {
             services: services.iter().map(|s| ((*s).to_owned(), true)).collect(),
             grants: Vec::new(),
             sync: Vec::new(),
+            show_in_files: None,
             on_this_computer: false,
             expires: None,
             sign_in: None,
@@ -124,6 +128,12 @@ impl Held {
     /// An account syncd can mirror: both sync toggles, off.
     pub fn syncing(mut self) -> Held {
         self.sync = vec![("files".to_owned(), false), ("photos".to_owned(), false)];
+        self
+    }
+
+    /// An account whose whole drive syncd can show in Files: the switch off, with `help` under it.
+    pub fn showing_in_files(mut self, help: &str) -> Held {
+        self.show_in_files = Some((false, help.to_owned()));
         self
     }
 
@@ -380,6 +390,19 @@ fn rows_of(held: &Held) -> Vec<KeySpec> {
         }
         rows.push(row);
     }
+    if let Some((_, help)) = &held.show_in_files {
+        let mut row = spec(
+            format!("accounts.{id}.storage.files"),
+            section,
+            "Show in Files",
+            KeyKind::Toggle {
+                variants: ["on".to_owned(), "off".to_owned()],
+            },
+            toml::Value::String("off".to_owned()),
+        );
+        row.help = Help(help.clone());
+        rows.push(row);
+    }
     for (n, app) in held.used_by.iter().enumerate() {
         rows.push(fixed(&format!("used_by.{n}"), "Used by", app));
     }
@@ -485,7 +508,11 @@ impl LiveModule for Accountd {
                 .iter()
                 .map(|(k, on)| (format!("service.{k}"), on));
             let sync = held.sync.iter().map(|(k, on)| (format!("sync.{k}"), on));
-            services.chain(sync).find_map(|(row, on)| {
+            let files = held
+                .show_in_files
+                .iter()
+                .map(|(on, _)| ("storage.files".to_owned(), on));
+            services.chain(sync).chain(files).find_map(|(row, on)| {
                 (path == format!("accounts.{}.{row}", held.id)).then_some(*on)
             })
         });
@@ -522,6 +549,11 @@ impl LiveModule for Accountd {
                 if path == format!("accounts.{}.sync.{leaf}", held.id) {
                     *on = value.as_str() == Some("on");
                 }
+            }
+            if let Some((on, _)) = &mut held.show_in_files
+                && path == format!("accounts.{}.storage.files", held.id)
+            {
+                *on = value.as_str() == Some("on");
             }
             held.grants
                 .retain(|(grant, _)| path != format!("accounts.{}.grant.{grant}", held.id));

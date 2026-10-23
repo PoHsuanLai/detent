@@ -85,6 +85,7 @@ mod tests {
             group: ProviderGroup::Internet,
             services: Vec::new(),
             sync: Vec::new(),
+            show_in_files: None,
             permissions: Vec::new(),
             reauth: reauth.then(|| {
                 (

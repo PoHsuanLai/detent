@@ -227,6 +227,7 @@ mod offers {
             group: ProviderGroup::Intelligence,
             services: Vec::new(),
             sync: Vec::new(),
+            show_in_files: None,
             permissions: Vec::new(),
             reauth: None,
             sign_out: None,

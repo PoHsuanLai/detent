@@ -27,6 +27,9 @@ const SERVICE: &str = ".service.";
 /// After an account's id, in the path of a sync switch: `accounts.<id>.sync.files`, `.sync.photos`.
 const SYNC: &str = ".sync.";
 
+/// The path of an account's "Show in Files" switch, after its id: `accounts.<id>.storage.files`.
+const SHOW_IN_FILES: &str = ".storage.files";
+
 /// The leaves a sync switch ends in.
 const SYNC_LEAVES: [&str; 2] = ["files", "photos"];
 
@@ -217,6 +220,10 @@ pub struct Account {
     pub services: Vec<AccountService>,
     /// Its sync switches, in the module's order; none when syncd cannot mirror it.
     pub sync: Vec<AccountSync>,
+    /// Its "Show in Files" switch: the whole drive in Files, downloaded as it is opened. Only for
+    /// an account whose drive the sync service can show; its help carries the service's line when
+    /// turning it on did not end on.
+    pub show_in_files: Option<AccountSync>,
     /// The apps' permissions for it.
     pub permissions: Vec<AccountPermission>,
     /// The row that signs in again, with its action's name.
@@ -242,6 +249,7 @@ impl Account {
     fn owns(&self, path: &KeyPath) -> bool {
         self.services.iter().any(|s| &s.path == path)
             || self.sync.iter().any(|s| &s.path == path)
+            || self.show_in_files.as_ref().is_some_and(|s| &s.path == path)
             || self.permissions.iter().any(|p| &p.path == path)
             || self.reauth.as_ref().is_some_and(|(p, _)| p == path)
             || self.sign_out.as_ref().is_some_and(|(p, _)| p == path)
@@ -342,6 +350,7 @@ pub(super) enum Row<'a> {
     SpendCap(&'a str),
     AccountService(&'a str, bool),
     Sync(bool),
+    ShowInFiles(bool),
     Grant,
     Reauth,
     SignOut,
@@ -362,6 +371,9 @@ pub(super) fn classify<'a>(
         KeyKind::Toggle { .. } => {
             if let Some((id, kind)) = rest.rsplit_once(SERVICE) {
                 return Some((key(id), Row::AccountService(kind, held(&spec.path))));
+            }
+            if let Some(id) = rest.strip_suffix(SHOW_IN_FILES) {
+                return Some((key(id), Row::ShowInFiles(held(&spec.path))));
             }
             let (id, leaf) = rest.rsplit_once(SYNC)?;
             SYNC_LEAVES
@@ -439,6 +451,7 @@ fn account_of<'a>(
                 group: ProviderGroup::Internet,
                 services: Vec::new(),
                 sync: Vec::new(),
+                show_in_files: None,
                 permissions: Vec::new(),
                 reauth: None,
                 sign_out: None,
@@ -556,6 +569,14 @@ impl AccountsPane {
                     help: spec.help.0.clone(),
                     on,
                 }),
+                Row::ShowInFiles(on) => {
+                    account.show_in_files = Some(AccountSync {
+                        path: spec.path.clone(),
+                        label: spec.label.0.clone(),
+                        help: spec.help.0.clone(),
+                        on,
+                    });
+                }
                 Row::Grant => account.permissions.push(AccountPermission {
                     path: spec.path.clone(),
                     label: spec.label.0.clone(),

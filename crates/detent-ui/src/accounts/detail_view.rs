@@ -145,8 +145,11 @@ pub(super) fn AccountDetail(
                     }
                 }
             }
-            if !account.sync.is_empty() || holds.any_of(&account) {
+            if !account.sync.is_empty() || account.show_in_files.is_some() || holds.any_of(&account) {
                 FieldGroup { title: Some("Sync".to_owned()),
+                    if let Some(files) = account.show_in_files.clone() {
+                        ShowInFilesRow { module: account.module, files, availability, on }
+                    }
                     for sync in account.sync.iter().cloned() {
                         SyncRow { key: "{sync.path.0}", module: account.module, sync: sync.clone(), availability, on }
                         if sync.on {
@@ -282,6 +285,33 @@ fn SyncRow(
             Toggle {
                 label: sync.label.clone(),
                 value: if sync.on { Check::On } else { Check::Off },
+                availability,
+                onchange: move |next| on.switched.call((row.clone(), next == Check::On)),
+            }
+        }
+    }
+}
+
+/// "Show in Files": the account's whole drive in Files. Its line stands under it, so the service's
+/// word after a turn-on that did not end on ("Files wasn't turned on. You can try again.") is read
+/// without opening anything.
+#[component]
+fn ShowInFilesRow(
+    module: ModuleId,
+    files: AccountSync,
+    availability: Availability,
+    on: Handlers,
+) -> Element {
+    let row = ModuleRow::new(module, files.path.clone());
+    rsx! {
+        FieldRow {
+            label: TextLine::from(files.label.clone()),
+            help: (!files.help.is_empty()).then(|| TextLine::from(files.help.clone())),
+            help_shown: HelpShown::Inline,
+            availability,
+            Toggle {
+                label: files.label.clone(),
+                value: if files.on { Check::On } else { Check::Off },
                 availability,
                 onchange: move |next| on.switched.call((row.clone(), next == Check::On)),
             }

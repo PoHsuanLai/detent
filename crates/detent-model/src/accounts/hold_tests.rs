@@ -116,6 +116,7 @@ fn a_hold_belongs_to_its_account_and_sits_on_its_sync_row() {
             group: porter_core::sheet::ProviderGroup::Internet,
             services: Vec::new(),
             sync,
+            show_in_files: None,
             permissions: Vec::new(),
             reauth: None,
             sign_out: None,

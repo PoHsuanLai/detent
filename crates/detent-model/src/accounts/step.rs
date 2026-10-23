@@ -222,7 +222,7 @@ fn ready_step(
             ready.confirming = None;
         }
         AccountsInput::Switched { row, on } if idle => {
-            // A service and a sync switch are both a path and a state: the same Set.
+            // A service, a sync switch and Show in Files are each a path and a state: the same Set.
             let switch = ready
                 .pane
                 .accounts
@@ -230,7 +230,11 @@ fn ready_step(
                 .filter(|account| account.module == row.module)
                 .flat_map(|account| {
                     let services = account.services.iter_mut().map(|s| (&s.path, &mut s.on));
-                    services.chain(account.sync.iter_mut().map(|s| (&s.path, &mut s.on)))
+                    let sync = account
+                        .sync
+                        .iter_mut()
+                        .chain(account.show_in_files.as_mut());
+                    services.chain(sync.map(|s| (&s.path, &mut s.on)))
                 })
                 .find(|(path, held)| **path == row.path && **held != on);
             if let Some((_, held)) = switch {

@@ -493,6 +493,7 @@ fn row_word(key: &str) -> Option<&'static str> {
     match classify(ModuleId::Accountd, &spec, &described())? {
         (_, Row::AccountService(..)) => Some("service"),
         (_, Row::Sync(_)) => Some("sync"),
+        (_, Row::ShowInFiles(_)) => Some("files"),
         _ => Some("other"),
     }
 }
@@ -503,6 +504,7 @@ fn classify_tells_a_service_from_a_sync_switch_and_drops_an_unknown_leaf() {
         ("accounts.home.service.storage", Some("service")),
         ("accounts.home.sync.files", Some("sync")),
         ("accounts.work.example.sync.photos", Some("sync")),
+        ("accounts.work.example.storage.files", Some("files")),
         ("accounts.home.sync.other", None),
         ("accounts.home.mystery", None),
     ];

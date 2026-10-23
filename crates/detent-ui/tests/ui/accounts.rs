@@ -400,6 +400,49 @@ fn a_switch_sets_the_service_in_inferd_and_the_answer_stays_on_screen() {
     });
 }
 
+const SHOW_IN_FILES: &str = "[aria-label=\"Show in Files\"] .ds-toggle";
+const FILES_NOT_ON: &str = "Files wasn't turned on. You can try again.";
+
+#[test]
+fn show_in_files_is_syncds_switch_with_its_line_under_it_and_a_turn_on_is_a_set() {
+    let mirrored = vec![
+        Held::new("home", "Home sync", "ok", &[])
+            .syncing()
+            .showing_in_files(FILES_NOT_ON),
+    ];
+    let mut w = start_syncing(
+        "accounts-show-in-files",
+        Scheme::Light,
+        identities(),
+        &[Module::Accountd, Module::Inferd, Module::Syncd],
+        mirrored,
+        Syncd::default(),
+    );
+    open(&mut w, SYNC);
+    assert_eq!(
+        w.harness.attr(SHOW_IN_FILES, "aria-checked").as_deref(),
+        Some("false")
+    );
+    // The service's line stands under the switch, not behind the info button.
+    assert!(
+        w.harness
+            .text_of("[aria-label=\"Show in Files\"]")
+            .unwrap_or_default()
+            .contains(FILES_NOT_ON),
+        "{}",
+        w.harness.html()
+    );
+    click(&mut w.harness, SHOW_IN_FILES);
+    settle(&mut w.harness, "the set", |_| !w.syncd.sets().is_empty());
+    assert_eq!(
+        w.syncd.sets(),
+        [(
+            "accounts.home.storage.files".to_owned(),
+            toml::Value::String("on".to_owned())
+        )]
+    );
+}
+
 #[test]
 fn the_sync_switches_are_syncds_and_set_on_and_off_in_syncds_module() {
     let mut w = world("accounts-sync");
