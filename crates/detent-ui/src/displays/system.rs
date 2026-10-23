@@ -46,7 +46,10 @@ fn read_blocking() -> Result<DisplaysStatus, Missing> {
 }
 
 /// Tells `ticker` each time the compositor finishes describing the displays again, until nobody
-/// listens. It ends when the next change arrives after the page has gone.
+/// listens. It ends when the next change arrives after the page has gone, so it can wait in a
+/// read for as long as the displays stay as they are: it runs on a plain thread, never the
+/// runtime's blocking pool, whose shutdown waits for every task and so kept a closed Settings
+/// running (and holding its bus name) until the next display change.
 fn watch_blocking(ticker: &Ticker) {
     let Ok(mut client) = connect() else { return };
     while client.blocking_dispatch().is_ok() {
@@ -171,7 +174,13 @@ impl DisplaysLink for OnCompositor {
         Box::pin(async move {
             reachable?;
             let (ticker, ticks) = Ticks::channel();
-            Ok(ticks.with_relay(tokio::task::spawn_blocking(move || watch_blocking(&ticker))))
+            let watching = std::thread::Builder::new()
+                .name("detent-displays-watch".to_owned())
+                .spawn(move || watch_blocking(&ticker));
+            if let Err(fault) = watching {
+                eprintln!("detent: displays: no watch for changes: {fault}");
+            }
+            Ok(ticks)
         })
     }
 
