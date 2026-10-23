@@ -1,6 +1,7 @@
 //! The Intelligence page's assistants: where the built-in assistant may run, and the assistants
 //! that sign themselves in.
 
+mod add_flow;
 mod add_view;
 mod models;
 mod outside_view;

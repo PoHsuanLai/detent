@@ -2,6 +2,9 @@
 //! the Add sheet shows, the question before one is removed, and the sentences for every refusal.
 //! Pure; the files are read and written by `detent-files`.
 
+use super::add_choice::{
+    AddButton, Candidate, Listing, Presence, Step, download_failure, list_failure,
+};
 use crate::outside::Assistant;
 use docket_settings::{AddFault, AgentRow, ChoiceFault, NewAgent, Source, edit_agent_add};
 
@@ -51,39 +54,134 @@ pub fn unlisted_found(found: &[FoundAgent], rows: &[AgentRow]) -> Vec<FoundAgent
         .collect()
 }
 
+/// What Add does for the assistant picked.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Request {
+    /// It is installed: list it.
+    Add(NewAgent),
+    /// It is not: download `version` of `id`, then list it.
+    Install {
+        /// The id to download.
+        id: String,
+        /// The version to download.
+        version: String,
+        /// The entry to write once it is installed.
+        then: NewAgent,
+    },
+}
+
 /// The Add sheet's form: the assistants to choose from, the one chosen, and its name as typed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AddForm {
-    choices: Vec<FoundAgent>,
+    choices: Vec<Candidate>,
+    /// The programs and ids the list has already, which are not offered again.
+    listed: Vec<String>,
     picked: usize,
     label: String,
+    list: Listing,
+    step: Step,
     /// Why the last Add was refused, in words.
-    pub refusal: Option<&'static str>,
+    pub refusal: Option<String>,
+}
+
+fn listed_words(rows: &[AgentRow]) -> Vec<String> {
+    rows.iter()
+        .flat_map(|row| {
+            let id = match &row.source {
+                Source::Registry { id, .. } => Some(id.clone()),
+                Source::Own { .. } => None,
+            };
+            std::iter::once(row.program.clone()).chain(id)
+        })
+        .collect()
 }
 
 impl AddForm {
-    /// The form over `choices`, the first picked and named after itself; none for no choices.
-    pub fn open(choices: Vec<FoundAgent>) -> Option<Self> {
-        let label = choices.first()?.name();
-        Some(Self {
+    fn start(found: &[FoundAgent], rows: &[AgentRow], list: Listing) -> Self {
+        let choices: Vec<Candidate> = unlisted_found(found, rows)
+            .iter()
+            .map(Candidate::installed)
+            .collect();
+        let label = choices.first().map(|one| one.name.clone());
+        Self {
             choices,
+            listed: listed_words(rows),
             picked: 0,
-            label,
+            label: label.unwrap_or_default(),
+            list,
+            step: Step::Idle,
             refusal: None,
-        })
+        }
     }
 
-    /// What to choose from: each id with the name it reads as.
-    pub fn entries(&self) -> Vec<(String, String)> {
-        self.choices
+    /// The form while the list of assistants is fetched; the installed ones not in `rows` wait in it.
+    pub fn loading(found: &[FoundAgent], rows: &[AgentRow]) -> Self {
+        Self::start(found, rows, Listing::Loading)
+    }
+
+    /// The form over the installed assistants only, when there is nothing to fetch a list with.
+    pub fn offline(found: &[FoundAgent], rows: &[AgentRow]) -> Self {
+        Self::start(found, rows, Listing::Offline)
+    }
+
+    /// The form with the fetched `offers` first, in their order, then the installed ones the list
+    /// does not know; those `rows` have already are left out. Only a form still loading takes it.
+    pub fn catalogue(mut self, offers: Vec<Candidate>) -> Self {
+        if self.list != Listing::Loading {
+            return self;
+        }
+        let rest: Vec<Candidate> = self
+            .choices
             .iter()
-            .map(|one| (one.id.clone(), one.name()))
-            .collect()
+            .filter(|one| offers.iter().all(|offer| offer.id != one.id))
+            .cloned()
+            .collect();
+        self.choices = offers
+            .into_iter()
+            .chain(rest)
+            .filter(|one| !self.listed.contains(&one.id))
+            .collect();
+        self.picked = 0;
+        self.label = self
+            .choices
+            .first()
+            .map_or_else(String::new, |one| one.name.clone());
+        self.list = Listing::Listed;
+        self
+    }
+
+    /// The form with the reason the list was not fetched, the installed ones still offered. Only a
+    /// form still loading takes it.
+    pub fn unreachable(mut self, said: &str) -> Self {
+        if self.list == Listing::Loading {
+            self.list = Listing::Failed(list_failure(said));
+        }
+        self
+    }
+
+    /// How far the list has come.
+    pub fn listing(&self) -> &Listing {
+        &self.list
+    }
+
+    /// How far Add has come.
+    pub fn step(&self) -> Step {
+        self.step
+    }
+
+    /// What to choose from, in order.
+    pub fn entries(&self) -> &[Candidate] {
+        &self.choices
+    }
+
+    /// The assistant picked.
+    pub fn picked(&self) -> Option<&Candidate> {
+        self.choices.get(self.picked)
     }
 
     /// The id picked.
     pub fn picked_id(&self) -> &str {
-        self.choices.get(self.picked).map_or("", |one| &one.id)
+        self.picked().map_or("", |one| &one.id)
     }
 
     /// The name as typed.
@@ -91,10 +189,23 @@ impl AddForm {
         &self.label
     }
 
-    /// Picks `id`, and names the assistant after itself; an id not offered changes nothing.
+    /// What the Add button can do now.
+    pub fn button(&self) -> AddButton {
+        match (&self.list, self.step, self.choices.is_empty()) {
+            (_, Step::Starting | Step::Downloading, _) => AddButton::Busy,
+            (Listing::Loading, _, _) | (_, _, true) => AddButton::Off,
+            _ => AddButton::Ready,
+        }
+    }
+
+    /// Picks `id`, and names the assistant after itself; an id not offered changes nothing, and
+    /// nothing is picked while a download runs.
     pub fn pick(mut self, id: &str) -> Self {
+        if self.step != Step::Idle {
+            return self;
+        }
         if let Some(at) = self.choices.iter().position(|one| one.id == id) {
-            self.label = self.choices[at].name();
+            self.label = self.choices[at].name.clone();
             self.picked = at;
             self.refusal = None;
         }
@@ -108,21 +219,58 @@ impl AddForm {
         self
     }
 
-    /// What Add writes, checked the way docket checks it; the sentence for what it refuses.
-    pub fn request(&self) -> Result<NewAgent, &'static str> {
-        let found = self.choices.get(self.picked).ok_or(NOTHING_NEW)?;
+    /// What Add does, checked the way docket checks the entry; the sentence for what it refuses.
+    pub fn request(&self) -> Result<Request, &'static str> {
+        let found = self.picked().ok_or(NOTHING_NEW)?;
         let new = NewAgent {
             program: found.id.clone(),
             registry: found.id.clone(),
             version: found.version.clone(),
             label: self.label.trim().to_owned(),
         };
-        edit_agent_add("", &new).map(|_| new).map_err(add_refusal)
+        edit_agent_add("", &new).map_err(add_refusal)?;
+        Ok(match found.presence {
+            Presence::Installed => Request::Add(new),
+            Presence::Online => Request::Install {
+                id: found.id.clone(),
+                version: found.version.clone(),
+                then: new,
+            },
+        })
+    }
+
+    /// The form with the download asked for.
+    pub fn installing(mut self) -> Self {
+        self.step = Step::Starting;
+        self.refusal = None;
+        self
+    }
+
+    /// The form with the download begun.
+    pub fn downloading(mut self) -> Self {
+        if self.step == Step::Starting {
+            self.step = Step::Downloading;
+        }
+        self
+    }
+
+    /// What is said once the download has begun; nothing before.
+    pub fn download_line(&self) -> Option<String> {
+        let one = self.picked()?;
+        (self.step == Step::Downloading).then(|| format!("Downloading {}\u{2026}", one.name))
+    }
+
+    /// The form with the download's failure shown, ready for another Add.
+    pub fn install_failed(mut self, said: &str) -> Self {
+        self.step = Step::Idle;
+        self.refusal = Some(download_failure(said));
+        self
     }
 
     /// The form with the refusal of the write shown.
     pub fn refused(mut self, fault: AddFault) -> Self {
-        self.refusal = Some(add_refusal(fault));
+        self.step = Step::Idle;
+        self.refusal = Some(add_refusal(fault).to_owned());
         self
     }
 }

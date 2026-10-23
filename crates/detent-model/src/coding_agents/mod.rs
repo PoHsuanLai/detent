@@ -8,6 +8,7 @@
 //! agents: [`offers`] makes the list, [`with_agents`] lays it over the rows. Pure.
 
 mod add;
+mod add_choice;
 mod offer;
 
 #[cfg(test)]
@@ -16,8 +17,12 @@ mod add_tests;
 mod tests;
 
 pub use add::{
-    AddForm, FoundAgent, INTERNET_LINE, NOTHING_NEW, RemoveQuestion, add_refusal, removal_of,
-    remove_refusal, unlisted_found,
+    AddForm, FoundAgent, INTERNET_LINE, NOTHING_NEW, RemoveQuestion, Request, add_refusal,
+    removal_of, remove_refusal, unlisted_found,
+};
+pub use add_choice::{
+    AddButton, Candidate, DOWNLOAD_FAILED, LIST_FAILED, LOADING, Listing, Presence, Step,
+    download_failure, list_failure,
 };
 pub use offer::{AgentOffer, AgentReason, AgentStanding, offers};
 

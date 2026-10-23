@@ -3,10 +3,11 @@
 //! sign-in stands, and the way to its account). What the agent offered is what docket recorded
 //! when it last started; opening this page starts nothing.
 
+use super::add_flow;
 use super::add_view::{AddSheet, RemoveAlert};
 use crate::accounts::{AccountLink, OpenButton};
 use crate::env::Env;
-use detent_files::{add_agent, installed_agents, load_agents, remove_agent, save_agent_choice};
+use detent_files::{installed_agents, load_agents, remove_agent, save_agent_choice};
 use detent_model::{
     AccountsPane, AddForm, Assistant, Entry, FoundAgent, RemoveQuestion, assistants_of,
     model_choice, model_menu, model_word, removal_of, remove_refusal, unlisted_found, way_choice,
@@ -33,12 +34,12 @@ fn items_of(menu: &[Entry]) -> Vec<MenuItem<String>> {
 
 /// What docket's files say now: the assistants listed, and the installed ones not yet listed.
 #[derive(Clone)]
-struct Shown {
-    agents: Agents,
-    new: Vec<FoundAgent>,
+pub(super) struct Shown {
+    pub(super) agents: Agents,
+    pub(super) new: Vec<FoundAgent>,
 }
 
-fn shown(env: &Env) -> Shown {
+pub(super) fn shown(env: &Env) -> Shown {
     let agents = load_agents(&env.config_home, &env.data_home);
     let new = unlisted_found(&installed_agents(&env.data_home), &agents.rows);
     Shown { agents, new }
@@ -67,25 +68,7 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
     });
     let submit = EventHandler::new({
         let env = env.clone();
-        move |()| {
-            let Some(form) = adding.peek().clone() else {
-                return;
-            };
-            match form.request() {
-                Err(words) => {
-                    let mut refused = form;
-                    refused.refusal = Some(words);
-                    adding.set(Some(refused));
-                }
-                Ok(new) => match add_agent(&env.config_home, &new) {
-                    Ok(()) => {
-                        adding.set(None);
-                        now.set(shown(&env));
-                    }
-                    Err(fault) => adding.set(Some(form.refused(fault))),
-                },
-            }
-        }
+        move |()| add_flow::submit(&env, adding, now)
     });
     let answer = EventHandler::new({
         let env = env.clone();
@@ -103,10 +86,11 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
     let accounts: Vec<_> = pane.in_group(ProviderGroup::Agent).cloned().collect();
     let Shown { agents, new } = now();
     let rows = assistants_of(&agents.rows, &accounts);
-    if rows.is_empty() && new.is_empty() {
+    if rows.is_empty() && new.is_empty() && env.agents_program.is_none() {
         return rsx! {};
     }
-    let can_add = !new.is_empty();
+    // With the program that lists what is on offer, Add is there even when nothing is installed.
+    let can_add = !new.is_empty() || env.agents_program.is_some();
     rsx! {
         div { class: "assistants", "data-assistants": "coding",
             FieldGroup { title: Some(TITLE.to_owned()),
@@ -124,7 +108,10 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
                             common: Common { aria_label: Some("Add a coding assistant".to_owned()), ..Common::default() },
                             label: "Add\u{2026}",
                             size: ControlSize::Small,
-                            onclick: move |_| adding.set(AddForm::open(new.clone())),
+                            onclick: {
+                                let env = env.clone();
+                                move |_| add_flow::open(&env, adding, &now.peek())
+                            },
                         }
                     }
                 }
@@ -141,7 +128,7 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
                         adding.set(next);
                     },
                     submit,
-                    close: move |()| adding.set(None),
+                    close: move |()| add_flow::close(adding),
                 }
             }
             if let Some(question) = removing() {

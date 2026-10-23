@@ -86,6 +86,10 @@ pub struct Env {
     /// The value of `PATH`: where the coding agents already on this computer are looked for for
     /// the assistant's model. Empty until the launcher gives it, so a test finds none.
     pub programs_path: String,
+    /// The program that lists and downloads coding assistants, where the launcher found it. None
+    /// until it is given, so a test reaches no network and the Add sheet offers only the
+    /// assistants already installed.
+    pub agents_program: Option<PathBuf>,
     /// The pictures the Wallpaper page offers and the chooser that adds one: this computer's own
     /// unless a test hands in another.
     pub pictures: Arc<dyn Pictures>,
@@ -168,6 +172,7 @@ impl Env {
             entry_rule: OriginRule::Ownership,
             engines,
             programs_path: String::new(),
+            agents_program: None,
             pictures,
             corners,
             extensions,
@@ -237,6 +242,14 @@ impl Env {
     pub fn with_programs_path(self, programs_path: String) -> Env {
         Env {
             programs_path,
+            ..self
+        }
+    }
+
+    /// This environment downloading coding assistants with the program at `agents_program`.
+    pub fn with_agents_program(self, agents_program: Option<PathBuf>) -> Env {
+        Env {
+            agents_program,
             ..self
         }
     }

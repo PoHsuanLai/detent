@@ -2,9 +2,10 @@
 //! read in which a value no control can hold is kept as written and reported, unknown keys are
 //! reported and left alone, and a write that sets one key in place through an atomic
 //! temp-and-rename. The programs' own directory watches apply what is written;
-//! nothing here talks to a program.
+//! only `agents_tool` starts a program (the one that downloads coding assistants).
 
 mod agents;
+mod agents_tool;
 mod coding_agents;
 mod desktop_paths;
 mod error;
@@ -24,6 +25,7 @@ mod unknown;
 mod values;
 
 pub use agents::{add_agent, installed_agents, load_agents, remove_agent, save_agent_choice};
+pub use agents_tool::{AgentsTool, find_agents_program};
 pub use coding_agents::{agents_switch, programs_on, turn_on_agents};
 pub use error::FilesError;
 pub use extensions::ExtensionHome;

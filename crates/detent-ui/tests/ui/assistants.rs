@@ -630,7 +630,7 @@ fn an_installed_assistant_is_added_from_a_sheet_that_says_it_uses_the_internet()
     );
     let mut harness = sandbox.harness(intelligence());
     settle(&mut harness, "the group", |h| h.count(CODING_GROUP) == 1);
-    let open = format!("{CODING_GROUP} [aria-label=\"Add a coding assistant\"]");
+    let open = format!("{CODING_GROUP} button[aria-label=\"Add a coding assistant\"]");
     scroll_into_view(&mut harness, &open);
     click_when_still(&mut harness, &open);
     settle(&mut harness, "the sheet", |h| h.count(SHEET) == 1);

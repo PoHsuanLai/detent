@@ -68,6 +68,7 @@ pub struct Sandbox {
     wifi: Wifi,
     bluetooth: Bluetooth,
     displays: Displays,
+    agents_program: Option<std::path::PathBuf>,
 }
 
 impl Sandbox {
@@ -95,6 +96,8 @@ impl Sandbox {
             wifi: Wifi::missing(Missing::NoService),
             bluetooth: Bluetooth::missing(Missing::NoService),
             displays: Displays::missing(Missing::NoService),
+            // No program to list or download coding assistants with, whatever this computer has.
+            agents_program: None,
         }
     }
 
@@ -151,6 +154,14 @@ impl Sandbox {
     /// This world with the compositor's displays in this standing.
     pub fn with_displays(self, displays: Displays) -> Sandbox {
         Sandbox { displays, ..self }
+    }
+
+    /// This world downloading coding assistants with the program at `program`.
+    pub fn with_agents_program(self, program: std::path::PathBuf) -> Sandbox {
+        Sandbox {
+            agents_program: Some(program),
+            ..self
+        }
     }
 
     /// The log-out the Software Update page starts, to read how often it was asked.
@@ -236,6 +247,7 @@ impl Sandbox {
         .with_engines(self.engines.clone())
         .with_pictures(self.pictures.clone())
         .with_corners(self.corners.clone())
+        .with_agents_program(self.agents_program.clone())
         .with_os_release(self.os_release_path())
         .with_application_dirs(vec![self.scratch.join("applications")])
         .with_entry_rule(self.entry_rule())

@@ -8,7 +8,7 @@ mod dirs;
 use accounts::LiveAccounts;
 use clap::Parser;
 use cli::Run;
-use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles};
+use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles, find_agents_program};
 use detent_intents::{ServeFault, SettingsProvider, hand_over_session, serve_session};
 use detent_model::{PageSlug, inbox, is_assistant_setup};
 use detent_ui::{App, BusSource, Env, FirstRunApp, Homes, Opening};
@@ -59,6 +59,7 @@ fn environment(opening: Opening) -> Result<Env, ExitCode> {
         eprintln!("detent: neither XDG_CONFIG_HOME nor HOME is set, nowhere to keep settings");
         return Err(ExitCode::FAILURE);
     };
+    let path = std::env::var("PATH").unwrap_or_default();
     let env = Env::discover(
         &dirs::schema_dirs(),
         Homes {
@@ -75,7 +76,11 @@ fn environment(opening: Opening) -> Result<Env, ExitCode> {
     .with_application_dirs(dirs::application_dirs())
     .with_intent_dirs(dirs::intent_dirs())
     .with_system_data_dirs(dirs::system_data_dirs())
-    .with_programs_path(std::env::var("PATH").unwrap_or_default());
+    .with_programs_path(path.clone())
+    .with_agents_program(find_agents_program(
+        std::env::current_exe().ok().as_deref(),
+        &path,
+    ));
     for warning in &env.warnings {
         eprintln!("detent: {warning}");
     }

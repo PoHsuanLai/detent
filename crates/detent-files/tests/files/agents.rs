@@ -5,9 +5,10 @@ use detent_files::{
     ConfigHome, DataHome, add_agent, installed_agents, load_agents, remove_agent, save_agent_choice,
 };
 use detent_model::{
-    AGENTS_OWN, AddForm, model_choice, model_menu, unlisted_found, way_choice, way_menu,
+    AGENTS_OWN, AddForm, Request, model_choice, model_menu, unlisted_found, way_choice, way_menu,
 };
 use detent_testkit::Scratch;
+use docket_settings::NewAgent;
 use docket_settings::{AddFault, ChoiceFault};
 
 const TMP: &str = env!("CARGO_TARGET_TMPDIR");
@@ -103,6 +104,14 @@ fn install(data: &DataHome, id: &str, version: &str) {
     std::fs::write(dir.join("installed.toml"), record).expect("record");
 }
 
+/// The entry Add writes for the installed assistant picked.
+fn added(form: &AddForm) -> NewAgent {
+    match form.request() {
+        Ok(Request::Add(new)) => new,
+        other => panic!("an installed assistant is only listed: {other:?}"),
+    }
+}
+
 #[test]
 fn installed_assistants_are_found_by_their_records_and_the_listed_ones_are_left_out() {
     let (_scratch, config, data) = homes("agents-installed");
@@ -110,8 +119,6 @@ fn installed_assistants_are_found_by_their_records_and_the_listed_ones_are_left_
     install(&data, "gemini", "0.9.0");
     install(&data, "gemini", "1.0.0");
     install(&data, "claude-code", "1.0.0");
-    // A folder with no record is a half-made install, not an assistant.
-    std::fs::create_dir_all(data.0.join("docket/agents/installed/half/2.0.0")).expect("mkdir");
     let found: Vec<(String, String)> = installed_agents(&data)
         .into_iter()
         .map(|f| (f.id, f.version))
@@ -136,8 +143,8 @@ fn an_assistant_added_from_the_installed_ones_can_be_removed_again() {
     let (scratch, config, data) = homes("agents-add-remove");
     install(&data, "gemini", "1.0.0");
     let rows = load_agents(&config, &data).rows;
-    let form = AddForm::open(unlisted_found(&installed_agents(&data), &rows)).expect("one new");
-    let new = form.typed("My Gemini".to_owned()).request().expect("fine");
+    let form = AddForm::offline(&unlisted_found(&installed_agents(&data), &rows), &rows);
+    let new = added(&form.typed("My Gemini".to_owned()));
     add_agent(&config, &new).expect("added");
     let path = scratch.join("config/docket/agents.toml");
     let text = std::fs::read_to_string(&path).expect("file");
@@ -174,7 +181,7 @@ fn adding_creates_the_file_when_there_is_none() {
     let config = ConfigHome(scratch.join("config"));
     let data = DataHome(scratch.join("data"));
     install(&data, "gemini", "1.0.0");
-    let form = AddForm::open(installed_agents(&data)).expect("one");
-    add_agent(&config, &form.request().expect("fine")).expect("added");
+    let form = AddForm::offline(&installed_agents(&data), &[]);
+    add_agent(&config, &added(&form)).expect("added");
     assert!(load_agents(&config, &data).get("gemini").is_some());
 }

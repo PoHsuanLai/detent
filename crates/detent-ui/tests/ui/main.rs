@@ -25,6 +25,7 @@ mod local_models;
 mod local_runtimes;
 mod memory_consent;
 mod notices;
+mod online_assistants;
 mod privacy;
 mod screen_sharing;
 mod shortcuts;

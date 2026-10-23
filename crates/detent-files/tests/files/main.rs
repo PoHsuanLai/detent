@@ -2,6 +2,7 @@
 //! A separate test target needs a stated reason (CONVENTIONS.md, Tests).
 
 mod agents;
+mod agents_tool;
 mod extensions;
 mod first_run_mark;
 mod intents;

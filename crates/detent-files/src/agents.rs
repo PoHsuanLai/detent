@@ -6,7 +6,6 @@ use crate::read::text_of;
 use crate::values::{ConfigHome, DataHome};
 use detent_model::FoundAgent;
 use docket_agents::AgentsDir;
-use docket_agents::slug::Slug;
 use docket_settings::{
     AddFault, AgentChoice, Agents, ChoiceFault, NewAgent, read_agents, write_agent_add,
     write_agent_choice, write_agent_remove,
@@ -16,7 +15,7 @@ use docket_settings::{
 const AGENTS_FILE: &str = "docket/agents.toml";
 
 /// Where docket keeps what it installed and what each agent offered, under the data directory.
-const AGENTS_DIR: &str = "docket/agents";
+pub(crate) const AGENTS_DIR: &str = "docket/agents";
 
 /// The agents `docket/agents.toml` lists, none when there is no file.
 pub fn load_agents(config: &ConfigHome, data: &DataHome) -> Agents {
@@ -50,19 +49,9 @@ pub fn save_agent_choice(
 /// each id with its last installed version, in name order. Only files are read; nothing is
 /// started and no network is used.
 pub fn installed_agents(data: &DataHome) -> Vec<FoundAgent> {
-    let root = data.0.join(AGENTS_DIR);
-    let dir = AgentsDir::at(&root);
-    let Ok(read) = std::fs::read_dir(root.join("installed")) else {
-        return Vec::new();
-    };
-    let mut ids: Vec<Slug> = read
-        .filter_map(|entry| {
-            let name = entry.ok()?.file_name();
-            Slug::parse(name.to_str()?).ok()
-        })
-        .collect();
-    ids.sort();
-    ids.into_iter()
+    let dir = AgentsDir::at(&data.0.join(AGENTS_DIR));
+    dir.agents()
+        .into_iter()
         .filter_map(|id| {
             let version = dir.versions(&id).pop()?;
             Some(FoundAgent {
