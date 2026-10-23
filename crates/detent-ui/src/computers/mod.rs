@@ -3,6 +3,7 @@
 //! computers asking to borrow this one's.
 
 mod io;
+mod server_sheet;
 mod view;
 
 pub(crate) use io::inferd;

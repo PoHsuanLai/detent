@@ -1,7 +1,8 @@
 //! The "Your computers" group (its rows are the assistant's places, drawn by the Assistants block),
 //! the Add list, and the group of computers asking to use this one's models.
 
-use super::io::{Change, Watch, candidates, change, read};
+use super::io::{Change, Watch, candidates, change, models, read};
+use super::server_sheet::ServerSheetView;
 use crate::assistants::{PlaceEntry, PlaceRow};
 use crate::env::Env;
 use crate::live::{BusSource, Daemon, next_owner, owner_changes};
@@ -27,6 +28,10 @@ const GUESTS_TITLE: &str = "Computers asking to use this computer's models";
 
 /// What the list says before a computer is added.
 const NONE_YET: &str = "Computers you add appear here. Each starts off.";
+
+/// What the Add a server row says it is for.
+const ADD_SERVER_HELP: &str =
+    "A model server you already run on this computer, such as one started by hand.";
 
 /// What the Add list says when Tailscale knows no computer of the person's that lends.
 const NOBODY_LENDING: &str = "None of your other computers is lending its models. On the other \
@@ -58,9 +63,11 @@ fn change_of(effect: ComputersEffect) -> Option<Change> {
         ComputersEffect::Remove(id) => Some(Change::Remove(id)),
         ComputersEffect::Answer(node, answer) => Some(Change::Answer(node, answer)),
         ComputersEffect::Forget(node) => Some(Change::Forget(node)),
-        ComputersEffect::Reload | ComputersEffect::LoadCandidates | ComputersEffect::Tell(_) => {
-            None
-        }
+        ComputersEffect::AddServer(draft) => Some(Change::Server(draft)),
+        ComputersEffect::Reload
+        | ComputersEffect::LoadCandidates
+        | ComputersEffect::LoadServerModels
+        | ComputersEffect::Tell(_) => None,
     }
 }
 
@@ -89,11 +96,23 @@ fn drive(
                     drive(state, toasts, bus, ComputersInput::Candidates(found));
                 });
             }
+            ComputersEffect::LoadServerModels => {
+                spawn(async move {
+                    let found = models(&bus).await;
+                    drive(state, toasts, bus, ComputersInput::ServerModels(found));
+                });
+            }
             other => {
                 if let Some(asked) = change_of(other) {
+                    let server = matches!(asked, Change::Server(_));
                     spawn(async move {
                         let ended = change(&bus, asked).await;
-                        drive(state, toasts, bus, ComputersInput::Changed(ended));
+                        let input = if server {
+                            ComputersInput::ServerAdded(ended)
+                        } else {
+                            ComputersInput::Changed(ended)
+                        };
+                        drive(state, toasts, bus, input);
                     });
                 }
             }
@@ -194,6 +213,16 @@ fn Listed(
                 for row in rows {
                     PlaceRow { key: "{row.view.name}", view: row.view, on: row.on }
                 }
+                FieldRow { label: TextLine::from("Add a server"),
+                    help: Some(TextLine::from(ADD_SERVER_HELP)),
+                    help_shown: HelpShown::OnRequest,
+                    Button {
+                        common: Common { aria_label: Some("Add a server".to_owned()), id: Some("add-server".to_owned()), ..Common::default() },
+                        label: "Add a server\u{2026}",
+                        size: ControlSize::Small,
+                        onclick: move |_| feed.call(ComputersInput::OpenServer),
+                    }
+                }
                 FieldRow { label: TextLine::from("Add a computer"),
                     Button {
                         common: Common { aria_label: Some("Add a computer".to_owned()), ..Common::default() },
@@ -203,6 +232,9 @@ fn Listed(
                         onclick: move |_| feed.call(ComputersInput::OpenAdd),
                     }
                 }
+            }
+            if let Some(sheet) = ready.server.clone() {
+                ServerSheetView { sheet, feed }
             }
             match ready.adding.clone() {
                 AddList::Closed => rsx! {},

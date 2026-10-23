@@ -157,6 +157,14 @@ impl Inferd {
         connection
     }
 
+    /// Serves the module on `connection` without taking inferd's bus name, for a test whose other
+    /// fake serves inferd's own interface on the same connection and takes the name after.
+    pub async fn serve_module(&self, connection: &zbus::Connection) {
+        serve(connection, INFERENCE_SETTINGS_PATH, self.clone())
+            .await
+            .expect("serves");
+    }
+
     /// The text slot's Automatic list: the slot's models, without the empty word and Automatic.
     fn pool_spec(&self) -> KeySpec {
         let models = WORDS[2..].to_vec();

@@ -8,6 +8,8 @@ use porter_core::NodeId;
 use porter_core::lending::{ComputerCandidate, GuestAnswer, GuestRow};
 use porter_infer::{ComputerName, PlaceKind, PlaceRow, PlaceState, PlaceTarget};
 
+use super::server::{ServerDraft, ServerEdit, ServerModel, ServerPhase, ServerSheet};
+
 /// Whether a computer answers now.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Standing {
@@ -77,6 +79,8 @@ pub struct ComputersReady {
     pub guests: Vec<GuestRow>,
     /// The Add list.
     pub adding: AddList,
+    /// The Add a server sheet, while it is open.
+    pub server: Option<ServerSheet>,
 }
 
 /// Where the computers stand.
@@ -103,6 +107,18 @@ pub enum ComputersInput {
     Forget(NodeId),
     /// A change ended: done, or the sentence that says why not.
     Changed(Result<(), String>),
+    /// The person pressed Add a server.
+    OpenServer,
+    /// The models a server may run were read.
+    ServerModels(Vec<ServerModel>),
+    /// The person changed the Add a server sheet.
+    ServerEdit(ServerEdit),
+    /// The person pressed Add on the sheet.
+    AddServer,
+    /// The person pressed Cancel on the sheet.
+    CloseServer,
+    /// Adding the server ended: done, or the service's sentence.
+    ServerAdded(Result<(), String>),
 }
 
 /// What the caller must do.
@@ -120,6 +136,10 @@ pub enum ComputersEffect {
     Answer(NodeId, GuestAnswer),
     /// Forget the guest.
     Forget(NodeId),
+    /// Ask which models a server may run.
+    LoadServerModels,
+    /// Add the server.
+    AddServer(ServerDraft),
     /// Tell the person something.
     Tell(String),
 }
@@ -137,6 +157,7 @@ pub fn computers_step(
                     computers: found.computers,
                     guests: found.guests,
                     adding: AddList::Closed,
+                    server: None,
                 },
                 |ready, found| ComputersReady {
                     computers: found.computers,
@@ -187,6 +208,51 @@ fn ready_step(
             effects.push(ComputersEffect::Reload);
         }
         ComputersInput::Found(_) => {}
+        server => server_step(&mut ready, &mut effects, server),
     }
     (ready, effects)
+}
+
+/// The Add a server sheet's part of the transition.
+fn server_step(
+    ready: &mut ComputersReady,
+    effects: &mut Vec<ComputersEffect>,
+    input: ComputersInput,
+) {
+    match (input, ready.server.take()) {
+        (ComputersInput::OpenServer, _) => {
+            ready.server = Some(ServerSheet::opened());
+            effects.push(ComputersEffect::LoadServerModels);
+        }
+        (ComputersInput::ServerModels(models), Some(sheet)) => {
+            ready.server = Some(sheet.offering(models));
+        }
+        (ComputersInput::ServerEdit(edit), Some(mut sheet))
+            if sheet.phase == ServerPhase::Editing =>
+        {
+            sheet.form = sheet.form.edited(edit);
+            sheet.fault = None;
+            ready.server = Some(sheet);
+        }
+        (ComputersInput::AddServer, Some(mut sheet)) if sheet.phase == ServerPhase::Editing => {
+            match sheet.form.check() {
+                Ok(draft) => {
+                    sheet.phase = ServerPhase::Adding;
+                    sheet.fault = None;
+                    effects.push(ComputersEffect::AddServer(draft));
+                }
+                Err(fault) => sheet.fault = Some(fault.words().to_owned()),
+            }
+            ready.server = Some(sheet);
+        }
+        (ComputersInput::CloseServer, Some(sheet)) if sheet.phase == ServerPhase::Adding => {
+            ready.server = Some(sheet);
+        }
+        (ComputersInput::CloseServer, _) => {}
+        (ComputersInput::ServerAdded(Ok(())), Some(_)) => effects.push(ComputersEffect::Reload),
+        (ComputersInput::ServerAdded(Err(sentence)), Some(sheet)) => {
+            ready.server = Some(sheet.refused(sentence));
+        }
+        (_, sheet) => ready.server = sheet,
+    }
 }

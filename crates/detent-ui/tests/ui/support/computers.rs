@@ -4,6 +4,7 @@
 #![allow(dead_code)]
 
 use super::bus::PrivateBus;
+use super::inferd::Inferd;
 use porter_dbus::names::{
     CANDIDATE_KEY_MODELS, CANDIDATE_KEY_NAME, CANDIDATE_KEY_NEEDS_APPROVAL, GUEST_KEY_NAME,
     GUEST_KEY_SINCE, GUEST_KEY_STATE, INFERENCE_BUS, INFERENCE_PATH, PLACE_KEY_KIND,
@@ -207,6 +208,43 @@ impl Inference {
         Ok(())
     }
 
+    /// `AddComputer`: what was asked is written down as `add_server <name> <model> port=<n> key=<yes|no>`
+    /// (or `socket=<path>`); the key itself is never written. The computer then shows in `Places`.
+    async fn add_computer(
+        &self,
+        #[zbus(signal_emitter)] emitter: SignalEmitter<'_>,
+        name: String,
+        models: Vec<(String, Details)>,
+    ) -> Result<String, Refusal> {
+        self.refusal()?;
+        let mut served: Vec<(&'static str, &'static str)> = Vec::new();
+        for (model, details) in &models {
+            let reach = match (details.get("port"), details.get("socket")) {
+                (Some(port), _) => u16::try_from(port.try_clone().expect("a port"))
+                    .map_or_else(|_| "port=?".to_owned(), |port| format!("port={port}")),
+                (None, Some(path)) => String::try_from(path.try_clone().expect("a path"))
+                    .map_or_else(|_| "socket=?".to_owned(), |path| format!("socket={path}")),
+                (None, None) => "no way".to_owned(),
+            };
+            let key = if details.contains_key("key") {
+                "yes"
+            } else {
+                "no"
+            };
+            self.note(format!("add_server {name} {model} {reach} key={key}"));
+            let model: &'static str = Box::leak(model.clone().into_boxed_str());
+            served.push((model, model));
+        }
+        let own = Own {
+            name: Box::leak(name.clone().into_boxed_str()),
+            models: Box::leak(served.into_boxed_slice()),
+            ready: true,
+        };
+        self.state.lock().expect("state").own.push(own);
+        let _ = Self::engines_changed(&emitter).await;
+        Ok(format!("computer:{name}"))
+    }
+
     async fn guests(&self) -> Vec<(String, Details)> {
         let state = self.state.lock().expect("state");
         state
@@ -311,6 +349,18 @@ pub async fn serve(
     lenders: Vec<Lender>,
     askers: Vec<Asker>,
 ) -> Fake {
+    serve_with(bus, own, lenders, askers, None).await
+}
+
+/// The same, with the model picker's module (`models`) served on the same connection, so the
+/// Add a server sheet finds the models inferd lists.
+pub async fn serve_with(
+    bus: &PrivateBus,
+    own: Vec<Own>,
+    lenders: Vec<Lender>,
+    askers: Vec<Asker>,
+    models: Option<&Inferd>,
+) -> Fake {
     let log: Log = Arc::default();
     let state = Arc::new(Mutex::new(State {
         own,
@@ -319,6 +369,9 @@ pub async fn serve(
         refuse: None,
     }));
     let connection = bus.connect().await;
+    if let Some(module) = models {
+        module.serve_module(&connection).await;
+    }
     connection
         .object_server()
         .at(

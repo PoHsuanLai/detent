@@ -7,8 +7,9 @@
 use crate::support::Sandbox;
 use crate::support::accountd::{Accountd, Held, Policy};
 use crate::support::bus::PrivateBus;
-use crate::support::computers::{Asker, Fake, Lender, Own, serve};
-use crate::support::drive::{click, click_when_still, scroll_into_view};
+use crate::support::computers::{Asker, Fake, Lender, Own, serve_with};
+use crate::support::drive::{click, click_when_still, scroll_into_view, type_into};
+use crate::support::inferd::{Inferd, Policy as InferdPolicy};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use docket_settings::{CloudAllowed, Toggle, read_places};
@@ -293,6 +294,19 @@ fn computers(name: &str, own: Vec<Own>, lenders: Vec<Lender>, askers: Vec<Asker>
     computers_in(name, None, own, lenders, askers)
 }
 
+/// The same, with inferd's model picker served beside the computers: the models the Add a server
+/// sheet offers.
+fn computers_with_models(name: &str, own: Vec<Own>) -> Computers {
+    build(
+        name,
+        None,
+        own,
+        vec![],
+        vec![],
+        Some(Inferd::new(InferdPolicy::Allow).on_slots()),
+    )
+}
+
 /// The same, in a world whose docket file holds `file`.
 fn computers_in(
     name: &str,
@@ -301,13 +315,24 @@ fn computers_in(
     lenders: Vec<Lender>,
     askers: Vec<Asker>,
 ) -> Computers {
+    build(name, file, own, lenders, askers, None)
+}
+
+fn build(
+    name: &str,
+    file: Option<&str>,
+    own: Vec<Own>,
+    lenders: Vec<Lender>,
+    askers: Vec<Asker>,
+    models: Option<Inferd>,
+) -> Computers {
     let rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()
         .build()
         .expect("a runtime for the fake daemon");
     let bus = PrivateBus::start(name);
-    let fake = rt.block_on(serve(&bus, own, lenders, askers));
+    let fake = rt.block_on(serve_with(&bus, own, lenders, askers, models.as_ref()));
     let sandbox = Sandbox::new(name).on_bus(&bus.address);
     if let Some(text) = file {
         sandbox.write(SETTINGS, text);
@@ -379,6 +404,72 @@ fn add_lists_the_lenders_and_adding_one_moves_it_into_the_list() {
         1,
         "one row, not two: {text}"
     );
+}
+
+const SERVER_SHEET: &str = "[data-system=\"add-server\"]";
+
+#[test]
+fn a_server_is_added_from_its_sheet_and_shows_in_the_list_with_remove() {
+    let mut c = computers_with_models("computers-server", vec![LAB_COMPUTER]);
+    press(&mut c.harness, "Add a server");
+    settle(&mut c.harness, "the sheet", |h| h.count(SERVER_SHEET) == 1);
+    let sheet = c.harness.text_of(SERVER_SHEET).unwrap_or_default();
+    assert!(
+        sheet.contains("The server must answer on this computer."),
+        "{sheet}"
+    );
+    settle(&mut c.harness, "the models", |h| {
+        h.count("#server-model") == 1
+    });
+    type_into(&mut c.harness, "#server-name", "studio");
+    type_into(&mut c.harness, "#server-port", "8080");
+    click(&mut c.harness, "#server-add");
+    settle(&mut c.harness, "the server in the list", |h| {
+        h.count(SERVER_SHEET) == 0 && group_text(h).contains("studio")
+    });
+    assert_eq!(
+        c.fake.changes(),
+        ["add_server studio qwen port=8080 key=no"]
+    );
+    assert_eq!(
+        c.harness
+            .count(&format!("{GROUP} .ds-button[aria-label=\"Remove studio\"]")),
+        1
+    );
+}
+
+#[test]
+fn a_sheet_that_asks_for_nothing_sendable_tells_why_and_calls_nothing() {
+    let mut c = computers_with_models("computers-server-bad", vec![LAB_COMPUTER]);
+    press(&mut c.harness, "Add a server");
+    settle(&mut c.harness, "the sheet", |h| h.count(SERVER_SHEET) == 1);
+    click(&mut c.harness, "#server-add");
+    settle(&mut c.harness, "the sentence", |h| {
+        h.text_of(SERVER_SHEET)
+            .unwrap_or_default()
+            .contains("Give the server a name.")
+    });
+    assert_eq!(c.fake.changes(), Vec::<String>::new());
+}
+
+#[test]
+fn a_refused_server_keeps_the_sheet_open_with_the_services_sentence() {
+    let mut c = computers_with_models("computers-server-refused", vec![LAB_COMPUTER]);
+    press(&mut c.harness, "Add a server");
+    settle(&mut c.harness, "the sheet", |h| h.count(SERVER_SHEET) == 1);
+    settle(&mut c.harness, "the models", |h| {
+        h.count("#server-model") == 1
+    });
+    type_into(&mut c.harness, "#server-name", "studio");
+    type_into(&mut c.harness, "#server-port", "8080");
+    c.fake.refuse_next("NotAnswering");
+    click(&mut c.harness, "#server-add");
+    settle(&mut c.harness, "the sentence", |h| {
+        h.text_of(SERVER_SHEET)
+            .unwrap_or_default()
+            .contains("The sentence for NotAnswering.")
+    });
+    assert_eq!(c.harness.count(SERVER_SHEET), 1);
 }
 
 #[test]
