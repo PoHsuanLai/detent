@@ -33,6 +33,7 @@ mod page_view;
 mod pictures;
 mod privacy;
 mod reported;
+mod running;
 mod screen_sharing;
 mod section_view;
 mod sharing;

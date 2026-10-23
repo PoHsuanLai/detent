@@ -6,5 +6,5 @@ mod io;
 mod server_sheet;
 mod view;
 
-pub(crate) use io::inferd;
+pub(crate) use io::{inferd, relay};
 pub(crate) use view::{Computers, use_computers};

@@ -19,6 +19,7 @@ pub mod lending;
 pub mod memory;
 pub mod pictures;
 pub mod portal;
+pub mod running;
 pub mod spaces;
 pub mod syncd;
 pub mod updates;

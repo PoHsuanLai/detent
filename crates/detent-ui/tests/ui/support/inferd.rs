@@ -76,6 +76,15 @@ fn places_of(words: &[(&str, &str, Option<&str>)]) -> BTreeMap<ChoiceWord, Choic
         .collect()
 }
 
+/// The engine program rows the fake lists when asked to, with their labels.
+const PROGRAMS: &[(&str, &str)] = &[
+    ("engines.vllm_python", "vLLM's Python"),
+    ("engines.llama_server", "llama-server"),
+];
+
+/// What the module refuses a path that is not whole with, as the real one words it.
+pub const NOT_WHOLE: &str = "Give the whole path of the program, starting with a slash.";
+
 /// The key of the text slot's Automatic list.
 const POOL_KEY: &str = "ai.auto.pool.text";
 
@@ -112,6 +121,8 @@ pub struct Inferd {
     pub pool: Arc<Mutex<Vec<String>>>,
     /// Every list `Set` on the Automatic list that arrived, in order.
     pub pool_sets: Arc<Mutex<Vec<Vec<String>>>>,
+    /// The engine program rows (`engines.*`, text, advanced) and their values; none by default.
+    pub programs: Arc<Mutex<BTreeMap<String, String>>>,
     /// The line the slots layout's rows and Automatic list carry as their `note`.
     note: Option<String>,
     policy: Policy,
@@ -128,6 +139,7 @@ impl Inferd {
             gated: Arc::default(),
             pool: Arc::default(),
             pool_sets: Arc::default(),
+            programs: Arc::default(),
             note: None,
             policy,
             layout: Layout::Kinds,
@@ -137,6 +149,17 @@ impl Inferd {
     /// The same fake serving slot keys.
     pub fn on_slots(mut self) -> Inferd {
         self.layout = Layout::Slots;
+        self
+    }
+
+    /// The same fake listing the two engine program rows, both empty (the program is found by
+    /// itself). A path that is not whole is refused as the real module refuses it.
+    pub fn with_programs(self) -> Inferd {
+        self.programs.lock().expect("programs").extend(
+            PROGRAMS
+                .iter()
+                .map(|(path, _)| ((*path).to_owned(), String::new())),
+        );
         self
     }
 
@@ -204,6 +227,27 @@ impl Inferd {
                 .collect(),
             places: places_of(&models),
             note: self.note.clone().map(Note),
+        }
+    }
+
+    /// The row of an engine program: advanced text in "Local models".
+    fn program_spec(path: &str, label: &str) -> KeySpec {
+        KeySpec {
+            control: None,
+            path: KeyPath(path.to_owned()),
+            kind: KeyKind::Text,
+            default: toml::Value::String(String::new()),
+            label: Label(label.to_owned()),
+            help: Help("Leave it empty and this computer finds it itself.".to_owned()),
+            page: Page::Intelligence,
+            section: Section("Local models".to_owned()),
+            exposure: Exposure::Advanced,
+            labels: WordLabels(BTreeMap::new()),
+            agent: AgentSetting::HandsOff,
+            unavailable: BTreeMap::new(),
+            groups: BTreeMap::new(),
+            places: BTreeMap::new(),
+            note: None,
         }
     }
 
@@ -294,6 +338,12 @@ impl LiveModule for Inferd {
             .iter()
             .map(|(kind, label, tier)| self.spec(kind, label, tier))
             .chain(matches!(self.layout, Layout::Slots).then(|| self.pool_spec()))
+            .chain(
+                PROGRAMS
+                    .iter()
+                    .filter(|(path, _)| self.programs.lock().expect("programs").contains_key(*path))
+                    .map(|(path, label)| Inferd::program_spec(path, label)),
+            )
             .collect(),
         }
     }
@@ -304,6 +354,9 @@ impl LiveModule for Inferd {
             return Ok(toml::Value::Array(
                 pool.into_iter().map(toml::Value::String).collect(),
             ));
+        }
+        if let Some(program) = self.programs.lock().expect("programs").get(&key.0) {
+            return Ok(toml::Value::String(program.clone()));
         }
         let values = self.values.lock().expect("values");
         Ok(toml::Value::String(
@@ -330,6 +383,21 @@ impl LiveModule for Inferd {
         let toml::Value::String(word) = value else {
             return Err(LiveError::BadValue("a model is text".to_owned()));
         };
+        let is_program = self.programs.lock().expect("programs").contains_key(&key.0);
+        if is_program {
+            if !word.is_empty() && !word.starts_with('/') {
+                return Err(LiveError::BadValue(NOT_WHOLE.to_owned()));
+            }
+            self.sets
+                .lock()
+                .expect("sets")
+                .push((key.0.clone(), word.clone()));
+            self.programs
+                .lock()
+                .expect("programs")
+                .insert(key.0.clone(), word);
+            return Ok(());
+        }
         self.sets
             .lock()
             .expect("sets")

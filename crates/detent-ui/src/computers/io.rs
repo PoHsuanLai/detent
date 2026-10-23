@@ -171,7 +171,7 @@ pub(super) struct Watch {
 }
 
 /// Tells `out` each time `stream` yields, until the stream ends or nobody listens.
-async fn relay(mut stream: impl BusStream<Item = impl Send> + Unpin, out: Ticker) {
+pub(crate) async fn relay(mut stream: impl BusStream<Item = impl Send> + Unpin, out: Ticker) {
     while std::future::poll_fn(|cx| std::pin::Pin::new(&mut stream).poll_next(cx))
         .await
         .is_some()

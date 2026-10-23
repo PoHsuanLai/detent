@@ -14,6 +14,7 @@ mod turn_on;
 
 pub(crate) use drive::{Picker, use_picker};
 pub(crate) use io::{is_choice, set, set_pool};
+pub(crate) use note::NoteLine;
 pub(crate) use picker_view::{ModelPicker, Unavailable, show_reason};
 pub use reasons::ReasonFeed;
 pub(crate) use runtimes_view::LocalRuntimes;

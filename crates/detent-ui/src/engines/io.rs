@@ -51,3 +51,8 @@ pub(crate) async fn restart(bus: &BusSource) -> Restarted {
         Some(Err(_)) | None => Restarted::Failed,
     }
 }
+
+/// The rows of inferd's module whose value the program rows read: its text rows.
+pub(super) fn is_text(kind: &ds_settings::schema::KeyKind) -> bool {
+    matches!(kind, ds_settings::schema::KeyKind::Text)
+}

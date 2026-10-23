@@ -40,6 +40,7 @@ mod range;
 mod reads;
 mod reason;
 mod rows;
+mod running;
 mod screen_sharing;
 mod search;
 mod sharing;
@@ -113,9 +114,11 @@ pub use engine_install::{
     SheetWords, Waiting, engine_named, engine_sheet_step, sheet_words, size_words,
 };
 pub use engines::{
-    EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LLAMA_CPP_ID, ListedEngine, LlamaCpp,
-    Program, RELEASES_LINE, RESTART, Restart, Restarted, SETUP_LINE, START_USING, SetupNote,
-    StartButton, engines_step, install_advice, llama_cpp_of, restart_question, setup_note,
+    EnginesEffect, EnginesInput, EnginesState, FOUND_AUTOMATICALLY, InstallAdvice, LLAMA_CPP_ID,
+    ListedEngine, LlamaCpp, PROGRAMS_SECTION, Program, ProgramRow, Programs, ProgramsEffect,
+    ProgramsInput, ProgramsPane, RELEASES_LINE, RESTART, Restart, Restarted, SETUP_LINE,
+    START_USING, SetupNote, StartButton, engines_step, install_advice, llama_cpp_of, program_rows,
+    programs_step, restart_question, setup_note,
 };
 pub use entry::KeyEntry;
 pub use extensions::{
@@ -165,6 +168,10 @@ pub use range::{Number, Range};
 pub use reads::modules_read;
 pub use reason::Reason;
 pub use rows::Columns;
+pub use running::{
+    InFlight, ModelRun, RunBoard, RunButton, RunEffect, RunInput, RunPane, RunRowView, RunStanding,
+    memory_words, model_name, running_step,
+};
 pub use screen_sharing::{
     APP_ID_MAX, GRANTS_MAX, ScreenGrant, ScreenSharingEffect, ScreenSharingInput,
     ScreenSharingReady, ScreenSharingState, ShareLength, grant_line, screen_sharing_step,

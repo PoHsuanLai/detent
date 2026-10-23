@@ -21,6 +21,7 @@ mod intelligence;
 mod intelligence_programs;
 mod lending;
 mod local_engines;
+mod local_models;
 mod local_runtimes;
 mod memory_consent;
 mod notices;
