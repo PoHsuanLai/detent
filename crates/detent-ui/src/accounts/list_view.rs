@@ -109,14 +109,30 @@ fn second_line(account: &Account) -> String {
         .map_or_else(|| account.status.label(), |provider| provider.name.clone())
 }
 
+/// How an account that is not fine stands, or what is coming to one that is; nothing for one that
+/// is fine.
+fn standing(status: &AccountStatus, attention: Option<Attention>) -> Option<String> {
+    match (status, attention) {
+        (AccountStatus::Ok, None) => None,
+        (AccountStatus::Ok, Some(attention)) => Some(attention.badge_label().to_owned()),
+        _ => Some(status.label()),
+    }
+}
+
+/// The row's name as a screen reader says it: the account, its second line, and how it stands
+/// when its dot shows ("ada@example.com, Microsoft, Needs sign-in").
+fn row_name(account: &Account) -> String {
+    let mut words = vec![account.label.clone(), second_line(account)];
+    words.extend(standing(&account.status, Attention::of(account)));
+    words.join(", ")
+}
+
 /// A dot after the words of an account that is not fine, named by how it stands; an account that
 /// is fine but about to be signed out has one too, named by what is coming.
 #[component]
 fn StandingDot(status: AccountStatus, attention: Option<Attention>) -> Element {
-    let name = match (&status, attention) {
-        (AccountStatus::Ok, None) => return rsx! {},
-        (AccountStatus::Ok, Some(attention)) => attention.badge_label().to_owned(),
-        _ => status.label(),
+    let Some(name) = standing(&status, attention) else {
+        return rsx! {};
     };
     rsx! {
         Badge {
@@ -171,6 +187,7 @@ fn account_item(
                 state,
                 common: Common {
                     id: Some(row_id("account", &key.0)),
+                    aria_label: Some(row_name(account)),
                     ..Common::default()
                 },
                 onclick: move |_| onselect.call(picked.clone()),

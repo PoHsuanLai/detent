@@ -333,6 +333,14 @@ fn the_list_stays_beside_the_detail_of_the_account_chosen_in_it() {
             account.id
         );
     }
+    // A row is named by its words, read apart, and by its dot when it has one.
+    let name = |row: &str| w.harness.attr(row, "aria-label").unwrap_or_default();
+    let home = name(HOME.row);
+    assert!(home.starts_with("Home cloud, "), "{home}");
+    assert_eq!(home.split(", ").count(), 2, "{home}");
+    let work = name(WORK.row);
+    assert!(work.starts_with("Work mail, "), "{work}");
+    assert_eq!(work.split(", ").count(), 3, "the standing is said: {work}");
     // Only an account that is not fine has a dot after its words.
     assert_eq!(
         w.harness
