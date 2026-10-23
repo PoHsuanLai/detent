@@ -203,7 +203,7 @@ fn a_folder_is_system_only_when_root_owns_it_and_every_folder_above_it() {
 }
 
 #[test]
-fn quires_schema_marks_theme_accent_and_use_my_styles_and_use_my_styles_is_a_switch() {
+fn quires_schema_marks_theme_accent_look_and_use_my_styles_and_use_my_styles_is_a_switch() {
     use detent_model::{Control, PageSlug, TogglePair};
     let scratch = Scratch::under(TMP, "marks-quire-appearance");
     let dir = scratch.join("d");
@@ -224,6 +224,7 @@ fn quires_schema_marks_theme_accent_and_use_my_styles_and_use_my_styles_is_a_swi
         [
             "appearance.theme",
             "appearance.accent",
+            "appearance.look",
             "appearance.custom_styles"
         ]
     );

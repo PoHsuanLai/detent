@@ -6,6 +6,7 @@ use crate::catalogue::{PageModel, SectionModel};
 use crate::control::Control;
 use crate::displays::is_displays;
 use crate::entry::KeyEntry;
+use crate::extensions::is_extensions;
 use crate::memory_consent::MEMORY_SECTION;
 use crate::updates::is_software_update;
 use crate::wifi::is_wifi;
@@ -53,6 +54,9 @@ pub enum Block {
     Bluetooth,
     /// Each display's resolution, refresh rate, rotation and place. Not in any file.
     Displays,
+    /// The installed Extensions, grouped by what they provide, each with a switch. Not in any
+    /// schema's keys.
+    Extensions,
     /// The button that opens the Hot Corners sheet, over the corner keys the page's schema marks
     /// for it.
     HotCorners(Vec<KeyEntry>),
@@ -176,6 +180,9 @@ fn page_blocks(page: &PageModel) -> Vec<Block> {
         Page::App(_) if is_displays(&page.page) => {
             return std::iter::once(Block::Displays).collect();
         }
+        Page::App(_) if is_extensions(&page.page) => {
+            return std::iter::once(Block::Extensions).collect();
+        }
         Page::Intelligence => {}
         Page::Appearance => return sections.flat_map(with_style_notes).collect(),
         _ => return sections.collect(),
@@ -236,6 +243,7 @@ mod tests {
                 Block::Wifi => "<wifi>",
                 Block::Bluetooth => "<bluetooth>",
                 Block::Displays => "<displays>",
+                Block::Extensions => "<extensions>",
                 Block::HotCorners(_) => "<hot corners>",
                 Block::StyleNotes => "<style notes>",
             })
@@ -336,6 +344,12 @@ mod tests {
             let drawn = blocks(&page(kind.clone(), &[]));
             assert_eq!(names(&drawn), [want], "{kind:?}");
         }
+    }
+
+    #[test]
+    fn the_extensions_page_is_its_list_and_nothing_else() {
+        let drawn = blocks(&page(crate::extensions_page(), &["Turned off"]));
+        assert_eq!(names(&drawn), ["<extensions>"]);
     }
 
     #[test]

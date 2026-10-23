@@ -3,9 +3,9 @@
 //! styles is quire's lint.
 
 use crate::read::text_of;
-use crate::values::ConfigHome;
+use crate::values::{ConfigHome, DataHome};
 use detent_model::StyleOwner;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// The file every style sheet is called.
 const SHEET: &str = "style.css";
@@ -51,4 +51,20 @@ pub fn read_style_sheets(home: &ConfigHome) -> Vec<StyleSheet> {
         sheet_in(&at, StyleOwner::App(name))
     });
     desktop.into_iter().chain(apps).collect()
+}
+
+/// The classes each installed app publishes for a style to rely on, one list per app: what the
+/// apps installed under `system` data directories and under `data` (the person's) put in their
+/// `quire/selectors` folders. A style that uses one of these is not using an internal selector.
+/// The directories are named by the caller, so a test reads only its own.
+pub fn published_classes(data: &DataHome, system: &[PathBuf]) -> Vec<Vec<String>> {
+    let dirs: Vec<PathBuf> = system
+        .iter()
+        .chain(std::iter::once(&data.0))
+        .map(|root| root.join("quire").join("selectors"))
+        .collect();
+    ds_settings::discover_parts(&dirs)
+        .into_iter()
+        .map(|parts| parts.classes)
+        .collect()
 }

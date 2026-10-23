@@ -4,7 +4,7 @@
 use crate::hot_corners::{HOT_CORNERS_CONTROL, corner_admits};
 use crate::range::Range;
 use crate::rows::Columns;
-use ds_settings::schema::{Control as Named, KeyKind, KeySpec};
+use ds_settings::schema::{Control as Named, KeyKind, KeySpec, STANDARD};
 
 /// The two words of an on/off enum, which one is on.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,9 +68,6 @@ pub enum FileOnly {
     /// An action the owning program runs through its live settings module (a button): detent
     /// has no live client yet, so the row is read-only until the Accounts pane's lane wires one.
     Action,
-    /// A choice among things somebody installed (a look): the chooser comes with the Extensions
-    /// page, so until then the row is read-only and any stored id is kept.
-    Provided,
 }
 
 /// What draws a key.
@@ -97,6 +94,10 @@ pub enum Control {
     /// `control = "corners"`. The Desktop & Dock page draws the four corner keys as one
     /// button that opens the Hot Corners sheet, whatever kind the schema gives them.
     HotCorners,
+    /// A choice among things somebody installed (a look): a pop-up button over the words on
+    /// offer, `standard` first. Any stored text is held, so the id of an Extension that is gone
+    /// is kept and shown as unavailable rather than reset (`KeyEntry::offering` fills the words).
+    Provided(Vec<String>),
     /// A list of tables: the rows editor, one cell per column.
     Rows(Columns),
     /// No component: read-only, edited in the file.
@@ -146,7 +147,7 @@ impl Control {
             KeyKind::Rows { columns } => Control::Rows(Columns::new(columns.clone())),
             KeyKind::List(_) => Control::FileOnly(FileOnly::List),
             KeyKind::Live { .. } => Control::FileOnly(FileOnly::Action),
-            KeyKind::Provided { .. } => Control::FileOnly(FileOnly::Provided),
+            KeyKind::Provided { .. } => Control::Provided(vec![STANDARD.to_owned()]),
         }
     }
 
@@ -164,7 +165,7 @@ impl Control {
             Control::Toggle(pair) => word_of(&[pair.on.clone(), pair.off.clone()]),
             Control::Segmented(words) | Control::Menu(words) => word_of(words),
             Control::Slider(range) => range.admit(value),
-            Control::Text | Control::Colour | Control::Picture => {
+            Control::Text | Control::Colour | Control::Picture | Control::Provided(_) => {
                 value.is_str().then(|| value.clone())
             }
             Control::HotCorners => corner_admits(value).then(|| value.clone()),
@@ -381,6 +382,14 @@ mod tests {
                 Value::String(String::new()),
                 Control::FileOnly(FileOnly::Action),
             ),
+            (
+                "provided",
+                KeyKind::Provided {
+                    capability: "look".to_owned(),
+                },
+                Value::String("standard".to_owned()),
+                Control::Provided(words(&["standard"])),
+            ),
         ];
         for (name, kind, default, want) in cases {
             assert_eq!(Control::of(&spec(kind, default)), want, "{name}");
@@ -396,6 +405,13 @@ mod tests {
         assert_eq!(toggle.admit(&Value::Integer(1)), None);
         assert_eq!(Control::Text.admit(&text("hello")), Some(text("hello")));
         assert_eq!(Control::Text.admit(&Value::Integer(1)), None);
+        // A provided key keeps the id of an Extension that is gone, whatever is on offer.
+        let provided = Control::Provided(words(&["standard"]));
+        assert_eq!(
+            provided.admit(&text("org.example.Paper")),
+            Some(text("org.example.Paper"))
+        );
+        assert_eq!(provided.admit(&Value::Integer(1)), None);
     }
 
     #[test]

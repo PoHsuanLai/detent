@@ -1,11 +1,11 @@
 //! Grouping, ordering and search over the real schemas (`fixtures/schemas`).
 
 use detent_model::{
-    Catalogue, Found, PageSlug, Rank, Search, SectionModel, discover, landing, search,
-    visible_pages,
+    Catalogue, Control, Found, Offer, Offers, PageSlug, Rank, Search, SectionModel, discover,
+    landing, search, visible_pages,
 };
 use detent_testkit::{Scratch, seed_schemas};
-use ds_settings::schema::Exposure;
+use ds_settings::schema::{Exposure, KeyKind, KeyPath, WordLabels};
 
 const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
@@ -34,6 +34,7 @@ fn pages_come_in_the_page_tables_order_and_only_when_they_have_keys() {
             "bluetooth",
             "notifications",
             "appearance",
+            "extensions",
             "intelligence",
             "assistant-model",
             "privacy",
@@ -47,7 +48,7 @@ fn pages_come_in_the_page_tables_order_and_only_when_they_have_keys() {
             "keyboard_and_shortcuts",
             "mouse_and_gestures"
         ],
-        "no schema names the Apps page, so it is not listed; sill's wallpaper.picture lists Wallpaper; inferd's and docket's name Intelligence; Accounts, Privacy, Assistant Model, Software Update, Wi-Fi, Bluetooth and Displays are live panes and always there"
+        "no schema names the Apps page, so it is not listed; sill's wallpaper.picture lists Wallpaper; inferd's and docket's name Intelligence; Accounts, Privacy, Assistant Model, Software Update, Wi-Fi, Bluetooth, Displays and Extensions are live panes and always there"
     );
 }
 
@@ -281,4 +282,56 @@ fn a_page_is_found_by_the_start_of_its_name_or_of_a_word_of_it() {
     let shown = landing(&visible, &found, &slug("nowhere")).expect("a page");
     assert_eq!(shown.slug, slug("accounts"));
     assert_eq!(found.first_page(), Some(&slug("accounts")));
+}
+
+#[test]
+fn a_provided_key_draws_a_menu_of_what_is_installed_and_only_on_the_pages_that_have_one() {
+    let catalogue = real("a_provided_key_draws_a_menu_of_what_is_installed");
+    let look = KeyPath("appearance.look".to_owned());
+    let bare = catalogue.entry(&look).expect("quire's look key");
+    assert_eq!(
+        bare.control,
+        Control::Provided(vec!["standard".to_owned()]),
+        "before anything is found, only Standard"
+    );
+
+    let paper = "org.example.Paper".to_owned();
+    let words = vec!["standard".to_owned(), paper.clone()];
+    let offers = Offers::default().with(
+        "look",
+        Offer {
+            words: words.clone(),
+            labels: WordLabels(
+                [
+                    ("standard".to_owned(), "Standard".to_owned()),
+                    (paper, "Paper".to_owned()),
+                ]
+                .into(),
+            ),
+        },
+    );
+    let appearance = catalogue.page(&slug("appearance")).expect("appearance");
+    assert!(appearance.has_provided());
+    let filled = appearance.offering(&offers);
+    let entry = filled
+        .sections
+        .iter()
+        .flat_map(|section| &section.keys)
+        .find(|entry| entry.spec.path == look)
+        .expect("the key is still on its page");
+    assert_eq!(entry.control, Control::Provided(words.clone()));
+    assert_eq!(entry.spec.kind, KeyKind::Menu { variants: words });
+    assert_eq!(entry.spec.labels.of("org.example.Paper"), Some("Paper"));
+    assert_eq!(
+        entry.spec.default,
+        toml::Value::String("standard".to_owned())
+    );
+
+    let dock = catalogue.page(&slug("dock")).expect("dock");
+    assert!(!dock.has_provided());
+    assert_eq!(
+        &dock.offering(&offers),
+        dock,
+        "a page without one is as it was"
+    );
 }

@@ -25,11 +25,11 @@ fn clicking_a_page_shows_it() {
     assert_eq!(page_of(&harness).as_deref(), Some("appearance"));
     assert_eq!(title_of(&harness).as_deref(), Some("Appearance"));
 
-    click(&mut harness, &sidebar_row(8));
+    click(&mut harness, &sidebar_row(9));
     assert_eq!(page_of(&harness).as_deref(), Some("dock"));
     assert_eq!(title_of(&harness).as_deref(), Some("Desktop & Dock"));
     assert_eq!(
-        harness.attr(&sidebar_row(8), "aria-selected").as_deref(),
+        harness.attr(&sidebar_row(9), "aria-selected").as_deref(),
         Some("true"),
         "the clicked row is the selected one"
     );

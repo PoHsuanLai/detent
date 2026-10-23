@@ -13,6 +13,7 @@ chordkit = { workspace = true }
 detent-model = { workspace = true }
 docket-agents = { workspace = true }
 docket-settings = { workspace = true }
+ds-extensions = { workspace = true }
 ds-helpers = { workspace = true }
 freedesktop-icons = { workspace = true }
 ds-settings = { workspace = true }

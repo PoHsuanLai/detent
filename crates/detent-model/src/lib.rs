@@ -19,6 +19,7 @@ mod displays;
 mod engine_install;
 mod engines;
 mod entry;
+mod extensions;
 mod first_run;
 mod hot_corners;
 mod layout;
@@ -117,6 +118,11 @@ pub use engines::{
     StartButton, engines_step, install_advice, llama_cpp_of, restart_question, setup_note,
 };
 pub use entry::KeyEntry;
+pub use extensions::{
+    EXTENSIONS_EMPTY_HELP, EXTENSIONS_EMPTY_TITLE, EXTENSIONS_SLUG, ExtensionGroup, ExtensionList,
+    ExtensionPower, ExtensionRow, ExtensionStanding, InstalledExtensions, NOT_AVAILABLE,
+    NOT_INSTALLED, Offer, Offers, UNREADABLE_MANIFEST, extensions_page, is_extensions, stray_word,
+};
 pub use first_run::{
     FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
 };

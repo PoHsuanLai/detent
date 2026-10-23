@@ -3,6 +3,7 @@
 use crate::assistant_model::{ASSISTANT_MODEL_SLUG, is_assistant_model};
 use crate::bluetooth::{BLUETOOTH_SLUG, is_bluetooth};
 use crate::displays::{DISPLAYS_SLUG, is_displays};
+use crate::extensions::{EXTENSIONS_SLUG, is_extensions};
 use crate::updates::{SLUG as SOFTWARE_UPDATE, is_software_update};
 use crate::wallpaper::{SLUG as WALLPAPER, is_wallpaper};
 use crate::wifi::{WIFI_SLUG, is_wifi};
@@ -35,6 +36,7 @@ impl PageSlug {
             Page::App(_) if is_wifi(page) => WIFI_SLUG.to_owned(),
             Page::App(_) if is_bluetooth(page) => BLUETOOTH_SLUG.to_owned(),
             Page::App(_) if is_displays(page) => DISPLAYS_SLUG.to_owned(),
+            Page::App(_) if is_extensions(page) => EXTENSIONS_SLUG.to_owned(),
             Page::App(id) => format!("app:{id}"),
         })
     }
@@ -84,6 +86,7 @@ mod tests {
             Page::MouseAndGestures,
             Page::Dock,
             Page::declared("wallpaper"),
+            crate::extensions_page(),
             Page::Appearance,
         ];
         let table = PageTable::built_in();
@@ -96,6 +99,7 @@ mod tests {
                 "bluetooth",
                 "notifications",
                 "appearance",
+                "extensions",
                 "intelligence",
                 "privacy",
                 "dock",

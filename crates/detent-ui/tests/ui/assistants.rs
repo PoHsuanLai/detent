@@ -443,7 +443,8 @@ fn a_sheet_that_asks_for_nothing_sendable_tells_why_and_calls_nothing() {
     let mut c = computers_with_models("computers-server-bad", vec![LAB_COMPUTER]);
     press(&mut c.harness, "Add a server");
     settle(&mut c.harness, "the sheet", |h| h.count(SERVER_SHEET) == 1);
-    click(&mut c.harness, "#server-add");
+    // The sheet slides in: the click waits for the button to hold still.
+    click_when_still(&mut c.harness, "#server-add");
     settle(&mut c.harness, "the sentence", |h| {
         h.text_of(SERVER_SHEET)
             .unwrap_or_default()

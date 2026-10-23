@@ -14,7 +14,8 @@ use crate::pictures::{OnDisk, Pictures, Thumbnails};
 use crate::updates::{Departure, OnBus, PowerMenu, UpdatesLink};
 use crate::wifi::{OnSystem as WifiOnSystem, WifiLink};
 use detent_files::{
-    CacheHome, ConfigHome, DataHome, FirstRunMark, KeymapFiles, PictureDirs, StateHome,
+    CacheHome, ConfigHome, DataHome, ExtensionHome, FirstRunMark, KeymapFiles, PictureDirs,
+    StateHome,
 };
 use detent_model::{Catalogue, Inbox, OriginRule, PageSlug, Warning, discover};
 use ds_helpers::Environment;
@@ -91,6 +92,13 @@ pub struct Env {
     /// The apps' actions and the file chooser the Hot Corners sheet asks for: this computer's own
     /// unless a test hands in another.
     pub corners: Arc<dyn CornerDesk>,
+    /// The Extensions installed, which the Look menu offers and the Extensions page lists; the
+    /// person's own folders only unless the launcher names the system's.
+    pub extensions: ExtensionHome,
+    /// The system's data directories, in the order of precedence: where the Extensions and the
+    /// apps' published style parts are looked for besides the person's own. None until the
+    /// launcher names them, so a test reads only its scratch folders.
+    pub system_data_dirs: Vec<PathBuf>,
 }
 
 /// The person's own folders the app reads and writes: settings, data, state and cache (or
@@ -135,6 +143,7 @@ impl Env {
         let wifi = Arc::new(WifiOnSystem(bus.clone()));
         let bluetooth = Arc::new(BluetoothOnSystem::new(bus.clone()));
         let displays = Arc::new(OnCompositor(bus.clone()));
+        let extensions = ExtensionHome::under(&config_home, &data_home, &[]);
         Env {
             catalogue: Arc::new(Catalogue::build(&found.programs)),
             warnings: found.warnings,
@@ -161,6 +170,8 @@ impl Env {
             programs_path: String::new(),
             pictures,
             corners,
+            extensions,
+            system_data_dirs: Vec::new(),
         }
     }
 
@@ -226,6 +237,18 @@ impl Env {
     pub fn with_programs_path(self, programs_path: String) -> Env {
         Env {
             programs_path,
+            ..self
+        }
+    }
+
+    /// This environment looking for Extensions and published style parts in `system_data_dirs`
+    /// as well as the person's own data home.
+    pub fn with_system_data_dirs(self, system_data_dirs: Vec<PathBuf>) -> Env {
+        let extensions =
+            ExtensionHome::under(&self.config_home, &self.data_home, &system_data_dirs);
+        Env {
+            extensions,
+            system_data_dirs,
             ..self
         }
     }

@@ -29,6 +29,8 @@ detent-ui      = { path = "crates/detent-ui" }
 # Sibling repos, checked out next to this one (the worktree holds symlinks to their masters).
 ds          = { path = "../quire/crates/ds" }
 ds-blitz    = { path = "../quire/crates/ds-blitz" }
+# Extensions: the folder scan and the on and off state, for the Look menu and the Extensions page.
+ds-extensions = { path = "../quire/crates/ds-extensions" }
 ds-harness  = { path = "../quire/crates/ds-harness" }
 # The distro family and the release (`os-release`), for the install line of a missing program; the PackageKit backend is not wanted.
 ds-helpers  = { path = "../quire/crates/ds-helpers", default-features = false }

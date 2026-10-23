@@ -1,12 +1,13 @@
 //! Where a [`SettingsTarget`] lands in the window: the page, with the search that marks the row,
-//! or the Accounts page at an account. Pure: it only reads the catalogue.
+//! the Accounts page at an account, or the Extensions page at an Extension. Pure: it only reads the catalogue.
 
 use crate::accounts::{AccountSegment, AccountTarget, is_accounts_setup};
 use crate::assistant_model::is_assistant_setup;
 use crate::catalogue::Catalogue;
+use crate::extensions::EXTENSIONS_SLUG;
 use crate::page::PageSlug;
 use ds_settings::schema::PageTable;
-use ds_settings::target::SettingsTarget;
+use ds_settings::target::{ExtensionId, SettingsTarget};
 use porter_core::{AccountId, object_segment};
 
 /// What the window does for a target.
@@ -17,6 +18,8 @@ pub enum Arrival {
     Page { slug: PageSlug, query: String },
     /// Show the Accounts page as the target asks.
     Account(AccountTarget),
+    /// Show the Extensions page with this Extension's row marked.
+    Extension(ExtensionId),
 }
 
 /// The account a target's id names, by the segment accountd's object path ends in; an id that is
@@ -64,8 +67,9 @@ pub fn arrival(catalogue: &Catalogue, target: &SettingsTarget) -> Option<Arrival
                 query: entry.spec.label.0.clone(),
             }),
         SettingsTarget::Account(account) => Some(Arrival::Account(account_of(&account.0))),
-        // No Extensions page yet: an Extension's row has nowhere to land.
-        SettingsTarget::Extension(_) => None,
+        SettingsTarget::Extension(id) => catalogue
+            .page(&PageSlug(EXTENSIONS_SLUG.to_owned()))
+            .map(|_| Arrival::Extension(id.clone())),
     }
 }
 
@@ -75,7 +79,7 @@ mod tests {
     use crate::accounts::{AccountSegment, AccountTarget};
     use crate::catalogue::Catalogue;
     use crate::page::PageSlug;
-    use ds_settings::target::SettingsTarget;
+    use ds_settings::target::{ExtensionId, SettingsTarget};
 
     fn target(text: &str) -> SettingsTarget {
         text.parse().expect("a target")
@@ -106,6 +110,21 @@ mod tests {
                 "{slug}"
             );
         }
+    }
+
+    #[test]
+    fn an_extension_lands_on_the_extensions_page_when_the_catalogue_has_it() {
+        let id = "org.example.Paper";
+        assert_eq!(
+            arrival(&Catalogue::default(), &target(&format!("extension:{id}"))),
+            None,
+            "no page, nowhere to land"
+        );
+        let catalogue = Catalogue::build(&[]);
+        assert_eq!(
+            arrival(&catalogue, &target(&format!("extension:{id}"))),
+            Some(Arrival::Extension(ExtensionId(id.to_owned())))
+        );
     }
 
     #[test]

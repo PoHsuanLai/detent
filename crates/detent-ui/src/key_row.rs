@@ -37,7 +37,7 @@ pub(crate) fn row_id(scope: &str, text: &str) -> String {
 }
 
 /// The class a highlighted row carries.
-const HIT_CLASS: &str = "key-hit";
+pub(crate) const HIT_CLASS: &str = "key-hit";
 
 fn common_for(found: Match, entry: &KeyEntry) -> Common {
     Common {

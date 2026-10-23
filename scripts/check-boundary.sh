@@ -57,7 +57,7 @@ EDGES=(
   "detent-testkit:"
   "detent-callers: ds-settings"
   "detent-model: almanac-core docket-core docket-settings ds-helpers ds-settings porter-core porter-infer"
-  "detent-files: detent-model docket-agents docket-settings ds-helpers ds-settings"
+  "detent-files: detent-model docket-agents docket-settings ds-extensions ds-helpers ds-settings"
   "detent-intents: detent-callers detent-files detent-model docket-client docket-core docket-dbus ds-peer ds-settings porter-core prov"
   "detent-ui: almanac-core anyview-core anyview-fs anyview-image anyview-platform desktop-client detent-callers detent-files detent-model docket-settings ds ds-blitz ds-helpers ds-lint ds-peer ds-settings porter-client porter-core porter-daemon porter-dbus porter-engines porter-engines-install porter-infer porter-provider"
   "detent: detent-callers detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"

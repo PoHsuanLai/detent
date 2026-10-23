@@ -41,7 +41,9 @@ pub fn Control(
             rsx! { SwatchControl { label, value, onchange } }
         }
         Kind::Segmented(words) => rsx! { SegmentedKey { label, words, labels, value, onchange } },
-        Kind::Menu(words) => rsx! { MenuControl { words, labels, value, onchange } },
+        Kind::Menu(words) | Kind::Provided(words) => {
+            rsx! { MenuControl { words, labels, value, onchange } }
+        }
         Kind::Slider(range) => rsx! { SliderControl { label, range, value, onchange } },
         Kind::Text => rsx! { TextControl { label, value, onchange } },
         Kind::Colour => rsx! { SwatchControl { label, value, onchange } },

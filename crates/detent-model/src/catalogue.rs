@@ -6,10 +6,11 @@ use crate::config_file::ConfigFile;
 use crate::discovery::ProgramSchema;
 use crate::displays::displays_page;
 use crate::entry::KeyEntry;
+use crate::extensions::{Offers, extensions_page};
 use crate::page::{PageSlug, sidebar_place};
 use crate::updates::software_update_page;
 use crate::wifi::wifi_page;
-use ds_settings::schema::{Exposure, ForeignTables, KeyPath, KeySpec, Page, PageTable};
+use ds_settings::schema::{Exposure, ForeignTables, KeyKind, KeyPath, KeySpec, Page, PageTable};
 
 /// The keys of one section that share an exposure, in schema order.
 #[derive(Debug, Clone, PartialEq)]
@@ -38,6 +39,40 @@ pub struct PageModel {
     pub advanced: Vec<SectionModel>,
 }
 
+impl PageModel {
+    /// Whether a key of the page is a choice among installed things, whose menu is filled when
+    /// the page is shown.
+    pub fn has_provided(&self) -> bool {
+        self.sections
+            .iter()
+            .chain(&self.advanced)
+            .flat_map(|section| &section.keys)
+            .any(|entry| matches!(entry.spec.kind, KeyKind::Provided { .. }))
+    }
+
+    /// This page with the choices of `offers` in each of its `Provided` keys.
+    pub fn offering(&self, offers: &Offers) -> PageModel {
+        let fill = |sections: &[SectionModel]| -> Vec<SectionModel> {
+            sections
+                .iter()
+                .map(|section| SectionModel {
+                    title: section.title.clone(),
+                    keys: section
+                        .keys
+                        .iter()
+                        .map(|key| key.offering(offers))
+                        .collect(),
+                })
+                .collect()
+        };
+        PageModel {
+            sections: fill(&self.sections),
+            advanced: fill(&self.advanced),
+            ..self.clone()
+        }
+    }
+}
+
 /// All the keys that live in one file, from every schema that names it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FileSpec {
@@ -54,7 +89,7 @@ pub struct FileSpec {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Catalogue {
     /// Pages that have at least one key, in sidebar order, and the live pages (Accounts, Privacy,
-    /// Assistant Model, Software Update, Wi-Fi, Bluetooth, Displays), which need none.
+    /// Assistant Model, Software Update, Wi-Fi, Bluetooth, Displays, Extensions), which need none.
     pub pages: Vec<PageModel>,
     /// Every settings file the keys read and write.
     pub files: Vec<FileSpec>,
@@ -162,8 +197,9 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
         pages
     });
     // Accounts is accountd's live pane, Privacy the compositor's list, Assistant Model inferd's
-    // picker row, Software Update the update service's, and Wi-Fi, Bluetooth and Displays the
-    // computer's own (no file names any of them), so all seven pages are always there.
+    // picker row, Software Update the update service's, Wi-Fi, Bluetooth and Displays the
+    // computer's own, and Extensions the folders of what is installed (no file names any of
+    // them), so all eight pages are always there.
     for live in [
         Page::Accounts,
         Page::Privacy,
@@ -172,6 +208,7 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
         wifi_page(),
         bluetooth_page(),
         displays_page(),
+        extensions_page(),
     ] {
         if !pages.iter().any(|page| page.page == live) {
             pages.push(PageModel {

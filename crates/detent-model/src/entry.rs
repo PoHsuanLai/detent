@@ -2,7 +2,8 @@
 
 use crate::config_file::ConfigFile;
 use crate::control::Control;
-use ds_settings::schema::{AgentSetting, KeySpec};
+use crate::extensions::Offers;
+use ds_settings::schema::{AgentSetting, KeyKind, KeySpec};
 
 /// A schema key with the file that holds its value and the control that draws it.
 #[derive(Debug, Clone, PartialEq)]
@@ -23,6 +24,23 @@ impl KeyEntry {
             spec,
             file,
             control,
+        }
+    }
+
+    /// This entry with the choices of `offers` in it when its key is a `Provided` one (a look):
+    /// the spec takes them as a menu of words and labels (`KeySpec::offering`) and the control
+    /// holds the words. Any other entry comes back as it is.
+    pub fn offering(&self, offers: &Offers) -> KeyEntry {
+        match &self.spec.kind {
+            KeyKind::Provided { capability } => {
+                let offer = offers.of(capability);
+                KeyEntry {
+                    spec: self.spec.offering(offer.words.clone(), offer.labels),
+                    file: self.file.clone(),
+                    control: Control::Provided(offer.words),
+                }
+            }
+            _ => self.clone(),
         }
     }
 

@@ -3,6 +3,7 @@
 use crate::accounts::{AccountLink, AccountsSetup};
 use crate::assistant_model::AssistantSetup;
 use crate::env::Env;
+use crate::extensions::ExtensionLink;
 use crate::files::load_all;
 use crate::view::View;
 use crate::window::Window;
@@ -29,6 +30,7 @@ pub fn App() -> Element {
     let page = use_signal(|| opening.page.clone().or(first).unwrap_or_default());
     let query = use_signal(|| opening.query.clone());
     let link = AccountLink::provide(page, query);
+    let extension_link = ExtensionLink::provide(page, query);
     let handle = use_window_handle();
     let files = use_signal({
         let env = env.clone();
@@ -61,6 +63,7 @@ pub fn App() -> Element {
                             page.set(slug);
                         }
                         Some(Arrival::Account(account)) => link.open_target(account),
+                        Some(Arrival::Extension(extension)) => extension_link.open(extension.0),
                         None => {}
                     },
                     Notice::Reload => files.set(load_all(&told)),

@@ -18,6 +18,7 @@ mod displays;
 mod engine_install;
 mod engines;
 mod env;
+mod extensions;
 mod files;
 mod first_run;
 mod hot_corners;

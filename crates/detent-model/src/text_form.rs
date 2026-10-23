@@ -4,6 +4,7 @@
 
 use crate::control::Control;
 use crate::range::Number;
+use ds_settings::schema::Provided;
 
 /// Why a text is not a value of the control.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,6 +45,10 @@ impl Control {
             }
             Control::Text | Control::Colour | Control::Picture => {
                 Ok(toml::Value::String(text.to_owned()))
+            }
+            // Blank text is the built-in choice; an id is kept even when nothing installed has it.
+            Control::Provided(_) => {
+                Ok(toml::Value::String(Provided::new(text).as_str().to_owned()))
             }
             Control::HotCorners | Control::Rows(_) | Control::FileOnly(_) => {
                 Err(TextFault::FileOnly)
@@ -110,6 +115,16 @@ mod tests {
                 Control::Text,
                 "/tmp/x y",
                 Ok(Value::String("/tmp/x y".into())),
+            ),
+            (
+                Control::Provided(words(&["standard"])),
+                " org.example.Paper ",
+                Ok(Value::String("org.example.Paper".into())),
+            ),
+            (
+                Control::Provided(words(&["standard"])),
+                " ",
+                Ok(Value::String("standard".into())),
             ),
             (
                 Control::FileOnly(crate::control::FileOnly::List),

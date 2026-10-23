@@ -116,11 +116,11 @@ fn the_page_sits_after_desktop_and_dock_and_says_plainly_when_there_is_no_compos
     assert_eq!(page_of(&harness).as_deref(), Some("displays"));
     assert_eq!(title_of(&harness).as_deref(), Some("Displays"));
     assert_eq!(
-        harness.text_of(&sidebar_row(8)).as_deref(),
+        harness.text_of(&sidebar_row(9)).as_deref(),
         Some("Desktop & Dock")
     );
     assert_eq!(
-        harness.text_of(&sidebar_row(9)).as_deref(),
+        harness.text_of(&sidebar_row(10)).as_deref(),
         Some("Displays")
     );
     let row = harness.text_of(".ds-field-row").unwrap_or_default();

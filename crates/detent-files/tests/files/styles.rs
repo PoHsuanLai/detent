@@ -1,6 +1,6 @@
 //! The style files the person wrote, over a scratch settings folder.
 
-use detent_files::{ConfigHome, StyleSheet, read_style_sheets};
+use detent_files::{ConfigHome, DataHome, StyleSheet, published_classes, read_style_sheets};
 use detent_model::StyleOwner;
 use detent_testkit::Scratch;
 use std::fs;
@@ -48,4 +48,26 @@ fn a_missing_folder_or_a_sheet_that_cannot_be_read_leaves_the_file_out() {
     fs::write(scratch.join("quire/style.css"), b"\xff\xfe").expect("write");
     let found = read_style_sheets(&ConfigHome(scratch.path().to_owned()));
     assert_eq!(found, [sheet(StyleOwner::App("files".to_owned()), "ok")]);
+}
+
+#[test]
+fn the_classes_apps_publish_are_read_from_the_system_folders_then_the_persons() {
+    let scratch = Scratch::under(env!("CARGO_TARGET_TMPDIR"), "published-classes");
+    let parts = |app: &str, class: &str| format!("app = \"{app}\"\nclasses = [\"{class}\"]\n");
+    write(
+        &scratch,
+        "system/quire/selectors/sill.toml",
+        &parts("sill", "sill-bar"),
+    );
+    write(
+        &scratch,
+        "data/quire/selectors/files.toml",
+        &parts("files", "files-row"),
+    );
+    let found = published_classes(&DataHome(scratch.join("data")), &[scratch.join("system")]);
+    assert_eq!(
+        found,
+        [vec!["sill-bar".to_owned()], vec!["files-row".to_owned()]]
+    );
+    assert!(published_classes(&DataHome(scratch.join("nowhere")), &[]).is_empty());
 }

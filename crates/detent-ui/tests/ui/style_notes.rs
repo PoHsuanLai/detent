@@ -99,3 +99,31 @@ fn the_notes_of_every_style_file_are_counted_and_listed_with_their_file_and_line
         assert!(html.contains(want), "{want} is in the sheet:\n{html}");
     }
 }
+
+#[test]
+fn a_class_an_installed_app_publishes_is_not_an_internal_selector() {
+    let style = ".sill-bar { color: red; }\n";
+    let published = "app = \"sill\"\nclasses = [\"sill-bar\"]\n";
+
+    let without = Sandbox::new("style-notes-unpublished");
+    without.write("quire/style.css", style);
+    let mut harness = without.harness(appearance());
+    settle(&mut harness, "the notes line", |h| h.count(LINE) == 1);
+    assert_eq!(
+        harness
+            .text_of(&format!("{LINE} .ds-field-row-title"))
+            .as_deref(),
+        Some("1 note"),
+        "a part nobody published may change in an update"
+    );
+
+    let with = Sandbox::new("style-notes-published");
+    with.write("quire/style.css", style);
+    with.write_data("quire/selectors/sill.toml", published);
+    let mut harness = with.harness(appearance());
+    for _ in 0..40 {
+        harness.advance(Duration::from_millis(50));
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert_eq!(harness.count(LINE), 0, "{}", harness.html());
+}

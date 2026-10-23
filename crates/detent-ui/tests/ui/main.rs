@@ -13,6 +13,7 @@ mod coherence;
 mod confirmed_owner;
 mod displays;
 mod engine_install;
+mod extensions;
 mod first_run;
 mod holds;
 mod hot_corners;

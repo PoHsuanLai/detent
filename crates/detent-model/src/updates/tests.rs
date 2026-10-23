@@ -734,6 +734,7 @@ fn the_page_has_its_own_slug_label_and_place_and_draws_only_its_pane() {
         [
             "wifi",
             "bluetooth",
+            "extensions",
             "assistant-model",
             "privacy",
             "displays",

@@ -90,6 +90,24 @@ variants = ["system", "editorial"]
 kind = "appearance"
 
 [[key]]
+path = "appearance.look"
+default = "standard"
+label = "Look"
+help = "Standard, or a look you added in Extensions. A look restyles every window; choosing Standard puts the desktop back as it shipped."
+section = "Appearance"
+exposure = "basic"
+agent = "settable"
+
+[key.kind]
+kind = "provided"
+
+[key.kind.v]
+capability = "look"
+
+[key.page]
+kind = "appearance"
+
+[[key]]
 path = "appearance.custom_styles"
 default = "use"
 label = "Use my styles"

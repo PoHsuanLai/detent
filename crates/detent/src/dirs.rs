@@ -124,6 +124,26 @@ fn application_dirs_from(data_home: Option<DataHome>, data_dirs: Option<OsString
     )
 }
 
+/// The system's data directories (`$XDG_DATA_DIRS`, `/usr/local/share:/usr/share` when it is
+/// unset), absolute ones only and without the person's own data home, which is looked at
+/// separately: where installed Extensions and apps' published style parts are.
+fn system_data_dirs_from(data_home: Option<DataHome>, data_dirs: Option<OsString>) -> Vec<PathBuf> {
+    let listed = data_dirs
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| OsString::from("/usr/local/share:/usr/share"));
+    unique(
+        std::env::split_paths(&listed)
+            .filter(|dir| dir.is_absolute())
+            .filter(|dir| data_home.as_ref().is_none_or(|home| *dir != home.0))
+            .collect(),
+    )
+}
+
+/// The system's data directories, at the edge.
+pub fn system_data_dirs() -> Vec<PathBuf> {
+    system_data_dirs_from(data_home(), std::env::var_os("XDG_DATA_DIRS"))
+}
+
 /// The folders desktop entries are read from, at the edge.
 pub fn application_dirs() -> Vec<PathBuf> {
     application_dirs_from(data_home(), std::env::var_os("XDG_DATA_DIRS"))
@@ -133,7 +153,7 @@ pub fn application_dirs() -> Vec<PathBuf> {
 mod tests {
     use super::{
         application_dirs_from, cache_home_from, config_home_from, data_home_from,
-        intent_dirs_beside, state_home_from, unique,
+        intent_dirs_beside, state_home_from, system_data_dirs_from, unique,
     };
     use detent_files::DataHome;
     use std::ffi::OsString;
@@ -299,5 +319,20 @@ mod tests {
             ]),
             "no data home, no user folders"
         );
+    }
+
+    #[test]
+    fn the_system_data_directories_leave_out_the_data_home_and_the_relative_ones() {
+        let home = Some(DataHome(PathBuf::from("/home/ada/.local/share")));
+        let dirs =
+            |value: Option<&str>| system_data_dirs_from(home.clone(), value.map(OsString::from));
+        let paths = |list: &[&str]| list.iter().map(PathBuf::from).collect::<Vec<_>>();
+        assert_eq!(
+            dirs(Some(
+                "/home/ada/.local/share:/opt/share:relative:/usr/share:/opt/share"
+            )),
+            paths(&["/opt/share", "/usr/share"])
+        );
+        assert_eq!(dirs(None), paths(&["/usr/local/share", "/usr/share"]));
     }
 }

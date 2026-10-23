@@ -147,6 +147,7 @@ impl SettingsProvider {
                 .page(&slug)
                 .map(|page| format!("Opened {}", page.title)),
             Some(Arrival::Account(_)) => Some("Opened Accounts".to_owned()),
+            Some(Arrival::Extension(_)) => Some("Opened Extensions".to_owned()),
             None => None,
         }
         .ok_or_else(|| not_found(&self.app, "settings.key", &target.to_string()))?;

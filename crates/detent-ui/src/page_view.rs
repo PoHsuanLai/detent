@@ -7,6 +7,7 @@ use crate::assistants::Assistants;
 use crate::bluetooth::BluetoothPane;
 use crate::displays::DisplaysPane;
 use crate::env::Env;
+use crate::extensions::ExtensionsPane;
 use crate::files::{Edit, Files};
 use crate::hot_corners::HotCorners;
 use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
@@ -21,7 +22,8 @@ use crate::style_notes::StyleNotesLine;
 use crate::updates::SoftwareUpdatePane;
 use crate::wifi::WifiPane;
 use detent_model::{
-    Block, PageSlug, advanced_sections, blocks, holds_memory_settings, modules_read,
+    Block, Offers, PageModel, PageSlug, advanced_sections, blocks, holds_memory_settings,
+    modules_read,
 };
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
@@ -61,9 +63,26 @@ pub fn PageView(
             }
         }
     });
-    let Some(page) = env.catalogue.page(&slug) else {
+    // The choices of the installed Extensions are read once, when a page that has a key choosing
+    // among them is shown; coming back to the page after turning one off reads them again.
+    let wants_offers = env
+        .catalogue
+        .page(&slug)
+        .is_some_and(PageModel::has_provided);
+    let offers = use_hook({
+        let extensions = env.extensions.clone();
+        move || {
+            if wants_offers {
+                extensions.read().offers
+            } else {
+                Offers::default()
+            }
+        }
+    });
+    let Some(page) = env.catalogue.page(&slug).map(|page| page.offering(&offers)) else {
         return rsx! {};
     };
+    let page = &page;
     let advanced = advanced_sections(page);
     rsx! {
         div { class: "scroll", "data-page": "{slug.0}",
@@ -82,6 +101,7 @@ pub fn PageView(
                     Block::Wifi => rsx! { WifiPane {} },
                     Block::Bluetooth => rsx! { BluetoothPane {} },
                     Block::Displays => rsx! { DisplaysPane {} },
+                    Block::Extensions => rsx! { ExtensionsPane {} },
                     Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
                     Block::StyleNotes => rsx! { StyleNotesLine {} },

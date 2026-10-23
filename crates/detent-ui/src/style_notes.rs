@@ -3,7 +3,7 @@
 //! for each visit), off the window's thread; a file that cannot be read has no line.
 
 use crate::env::Env;
-use detent_files::{ConfigHome, read_style_sheets};
+use detent_files::{ConfigHome, DataHome, published_classes, read_style_sheets};
 use detent_model::{STYLE_NOTES_LEAD, STYLE_NOTES_TITLE, StyleFile, StyleNote, StyleNotes};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -13,16 +13,18 @@ use ds::components::overlays::sheet_width::SheetWidth;
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds_lint::user_stylesheet_with;
+use std::path::PathBuf;
 
-/// The notes quire's lint has on every style file under `home`, in plain words. Reads files:
-/// call it off the window's thread.
-fn read_notes(home: &ConfigHome) -> StyleNotes {
+/// The notes quire's lint has on every style file under `home`, in plain words, a class an
+/// installed app publishes (`apps`) not counting as an internal one. Reads files: call it off the
+/// window's thread.
+fn read_notes(home: &ConfigHome, apps: &[Vec<String>]) -> StyleNotes {
     let kits = ds::kits();
     let files = read_style_sheets(home)
         .into_iter()
         .map(|sheet| StyleFile {
             owner: sheet.owner,
-            notes: user_stylesheet_with(&sheet.css, &kits, &[])
+            notes: user_stylesheet_with(&sheet.css, &kits, apps)
                 .into_iter()
                 .map(|note| StyleNote {
                     line: note.line,
@@ -34,8 +36,8 @@ fn read_notes(home: &ConfigHome) -> StyleNotes {
     StyleNotes::new(files)
 }
 
-async fn notes_of(home: ConfigHome) -> StyleNotes {
-    tokio::task::spawn_blocking(move || read_notes(&home))
+async fn notes_of(home: ConfigHome, data: DataHome, system: Vec<PathBuf>) -> StyleNotes {
+    tokio::task::spawn_blocking(move || read_notes(&home, &published_classes(&data, &system)))
         .await
         .unwrap_or_default()
 }
@@ -47,10 +49,17 @@ pub(crate) fn StyleNotesLine() -> Element {
     let mut notes = use_signal(StyleNotes::default);
     let mut opened = use_signal(|| Shown::Hidden);
     use_future({
-        let home = env.config_home.clone();
+        let env = env.clone();
         move || {
-            let home = home.clone();
-            async move { notes.set(notes_of(home).await) }
+            let env = env.clone();
+            async move {
+                let (home, data, system) = (
+                    env.config_home.clone(),
+                    env.data_home.clone(),
+                    env.system_data_dirs.clone(),
+                );
+                notes.set(notes_of(home, data, system).await);
+            }
         }
     });
     let Some(summary) = notes().summary() else {
