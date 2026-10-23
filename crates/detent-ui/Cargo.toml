@@ -26,6 +26,7 @@ dioxus = { workspace = true }
 ds = { workspace = true }
 ds-blitz = { workspace = true }
 ds-helpers = { workspace = true }
+ds-lint = { workspace = true }
 ds-peer = { workspace = true }
 ds-settings = { workspace = true, features = ["dioxus", "live", "tokio"] }
 porter-client = { workspace = true, features = ["infer", "lending"] }
@@ -51,7 +52,6 @@ detent-testkit = { workspace = true }
 ds-settings = { workspace = true, features = ["testing"] }
 dioxus-ssr = { workspace = true }
 ds-harness = { workspace = true }
-ds-lint = { workspace = true }
 image = { workspace = true }
 
 [lints]

@@ -17,6 +17,7 @@ use crate::screen_sharing::ScreenSharingPane;
 use crate::section_view::SectionView;
 use crate::shortcuts::ShortcutsPane;
 use crate::spaces::SpacesPane;
+use crate::style_notes::StyleNotesLine;
 use crate::updates::SoftwareUpdatePane;
 use crate::wifi::WifiPane;
 use detent_model::{
@@ -83,6 +84,7 @@ pub fn PageView(
                     Block::Displays => rsx! { DisplaysPane {} },
                     Block::Assistants => rsx! { Assistants {} },
                     Block::LocalRuntimes => rsx! { LocalRuntimes {} },
+                    Block::StyleNotes => rsx! { StyleNotesLine {} },
                     Block::HotCorners(entries) => rsx! { HotCorners { entries, files, onedit } },
                     Block::ModelPicker => rsx! {
                         ModelPicker { reasons: show_reason(&env, &files()) }

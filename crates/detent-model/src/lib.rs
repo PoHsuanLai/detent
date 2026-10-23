@@ -44,6 +44,7 @@ mod search;
 mod sharing;
 mod shortcuts;
 mod spaces;
+mod style_notes;
 mod text_form;
 mod updates;
 mod wallpaper;
@@ -177,6 +178,7 @@ pub use spaces::{
     SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState, WithoutMemory,
     spaces_step,
 };
+pub use style_notes::{NoteRow, StyleFile, StyleNote, StyleNotes, StyleOwner};
 pub use text_form::{TextFault, show_value};
 pub use updates::{
     ButtonActivity, ByteCount, NotesSheet, NotesState, Permille, ProblemKind,
@@ -198,5 +200,5 @@ pub use wifi::{
     WifiWire, details_rows, forget_network_body, forget_network_title, is_wifi,
     missing_words as wifi_missing_words, password_help, password_title, wifi_page, wifi_step,
 };
-pub use words::{humanize, word_label};
+pub use words::{STYLE_NOTES_LEAD, STYLE_NOTES_TITLE, humanize, word_label};
 pub use work::Work;

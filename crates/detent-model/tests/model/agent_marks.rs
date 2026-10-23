@@ -201,3 +201,44 @@ fn a_folder_is_system_only_when_root_owns_it_and_every_folder_above_it() {
     std::fs::set_permissions(&own, std::fs::Permissions::from_mode(0o777)).expect("chmod");
     assert_eq!(SchemaOrigin::of_dir(&own), SchemaOrigin::PersonWritable);
 }
+
+#[test]
+fn quires_schema_marks_theme_accent_and_use_my_styles_and_use_my_styles_is_a_switch() {
+    use detent_model::{Control, PageSlug, TogglePair};
+    let scratch = Scratch::under(TMP, "marks-quire-appearance");
+    let dir = scratch.join("d");
+    std::fs::create_dir_all(&dir).expect("dir");
+    std::fs::copy(
+        fixture_dir().join("quire.settings.toml"),
+        dir.join("quire.settings.toml"),
+    )
+    .expect("copy");
+    let found = catalogue(&[&dir], std::slice::from_ref(&dir));
+    let settable: Vec<&str> = found
+        .entries()
+        .filter(|(_, e)| e.agent() == AgentSetting::Settable)
+        .map(|(_, e)| e.spec.path.0.as_str())
+        .collect();
+    assert_eq!(
+        settable,
+        [
+            "appearance.theme",
+            "appearance.accent",
+            "appearance.custom_styles"
+        ]
+    );
+    let entry = found
+        .entry(&KeyPath("appearance.custom_styles".to_owned()))
+        .expect("the key is in the catalogue");
+    assert_eq!(
+        entry.control,
+        Control::Toggle(TogglePair {
+            on: "use".to_owned(),
+            off: "off".to_owned()
+        })
+    );
+    let page = found
+        .page(&PageSlug("appearance".to_owned()))
+        .expect("page");
+    assert!(page.sections.iter().any(|s| s.keys.contains(entry)));
+}

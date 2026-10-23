@@ -9,6 +9,7 @@ mod pictures;
 mod places;
 mod programs;
 mod round_trip;
+mod styles;
 mod unreadable;
 mod writes;
 

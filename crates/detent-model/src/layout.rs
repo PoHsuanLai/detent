@@ -56,6 +56,10 @@ pub enum Block {
     /// The button that opens the Hot Corners sheet, over the corner keys the page's schema marks
     /// for it.
     HotCorners(Vec<KeyEntry>),
+    /// The line under the Appearance page's "Use my styles" switch that counts the notes on the
+    /// person's styles and opens the sheet that lists them. Not in any file; drawn only when there
+    /// are notes.
+    StyleNotes,
 }
 
 /// The keys of `page` that the Hot Corners sheet draws, in the order the schemas give them.
@@ -126,6 +130,19 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
     drawn.into_iter().chain(sheet).collect()
 }
 
+/// The Appearance page's section that holds the "Use my styles" switch, which the notes follow.
+const STYLES_SECTION: &str = "Appearance";
+
+/// `block`, followed by the notes line when it is the section that holds the styles switch.
+fn with_style_notes(block: Block) -> Vec<Block> {
+    match &block {
+        Block::Section(section) if section.title == STYLES_SECTION => {
+            vec![block, Block::StyleNotes]
+        }
+        _ => vec![block],
+    }
+}
+
 fn page_blocks(page: &PageModel) -> Vec<Block> {
     let sections = basic_sections(page).into_iter().map(Block::Section);
     match page.page {
@@ -160,6 +177,7 @@ fn page_blocks(page: &PageModel) -> Vec<Block> {
             return std::iter::once(Block::Displays).collect();
         }
         Page::Intelligence => {}
+        Page::Appearance => return sections.flat_map(with_style_notes).collect(),
         _ => return sections.collect(),
     }
     // Two slots per rank: the section at the even one, the live blocks at the odd one after
@@ -219,6 +237,7 @@ mod tests {
                 Block::Bluetooth => "<bluetooth>",
                 Block::Displays => "<displays>",
                 Block::HotCorners(_) => "<hot corners>",
+                Block::StyleNotes => "<style notes>",
             })
             .collect()
     }
@@ -282,6 +301,12 @@ mod tests {
             Page::KeyboardAndShortcuts,
             &["Typing"],
             &["Typing", "<shortcuts>"],
+        ),
+        (
+            "the style notes follow the appearance section that holds the styles switch",
+            Page::Appearance,
+            &["Icons", "Appearance", "Time"],
+            &["Icons", "Appearance", "<style notes>", "Time"],
         ),
         (
             "another page keeps the schema order and has no picker",

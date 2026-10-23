@@ -29,6 +29,7 @@ mod shortcuts;
 mod snapshots;
 mod software_update;
 mod spaces;
+mod style_notes;
 mod support;
 mod thumbnails;
 mod viewer_page;

@@ -38,6 +38,7 @@ mod sharing;
 mod shortcuts;
 mod sidebar;
 mod spaces;
+mod style_notes;
 mod system;
 mod ticks;
 #[cfg(test)]

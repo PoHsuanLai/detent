@@ -90,6 +90,24 @@ variants = ["system", "editorial"]
 kind = "appearance"
 
 [[key]]
+path = "appearance.custom_styles"
+default = "use"
+label = "Use my styles"
+help = "Draw the look you chose and your own style sheets. Turn this off if a style made something hard to use."
+section = "Appearance"
+exposure = "basic"
+agent = "settable"
+
+[key.kind]
+kind = "toggle"
+
+[key.kind.v]
+variants = ["use", "off"]
+
+[key.page]
+kind = "appearance"
+
+[[key]]
 path = "appearance.material_tint_alpha"
 default = 80
 label = "Material tint"

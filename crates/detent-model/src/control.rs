@@ -68,6 +68,9 @@ pub enum FileOnly {
     /// An action the owning program runs through its live settings module (a button): detent
     /// has no live client yet, so the row is read-only until the Accounts pane's lane wires one.
     Action,
+    /// A choice among things somebody installed (a look): the chooser comes with the Extensions
+    /// page, so until then the row is read-only and any stored id is kept.
+    Provided,
 }
 
 /// What draws a key.
@@ -143,6 +146,7 @@ impl Control {
             KeyKind::Rows { columns } => Control::Rows(Columns::new(columns.clone())),
             KeyKind::List(_) => Control::FileOnly(FileOnly::List),
             KeyKind::Live { .. } => Control::FileOnly(FileOnly::Action),
+            KeyKind::Provided { .. } => Control::FileOnly(FileOnly::Provided),
         }
     }
 

@@ -64,6 +64,8 @@ pub fn arrival(catalogue: &Catalogue, target: &SettingsTarget) -> Option<Arrival
                 query: entry.spec.label.0.clone(),
             }),
         SettingsTarget::Account(account) => Some(Arrival::Account(account_of(&account.0))),
+        // No Extensions page yet: an Extension's row has nowhere to land.
+        SettingsTarget::Extension(_) => None,
     }
 }
 

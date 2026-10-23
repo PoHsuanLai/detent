@@ -18,6 +18,7 @@ mod places;
 mod programs;
 mod read;
 mod save;
+mod styles;
 mod unknown;
 mod values;
 
@@ -32,4 +33,5 @@ pub use pictures::PictureDirs;
 pub use places::{load_places, save_places};
 pub use programs::scan_programs;
 pub use save::save;
+pub use styles::{StyleSheet, read_style_sheets};
 pub use values::{CacheHome, ConfigHome, DataHome, FileValues};
