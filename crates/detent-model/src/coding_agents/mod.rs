@@ -7,11 +7,18 @@
 //! words are added here, to the rows the module described, from what docket's settings say of the
 //! agents: [`offers`] makes the list, [`with_agents`] lays it over the rows. Pure.
 
+mod add;
 mod offer;
 
 #[cfg(test)]
+mod add_tests;
+#[cfg(test)]
 mod tests;
 
+pub use add::{
+    AddForm, FoundAgent, INTERNET_LINE, NOTHING_NEW, RemoveQuestion, add_refusal, removal_of,
+    remove_refusal, unlisted_found,
+};
 pub use offer::{AgentOffer, AgentReason, AgentStanding, offers};
 
 use crate::picker::Described;

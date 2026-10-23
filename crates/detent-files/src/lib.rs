@@ -23,7 +23,7 @@ mod styles;
 mod unknown;
 mod values;
 
-pub use agents::{load_agents, save_agent_choice};
+pub use agents::{add_agent, installed_agents, load_agents, remove_agent, save_agent_choice};
 pub use coding_agents::{agents_switch, programs_on, turn_on_agents};
 pub use error::FilesError;
 pub use extensions::ExtensionHome;

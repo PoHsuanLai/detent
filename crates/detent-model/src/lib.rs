@@ -86,8 +86,10 @@ pub use bluetooth::{
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use coding_agents::{
-    AgentOffer, AgentReason, AgentStanding, CHOOSE_DIRECTLY, GROUP as CODING_AGENTS_GROUP,
-    TURNED_OFF, WORD_PREFIX, offers as agent_offers, with_agents,
+    AddForm, AgentOffer, AgentReason, AgentStanding, CHOOSE_DIRECTLY, FoundAgent,
+    GROUP as CODING_AGENTS_GROUP, INTERNET_LINE, NOTHING_NEW, RemoveQuestion, TURNED_OFF,
+    WORD_PREFIX, add_refusal, offers as agent_offers, removal_of, remove_refusal, unlisted_found,
+    with_agents,
 };
 pub use computers::{
     AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,

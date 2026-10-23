@@ -4,8 +4,13 @@
 use crate::error::FilesError;
 use crate::read::text_of;
 use crate::values::{ConfigHome, DataHome};
+use detent_model::FoundAgent;
 use docket_agents::AgentsDir;
-use docket_settings::{AgentChoice, Agents, ChoiceFault, read_agents, write_agent_choice};
+use docket_agents::slug::Slug;
+use docket_settings::{
+    AddFault, AgentChoice, Agents, ChoiceFault, NewAgent, read_agents, write_agent_add,
+    write_agent_choice, write_agent_remove,
+};
 
 /// The agents file, under the configuration directory.
 const AGENTS_FILE: &str = "docket/agents.toml";
@@ -39,4 +44,42 @@ pub fn save_agent_choice(
             reason: fault.to_string(),
         },
     })
+}
+
+/// The coding assistants installed in docket's folder, whether `agents.toml` lists them or not:
+/// each id with its last installed version, in name order. Only files are read; nothing is
+/// started and no network is used.
+pub fn installed_agents(data: &DataHome) -> Vec<FoundAgent> {
+    let root = data.0.join(AGENTS_DIR);
+    let dir = AgentsDir::at(&root);
+    let Ok(read) = std::fs::read_dir(root.join("installed")) else {
+        return Vec::new();
+    };
+    let mut ids: Vec<Slug> = read
+        .filter_map(|entry| {
+            let name = entry.ok()?.file_name();
+            Slug::parse(name.to_str()?).ok()
+        })
+        .collect();
+    ids.sort();
+    ids.into_iter()
+        .filter_map(|id| {
+            let version = dir.versions(&id).pop()?;
+            Some(FoundAgent {
+                id: id.as_str().to_owned(),
+                version: version.as_str().to_owned(),
+            })
+        })
+        .collect()
+}
+
+/// Lists `agent` in `agents.toml`, creating the file when there is none.
+pub fn add_agent(config: &ConfigHome, agent: &NewAgent) -> Result<(), AddFault> {
+    write_agent_add(&config.0.join(AGENTS_FILE), agent)
+}
+
+/// Takes the entry of `program` out of `agents.toml`. Nothing else changes: the files installed
+/// and the sign-in the assistant holds stay where they are.
+pub fn remove_agent(config: &ConfigHome, program: &str) -> Result<(), ChoiceFault> {
+    write_agent_remove(&config.0.join(AGENTS_FILE), program)
 }
