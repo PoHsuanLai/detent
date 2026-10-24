@@ -68,7 +68,7 @@ dependencies = [
 [[package]]
 name = "accesskit_xplat"
 version = "0.2.0"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 dependencies = [
  "accesskit",
  "accesskit_macos",
@@ -244,7 +244,7 @@ checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 [[package]]
 name = "anyrender"
 version = "0.13.0"
-source = "git+https://github.com/PoHsuanLai/anyrender?rev=d4ae3885f89a58351ff7e99cd75d9b7de5865337#d4ae3885f89a58351ff7e99cd75d9b7de5865337"
+source = "git+https://github.com/PoHsuanLai/anyrender?rev=03fcbe4c746d2334d3fb91e63641741f3dacc826#03fcbe4c746d2334d3fb91e63641741f3dacc826"
 dependencies = [
  "kurbo",
  "peniko",
@@ -268,7 +268,7 @@ dependencies = [
 [[package]]
 name = "anyrender_vello_cpu"
 version = "0.17.0"
-source = "git+https://github.com/PoHsuanLai/anyrender?rev=d4ae3885f89a58351ff7e99cd75d9b7de5865337#d4ae3885f89a58351ff7e99cd75d9b7de5865337"
+source = "git+https://github.com/PoHsuanLai/anyrender?rev=03fcbe4c746d2334d3fb91e63641741f3dacc826#03fcbe4c746d2334d3fb91e63641741f3dacc826"
 dependencies = [
  "anyrender",
  "bytemuck",
@@ -285,7 +285,7 @@ dependencies = [
 [[package]]
 name = "anyrender_vello_hybrid"
 version = "0.10.0"
-source = "git+https://github.com/PoHsuanLai/anyrender?rev=d4ae3885f89a58351ff7e99cd75d9b7de5865337#d4ae3885f89a58351ff7e99cd75d9b7de5865337"
+source = "git+https://github.com/PoHsuanLai/anyrender?rev=03fcbe4c746d2334d3fb91e63641741f3dacc826#03fcbe4c746d2334d3fb91e63641741f3dacc826"
 dependencies = [
  "anyrender",
  "debug_timer 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -350,7 +350,9 @@ dependencies = [
  "bayonet",
  "dirs 6.0.0",
  "ds-core",
+ "ds-extensions 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470)",
  "ds-helpers",
+ "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470)",
  "latchkey",
  "log",
  "md-5",
@@ -678,7 +680,7 @@ dependencies = [
 [[package]]
 name = "blitz-dom"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 dependencies = [
  "accesskit",
  "anyrender",
@@ -689,7 +691,7 @@ dependencies = [
  "color",
  "cssparser",
  "cursor-icon",
- "debug_timer 0.1.3 (git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9)",
+ "debug_timer 0.1.3 (git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf)",
  "euclid",
  "html-escape",
  "image",
@@ -722,7 +724,7 @@ dependencies = [
 [[package]]
 name = "blitz-html"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 dependencies = [
  "blitz-dom",
  "blitz-traits",
@@ -746,7 +748,7 @@ dependencies = [
 [[package]]
 name = "blitz-paint"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 dependencies = [
  "anyrender",
  "anyrender_svg",
@@ -767,7 +769,7 @@ dependencies = [
 [[package]]
 name = "blitz-shell"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 dependencies = [
  "accesskit",
  "accesskit_xplat",
@@ -789,7 +791,7 @@ dependencies = [
 [[package]]
 name = "blitz-traits"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 dependencies = [
  "atomic_refcell",
  "bitflags 2.13.2",
@@ -1425,7 +1427,7 @@ checksum = "da220af51a1a335e9a930beaaef53d261e41ea9eecfb3d973a3ddae1a7284b9c"
 [[package]]
 name = "debug_timer"
 version = "0.1.3"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 
 [[package]]
 name = "defmt"
@@ -1505,7 +1507,7 @@ dependencies = [
  "detent-testkit",
  "detent-ui",
  "ds-blitz",
- "ds-settings",
+ "ds-settings 0.1.0",
  "tokio",
  "toml",
 ]
@@ -1515,7 +1517,7 @@ name = "detent-callers"
 version = "0.1.0"
 dependencies = [
  "detent-testkit",
- "ds-settings",
+ "ds-settings 0.1.0",
  "peephole-bus",
  "rustix",
  "thiserror 2.0.21",
@@ -1531,9 +1533,9 @@ dependencies = [
  "detent-testkit",
  "docket-agents",
  "docket-settings",
- "ds-extensions",
+ "ds-extensions 0.1.0",
  "ds-helpers",
- "ds-settings",
+ "ds-settings 0.1.0",
  "freedesktop-icons",
  "keycap-client",
  "serde_json",
@@ -1553,8 +1555,8 @@ dependencies = [
  "docket-client",
  "docket-core",
  "docket-dbus",
- "ds-peer",
- "ds-settings",
+ "ds-peer 0.1.0",
+ "ds-settings 0.1.0",
  "porter-core",
  "prov",
  "serde",
@@ -1575,7 +1577,7 @@ dependencies = [
  "docket-core",
  "docket-settings",
  "ds-helpers",
- "ds-settings",
+ "ds-settings 0.1.0",
  "keycap-client",
  "porter-core",
  "porter-infer",
@@ -1613,8 +1615,8 @@ dependencies = [
  "ds-harness",
  "ds-helpers",
  "ds-lint",
- "ds-peer",
- "ds-settings",
+ "ds-peer 0.1.0",
+ "ds-settings 0.1.0",
  "image",
  "md-5",
  "porter-client",
@@ -1825,7 +1827,7 @@ dependencies = [
 [[package]]
 name = "dioxus-native"
 version = "0.7.0"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 dependencies = [
  "android-activity",
  "anyrender",
@@ -1857,7 +1859,7 @@ dependencies = [
 [[package]]
 name = "dioxus-native-dom"
 version = "0.7.0"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 dependencies = [
  "blitz-dom",
  "blitz-traits",
@@ -2114,7 +2116,7 @@ dependencies = [
  "ds-core",
  "ds-intents",
  "ds-motion",
- "ds-style",
+ "ds-style 0.1.0",
  "serde",
  "thiserror 2.0.21",
  "toml",
@@ -2123,6 +2125,14 @@ dependencies = [
 [[package]]
 name = "ds-behaviour"
 version = "0.1.0"
+dependencies = [
+ "ds-core",
+]
+
+[[package]]
+name = "ds-behaviour"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470#99cffc7d8717b75d1fa1e85867a54987df366470"
 dependencies = [
  "ds-core",
 ]
@@ -2160,6 +2170,7 @@ dependencies = [
  "wayland-backend",
  "wayland-client",
  "wayland-protocols",
+ "wayland-scanner",
  "webbrowser",
  "wgpu",
  "wgpu_context",
@@ -2191,7 +2202,7 @@ dependencies = [
 name = "ds-desktop"
 version = "0.1.0"
 dependencies = [
- "ds-peer",
+ "ds-peer 0.1.0",
 ]
 
 [[package]]
@@ -2201,8 +2212,22 @@ dependencies = [
  "bayonet",
  "ds-core",
  "ds-helpers",
- "ds-settings",
- "ds-style",
+ "ds-settings 0.1.0",
+ "ds-style 0.1.0",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "ds-extensions"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470#99cffc7d8717b75d1fa1e85867a54987df366470"
+dependencies = [
+ "bayonet",
+ "ds-core",
+ "ds-helpers",
+ "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470)",
+ "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470)",
  "serde",
  "thiserror 2.0.21",
 ]
@@ -2240,7 +2265,7 @@ dependencies = [
 name = "ds-helpers"
 version = "0.1.0"
 dependencies = [
- "ds-peer",
+ "ds-peer 0.1.0",
  "rustix",
  "serde",
  "thiserror 2.0.21",
@@ -2260,7 +2285,7 @@ version = "0.1.0"
 dependencies = [
  "cssparser",
  "ds-core",
- "ds-style",
+ "ds-style 0.1.0",
 ]
 
 [[package]]
@@ -2269,7 +2294,7 @@ version = "0.1.0"
 dependencies = [
  "dioxus",
  "ds-core",
- "ds-style",
+ "ds-style 0.1.0",
 ]
 
 [[package]]
@@ -2281,16 +2306,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-peer"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470#99cffc7d8717b75d1fa1e85867a54987df366470"
+dependencies = [
+ "futures-timer",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "ds-settings"
 version = "0.1.0"
 dependencies = [
  "dioxus",
- "ds-behaviour",
+ "ds-behaviour 0.1.0",
  "ds-core",
  "ds-helpers",
- "ds-peer",
- "ds-settings-derive",
- "ds-style",
+ "ds-peer 0.1.0",
+ "ds-settings-derive 0.1.0",
+ "ds-style 0.1.0",
  "futures-timer",
  "notify",
  "objc2-core-foundation",
@@ -2303,8 +2337,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "ds-settings"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470#99cffc7d8717b75d1fa1e85867a54987df366470"
+dependencies = [
+ "ds-behaviour 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470)",
+ "ds-core",
+ "ds-helpers",
+ "ds-peer 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470)",
+ "ds-settings-derive 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470)",
+ "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470)",
+ "futures-timer",
+ "notify",
+ "objc2-core-foundation",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "toml",
+ "toml_edit",
+]
+
+[[package]]
 name = "ds-settings-derive"
 version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "ds-settings-derive"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470#99cffc7d8717b75d1fa1e85867a54987df366470"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2319,6 +2384,17 @@ dependencies = [
  "ds-core",
  "ds-core-derive",
  "image",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "ds-style"
+version = "0.1.0"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=99cffc7d8717b75d1fa1e85867a54987df366470#99cffc7d8717b75d1fa1e85867a54987df366470"
+dependencies = [
+ "ds-core",
+ "ds-core-derive",
  "serde",
  "serde_json",
 ]
@@ -2812,7 +2888,7 @@ dependencies = [
 [[package]]
 name = "glifo"
 version = "0.2.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
+source = "git+https://github.com/PoHsuanLai/vello?rev=5c986661c9e943d26dac8e8ea7812895947722b8#5c986661c9e943d26dac8e8ea7812895947722b8"
 dependencies = [
  "bytemuck",
  "foldhash 0.2.0",
@@ -4946,7 +5022,7 @@ dependencies = [
 [[package]]
 name = "pixels_window_renderer"
 version = "0.8.0"
-source = "git+https://github.com/PoHsuanLai/anyrender?rev=d4ae3885f89a58351ff7e99cd75d9b7de5865337#d4ae3885f89a58351ff7e99cd75d9b7de5865337"
+source = "git+https://github.com/PoHsuanLai/anyrender?rev=03fcbe4c746d2334d3fb91e63641741f3dacc826#03fcbe4c746d2334d3fb91e63641741f3dacc826"
 dependencies = [
  "anyrender",
  "debug_timer 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -6149,7 +6225,7 @@ dependencies = [
 [[package]]
 name = "stylo_taffy"
 version = "0.3.0-beta.2"
-source = "git+https://github.com/PoHsuanLai/blitz?rev=0be21979f445965db402ddb79766a549b7b848a9#0be21979f445965db402ddb79766a549b7b848a9"
+source = "git+https://github.com/PoHsuanLai/blitz?rev=41134ff385ef138ed573ee5685308056243de0cf#41134ff385ef138ed573ee5685308056243de0cf"
 dependencies = [
  "bitflags 2.13.2",
  "stylo",
@@ -6772,7 +6848,7 @@ dependencies = [
 [[package]]
 name = "vello_common"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
+source = "git+https://github.com/PoHsuanLai/vello?rev=5c986661c9e943d26dac8e8ea7812895947722b8#5c986661c9e943d26dac8e8ea7812895947722b8"
 dependencies = [
  "bytemuck",
  "fearless_simd",
@@ -6787,7 +6863,7 @@ dependencies = [
 [[package]]
 name = "vello_cpu"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
+source = "git+https://github.com/PoHsuanLai/vello?rev=5c986661c9e943d26dac8e8ea7812895947722b8#5c986661c9e943d26dac8e8ea7812895947722b8"
 dependencies = [
  "bytemuck",
  "crossbeam-channel",
@@ -6802,7 +6878,7 @@ dependencies = [
 [[package]]
 name = "vello_hybrid"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
+source = "git+https://github.com/PoHsuanLai/vello?rev=5c986661c9e943d26dac8e8ea7812895947722b8#5c986661c9e943d26dac8e8ea7812895947722b8"
 dependencies = [
  "bytemuck",
  "glifo",
@@ -6817,7 +6893,7 @@ dependencies = [
 [[package]]
 name = "vello_sparse_shaders"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/vello?rev=84b2c9f7debed7d15f48d0ec9ea8575c16a56938#84b2c9f7debed7d15f48d0ec9ea8575c16a56938"
+source = "git+https://github.com/PoHsuanLai/vello?rev=5c986661c9e943d26dac8e8ea7812895947722b8#5c986661c9e943d26dac8e8ea7812895947722b8"
 dependencies = [
  "wesl",
  "wesl-macros",
@@ -7348,7 +7424,7 @@ dependencies = [
 [[package]]
 name = "wgpu_context"
 version = "0.9.0"
-source = "git+https://github.com/PoHsuanLai/anyrender?rev=d4ae3885f89a58351ff7e99cd75d9b7de5865337#d4ae3885f89a58351ff7e99cd75d9b7de5865337"
+source = "git+https://github.com/PoHsuanLai/anyrender?rev=03fcbe4c746d2334d3fb91e63641741f3dacc826#03fcbe4c746d2334d3fb91e63641741f3dacc826"
 dependencies = [
  "futures-intrusive",
  "wgpu",
