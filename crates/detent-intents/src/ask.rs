@@ -3,7 +3,7 @@
 
 use crate::answer::{not_found, refusal};
 use detent_model::PageSlug;
-use docket_core::{AppRefusal, Invocation, ParamName, Value};
+use docket_core::{AppRefusal, Invocation, ParamName, TargetValue, Value};
 use ds_settings::schema::KeyPath;
 use ds_settings::target::SettingsTarget;
 use porter_core::AppName;
@@ -54,6 +54,18 @@ fn entity_arg(
     }
 }
 
+/// The key of the one thing of `kind` an `.open` call acts on (the launcher's Enter on a hit).
+fn target_entity(inv: &Invocation, app: &AppName, kind: &str) -> Result<String, AppRefusal> {
+    match &inv.target {
+        TargetValue::Entities(named) => match named.as_slice() {
+            [id] if &id.app == app && id.kind.as_str() == kind => Ok(id.key.as_str().to_owned()),
+            [id] => Err(not_found(app, id.kind.as_str(), id.key.as_str())),
+            _ => Err(AppRefusal::Unsupported),
+        },
+        _ => Err(AppRefusal::Unsupported),
+    }
+}
+
 /// The text of the argument `name`; a whole number is taken as its digits.
 fn text_arg(inv: &Invocation, name: &str) -> Result<String, AppRefusal> {
     let wanted = param(name)?;
@@ -82,6 +94,16 @@ fn page_ask(text: String) -> Ask {
 pub(crate) fn ask(inv: &Invocation, app: &AppName) -> Result<Ask, AppRefusal> {
     match inv.action.as_str() {
         "settings.page.show" => entity_arg(inv, app, "page", "settings.page").map(page_ask),
+        "settings.page.open" => {
+            target_entity(inv, app, "settings.page").map(|slug| Ask::OpenPage(PageSlug(slug)))
+        }
+        "settings.key.open" => {
+            let path = target_entity(inv, app, "settings.key")?;
+            format!("key:{path}")
+                .parse()
+                .map(Ask::OpenTarget)
+                .map_err(|_| refusal(format!("{path} is not a setting")))
+        }
         "settings.key.read" => {
             entity_arg(inv, app, "key", "settings.key").map(|key| Ask::ReadKey(KeyPath(key)))
         }

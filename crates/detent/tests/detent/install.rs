@@ -52,6 +52,35 @@ fn the_manifest_is_installed_where_intentd_reads_it() {
     );
 }
 
+/// The only fields docket's `ShippedEntries::parse` takes in a row; it refuses any other.
+const ROW_FIELDS: [&str; 5] = ["kind", "key", "title", "subtitle", "keywords"];
+
+#[test]
+fn the_search_entries_are_installed_where_intentd_reads_them() {
+    let scratch = Scratch::under(TMP, "install-search");
+    let usr = install_into(&scratch);
+    let text = std::fs::read_to_string(usr.join("share/quire/search/org.quire.Settings.toml"))
+        .expect("the search file is installed beside the manifest");
+    let file: toml::Table = text.parse().expect("a TOML search file");
+    let rows = file["entries"].as_array().expect("the entries");
+    for row in rows {
+        let row = row.as_table().expect("a table");
+        assert!(
+            row.keys().all(|name| ROW_FIELDS.contains(&name.as_str())),
+            "{row:?}"
+        );
+        for required in ["kind", "key", "title"] {
+            assert!(row[required].is_str(), "{required} in {row:?}");
+        }
+    }
+    let pages: Vec<&str> = rows
+        .iter()
+        .filter(|row| row["kind"].as_str() == Some("settings.page"))
+        .filter_map(|row| row["key"].as_str())
+        .collect();
+    assert!(pages.contains(&"accounts"), "{pages:?}");
+}
+
 #[test]
 fn the_service_file_names_the_app_and_the_installed_binary() {
     let scratch = Scratch::under(TMP, "install-service");
@@ -60,7 +89,10 @@ fn the_service_file_names_the_app_and_the_installed_binary() {
         std::fs::read_to_string(usr.join("share/dbus-1/services/org.quire.Settings.service"))
             .expect("the service file is installed beside the manifest");
     assert!(service.contains("Name=org.quire.Settings\n"), "{service}");
-    assert!(service.contains("Exec=/usr/bin/detent\n"), "{service}");
+    assert!(
+        service.contains("Exec=/usr/bin/detent --service\n"),
+        "{service}"
+    );
     assert!(
         service.contains("SystemdService=org.quire.Settings.service\n"),
         "{service}"
@@ -80,7 +112,10 @@ fn the_user_unit_is_the_one_the_service_file_names() {
         .expect("the user unit is installed");
     assert!(unit.contains("Type=dbus\n"), "{unit}");
     assert!(unit.contains("BusName=org.quire.Settings\n"), "{unit}");
-    assert!(unit.contains("ExecStart=/usr/bin/detent\n"), "{unit}");
+    assert!(
+        unit.contains("ExecStart=/usr/bin/detent --service\n"),
+        "{unit}"
+    );
 }
 
 /// The variables peephole-core's `LOADER_VARIABLES` names: a unit that leaves any of them set is
@@ -137,13 +172,13 @@ fn a_prefix_with_characters_sed_reads_as_syntax_is_written_as_it_is() {
         std::fs::read_to_string(root.join("share/dbus-1/services/org.quire.Settings.service"))
             .expect("the service file");
     assert!(
-        service.contains(&format!("Exec={prefix}/bin/detent\n")),
+        service.contains(&format!("Exec={prefix}/bin/detent --service\n")),
         "{service}"
     );
     let unit = std::fs::read_to_string(root.join("lib/systemd/user/org.quire.Settings.service"))
         .expect("the unit");
     assert!(
-        unit.contains(&format!("ExecStart={prefix}/bin/detent\n")),
+        unit.contains(&format!("ExecStart={prefix}/bin/detent --service\n")),
         "{unit}"
     );
 }

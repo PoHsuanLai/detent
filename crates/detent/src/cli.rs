@@ -3,9 +3,7 @@
 use clap::Parser;
 use detent_model::PageSlug;
 use detent_ui::Opening;
-use std::path::Path;
-#[cfg(feature = "dev-callers")]
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// The desktop's Settings app.
 #[derive(Debug, Parser)]
@@ -21,6 +19,19 @@ pub struct Cli {
     /// nothing when it has already been shown.
     #[arg(long)]
     first_run: bool,
+    /// Serve the intents with no window and take no focus: what the bus runs (the D-Bus service
+    /// file and the systemd unit) to answer an action. A window opens only when an action asks for
+    /// one, and the process exits after a while with none.
+    #[arg(long, conflicts_with_all = ["page", "search", "first_run", "write_search_entries"])]
+    service: bool,
+    /// Write the launcher's search entries for Settings' pages and keys to this file
+    /// (`quire/search/org.quire.Settings.toml`) and exit; the installer runs it.
+    #[arg(long, value_name = "FILE")]
+    write_search_entries: Option<PathBuf>,
+    /// With `--write-search-entries`: read schemas from this `quire/settings` folder instead of
+    /// the data directories' (repeat for several; an installer names the staged tree).
+    #[arg(long, value_name = "DIR", requires = "write_search_entries")]
+    schemas: Vec<PathBuf>,
     /// Programs named in this file (the person's own, mode 600 or 644; `[[peer]]` rows with `app`,
     /// `role` and `exe`) are let in as the services they stand for, at a standing below every real
     /// proof: a stand-in built in a checkout is accountd, inferd or syncd for this run only. The
@@ -36,8 +47,16 @@ pub struct Cli {
 pub enum Run {
     /// The Settings window, opening here.
     Settings(Opening),
-    /// The first-run window, when it has not been shown yet.
-    FirstRun,
+    /// The first-run window (the desktop's setup), when it has not been shown yet.
+    Setup,
+    /// The intents with no window, until an action asks for one.
+    Service,
+    /// Write the search entries of the schemas in `schemas` (the data directories' when empty)
+    /// to `file`.
+    SearchEntries {
+        file: PathBuf,
+        schemas: Vec<PathBuf>,
+    },
 }
 
 impl Cli {
@@ -55,8 +74,17 @@ impl Cli {
 
     /// What to run.
     pub fn run(self) -> Run {
+        if let Some(file) = self.write_search_entries {
+            return Run::SearchEntries {
+                file,
+                schemas: self.schemas,
+            };
+        }
+        if self.service {
+            return Run::Service;
+        }
         if self.first_run {
-            return Run::FirstRun;
+            return Run::Setup;
         }
         Run::Settings(Opening {
             page: self.page.map(PageSlug),
@@ -75,7 +103,7 @@ mod tests {
     fn opening(args: &[&str]) -> Opening {
         match Cli::try_parse_from(args).expect("valid flags").run() {
             Run::Settings(opening) => opening,
-            Run::FirstRun => panic!("not the first run"),
+            other => panic!("not a window: {other:?}"),
         }
     }
 
@@ -117,9 +145,39 @@ mod tests {
     }
 
     #[test]
+    fn the_service_flag_is_a_run_with_no_window() {
+        let cli = Cli::try_parse_from(["detent", "--service"]).expect("valid flags");
+        assert_eq!(cli.run(), Run::Service);
+        assert!(Cli::try_parse_from(["detent", "--service", "--page", "dock"]).is_err());
+        assert!(Cli::try_parse_from(["detent", "--service", "--first-run"]).is_err());
+    }
+
+    #[test]
+    fn writing_the_search_entries_names_the_file_and_the_schema_folders() {
+        let cli = Cli::try_parse_from([
+            "detent",
+            "--write-search-entries",
+            "/tmp/out.toml",
+            "--schemas",
+            "/a/quire/settings",
+            "--schemas",
+            "/b/quire/settings",
+        ])
+        .expect("valid flags");
+        assert_eq!(
+            cli.run(),
+            Run::SearchEntries {
+                file: "/tmp/out.toml".into(),
+                schemas: vec!["/a/quire/settings".into(), "/b/quire/settings".into()],
+            }
+        );
+        assert!(Cli::try_parse_from(["detent", "--schemas", "/a"]).is_err());
+    }
+
+    #[test]
     fn first_run_is_its_own_run() {
         let cli = Cli::try_parse_from(["detent", "--first-run"]).expect("valid flags");
-        assert_eq!(cli.run(), Run::FirstRun);
+        assert_eq!(cli.run(), Run::Setup);
     }
 }
 

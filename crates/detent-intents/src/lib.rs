@@ -7,7 +7,8 @@
 //! `detent-model`; telling the window is a [`Notice`](detent_model::Notice) sent through the
 //! [`Outbox`](detent_model::Outbox) the binary hands in. The same bus name
 //! also serves `org.freedesktop.Application` at `/org/quire/Settings` (the Desktop Entry
-//! spec's D-Bus activation), so a launcher can start Settings, raise it, or open an account.
+//! spec's D-Bus activation), so a launcher can start Settings, raise it, or open an account. The launcher finds the pages and
+//! keys in intentd's index, from `search_entries`' file; the provider answers no search.
 
 mod accounts;
 mod answer;
@@ -19,6 +20,7 @@ mod journal;
 mod limits;
 mod manifest;
 mod provider;
+mod search_file;
 mod serve;
 
 pub use accounts::{AccountsRead, AccountsSource};
@@ -27,4 +29,5 @@ pub use application::{
 };
 pub use manifest::{ManifestFault, manifest};
 pub use provider::SettingsProvider;
+pub use search_file::search_entries;
 pub use serve::{ServeFault, serve, serve_session, serve_with};

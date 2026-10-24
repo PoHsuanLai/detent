@@ -4,18 +4,22 @@ mod accounts;
 mod cli;
 mod dev_callers;
 mod dirs;
+mod service;
 
 use accounts::LiveAccounts;
 use clap::Parser;
 use cli::Run;
 use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles, find_agents_program};
-use detent_intents::{ServeFault, SettingsProvider, hand_over_session, serve_session};
-use detent_model::{PageSlug, inbox, is_assistant_setup};
+use detent_intents::{
+    ServeFault, SettingsProvider, hand_over_session, search_entries, serve_session,
+};
+use detent_model::{Catalogue, PageSlug, discover, inbox, is_assistant_setup};
 use detent_ui::{App, BusSource, Env, FirstRunApp, Homes, Opening};
 use ds_blitz::{
     AppConfig, AppId, Decorations, FileRoots, LaunchError, WindowSize, enter_runtime, launch,
 };
 use ds_settings::SystemPrefsSource;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::sync::Arc;
 
@@ -44,7 +48,32 @@ fn main() -> ExitCode {
     }
     match cli.run() {
         Run::Settings(opening) => settings(opening),
-        Run::FirstRun => first_run(),
+        Run::Setup => first_run(),
+        Run::Service => service::run(),
+        Run::SearchEntries { file, schemas } => write_search_entries(&file, schemas),
+    }
+}
+
+/// Writes the launcher's search entries for the pages and keys of the schemas in `schemas` (the
+/// data directories' when none are named) to `file`, for the installer. It reads no settings and
+/// opens no window, so it needs no home directory.
+fn write_search_entries(file: &Path, schemas: Vec<PathBuf>) -> ExitCode {
+    let dirs = if schemas.is_empty() {
+        dirs::schema_dirs()
+    } else {
+        schemas
+    };
+    let found = discover(&dirs);
+    for warning in &found.warnings {
+        eprintln!("detent: {warning}");
+    }
+    let text = search_entries(&Catalogue::build(&found.programs));
+    match std::fs::write(file, text) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(fault) => {
+            eprintln!("detent: cannot write {}: {fault}", file.display());
+            ExitCode::FAILURE
+        }
     }
 }
 

@@ -44,6 +44,8 @@ mod tests {
             actions,
             [
                 ("settings.page.show", Effect::Read),
+                ("settings.page.open", Effect::Read),
+                ("settings.key.open", Effect::Read),
                 ("settings.key.read", Effect::Read),
                 ("settings.key.set", Effect::UndoableWrite),
                 ("settings.accounts.list", Effect::Read),

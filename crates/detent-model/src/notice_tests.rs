@@ -39,3 +39,19 @@ fn a_window_that_has_gone_is_told_so() {
     drop(inbox.take());
     assert!(outbox.send(Notice::Reload).is_err());
 }
+
+#[test]
+fn a_refilled_inbox_gives_the_next_window_its_own_queue() {
+    let (first, inbox) = inbox();
+    drop(inbox.take());
+    assert!(
+        first.send(Notice::Reload).is_err(),
+        "the first window has gone"
+    );
+    let second = inbox.refill();
+    second
+        .send(Notice::Reload)
+        .expect("the next window is waiting");
+    let mut waiting = inbox.take().expect("the new receiver");
+    assert_eq!(waiting.try_recv(), Some(Notice::Reload));
+}

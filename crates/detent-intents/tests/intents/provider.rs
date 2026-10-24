@@ -408,15 +408,6 @@ async fn suggestions_offer_pages_every_key_and_only_the_settable_ones_to_set() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn a_search_finds_keys_by_the_schemas_own_words() {
-    let world = world("search").await;
-    let hits = world.search("magnification").await;
-    let found: Vec<&str> = hits.iter().map(|h| h.entity.id.key.as_str()).collect();
-    assert!(found.contains(&MAGNIFICATION), "{found:?}");
-    assert_eq!(world.search("zzzzqqqq").await, []);
-}
-
-#[tokio::test(flavor = "multi_thread")]
 async fn previews_describe_a_key_and_list_a_page() {
     let world = world("preview").await;
     let Preview::Facts(lines) = world.preview(&entity("settings.key", MAGNIFICATION)).await else {

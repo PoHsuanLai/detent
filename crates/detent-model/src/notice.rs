@@ -175,8 +175,8 @@ impl Inbox {
     }
 }
 
-/// A new pair: send on the [`Outbox`], the window reads the [`Inbox`].
-pub fn inbox() -> (Outbox, Inbox) {
+/// A queue with one sender and its receiver.
+fn pair() -> (Outbox, Receiver) {
     let queue = Arc::new(Mutex::new(Queue {
         waiting: VecDeque::new(),
         waker: None,
@@ -187,8 +187,22 @@ pub fn inbox() -> (Outbox, Inbox) {
         queue: queue.clone(),
         dropped: Arc::default(),
     };
-    (
-        outbox,
-        Inbox(Arc::new(Mutex::new(Some(Receiver { queue })))),
-    )
+    (outbox, Receiver { queue })
+}
+
+/// A new pair: send on the [`Outbox`], the window reads the [`Inbox`].
+pub fn inbox() -> (Outbox, Inbox) {
+    let (outbox, receiver) = pair();
+    (outbox, Inbox(Arc::new(Mutex::new(Some(receiver)))))
+}
+
+impl Inbox {
+    /// A new queue for the next window to take from this inbox, and the end to send to it. A
+    /// service that opens its windows one after another (`detent --service`) hands each the same
+    /// [`Inbox`] through its environment; the receiver a window left behind is replaced.
+    pub fn refill(&self) -> Outbox {
+        let (outbox, receiver) = pair();
+        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = Some(receiver);
+        outbox
+    }
 }

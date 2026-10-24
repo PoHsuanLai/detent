@@ -230,6 +230,19 @@ impl World {
         serde_json::from_str(&answer).expect("an Outcome or an AppRefusal")
     }
 
+    /// An `.open` action on the one thing `id`, as the launcher's Enter on a hit calls it.
+    pub async fn open(&self, action: &str, id: EntityId) -> Result<Outcome, AppRefusal> {
+        let mut call = invocation(action, &[]);
+        call.target = docket_core::TargetValue::Entities(vec![id]);
+        let json = serde_json::to_string(&call).expect("json");
+        let answer = self
+            .proxy
+            .perform(&json, &Details::new())
+            .await
+            .expect("the bus call");
+        serde_json::from_str(&answer).expect("an Outcome or an AppRefusal")
+    }
+
     pub async fn dry_run(
         &self,
         action: &str,

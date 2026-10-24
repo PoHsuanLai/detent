@@ -5,6 +5,7 @@ mod accounts;
 mod application;
 mod intelligence;
 mod provider;
+mod search;
 mod support;
 
 /// Fails when a topic file in this directory is not declared above, so a new file cannot be

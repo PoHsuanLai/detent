@@ -1,4 +1,4 @@
 [D-BUS Service]
 Name=org.quire.Settings
-Exec=/usr/bin/detent
+Exec=/usr/bin/detent --service
 SystemdService=org.quire.Settings.service

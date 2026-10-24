@@ -9,7 +9,7 @@ use crate::manifest::{ManifestFault, manifest};
 use detent_files::{ConfigHome, load, save};
 use detent_model::{
     AgentSetting, Arrival, Catalogue, Control, KeyEntry, Notice, Outbox, PageSlug, TextFault,
-    arrival, search, show_value,
+    arrival, show_value,
 };
 use docket_client::IntentProvider;
 use docket_core::{
@@ -22,7 +22,7 @@ use porter_core::{AppName, DataClass};
 use prov::{Actor, EntityId, Label, Labelled, Source};
 use std::sync::{Arc, Mutex, MutexGuard};
 
-/// The most things a search or a suggestion lists.
+/// The most things a suggestion or a preview lists.
 const LISTED: usize = 20;
 
 /// Settings, as the desktop's router sees it.
@@ -274,15 +274,11 @@ impl IntentProvider for SettingsProvider {
         Ok(())
     }
 
-    async fn search(&self, text: &str) -> Vec<Hit> {
-        search(&self.catalogue, text)
-            .hits()
-            .iter()
-            .filter_map(|hit| self.catalogue.entry(&hit.path))
-            .filter_map(|entry| key_ref(&self.app, entry))
-            .take(LISTED)
-            .map(|entity| Hit { entity, why: None })
-            .collect()
+    /// Never answers: the launcher's search reads intentd's own index (the pages and keys in
+    /// `quire/search/org.quire.Settings.toml`, see `search_file`), so a query never reaches
+    /// this app. Design: search-index/DESIGN.md, "Launcher search".
+    async fn search(&self, _text: &str) -> Vec<Hit> {
+        Vec::new()
     }
 
     async fn preview(&self, id: &EntityId) -> Preview {
