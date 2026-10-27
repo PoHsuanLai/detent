@@ -1,12 +1,13 @@
 //! The Spaces list and its removal, over accountd's registry and memory's controls. Every call
 //! goes to the owner of the service's name that was confirmed, never to the name.
 
+use crate::copy::MEMORY_NOT_RUNNING;
 use crate::deadline::{Deadline, answered, peer};
 use crate::live::{BusSource, pinned_starting};
 use crate::memory::control;
 use almanac_core::Removal;
 use detent_callers::{ACCOUNTS_BUS, MEMORY_BUS};
-use detent_model::{Absence, MEMORY_NOT_RUNNING, SpaceKey, SpaceRow, WithoutMemory};
+use detent_model::{Absence, SpaceKey, SpaceRow, WithoutMemory};
 use ds_peer::within;
 use porter_client::SpacesError;
 use porter_dbus::{BusFailure, SpacesProxy, classify};
@@ -18,7 +19,7 @@ fn absence_of(error: SpacesError) -> Absence {
     match error {
         SpacesError::Unreachable => Absence::NotRunning,
         SpacesError::Denied(_) => Absence::NotPermitted,
-        other => Absence::Failed(other.to_string()),
+        _ => Absence::Failed,
     }
 }
 
@@ -31,7 +32,7 @@ pub(super) async fn list(bus: &BusSource) -> Result<Vec<SpaceRow>, Absence> {
     };
     let records = within(Deadline::READ, peer::ACCOUNTS, asked)
         .await
-        .map_err(|silent| Absence::Failed(silent.to_string()))??;
+        .map_err(|_| Absence::Failed)??;
     Ok(records
         .into_iter()
         .map(|record| SpaceRow {

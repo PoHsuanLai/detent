@@ -34,26 +34,6 @@ impl HotModifier {
         }
     }
 
-    /// The glyph a menu or a row writes.
-    pub fn glyph(self) -> &'static str {
-        match self {
-            HotModifier::Control => "\u{2303}",
-            HotModifier::Alt => "\u{2325}",
-            HotModifier::Shift => "\u{21e7}",
-            HotModifier::Command => "\u{2318}",
-        }
-    }
-
-    /// What a person who cannot see the glyph hears.
-    pub fn name(self) -> &'static str {
-        match self {
-            HotModifier::Control => "Control",
-            HotModifier::Alt => "Option",
-            HotModifier::Shift => "Shift",
-            HotModifier::Command => "Command",
-        }
-    }
-
     /// The modifier a file's word names.
     pub fn of_word(word: &str) -> Option<HotModifier> {
         HotModifier::ALL.into_iter().find(|m| m.word() == word)
@@ -104,18 +84,9 @@ impl HotKeys {
         self.0.iter().map(|m| m.word()).collect()
     }
 
-    /// The glyphs a row writes ("⌥⌘"), empty for the empty set.
-    pub fn glyphs(&self) -> String {
-        self.0.iter().map(|m| m.glyph()).collect()
-    }
-
-    /// The names a person who cannot see the glyphs hears ("Option Command").
-    pub fn names(&self) -> String {
-        self.0
-            .iter()
-            .map(|m| m.name())
-            .collect::<Vec<_>>()
-            .join(" ")
+    /// The modifiers held, in glyph order.
+    pub fn modifiers(&self) -> Vec<HotModifier> {
+        self.0.iter().copied().collect()
     }
 }
 
@@ -125,25 +96,26 @@ mod tests {
 
     #[test]
     fn words_round_trip_in_glyph_order_whatever_order_they_were_written_in() {
-        // (words as written, words as read back, glyphs)
-        let cases: &[(&[&str], &[&str], &str)] = &[
-            (&[], &[], ""),
-            (&["option"], &["option"], "\u{2325}"),
+        use HotModifier::{Alt, Command, Control, Shift};
+        // (words as written, words as read back, the modifiers in order)
+        let cases: &[(&[&str], &[&str], &[HotModifier])] = &[
+            (&[], &[], &[]),
+            (&["option"], &["option"], &[Alt]),
             (
                 &["command", "option"],
                 &["option", "command"],
-                "\u{2325}\u{2318}",
+                &[Alt, Command],
             ),
             (
                 &["shift", "control", "command", "option"],
                 &["control", "option", "shift", "command"],
-                "\u{2303}\u{2325}\u{21e7}\u{2318}",
+                &[Control, Alt, Shift, Command],
             ),
         ];
-        for (written, read, glyphs) in cases {
+        for (written, read, modifiers) in cases {
             let keys = HotKeys::of_words(written.iter().copied()).expect("known words");
             assert_eq!(keys.words(), *read, "{written:?}");
-            assert_eq!(keys.glyphs(), *glyphs, "{written:?}");
+            assert_eq!(keys.modifiers(), *modifiers, "{written:?}");
         }
         assert_eq!(HotKeys::of_words(["hyper"]), None);
     }
@@ -160,9 +132,5 @@ mod tests {
         ];
         sets.sort();
         assert_eq!(sets[0], HotKeys::default());
-        assert_eq!(
-            HotKeys::of([HotModifier::Alt, HotModifier::Command]).names(),
-            "Option Command"
-        );
     }
 }

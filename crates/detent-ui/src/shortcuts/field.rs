@@ -1,5 +1,6 @@
 //! How a chord is shown and changed in a row: quire's recorder. The one file that names it.
 
+use crate::copy::shortcuts::{action_name, standard_action_name};
 use detent_model::{ShortcutRow, ShortcutsInput};
 use dioxus::prelude::*;
 use ds::prelude::*;
@@ -9,13 +10,12 @@ use ds::prelude::*;
 #[component]
 pub(super) fn ShortcutCell(row: ShortcutRow, drive: EventHandler<ShortcutsInput>) -> Element {
     let action = row.action;
-    let clash = row
-        .clash
-        .clone()
-        .map_or(ShortcutClash::None, ShortcutClash::With);
+    let clash = row.clash.as_ref().map_or(ShortcutClash::None, |holder| {
+        ShortcutClash::With(action_name(holder))
+    });
     rsx! {
         ShortcutField {
-            label: row.name.clone(),
+            label: standard_action_name(action),
             value: row.chord,
             clash,
             onrecord: move |recorded: ShortcutRecorded| match recorded {

@@ -8,8 +8,9 @@ use crate::coding_agents::TURNED_OFF;
 /// What the menu calls the empty word, whatever the module calls it.
 pub(super) const NONE_LABEL: &str = "Off";
 
-/// The reason the module gives for a hosted model that no account reaches. Picking such a model
-/// offers the way to add an account instead of setting it.
+/// The reason the module gives for a hosted model that no account reaches (inferd's own words,
+/// matched and never shown from here). Picking such a model offers the way to add an account
+/// instead of setting it.
 pub(super) const NEEDS_ACCOUNT: &str = "Add an account to use";
 
 /// What a row has chosen.
@@ -48,22 +49,6 @@ pub enum ChoiceGap {
     LocalEngine,
     /// Local was picked and no model of it is chosen.
     LocalModel,
-}
-
-impl ChoiceGap {
-    /// The sentence that tells the person what to do next.
-    pub fn sentence(self) -> &'static str {
-        match self {
-            ChoiceGap::Choice => "Choose a model.",
-            ChoiceGap::PoolEmpty => "Turn on at least one model.",
-            ChoiceGap::PoolGone => {
-                "The models you turned on are not available now. Turn on another."
-            }
-            ChoiceGap::NoLocalEngine => "Nothing on this computer is set up to run models yet.",
-            ChoiceGap::LocalEngine => "Choose how to run models here.",
-            ChoiceGap::LocalModel => "Choose a model to run here.",
-        }
-    }
 }
 
 /// Whether a choice can be used.
@@ -110,18 +95,6 @@ pub enum Gate {
     Blocked(String),
     /// It is a coding agent while coding agents are switched off: picking it asks to turn them on.
     TurnOn,
-}
-
-impl Gate {
-    /// The line shown under the word when it cannot be picked as it is.
-    pub fn note(&self) -> Option<&str> {
-        match self {
-            Gate::Open => None,
-            Gate::NeedsAccount => Some(NEEDS_ACCOUNT),
-            Gate::Blocked(reason) => Some(reason),
-            Gate::TurnOn => Some(TURNED_OFF),
-        }
-    }
 }
 
 /// The gate a module's reason for a word makes.
@@ -177,12 +150,12 @@ impl ModelRow {
         }
     }
 
-    /// The sentence under the row when what it has chosen cannot be used yet; none when nothing
-    /// is chosen (the button already asks) or the choice is ready.
-    pub fn unready_note(&self) -> Option<&'static str> {
+    /// What is missing when what the row has chosen cannot be used yet; none when nothing is
+    /// chosen (the button already asks) or the choice is ready.
+    pub fn unready_gap(&self) -> Option<ChoiceGap> {
         match (self.choice(), self.readiness()) {
             (Choice::Nothing, _) | (_, ChoiceReadiness::Ready) => None,
-            (_, ChoiceReadiness::Missing(missing)) => Some(missing.sentence()),
+            (_, ChoiceReadiness::Missing(missing)) => Some(missing),
         }
     }
 

@@ -5,13 +5,13 @@ use super::agent::{AGENT_PATH, Agent};
 use super::link::BtSession;
 use super::read::{adapter_path, managed};
 use airwaves_bluez::{Adapter1Proxy, AgentManager1Proxy, Capability};
-use detent_model::Missing;
+use detent_model::Absence;
 use tokio::sync::mpsc;
 use zbus::Connection;
 use zbus::zvariant::{ObjectPath, OwnedObjectPath};
 
-fn failed<E>(_: E) -> Missing {
-    Missing::Failed
+fn failed<E>(_: E) -> Absence {
+    Absence::Failed
 }
 
 /// What stops when the session ends.
@@ -50,8 +50,8 @@ async fn stop(connection: &Connection, adapter: &OwnedObjectPath) {
 }
 
 /// Registers the agent and starts looking for devices.
-pub(super) async fn open(connection: Connection) -> Result<BtSession, Missing> {
-    let adapter = adapter_path(&managed(&connection).await?).ok_or(Missing::NoDevice)?;
+pub(super) async fn open(connection: Connection) -> Result<BtSession, Absence> {
+    let adapter = adapter_path(&managed(&connection).await?).ok_or(Absence::NoDevice)?;
     let (asks, heard) = mpsc::unbounded_channel();
     connection
         .object_server()

@@ -5,7 +5,7 @@ use super::note::NoteLine;
 use super::tier_row::{NOTHING_CHOSEN, pick_items};
 use crate::engine_install::{Board, GET};
 use crate::key_row::row_id;
-use detent_model::{ChoiceGap, EngineSheetInput, LocalView, PickerInput};
+use detent_model::{ChoiceGap, EngineOfferInput, LocalView, PickerInput};
 use dioxus::prelude::*;
 use ds::components::controls::button::Button;
 use ds::components::fields::field_row::FieldRow;
@@ -82,7 +82,7 @@ pub(super) fn LocalRows(
                 size: ControlSize::Small,
                 availability,
                 onpick: move |engine: String| match (engine.strip_prefix(GET), board) {
-                    (Some(id), Some(board)) => board.ask.call(EngineSheetInput::Chose(id.to_owned())),
+                    (Some(id), Some(board)) => board.ask.call(EngineOfferInput::Chose(id.to_owned())),
                     _ => onask.call(PickerInput::Engine { path: engine_at.clone(), engine }),
                 },
             }
@@ -118,7 +118,7 @@ fn NoEngine(
     rsx! {
         FieldRow {
             label: TextLine::from(NO_ENGINE_LABEL),
-            help: note.is_none().then(|| TextLine::from(ChoiceGap::NoLocalEngine.sentence())),
+            help: note.is_none().then(|| TextLine::from(crate::copy::picker::gap(ChoiceGap::NoLocalEngine))),
             availability,
             common: Common { id: Some(row_id("picker-no-engine", &path.0)), ..Common::default() },
             Button {

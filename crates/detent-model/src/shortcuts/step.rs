@@ -2,7 +2,9 @@
 //! asked about first; the person's keymap is written only for what the person chose, and only
 //! to the person's own file.
 
-use super::model::{KeymapTexts, OURS, ShortcutReplacing, ShortcutsState};
+use super::model::{
+    KeymapLayer, KeymapTexts, OURS, ShortcutProblem, ShortcutReplacing, ShortcutsState,
+};
 use super::person_text::render_person;
 use chordkit::{
     Action, Chord, Context, DefaultChord, OverrideEntry, OverrideProblem, Overrides,
@@ -43,22 +45,38 @@ pub enum ShortcutsEffect {
     },
     /// Read the files again.
     Reread,
-    /// Tell the person something.
+    /// Tell the person something, in the sentence a service gave.
     Tell(String),
+    /// Tell the person the file was left alone, for this `trouble`.
+    FileLeftAlone {
+        /// Why the file could not be read.
+        trouble: String,
+    },
+    /// Tell the person the desktop keeps `chord` for itself, for this `reason`.
+    Reserved {
+        /// The chord, as this desktop shows it.
+        chord: String,
+        /// Why it cannot be used.
+        reason: String,
+    },
 }
 
 type Step = (ShortcutsState, Vec<ShortcutsEffect>);
 
-fn labelled(label: &str, trouble: Option<&str>, problems: Vec<String>) -> Vec<String> {
+fn problems_in(
+    layer: KeymapLayer,
+    trouble: Option<&str>,
+    problems: Vec<String>,
+) -> Vec<ShortcutProblem> {
     trouble
         .map(str::to_owned)
         .into_iter()
         .chain(problems)
-        .map(|what| format!("{label}: {what}"))
+        .map(|what| ShortcutProblem { layer, what })
         .collect()
 }
 
-/// The skipped lines and the refused chords, in plain words.
+/// The skipped lines and the refused chords, in the words of whatever read them.
 fn words_of(bad: &[OverrideProblem], refused: &[OverrideProblem]) -> Vec<String> {
     bad.iter().chain(refused).map(ToString::to_string).collect()
 }
@@ -68,8 +86,8 @@ fn read(state: ShortcutsState, texts: KeymapTexts) -> ShortcutsState {
     let (person, person_bad) = Overrides::parse(&texts.person.text);
     let (under, machine_refused) = state.base.clone().with_overrides(&machine);
     let (_, person_refused) = under.with_overrides(&person);
-    let mut problems = labelled(
-        "This computer's shortcuts",
+    let mut problems = problems_in(
+        KeymapLayer::Machine,
         None,
         texts
             .machine
@@ -78,8 +96,8 @@ fn read(state: ShortcutsState, texts: KeymapTexts) -> ShortcutsState {
             .chain(words_of(&[], &machine_refused))
             .collect(),
     );
-    problems.extend(labelled(
-        "Your shortcuts",
+    problems.extend(problems_in(
+        KeymapLayer::Person,
         texts.person.trouble.as_deref(),
         words_of(&person_bad, &person_refused),
     ));
@@ -139,8 +157,10 @@ fn without(layer: &Overrides, action: &Action) -> Overrides {
 /// it says what the person's keymap already says.
 fn commit(state: ShortcutsState, person: Overrides) -> Step {
     if let Some(trouble) = &state.person_trouble {
-        let words = format!("Your shortcuts file was left alone. {trouble}");
-        return (state, vec![ShortcutsEffect::Tell(words)]);
+        let effect = ShortcutsEffect::FileLeftAlone {
+            trouble: trouble.clone(),
+        };
+        return (state, vec![effect]);
     }
     if shape(&person) == shape(&state.person) {
         return (state, vec![]);
@@ -158,8 +178,11 @@ fn commit(state: ShortcutsState, person: Overrides) -> Step {
 
 fn set(state: ShortcutsState, action: StandardAction, chord: Chord) -> Step {
     if let Some(reason) = reserved_reason(OURS, chord) {
-        let words = format!("{} can't be used: {reason}", chord.display(OURS));
-        return (state, vec![ShortcutsEffect::Tell(words)]);
+        let effect = ShortcutsEffect::Reserved {
+            chord: chord.display(OURS),
+            reason: reason.to_string(),
+        };
+        return (state, vec![effect]);
     }
     let live = state.live();
     let mine = Action::Standard(action);

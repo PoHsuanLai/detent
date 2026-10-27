@@ -1,5 +1,5 @@
 //! How an assistant's sign-out ended, as the module announces it on the account's `sign_out`
-//! row, and the line the person reads for it.
+//! row.
 
 /// What the module says the sign-out came to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,23 +33,6 @@ impl SignOutEnd {
             "launcher_gone" => Self::LauncherGone,
             _ => return None,
         })
-    }
-
-    /// The line the person reads for the account called `label`.
-    pub fn line(self, label: &str) -> String {
-        match self {
-            Self::Asked => format!("Asking {label} to sign out\u{2026}"),
-            Self::LoginUntouched => {
-                format!("{label} is still signed in on its own; open it to sign out there.")
-            }
-            Self::Done => format!("Signed out of {label}."),
-            Self::Failed => format!("Couldn't sign out of {label}."),
-            Self::Cancelled => format!("Signing out of {label} was cancelled."),
-            Self::Expired => format!("{label} didn't answer in time."),
-            Self::LauncherGone => {
-                format!("The app that runs {label} quit before signing out.")
-            }
-        }
     }
 
     /// Whether the account may have changed, so the pane reads it again.

@@ -4,6 +4,7 @@ use super::adapter::{
     ActionButton, AddAccountButton, AddKeyButton, ClientField, RemoveAccountButton,
 };
 use super::avatar_view::{AccountAvatar, AvatarPlace};
+use crate::copy::accounts::{attention_badge, status_label};
 use crate::key_row::row_id;
 use crate::marks::ProviderMarks;
 use detent_model::{
@@ -103,10 +104,10 @@ fn items_of(
 /// The line under an account's name: the kind of account it is ("Fastmail"), or how it stands
 /// when the module names no kind.
 fn second_line(account: &Account) -> String {
-    account
-        .provider
-        .as_ref()
-        .map_or_else(|| account.status.label(), |provider| provider.name.clone())
+    account.provider.as_ref().map_or_else(
+        || status_label(&account.status),
+        |provider| provider.name.clone(),
+    )
 }
 
 /// How an account that is not fine stands, or what is coming to one that is; nothing for one that
@@ -114,8 +115,8 @@ fn second_line(account: &Account) -> String {
 fn standing(status: &AccountStatus, attention: Option<Attention>) -> Option<String> {
     match (status, attention) {
         (AccountStatus::Ok, None) => None,
-        (AccountStatus::Ok, Some(attention)) => Some(attention.badge_label().to_owned()),
-        _ => Some(status.label()),
+        (AccountStatus::Ok, Some(attention)) => Some(attention_badge(&attention).to_owned()),
+        _ => Some(status_label(status)),
     }
 }
 

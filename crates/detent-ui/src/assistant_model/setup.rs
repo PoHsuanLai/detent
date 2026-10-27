@@ -6,9 +6,7 @@ use super::picker::AssistantPicker;
 use crate::env::Env;
 use crate::inference::{Picker, use_picker};
 use crate::live::start;
-use detent_model::{
-    Clearing, Pressable, SetupButton, assistant_model_page, modules_read, setup_button,
-};
+use detent_model::{Clearing, PageKind, SetupAction, SetupAvailability, setup_availability};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button::Button;
@@ -33,12 +31,12 @@ pub(crate) fn AssistantSetup() -> Element {
         let bus = env.bus.clone();
         move || {
             let bus = bus.clone();
-            async move { start(&bus, modules_read(&assistant_model_page())).await }
+            async move { start(&bus, PageKind::AssistantModel.modules_read()).await }
         }
     });
     let now = state();
-    let skip = availability_of(setup_button(&now, SetupButton::Skip));
-    let next = availability_of(setup_button(&now, SetupButton::Continue));
+    let skip = availability_of(setup_availability(&now, SetupAction::Skip));
+    let next = availability_of(setup_availability(&now, SetupAction::Continue));
     let (skip_app, next_app) = (app.clone(), app);
     rsx! {
         div { class: "assistant-setup", "data-assistant": "setup",
@@ -74,10 +72,10 @@ pub(crate) fn AssistantSetup() -> Element {
 }
 
 /// A button that can be pressed now is enabled.
-fn availability_of(pressable: Pressable) -> Availability {
-    match pressable {
-        Pressable::Now => Availability::Enabled,
-        Pressable::NotYet => Availability::Disabled,
+fn availability_of(availability: SetupAvailability) -> Availability {
+    match availability {
+        SetupAvailability::Now => Availability::Enabled,
+        SetupAvailability::NotYet => Availability::Disabled,
     }
 }
 

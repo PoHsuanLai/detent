@@ -1,8 +1,11 @@
 //! What waits for the person's word, and the pairs that are confirmed by saving them.
 
 use super::confinement::Confinement;
+use crate::catalogue::PageModel;
+use crate::control::Control;
 use crate::entry::KeyEntry;
 use crate::text_form::show_value;
+use crate::words::word_label;
 use almanac_core::WaitingSetting;
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -14,6 +17,39 @@ const MEMORY_FILE: &str = "almanac/settings.toml";
 /// Whether `entry` is a memory setting, one that can wait for the person's confirmation.
 pub fn is_memory_setting(entry: &KeyEntry) -> bool {
     entry.file.relative() == Path::new(MEMORY_FILE)
+}
+
+/// Whether any key of `page`, basic or advanced, is a memory setting.
+pub fn holds_memory_settings(page: &PageModel) -> bool {
+    page.sections
+        .iter()
+        .chain(&page.advanced)
+        .flat_map(|section| &section.keys)
+        .any(is_memory_setting)
+}
+
+/// A value of a memory setting, as the row names it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum KeptValue {
+    /// A number with its unit, as the row's slider shows it (`30 days`).
+    Measured(String),
+    /// A word, by its label.
+    Named(String),
+    /// Anything else, as memory wrote it.
+    Written(String),
+}
+
+/// The value memory keeps while `setting` waits, the way the row of `entry` reads it.
+pub fn kept_value(entry: &KeyEntry, setting: &WaitingSetting) -> KeptValue {
+    let wire = setting.shipped.as_str();
+    let value = entry.control.from_text(wire).ok();
+    match (&entry.control, value) {
+        (Control::Slider(range), Some(value)) => KeptValue::Measured(range.display(&value)),
+        (Control::Toggle(_) | Control::Segmented(_) | Control::Menu(_), Some(_)) => {
+            KeptValue::Named(word_label(&entry.spec.labels, wire))
+        }
+        _ => KeptValue::Written(wire.to_owned()),
+    }
 }
 
 /// A setting key and one value for it, as the memory service names them: numbers in decimal,

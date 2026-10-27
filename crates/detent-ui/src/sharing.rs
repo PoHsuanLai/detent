@@ -2,12 +2,10 @@
 //! sets sharing up through porter, and only when that worked is the setting written; turning it
 //! off takes sharing away and clears the setting. The steps are `detent-model`'s `sharing_step`.
 
+use crate::copy::sharing::{ALLOW, CANCEL, sharing_question};
 use crate::env::Env;
 use crate::files::{Edit, Files, store};
-use detent_model::{
-    ALLOW, CANCEL, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way, sharing_question,
-    sharing_step,
-};
+use detent_model::{SHARING_KEY, Sharing, SharingEffect, SharingInput, Way, sharing_step};
 use dioxus::prelude::*;
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
@@ -93,9 +91,10 @@ impl SharingSwitch {
 
     /// The question while one is asked.
     pub(crate) fn sheet(&self) -> Element {
-        let Some((title, message)) = sharing_question(*self.state.read()) else {
+        let Sharing::Asking(existing) = *self.state.read() else {
             return rsx! {};
         };
+        let (title, message) = sharing_question(existing);
         let (allow, cancel) = (self.clone(), self.clone());
         rsx! {
             Alert {

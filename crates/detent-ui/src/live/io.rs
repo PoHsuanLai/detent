@@ -14,16 +14,17 @@ use zbus::Connection;
 use zbus::fdo::{DBusProxy, NameOwnerChangedStream};
 use zbus::names::BusName;
 
-fn failed(why: impl ToString) -> Absence {
-    Absence::Failed(why.to_string())
+/// A failure the person sees only as "failed": its cause goes to the log.
+fn failed(why: impl std::fmt::Display) -> Absence {
+    eprintln!("detent: a settings service failed: {why}");
+    Absence::Failed
 }
 
 pub(super) fn absence_of(error: LiveError) -> Absence {
     match error {
         LiveError::NotPermitted(_) => Absence::NotPermitted,
         LiveError::NotTheService(_) => Absence::Unavailable,
-        LiveError::Timeout(words) => Absence::Failed(words),
-        other => failed(plain(&other)),
+        other => failed(other),
     }
 }
 

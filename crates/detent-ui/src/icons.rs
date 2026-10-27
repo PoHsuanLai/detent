@@ -1,34 +1,30 @@
 //! The glyph beside each page in the sidebar.
 
-use detent_model::{
-    is_assistant_model, is_bluetooth, is_displays, is_extensions, is_software_update, is_wallpaper,
-    is_wifi,
-};
+use detent_model::PageKind;
 use ds::prelude::Icon;
-use ds_settings::schema::Page;
 
-/// The sidebar glyph of `page`.
-pub fn icon_of(page: &Page) -> Icon {
-    match page {
-        Page::Appearance => Icon::SunMoon,
-        Page::Dock => Icon::Panel,
-        Page::MouseAndGestures => Icon::Mouse,
-        Page::KeyboardAndShortcuts => Icon::Keyboard,
-        Page::Notifications => Icon::Bell,
-        Page::Spaces => Icon::Group,
-        Page::Accounts => Icon::Key,
-        Page::Privacy => Icon::Lock,
-        Page::Power => Icon::Power,
-        Page::Apps => Icon::Grid,
-        Page::Intelligence => Icon::Sparkles,
-        Page::Viewer => Icon::Image,
-        Page::App(_) if is_software_update(page) => Icon::Download,
-        Page::App(_) if is_wallpaper(page) => Icon::Image,
-        Page::App(_) if is_assistant_model(page) => Icon::Sparkles,
-        Page::App(_) if is_wifi(page) => Icon::Wifi,
-        Page::App(_) if is_bluetooth(page) => Icon::Bluetooth,
-        Page::App(_) if is_displays(page) => Icon::Monitor,
-        Page::App(_) if is_extensions(page) => Icon::Puzzle,
-        Page::App(_) => Icon::Window,
+/// The sidebar glyph of a page of `kind`.
+pub fn icon_of(kind: PageKind) -> Icon {
+    match kind {
+        PageKind::Appearance => Icon::SunMoon,
+        PageKind::Dock => Icon::Panel,
+        PageKind::MouseAndGestures => Icon::Mouse,
+        PageKind::KeyboardAndShortcuts => Icon::Keyboard,
+        PageKind::Notifications => Icon::Bell,
+        PageKind::Spaces => Icon::Group,
+        PageKind::Accounts => Icon::Key,
+        PageKind::Privacy => Icon::Lock,
+        PageKind::Power => Icon::Power,
+        PageKind::Apps => Icon::Grid,
+        PageKind::Intelligence => Icon::Sparkles,
+        PageKind::Viewer => Icon::Image,
+        PageKind::SoftwareUpdate => Icon::Download,
+        PageKind::Wallpaper => Icon::Image,
+        PageKind::AssistantModel => Icon::Sparkles,
+        PageKind::Wifi => Icon::Wifi,
+        PageKind::Bluetooth => Icon::Bluetooth,
+        PageKind::Displays => Icon::Monitor,
+        PageKind::Extensions => Icon::Puzzle,
+        PageKind::Program => Icon::Window,
     }
 }

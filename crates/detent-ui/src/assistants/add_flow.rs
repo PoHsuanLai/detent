@@ -5,7 +5,7 @@
 use super::outside_view::{Shown, shown};
 use crate::env::Env;
 use detent_files::{AgentsTool, add_agent};
-use detent_model::{AddButton, AddForm, Request};
+use detent_model::{AddAction, AddForm, Request};
 use dioxus::prelude::*;
 use docket_settings::NewAgent;
 
@@ -41,7 +41,7 @@ pub(super) fn close(mut adding: Adding) {
     let busy = adding
         .peek()
         .clone()
-        .is_some_and(|form| form.button() == AddButton::Busy);
+        .is_some_and(|form| form.button() == AddAction::Busy);
     if !busy {
         adding.set(None);
     }
@@ -52,13 +52,13 @@ pub(super) fn submit(env: &Env, mut adding: Adding, now: Signal<Shown>) {
     let Some(form) = adding.peek().clone() else {
         return;
     };
-    if form.button() != AddButton::Ready {
+    if form.button() != AddAction::Ready {
         return;
     }
     match form.request() {
-        Err(words) => {
+        Err(refusal) => {
             let mut refused = form;
-            refused.refusal = Some(words.to_owned());
+            refused.refusal = Some(refusal);
             adding.set(Some(refused));
         }
         Ok(Request::Add(new)) => write(env, adding, now, &new),

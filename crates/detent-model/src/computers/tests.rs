@@ -1,14 +1,12 @@
-//! The computers' transitions and words.
+//! The computers' transitions.
 
 use super::{
     AddList, ComputerRow, ComputersEffect as Effect, ComputersFound, ComputersInput as Input,
-    ComputersState as State, Standing, computers_step, guest_line,
+    ComputersState as State, Standing, computers_step,
 };
 use crate::Absence;
-use porter_core::lending::{
-    Approval, CandidateModel, ComputerCandidate, GuestAnswer, GuestRow, RowState,
-};
-use porter_core::{NodeId, UnixSeconds};
+use porter_core::NodeId;
+use porter_core::lending::{Approval, CandidateModel, ComputerCandidate, GuestAnswer};
 use porter_infer::{ComputerName, PlaceId, PlaceKind, PlaceModel, PlaceRow, PlaceState};
 
 fn node(text: &str) -> NodeId {
@@ -181,20 +179,4 @@ fn reading_again_keeps_the_add_list_and_a_missing_service_replaces_everything() 
     assert_eq!(adding_of(&kept), &AddList::Choosing(vec![candidate()]));
     let (gone, _) = computers_step(kept, Input::Found(Err(Absence::NotRunning)));
     assert_eq!(gone, State::Unavailable(Absence::NotRunning));
-}
-
-#[test]
-fn a_guest_line_says_how_it_stands() {
-    const CASES: &[(RowState, &str)] = &[
-        (RowState::Approved, "Can use this computer's models"),
-        (
-            RowState::Denied,
-            "Not allowed to use this computer's models",
-        ),
-        (RowState::Asking, "Asking to use this computer's models"),
-    ];
-    for (state, line) in CASES {
-        let guest = GuestRow::new(node("n2"), "laptop".to_owned(), *state, UnixSeconds(0));
-        assert_eq!(guest_line(&guest), *line);
-    }
 }

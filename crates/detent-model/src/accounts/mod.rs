@@ -4,17 +4,21 @@
 
 mod add_account;
 mod attention;
+mod day;
+mod effect;
 mod grant;
 mod heard;
 mod hold;
 mod hold_step;
+mod input;
 mod model;
 mod module;
+mod pane;
 mod reads;
 mod reauth_end;
+mod rows;
 mod setup;
 mod sign_in_client;
-mod sign_in_help;
 mod sign_out;
 mod spend;
 mod step;
@@ -24,31 +28,35 @@ mod target;
 
 pub use add_account::{AddEnd, Adding};
 pub use attention::Attention;
-pub use grant::{AccountPermission, GrantDecision, GrantSentence};
-pub use hold::{DatasetName, HoldCounts, KEEP_HELP, SyncHold};
+pub use day::CalendarDay;
+pub use effect::{AccountsEffect, AccountsNotice};
+pub use grant::{AccountPermission, GrantDecision, GrantScope, GrantSentence};
+pub use hold::{DatasetName, HoldCounts, SyncHold};
 pub use hold_step::{HoldEffect, HoldInput, Holds, hold_step};
+pub use input::AccountsInput;
 pub use model::{
     Account, AccountExpiry, AccountKey, AccountProvider, AccountService, AccountStatus,
     AccountSync, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, LocalFiles,
-    Place, RemovalQuestion, SyncAdd,
+    Place, RemovalQuestion, SwitchState, SyncAdd,
 };
 pub use module::{ModuleId, ModuleRow, Source, Sources};
 pub use reads::{ReadTurn, Reads};
 pub use reauth_end::ReauthEnd;
 pub use setup::{
-    ACCOUNTS_SETUP_SLUG, SignedIn, accounts_setup_button, is_accounts_setup, signed_in,
+    ACCOUNTS_SETUP_SLUG, SignedIn, accounts_setup_offer, is_accounts_setup, signed_in,
 };
 pub use sign_in_client::{
     ClientEntry, ClientText, ClientValue, Secret, SecretStanding, SignInClient,
 };
-pub use sign_in_help::{reauth_help, sign_in_words};
 pub use sign_out::SignOutEnd;
 pub use spend::{AccountSpend, Cents, SpendBar, SpendLine};
-pub use step::{AccountsEffect, AccountsInput, accounts_step};
+pub use step::accounts_step;
 pub use sync_now::SyncNowEnd;
 pub use sync_status::{StorageQuota, SyncBook, SyncPause, SyncStatus, SyncWork};
 pub use target::{AccountSegment, AccountTarget};
 
+#[cfg(test)]
+mod client_tests;
 #[cfg(test)]
 mod flow_tests;
 #[cfg(test)]
@@ -56,6 +64,12 @@ mod hold_tests;
 #[cfg(test)]
 mod modules_tests;
 #[cfg(test)]
+mod pane_step_tests;
+#[cfg(test)]
+mod reading_tests;
+#[cfg(test)]
 mod reread_tests;
+#[cfg(test)]
+mod sign_out_tests;
 #[cfg(test)]
 mod tests;

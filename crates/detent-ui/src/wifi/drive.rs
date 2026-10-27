@@ -2,6 +2,7 @@
 //! steps are `detent-model`'s `wifi_step`.
 
 use super::link::WifiLink;
+use crate::copy;
 use crate::env::Env;
 use detent_model::{WifiEffect, WifiInput, WifiState, wifi_step};
 use dioxus::prelude::*;
@@ -107,6 +108,9 @@ impl Driver {
                 });
             }
             WifiEffect::Tell(words) => self.toasts.push(words, None),
+            WifiEffect::CouldNotJoin => self
+                .toasts
+                .push(copy::wifi::could_not_join().to_owned(), None),
         }
     }
 }

@@ -17,9 +17,6 @@ const NAME_MAX_CHARS: usize = 48;
 /// the part that tells programs apart.
 const PLACE_MAX_CHARS: usize = 60;
 
-/// What a program that nothing names is called.
-const UNNAMED_PROGRAM: &str = "A program";
-
 /// What stands for a character that must not be drawn (a control or a direction override).
 const REPLACEMENT: char = '\u{FFFD}';
 
@@ -56,8 +53,8 @@ pub struct ProgramBook {
 /// A program as the page draws it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProgramLook {
-    /// What it is called.
-    pub name: String,
+    /// What it is called; none when nothing names it.
+    pub name: Option<String>,
     /// Its icon file, when a system entry names it.
     pub icon: Option<PathBuf>,
     /// The folder it runs from, when no system entry vouches for its name: the page shows it so
@@ -147,7 +144,7 @@ impl ProgramBook {
     }
 
     /// What `subject` is called and looks like: the name and icon of the system entry that names
-    /// it, else its file name and folder (or the app's id), else a plain word.
+    /// it, else its file name and folder (or the app's id), else no name.
     pub fn look_of(&self, subject: &ProgramSubject) -> ProgramLook {
         let entry = self.app_of(subject);
         let named = entry
@@ -158,9 +155,9 @@ impl ProgramBook {
             SubjectKind::PrivacyProgram => (file_name(&subject.0), folder_of(&subject.0)),
         };
         let place = place.filter(|_| named.is_none());
-        let name = named.or(fallback).unwrap_or(UNNAMED_PROGRAM);
+        let name = named.or(fallback);
         ProgramLook {
-            name: clipped(&plain(name), NAME_MAX_CHARS),
+            name: name.map(|name| clipped(&plain(name), NAME_MAX_CHARS)),
             icon: entry.and_then(|app| app.icon.clone()),
             place: place.map(|folder| clipped_start(&plain(folder), PLACE_MAX_CHARS)),
         }

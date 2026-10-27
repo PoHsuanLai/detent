@@ -1,14 +1,14 @@
-//! The removal sheet's words and wire, and the list's transitions.
+//! The removal question and its wire, and the list's transitions.
 
-use super::removal::{HISTORY_CHOICES, SheetInput, WithoutMemory};
+use super::removal::{RemovalInput, WithoutMemory};
 use super::{
-    RemovalSheet, RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesState,
+    RemovalAsk, RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesState,
     spaces_step,
 };
 use almanac_core::{HistoryFate, MemoryFate, Removal};
 
-fn trip() -> RemovalSheet {
-    RemovalSheet::of(SpaceKey("space-1".to_owned()), "Trip".to_owned())
+fn trip() -> RemovalAsk {
+    RemovalAsk::of(SpaceKey("space-1".to_owned()), "Trip".to_owned())
 }
 
 fn ready() -> SpacesState {
@@ -34,41 +34,32 @@ fn asked() -> SpacesState {
 }
 
 #[test]
-fn the_sheet_opens_safe_flips_and_makes_remove_destructive_by_either_delete_choice() {
+fn the_question_opens_safe_flips_and_makes_remove_destructive_by_either_delete_choice() {
     // It opens on the choices nothing is lost by.
-    let sheet = trip();
-    assert_eq!(sheet.title(), "Remove \u{201c}Trip\u{201d}?");
-    assert_eq!(
-        sheet.body(),
-        "Its memories move to the apps that saved them."
-    );
-    assert_eq!(sheet.flip_label(), "Delete its memories instead");
-    assert_eq!(
-        HISTORY_CHOICES[0].0,
-        HistoryFate::Keep,
-        "the first is selected"
-    );
-    assert!(!sheet.destroys());
-    assert_eq!(sheet.removal(), Removal::KEEP_ALL);
-    // The link flips the body and its own label, and back.
-    let flipped = trip().after(SheetInput::FlipMemories);
-    assert_eq!(flipped.body(), "Its memories will be deleted.");
-    assert_eq!(flipped.flip_label(), "Move its memories instead");
+    let ask = trip();
+    assert_eq!(ask.name, "Trip");
+    assert_eq!(ask.memories, MemoryFate::MoveToApps);
+    assert_eq!(ask.history, HistoryFate::Keep);
+    assert!(!ask.destroys());
+    assert_eq!(ask.removal(), Removal::KEEP_ALL);
+    // The flip changes what becomes of the memories, and back.
+    let flipped = trip().after(RemovalInput::FlipMemories);
+    assert_eq!(flipped.memories, MemoryFate::Delete);
     assert!(flipped.destroys());
     // Each delete choice alone makes Remove destructive.
-    let history = trip().after(SheetInput::History(HistoryFate::Delete));
+    let history = trip().after(RemovalInput::History(HistoryFate::Delete));
     assert!(history.destroys());
     assert_eq!(history.memories, MemoryFate::MoveToApps);
     assert!(flipped.destroys());
     assert_eq!(flipped.history, HistoryFate::Keep);
-    assert_eq!(flipped.after(SheetInput::FlipMemories), trip());
+    assert_eq!(flipped.after(RemovalInput::FlipMemories), trip());
 }
 
 #[test]
 fn the_choices_send_the_json_memory_reads() {
     let both = trip()
-        .after(SheetInput::FlipMemories)
-        .after(SheetInput::History(HistoryFate::Delete));
+        .after(RemovalInput::FlipMemories)
+        .after(RemovalInput::History(HistoryFate::Delete));
     assert_eq!(
         serde_json::to_string(&both.removal()).expect("a removal is JSON"),
         r#"{"memories":"delete","history":"delete"}"#
@@ -80,7 +71,7 @@ fn the_choices_send_the_json_memory_reads() {
 }
 
 #[test]
-fn asking_opens_the_sheet_and_cancel_sends_nothing() {
+fn asking_opens_the_question_and_cancel_sends_nothing() {
     let SpacesState::Ready(ready) = asked() else {
         panic!("the list is there");
     };
@@ -97,7 +88,7 @@ fn asking_opens_the_sheet_and_cancel_sends_nothing() {
 fn confirming_sends_the_chosen_removal_for_that_space_once() {
     let changed = spaces_step(
         asked(),
-        SpacesInput::Sheet(SheetInput::History(HistoryFate::Delete)),
+        SpacesInput::Answer(RemovalInput::History(HistoryFate::Delete)),
     )
     .0;
     let (after, effects) = spaces_step(changed, SpacesInput::Confirm);
@@ -114,7 +105,7 @@ fn confirming_sends_the_chosen_removal_for_that_space_once() {
     let (_, again) = spaces_step(after, SpacesInput::Confirm);
     assert!(
         again.is_empty(),
-        "the sheet is gone, so a second press sends nothing"
+        "the question is gone, so a second press sends nothing"
     );
 }
 
@@ -131,7 +122,7 @@ fn nothing_else_is_asked_while_a_removal_is_under_way() {
     assert_eq!(
         after.stage,
         RemovalStage::Removing(SpaceKey("space-1".to_owned())),
-        "the first removal goes on and no second sheet opens"
+        "the first removal goes on and no second question opens"
     );
 }
 

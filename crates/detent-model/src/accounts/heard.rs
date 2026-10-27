@@ -1,9 +1,9 @@
 //! What the module's announcement of a value at a row means to the pane.
 
+use super::input::AccountsInput;
 use super::module::{ModuleId, ModuleRow};
 use super::reauth_end::{ReauthEnd, is_reauth_row};
 use super::sign_out::SignOutEnd;
-use super::step::AccountsInput;
 use ds_settings::schema::KeyPath;
 
 impl AccountsInput {

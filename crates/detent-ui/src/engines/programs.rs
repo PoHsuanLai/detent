@@ -5,13 +5,13 @@
 
 use super::io::is_text;
 use crate::chooser::{Want, choose};
+use crate::copy;
 use crate::env::Env;
 use crate::inference::{NoteLine, set};
 use crate::key_row::row_id;
 use crate::live::{BusSource, Daemon, Followed, follow};
 use detent_model::{
-    FOUND_AUTOMATICALLY, Live, ProgramRow, ProgramsEffect, ProgramsInput, ProgramsPane,
-    program_rows, programs_step,
+    Live, ProgramRow, ProgramsEffect, ProgramsInput, ProgramsPane, program_rows, programs_step,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -158,7 +158,7 @@ fn ProgramField(
         TextField {
             label: row.label.clone(),
             value: draft(),
-            placeholder: FOUND_AUTOMATICALLY,
+            placeholder: copy::engines::found_automatically(),
             help: Some(TextLine::from(row.help.clone())),
             size: ControlSize::Small,
             common: Common { id: Some(row_id("program", &row.path.0)), ..Common::default() },

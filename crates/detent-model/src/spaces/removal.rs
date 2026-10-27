@@ -1,12 +1,12 @@
-//! The sheet before a Space is removed: what its memories and its history become. Words, choices
-//! and the wire form it sends are decided here; the window only draws them.
+//! The question before a Space is removed: what its memories and its history become. The choices
+//! and the wire form they send are decided here; the window words and draws them.
 
 use super::step::SpaceKey;
 use almanac_core::{HistoryFate, MemoryFate, Removal};
 
-/// The sheet's state. The first choice of each kind is the one nothing is lost by.
+/// What is asked of the person about a Space's removal. The first choice of each kind is the one nothing is lost by.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RemovalSheet {
+pub struct RemovalAsk {
     /// The Space.
     pub space: SpaceKey,
     /// Its name, as the person called it.
@@ -17,19 +17,19 @@ pub struct RemovalSheet {
     pub history: HistoryFate,
 }
 
-/// What the person did to the sheet.
+/// What the person answered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SheetInput {
+pub enum RemovalInput {
     /// Picked what becomes of the history.
     History(HistoryFate),
-    /// Pressed the link under the body: memories move instead of being deleted, or the reverse.
+    /// Chose the other fate for the memories: moved instead of deleted, or the reverse.
     FlipMemories,
 }
 
-impl RemovalSheet {
-    /// The sheet for `space`: memories move to the apps, history is kept.
-    pub fn of(space: SpaceKey, name: String) -> RemovalSheet {
-        RemovalSheet {
+impl RemovalAsk {
+    /// The question for `space`: memories move to the apps, history is kept.
+    pub fn of(space: SpaceKey, name: String) -> RemovalAsk {
+        RemovalAsk {
             space,
             name,
             memories: MemoryFate::MoveToApps,
@@ -37,12 +37,12 @@ impl RemovalSheet {
         }
     }
 
-    /// The sheet after `input`.
+    /// The question after `input`.
     #[must_use]
-    pub fn after(self, input: SheetInput) -> RemovalSheet {
+    pub fn after(self, input: RemovalInput) -> RemovalAsk {
         match input {
-            SheetInput::History(history) => RemovalSheet { history, ..self },
-            SheetInput::FlipMemories => RemovalSheet {
+            RemovalInput::History(history) => RemovalAsk { history, ..self },
+            RemovalInput::FlipMemories => RemovalAsk {
                 memories: match self.memories {
                     MemoryFate::MoveToApps => MemoryFate::Delete,
                     MemoryFate::Delete => MemoryFate::MoveToApps,
@@ -57,27 +57,6 @@ impl RemovalSheet {
         Removal {
             memories: self.memories,
             history: self.history,
-        }
-    }
-
-    /// The title.
-    pub fn title(&self) -> String {
-        format!("Remove \u{201c}{}\u{201d}?", self.name)
-    }
-
-    /// The line under the title.
-    pub fn body(&self) -> &'static str {
-        match self.memories {
-            MemoryFate::MoveToApps => "Its memories move to the apps that saved them.",
-            MemoryFate::Delete => "Its memories will be deleted.",
-        }
-    }
-
-    /// The link button that flips what becomes of the memories.
-    pub fn flip_label(&self) -> &'static str {
-        match self.memories {
-            MemoryFate::MoveToApps => "Delete its memories instead",
-            MemoryFate::Delete => "Move its memories instead",
         }
     }
 
@@ -112,16 +91,3 @@ impl WithoutMemory {
         }
     }
 }
-
-/// What the person reads when a delete choice cannot be carried out because memory is not running.
-pub const MEMORY_NOT_RUNNING: &str = "Memory isn\u{2019}t running right now, so this Space can\u{2019}t be deleted. Try again in a moment.";
-
-/// The history choices, first the one that keeps it.
-pub const HISTORY_CHOICES: [(HistoryFate, &str); 2] = [
-    (HistoryFate::Keep, "Keep its history"),
-    (HistoryFate::Delete, "Delete its history"),
-];
-
-/// The line under the history choices.
-pub const HISTORY_NOTE: &str =
-    "History is what happened in this Space, like files you saved and messages you sent.";

@@ -2,9 +2,10 @@
 //! that lists it. The files are read when the Appearance page opens (the page is mounted afresh
 //! for each visit), off the window's thread; a file that cannot be read has no line.
 
+use crate::copy::{STYLE_NOTES_LEAD, STYLE_NOTES_TITLE, note_place, notes_summary};
 use crate::env::Env;
 use detent_files::{ConfigHome, DataHome, published_classes, read_style_sheets};
-use detent_model::{STYLE_NOTES_LEAD, STYLE_NOTES_TITLE, StyleFile, StyleNote, StyleNotes};
+use detent_model::{StyleFile, StyleNote, StyleNotes};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button_model::Answers;
@@ -62,9 +63,11 @@ pub(crate) fn StyleNotesLine() -> Element {
             }
         }
     });
-    let Some(summary) = notes().summary() else {
+    let total = notes().total();
+    if total == 0 {
         return rsx! {};
-    };
+    }
+    let summary = notes_summary(total);
     let close = EventHandler::new(move |()| opened.set(Shown::Hidden));
     rsx! {
         div { class: "style-notes", "data-style-notes": "{summary}",
@@ -91,8 +94,8 @@ pub(crate) fn StyleNotesLine() -> Element {
                         Label { text: STYLE_NOTES_LEAD, role: LabelRole::Secondary }
                         FieldGroup {
                             for (at, row) in notes().rows().into_iter().enumerate() {
-                                FieldRow { key: "{at}", label: TextLine::from(row.words),
-                                    Label { text: row.place, role: LabelRole::Secondary }
+                                FieldRow { key: "{at}", label: TextLine::from(row.words.clone()),
+                                    Label { text: note_place(&row), role: LabelRole::Secondary }
                                 }
                             }
                         }

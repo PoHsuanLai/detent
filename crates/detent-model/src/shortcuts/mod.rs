@@ -4,16 +4,14 @@
 
 mod groups;
 mod model;
-mod names;
 mod person_text;
 mod step;
 
 pub use groups::ShortcutGroup;
 pub use model::{
-    KeymapText, KeymapTexts, MachineLayer, Origin, ReplaceQuestion, ShortcutRow, ShortcutSection,
-    ShortcutsState, desktop_keymap, replace_question,
+    KeymapLayer, KeymapText, KeymapTexts, MachineLayer, Origin, ReplaceQuestion, ShortcutProblem,
+    ShortcutRow, ShortcutSection, ShortcutsState, desktop_keymap, replace_question,
 };
-pub use names::name_of;
 pub use step::{ShortcutsEffect, ShortcutsInput, shortcuts_step};
 
 #[cfg(test)]

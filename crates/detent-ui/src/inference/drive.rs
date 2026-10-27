@@ -3,6 +3,7 @@
 
 use super::{is_choice, set, set_pool};
 use crate::accounts::add_account;
+use crate::copy::picker::{agent_word, pool_refused};
 use crate::engine_install::use_board;
 use crate::env::Env;
 use crate::live::{Daemon, Followed, follow, reread, words_of};
@@ -32,7 +33,7 @@ fn with_coding_agents(env: &Env, described: Described) -> Described {
     let agents = load_agents(&env.config_home, &env.data_home);
     let found = programs_on(&env.programs_path);
     let offers = agent_offers(&agents, &found, agents_switch(&env.config_home));
-    with_agents(described, &offers)
+    with_agents(described, &offers, &agent_word)
 }
 
 /// Applies `input` to the picker and returns the effects it asks for.
@@ -109,6 +110,12 @@ async fn drive(
         for effect in send(&mut state, input) {
             match effect {
                 PickerEffect::Tell(text) => toasts.push(text, None),
+                PickerEffect::AccountNotAdded(end) => {
+                    if let Some(line) = crate::copy::account_notices::add_end_line(&end) {
+                        toasts.push(line.to_owned(), None);
+                    }
+                }
+                PickerEffect::PoolRefused => toasts.push(pool_refused().to_owned(), None),
                 PickerEffect::Set { path, word } => {
                     let Some(opened) = client.peek().clone() else {
                         continue;

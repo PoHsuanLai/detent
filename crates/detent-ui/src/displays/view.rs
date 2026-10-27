@@ -2,12 +2,12 @@
 //! refresh rate and rotation, and where it sits beside the others.
 
 use super::drive::use_displays;
+use crate::copy::{self, Subject};
 use crate::system::Unavailable;
 use detent_model::{
     ArrangeSide, Brightness, BrightnessList, DisplayChange, DisplayEdit, DisplayRotation,
     DisplaysInput, DisplaysReady, DisplaysState, Monitor, OutputId, PixelSize, RefreshMilliHz,
-    ScaleMilli, default_scale, display_size_words, displays_missing_words, hertz_words, looks_like,
-    mode_sizes, native_size, side_of,
+    ScaleMilli, default_scale, looks_like, mode_sizes, native_size, side_of,
 };
 use dioxus::prelude::*;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -22,8 +22,8 @@ pub(crate) fn DisplaysPane() -> Element {
     let state = driver.state.read().clone();
     match state {
         DisplaysState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
-        DisplaysState::Unavailable(missing) => rsx! {
-            Unavailable { title: "Displays", words: displays_missing_words(missing) }
+        DisplaysState::Unavailable(absence) => rsx! {
+            Unavailable { title: "Displays", subject: Subject::Displays, absence }
         },
         DisplaysState::Ready(page) => {
             let brightness = driver.brightness.read().clone();
@@ -139,7 +139,7 @@ fn ResolutionRow(
     let items: Vec<MenuItem<ScaleMilli>> = looks
         .iter()
         .map(|look| {
-            let size = display_size_words(look.size);
+            let size = copy::displays::size(look.size);
             let label = if look.scale == default {
                 format!("Default for display ({size})")
             } else {
@@ -151,7 +151,7 @@ fn ResolutionRow(
     let now = looks
         .iter()
         .find(|look| look.scale == display.scale)
-        .map(|look| format!("Looks like {}", display_size_words(look.size)));
+        .map(|look| format!("Looks like {}", copy::displays::size(look.size)));
     rsx! {
         FieldRow { label: TextLine::from("Resolution"), help: now.map(TextLine::from), availability,
             PopUpButton::<ScaleMilli> {
@@ -174,7 +174,7 @@ fn ModeRow(display: Monitor, availability: Availability, pick: EventHandler<Pixe
     let items: Vec<MenuItem<PixelSize>> = sizes
         .iter()
         .map(|size| {
-            let words = display_size_words(*size);
+            let words = copy::displays::size(*size);
             let label = if native == Some(*size) {
                 format!("{words} (Native)")
             } else {
@@ -230,7 +230,7 @@ fn RefreshRow(
     let alone = rates.len() < 2;
     let items: Vec<MenuItem<RefreshMilliHz>> = rates
         .iter()
-        .map(|rate| MenuItem::new(*rate, hertz_words(*rate)))
+        .map(|rate| MenuItem::new(*rate, copy::displays::hertz(*rate)))
         .collect();
     rsx! {
         FieldRow {
@@ -255,7 +255,7 @@ fn RotationRow(
 ) -> Element {
     let items: Vec<MenuItem<DisplayRotation>> = DisplayRotation::ALL
         .iter()
-        .map(|turn| MenuItem::new(*turn, turn.words()))
+        .map(|turn| MenuItem::new(*turn, copy::displays::rotation(*turn)))
         .collect();
     rsx! {
         FieldRow { label: TextLine::from("Rotation"), availability,
@@ -284,7 +284,7 @@ fn PlaceRow(
             ArrangeSide::ALL.into_iter().map(move |side| {
                 MenuItem::new(
                     (other.id.clone(), side),
-                    format!("{} {}", side.words(), other.name),
+                    format!("{} {}", copy::displays::side(side), other.name),
                 )
             })
         })

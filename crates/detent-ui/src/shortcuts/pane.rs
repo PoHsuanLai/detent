@@ -1,6 +1,7 @@
 //! The list's state and what carries its effects out: the files are read and written here, the
 //! decisions are `detent-model`'s `shortcuts_step`.
 
+use crate::copy::shortcuts::{chord_reserved, file_left_alone};
 use crate::env::Env;
 use detent_files::FilesError;
 use detent_model::{ShortcutsEffect, ShortcutsInput, ShortcutsState, shortcuts_step};
@@ -68,6 +69,12 @@ impl Pane {
             }
             ShortcutsEffect::Reread => self.feed(ShortcutsInput::Read(self.env.keymap.read())),
             ShortcutsEffect::Tell(words) => self.toasts.push(words, None),
+            ShortcutsEffect::FileLeftAlone { trouble } => {
+                self.toasts.push(file_left_alone(&trouble), None);
+            }
+            ShortcutsEffect::Reserved { chord, reason } => {
+                self.toasts.push(chord_reserved(&chord, &reason), None);
+            }
         }
     }
 

@@ -175,7 +175,7 @@ fn a_switch_and_an_action_go_back_to_the_module_that_has_the_row() {
         heard_all(),
         AccountsInput::Switched {
             row: files.clone(),
-            on: true,
+            on: SwitchState::On,
         },
     );
     assert_eq!(
@@ -185,7 +185,7 @@ fn a_switch_and_an_action_go_back_to_the_module_that_has_the_row() {
             value: toml::Value::String("on".to_owned())
         }]
     );
-    assert!(ready(state).pane.accounts[2].sync[0].on);
+    assert!(ready(state).pane.accounts[2].sync[0].on.is_on());
     // The same path in accountd is another row: the identity has no such switch.
     let elsewhere = ModuleRow::new(
         ModuleId::Accountd,
@@ -195,7 +195,7 @@ fn a_switch_and_an_action_go_back_to_the_module_that_has_the_row() {
         heard_all(),
         AccountsInput::Switched {
             row: elsewhere,
-            on: true,
+            on: SwitchState::On,
         },
     );
     assert!(effects.is_empty());
@@ -267,7 +267,7 @@ fn the_screen_of_a_vanished_modules_account_goes_back_to_the_list() {
 fn a_failed_reread_of_a_module_retries_that_module_only() {
     let (_, effects) = accounts_step(
         heard_all(),
-        AccountsInput::Reread(ModuleId::Inferd, Err(Absence::Failed("moved".to_owned()))),
+        AccountsInput::Reread(ModuleId::Inferd, Err(Absence::Failed)),
     );
     assert_eq!(effects, [AccountsEffect::Retry(ModuleId::Inferd)]);
 }

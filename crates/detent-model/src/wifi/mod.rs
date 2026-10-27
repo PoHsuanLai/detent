@@ -7,7 +7,6 @@ mod model;
 mod page;
 mod passphrase;
 mod step;
-mod words;
 
 pub use account::WifiLogin;
 pub use hidden::{HiddenForm, HiddenLogin, HiddenNetwork, HiddenSecurity};
@@ -15,15 +14,11 @@ pub use model::{
     AccessPoint, NetworkLink, NetworkLock, Remembered, SignalBars, SignalStrength, Ssid,
     WifiNetwork, WifiRadio, WifiStatus, WifiWire,
 };
-pub use page::{WIFI_SLUG, is_wifi, wifi_page};
+pub use page::{WIFI_SLUG, wifi_page};
 pub use passphrase::Passphrase;
 pub use step::{
-    AskKind, AskStanding, JoinFailure, PasswordAsk, WifiEffect, WifiInput, WifiReady, WifiSheet,
+    AskKind, AskStanding, JoinFailure, PasswordAsk, WifiAsking, WifiEffect, WifiInput, WifiReady,
     WifiState, wifi_step,
-};
-pub use words::{
-    OTHER_FAILED, OTHER_HELP, OTHER_TITLE, WIFI_BLOCKED, details_rows, forget_network_body,
-    forget_network_title, missing_words, password_help, password_title,
 };
 
 #[cfg(test)]

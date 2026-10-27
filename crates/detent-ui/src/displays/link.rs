@@ -3,17 +3,17 @@
 
 use crate::ticks::Ticks;
 use detent_model::{
-    Brightness, BrightnessList, DisplayChange, DisplaysStatus, Missing, OutputId, Work,
+    Absence, Brightness, BrightnessList, DisplayChange, DisplaysStatus, OutputId, Work,
 };
 use std::fmt::Debug;
 
 /// What the page needs of the compositor.
 pub trait DisplaysLink: Debug + Send + Sync {
     /// The displays now, or why there are none.
-    fn read(&self) -> Work<'_, Result<DisplaysStatus, Missing>>;
+    fn read(&self) -> Work<'_, Result<DisplaysStatus, Absence>>;
     /// A tick each time the displays may have changed, a change the compositor reverts included;
     /// only the compositor being unreachable is an error.
-    fn changes(&self) -> Work<'_, Result<Ticks, Missing>>;
+    fn changes(&self) -> Work<'_, Result<Ticks, Absence>>;
     /// Applies a change. The compositor asks the person whether to keep a change a program made,
     /// and goes back by itself when they do not; this answers when it has taken the change, not
     /// when it is kept. The compositor's words when it cannot.
@@ -21,12 +21,12 @@ pub trait DisplaysLink: Debug + Send + Sync {
 
     /// The displays that have a brightness to move, which are the ones the shell lists; none
     /// when there is no shell to ask.
-    fn brightness(&self) -> Work<'_, Result<BrightnessList, Missing>> {
-        Box::pin(std::future::ready(Err(Missing::NoService)))
+    fn brightness(&self) -> Work<'_, Result<BrightnessList, Absence>> {
+        Box::pin(std::future::ready(Err(Absence::NotRunning)))
     }
     /// A tick each time the shell says a brightness changed.
-    fn brightness_changes(&self) -> Work<'_, Result<Ticks, Missing>> {
-        Box::pin(std::future::ready(Err(Missing::NoService)))
+    fn brightness_changes(&self) -> Work<'_, Result<Ticks, Absence>> {
+        Box::pin(std::future::ready(Err(Absence::NotRunning)))
     }
     /// Sets one display's brightness. The words to say when it cannot.
     fn set_brightness(

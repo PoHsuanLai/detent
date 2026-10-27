@@ -109,7 +109,7 @@ impl Sources {
             match self.of(module) {
                 Source::Looking | Source::Read(_) => return None,
                 Source::Absent(absence) => {
-                    first.get_or_insert_with(|| absence.clone());
+                    first.get_or_insert(*absence);
                 }
             }
         }

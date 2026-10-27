@@ -5,7 +5,7 @@ use super::model::{
     DisplayPosition, DisplayRotation, DisplaysStatus, OutputId, PixelSize, RefreshMilliHz,
     ScaleMilli,
 };
-use crate::missing::Missing;
+use crate::Absence;
 
 /// Where the page stands.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -14,7 +14,7 @@ pub enum DisplaysState {
     #[default]
     Looking,
     /// There is nothing to show, for this reason.
-    Unavailable(Missing),
+    Unavailable(Absence),
     /// The displays.
     Ready(DisplaysReady),
 }
@@ -56,7 +56,7 @@ pub struct DisplayChange {
 #[derive(Debug, Clone)]
 pub enum DisplaysInput {
     /// A read of the compositor, or why there is none.
-    Heard(Result<DisplaysStatus, Missing>),
+    Heard(Result<DisplaysStatus, Absence>),
     /// The person changed a display.
     Change(DisplayChange),
     /// The person put a display beside another.
@@ -89,7 +89,7 @@ pub fn displays_step(
     }
 }
 
-fn heard_step(state: DisplaysState, heard: Result<DisplaysStatus, Missing>) -> DisplaysState {
+fn heard_step(state: DisplaysState, heard: Result<DisplaysStatus, Absence>) -> DisplaysState {
     let status = match heard {
         Ok(status) => status,
         Err(missing) => return DisplaysState::Unavailable(missing),

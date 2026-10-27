@@ -11,6 +11,7 @@ mod bluetooth;
 mod chooser;
 mod computers;
 mod controls;
+mod copy;
 mod deadline;
 #[cfg(test)]
 mod deadline_tests;

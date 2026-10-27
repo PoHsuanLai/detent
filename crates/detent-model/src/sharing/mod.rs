@@ -4,10 +4,7 @@
 
 mod step;
 
-pub use step::{
-    ALLOW, CANCEL, Existing, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way,
-    sharing_question, sharing_step,
-};
+pub use step::{Existing, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way, sharing_step};
 
 #[cfg(test)]
 mod tests;

@@ -69,13 +69,6 @@ impl BtKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BatteryLevel(pub u8);
 
-impl BatteryLevel {
-    /// The level as the row reads it (`80%`).
-    pub fn words(self) -> String {
-        format!("{}%", self.0.min(100))
-    }
-}
-
 /// One device.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BtDevice {
@@ -138,12 +131,6 @@ impl BtStatus {
 /// The six-digit number two devices compare while pairing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PairingCode(pub u32);
-
-impl std::fmt::Display for PairingCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:06}", self.0 % 1_000_000)
-    }
-}
 
 /// What a device asks of the person while pairing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -3,17 +3,17 @@
 
 use crate::ticks::Ticks;
 use detent_model::{
-    HiddenNetwork, JoinFailure, Missing, Passphrase, Ssid, WifiLogin, WifiRadio, WifiStatus, Work,
+    Absence, HiddenNetwork, JoinFailure, Passphrase, Ssid, WifiLogin, WifiRadio, WifiStatus, Work,
 };
 use std::fmt::Debug;
 
 /// What the page needs of the network service.
 pub trait WifiLink: Debug + Send + Sync {
     /// The switch and the networks in range now, or why there are none.
-    fn read(&self) -> Work<'_, Result<WifiStatus, Missing>>;
+    fn read(&self) -> Work<'_, Result<WifiStatus, Absence>>;
     /// A tick each time the standing may have changed, also when the service appears or goes;
     /// only the bus being unreachable is an error.
-    fn changes(&self) -> Work<'_, Result<Ticks, Missing>>;
+    fn changes(&self) -> Work<'_, Result<Ticks, Absence>>;
     /// Asks the radio to look for networks again; the answer arrives as a change.
     fn scan(&self) -> Work<'_, ()>;
     /// Moves the switch; the service's words when it cannot.

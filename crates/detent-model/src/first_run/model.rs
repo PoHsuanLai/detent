@@ -38,14 +38,6 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    /// What a person reads for how it stands: a runtime that is up is running.
-    pub fn state_label(&self) -> String {
-        match self.status {
-            AccountStatus::Ok => "Running".to_owned(),
-            _ => self.status.label(),
-        }
-    }
-
     /// Whether it can be picked now.
     pub fn is_running(&self) -> bool {
         self.status == AccountStatus::Ok

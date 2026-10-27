@@ -2,14 +2,14 @@
 //! the page asked and moves its own standing the way the real one would.
 
 use detent_model::{
-    DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, Missing, ModePreference, Work, mode_at,
+    Absence, DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, ModePreference, Work, mode_at,
 };
 use detent_ui::{DisplaysLink, Ticker, Ticks};
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 struct Shared {
-    standing: Mutex<Result<DisplaysStatus, Missing>>,
+    standing: Mutex<Result<DisplaysStatus, Absence>>,
     asked: Mutex<Vec<DisplayChange>>,
     refusal: Mutex<Option<String>>,
     listeners: Mutex<Vec<Ticker>>,
@@ -26,11 +26,11 @@ impl Displays {
     }
 
     /// No compositor, for this reason.
-    pub fn missing(why: Missing) -> Displays {
+    pub fn missing(why: Absence) -> Displays {
         Displays::standing(Err(why))
     }
 
-    fn standing(standing: Result<DisplaysStatus, Missing>) -> Displays {
+    fn standing(standing: Result<DisplaysStatus, Absence>) -> Displays {
         Displays(Arc::new(Shared {
             standing: Mutex::new(standing),
             asked: Mutex::default(),
@@ -59,12 +59,12 @@ impl Displays {
 }
 
 impl DisplaysLink for Displays {
-    fn read(&self) -> Work<'_, Result<DisplaysStatus, Missing>> {
+    fn read(&self) -> Work<'_, Result<DisplaysStatus, Absence>> {
         let standing = self.0.standing.lock().expect("lock").clone();
         Box::pin(std::future::ready(standing))
     }
 
-    fn changes(&self) -> Work<'_, Result<Ticks, Missing>> {
+    fn changes(&self) -> Work<'_, Result<Ticks, Absence>> {
         let (listener, ticks) = Ticks::channel();
         self.0.listeners.lock().expect("lock").push(listener);
         Box::pin(std::future::ready(Ok(ticks)))

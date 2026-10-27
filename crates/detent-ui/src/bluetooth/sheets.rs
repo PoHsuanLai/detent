@@ -1,9 +1,8 @@
 //! The two sheets over the Bluetooth page: forgetting a device, and a device asking while it
 //! pairs.
 
-use detent_model::{
-    BtInput, PairingAnswer, PairingQuestion, forget_body, forget_title, pairing_body, pairing_title,
-};
+use crate::copy::bluetooth::{forget_body, forget_title, pairing_body, pairing_title};
+use detent_model::{BtInput, PairingAnswer, PairingQuestion};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button_model::{Answers, ButtonRole};

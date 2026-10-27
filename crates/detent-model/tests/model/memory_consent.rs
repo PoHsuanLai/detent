@@ -1,10 +1,10 @@
 //! The loose memory settings over almanac's real schema: which keys can wait, the pairs a save
-//! confirms, the words of the note, and the state's bookkeeping.
+//! confirms, the value the note names, and the state's bookkeeping.
 
 use almanac_core::WaitingSetting;
 use detent_model::{
-    Catalogue, Confinement, ConsentState, KeyEntry, SettingPair, Trouble, discover,
-    holds_memory_settings, is_memory_setting, tells_confinement, to_confirm, waiting_note,
+    Catalogue, Confinement, ConsentState, KeptValue, KeyEntry, SettingPair, Trouble, discover,
+    holds_memory_settings, is_memory_setting, kept_value, tells_confinement, to_confirm,
 };
 use detent_testkit::{Scratch, seed_schemas};
 use ds_settings::schema::KeyPath;
@@ -117,18 +117,33 @@ fn a_saved_value_is_named_the_way_memory_names_it() {
 }
 
 #[test]
-fn the_note_says_what_memory_keeps_meanwhile_in_the_rows_own_words() {
+fn the_value_memory_keeps_meanwhile_is_read_in_the_rows_own_words() {
     let catalogue = real("consent-note");
-    // `(key, shipped value, the words)`.
+    // `(key, waiting value, shipped value, what the row reads it as)`.
     let cases = [
-        (AT_REST, "plain", "sealed", "\u{201c}Private\u{201d}"),
-        (APPLY, "review", "auto", "\u{201c}Right away\u{201d}"),
-        (SEARCH_DAYS, "7", "30", "30 days"),
+        (
+            AT_REST,
+            "plain",
+            "sealed",
+            KeptValue::Named("Private".to_owned()),
+        ),
+        (
+            APPLY,
+            "review",
+            "auto",
+            KeptValue::Named("Right away".to_owned()),
+        ),
+        (
+            SEARCH_DAYS,
+            "7",
+            "30",
+            KeptValue::Measured("30 days".to_owned()),
+        ),
     ];
     for (path, waiting, shipped, kept) in cases {
         assert_eq!(
-            waiting_note(&entry(&catalogue, path), &waits(path, waiting, shipped)),
-            format!("Waits for you to confirm. Until then, memory keeps {kept}."),
+            kept_value(&entry(&catalogue, path), &waits(path, waiting, shipped)),
+            kept,
             "{path}"
         );
     }
@@ -173,34 +188,19 @@ fn a_failure_stays_while_its_key_waits_and_goes_when_confirmed_or_gone() {
 }
 
 #[test]
-fn memorys_confinement_word_is_parsed_once_and_has_a_line_only_when_there_is_something_to_say() {
-    // `(the word on the bus, what it parses to, the line shown)`.
-    const CASES: &[(&str, Confinement, Option<&str>)] = &[
-        (
-            "confined",
-            Confinement::Confined,
-            Some("Memory keeps itself to its own folders"),
-        ),
-        (
-            "partial",
-            Confinement::Partial,
-            Some(
-                "Memory keeps itself to its own folders, though this computer can only enforce part of that",
-            ),
-        ),
-        (
-            "not-available",
-            Confinement::NotAvailable,
-            Some("This computer can't keep memory to its own folders"),
-        ),
-        ("off", Confinement::Off, None),
-        ("somewhere-new", Confinement::Unknown, None),
-        ("Confined", Confinement::Unknown, None),
-        ("", Confinement::Unknown, None),
+fn memorys_confinement_word_is_parsed_once() {
+    // `(the word on the bus, what it parses to)`.
+    const CASES: &[(&str, Confinement)] = &[
+        ("confined", Confinement::Confined),
+        ("partial", Confinement::Partial),
+        ("not-available", Confinement::NotAvailable),
+        ("off", Confinement::Off),
+        ("somewhere-new", Confinement::Unknown),
+        ("Confined", Confinement::Unknown),
+        ("", Confinement::Unknown),
     ];
-    for (word, parsed, line) in CASES {
+    for (word, parsed) in CASES {
         assert_eq!(Confinement::from_word(word), *parsed, "{word:?}");
-        assert_eq!(parsed.line(), *line, "{word:?}");
     }
     assert_eq!(
         Confinement::default(),

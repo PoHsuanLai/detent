@@ -9,6 +9,7 @@ use super::hold_drive::{drive_holds, drive_sync_now};
 use super::link::AccountLink;
 use super::list_view::{AccountList, ClientIds, FootHandlers};
 use super::sync_read::use_sync_book;
+use crate::copy::{Subject, absence as absence_words};
 use crate::env::Env;
 use crate::live::follow_holds;
 use crate::marks::ProviderMarks;
@@ -126,8 +127,7 @@ fn Ready(
     send_hold: EventHandler<HoldInput>,
     send_sync: EventHandler<DatasetName>,
 ) -> Element {
-    let busy = ready.pending.is_some();
-    let availability = if busy {
+    let availability = if ready.pending.is_some() {
         Availability::Disabled
     } else {
         Availability::Enabled
@@ -191,7 +191,7 @@ fn Ready(
                     panes: vec![SplitPane::new(SOURCES, list)],
                     div { class: "accounts-rest",
                         if let Some(account) = ready.open().cloned() {
-                            AccountDetail { account, busy, holds, marks, book, on }
+                            AccountDetail { account, availability, holds, marks, book, on }
                         } else if !ready.pane.accounts.is_empty() {
                             EmptyState {
                                 title: "No account chosen",
@@ -210,32 +210,10 @@ fn Ready(
                 RemoveAlert {
                     question,
                     remove_name,
-                    onanswer: move |yes| {
-                        send.call(if yes { AccountsInput::Remove } else { AccountsInput::Keep });
-                    },
+                    onkeep: move |()| send.call(AccountsInput::Keep),
+                    onremove: move |()| send.call(AccountsInput::Remove),
                 }
             }
-        }
-    }
-}
-
-/// What the absence of the account service says.
-fn absence_help(absence: &Absence) -> String {
-    match absence {
-        Absence::NoBus => {
-            "Settings is not connected to the desktop, so there are no accounts to show.".to_owned()
-        }
-        Absence::NotRunning => {
-            "The accounts service is not running, so there are no accounts to show.".to_owned()
-        }
-        Absence::NotPermitted => "Accounts can only be managed when Settings is opened from \
-            the desktop. Close this window and open Settings again from the launcher."
-            .to_owned(),
-        Absence::Unavailable => "The accounts service could not be confirmed, so there are no \
-            accounts to show."
-            .to_owned(),
-        Absence::Failed(_) => {
-            "The accounts service did not answer. Try again in a moment.".to_owned()
         }
     }
 }
@@ -248,7 +226,7 @@ fn Unavailable(absence: Absence) -> Element {
             FieldGroup { title: Some("Accounts".to_owned()),
                 FieldRow {
                     label: TextLine::from("Accounts"),
-                    help: Some(TextLine::from(absence_help(&absence))),
+                    help: Some(TextLine::from(absence_words(Subject::Accounts, absence))),
                     availability: Availability::Disabled,
                     Label { text: "Unavailable", role: LabelRole::Secondary }
                 }

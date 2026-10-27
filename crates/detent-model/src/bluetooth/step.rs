@@ -3,7 +3,7 @@
 use super::model::{
     BtAddress, BtLink, BtPairing, BtPower, BtStatus, PairingAnswer, PairingAsk, PairingQuestion,
 };
-use crate::missing::Missing;
+use crate::Absence;
 
 /// Where the page stands.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -12,7 +12,7 @@ pub enum BtState {
     #[default]
     Looking,
     /// There is nothing to show, for this reason.
-    Unavailable(Missing),
+    Unavailable(Absence),
     /// The switch and the devices.
     Ready(BtReady),
 }
@@ -22,17 +22,17 @@ pub enum BtState {
 pub struct BtReady {
     /// What BlueZ last said.
     pub status: BtStatus,
-    /// The sheet over the page, if any.
-    pub sheet: BtSheet,
+    /// What the person is asked over the page, if anything.
+    pub asking: BtAsking,
     /// The device a connect or a pairing was started for and has not ended.
     pub busy: Option<BtAddress>,
 }
 
-/// A sheet over the page.
+/// What the person is asked over the page.
 #[derive(Debug, Clone, PartialEq)]
-pub enum BtSheet {
-    /// None.
-    Closed,
+pub enum BtAsking {
+    /// Nothing.
+    Nothing,
     /// Are you sure you want to forget this device?
     Forget(BtAddress),
     /// A device asks something while pairing.
@@ -43,7 +43,7 @@ pub enum BtSheet {
 #[derive(Debug, Clone)]
 pub enum BtInput {
     /// A read of BlueZ, or why there is none.
-    Heard(Result<BtStatus, Missing>),
+    Heard(Result<BtStatus, Absence>),
     /// The person moved the switch.
     Switch(BtPower),
     /// The person pressed Connect on a device they have paired with.
@@ -56,7 +56,7 @@ pub enum BtInput {
     AskForget(BtAddress),
     /// The person confirmed forgetting.
     ConfirmForget,
-    /// The person closed the sheet.
+    /// The person turned away from the question.
     Cancel,
     /// A device asks something.
     Asked(PairingQuestion),
@@ -99,7 +99,7 @@ pub fn bluetooth_step(state: BtState, input: BtInput) -> (BtState, Vec<BtEffect>
     }
 }
 
-fn heard_step(state: BtState, heard: Result<BtStatus, Missing>) -> BtState {
+fn heard_step(state: BtState, heard: Result<BtStatus, Absence>) -> BtState {
     let status = match heard {
         Ok(status) => status,
         Err(missing) => return BtState::Unavailable(missing),
@@ -108,7 +108,7 @@ fn heard_step(state: BtState, heard: Result<BtStatus, Missing>) -> BtState {
         BtState::Ready(page) => BtState::Ready(BtReady { status, ..page }),
         BtState::Looking | BtState::Unavailable(_) => BtState::Ready(BtReady {
             status,
-            sheet: BtSheet::Closed,
+            asking: BtAsking::Nothing,
             busy: None,
         }),
     }
@@ -121,12 +121,12 @@ fn press_step(page: BtReady, input: BtInput) -> (BtReady, Vec<BtEffect>) {
         BtInput::Connect(address) => start(page, address, BtEffect::Connect),
         BtInput::Pair(address) => start(page, address, BtEffect::Pair),
         BtInput::Disconnect(address) => (page, vec![BtEffect::Disconnect(address)]),
-        BtInput::AskForget(address) => (with_sheet(page, BtSheet::Forget(address)), Vec::new()),
+        BtInput::AskForget(address) => (with_asking(page, BtAsking::Forget(address)), Vec::new()),
         BtInput::ConfirmForget => confirm_forget(page),
         BtInput::Cancel => cancel(page),
-        BtInput::Asked(question) => (with_sheet(page, BtSheet::Pairing(question)), Vec::new()),
+        BtInput::Asked(question) => (with_asking(page, BtAsking::Pairing(question)), Vec::new()),
         BtInput::Answer(answer) => (
-            with_sheet(page, BtSheet::Closed),
+            with_asking(page, BtAsking::Nothing),
             vec![BtEffect::Answer(answer)],
         ),
         BtInput::Ended(address, result) => ended(page, &address, result),
@@ -134,8 +134,8 @@ fn press_step(page: BtReady, input: BtInput) -> (BtReady, Vec<BtEffect>) {
     }
 }
 
-fn with_sheet(page: BtReady, sheet: BtSheet) -> BtReady {
-    BtReady { sheet, ..page }
+fn with_asking(page: BtReady, asking: BtAsking) -> BtReady {
+    BtReady { asking, ..page }
 }
 
 /// Starts work on a device, unless other work is under way.
@@ -157,22 +157,22 @@ fn start(
 }
 
 fn confirm_forget(page: BtReady) -> (BtReady, Vec<BtEffect>) {
-    match page.sheet.clone() {
-        BtSheet::Forget(address) => (
-            with_sheet(page, BtSheet::Closed),
+    match page.asking.clone() {
+        BtAsking::Forget(address) => (
+            with_asking(page, BtAsking::Nothing),
             vec![BtEffect::Forget(address)],
         ),
-        BtSheet::Closed | BtSheet::Pairing(_) => (page, Vec::new()),
+        BtAsking::Nothing | BtAsking::Pairing(_) => (page, Vec::new()),
     }
 }
 
-/// Closing the pairing sheet is a No to the device that asked.
+/// Turning away from a pairing question is a No to the device that asked.
 fn cancel(page: BtReady) -> (BtReady, Vec<BtEffect>) {
-    let effects = match &page.sheet {
-        BtSheet::Pairing(_) => vec![BtEffect::Answer(PairingAnswer::No)],
-        BtSheet::Closed | BtSheet::Forget(_) => Vec::new(),
+    let effects = match &page.asking {
+        BtAsking::Pairing(_) => vec![BtEffect::Answer(PairingAnswer::No)],
+        BtAsking::Nothing | BtAsking::Forget(_) => Vec::new(),
     };
-    (with_sheet(page, BtSheet::Closed), effects)
+    (with_asking(page, BtAsking::Nothing), effects)
 }
 
 fn ended(
@@ -181,15 +181,15 @@ fn ended(
     result: Result<(), String>,
 ) -> (BtReady, Vec<BtEffect>) {
     let busy = page.busy.clone().filter(|busy| busy != address);
-    let sheet = match &page.sheet {
-        BtSheet::Pairing(question) if &question.address == address => BtSheet::Closed,
+    let asking = match &page.asking {
+        BtAsking::Pairing(question) if &question.address == address => BtAsking::Nothing,
         other => other.clone(),
     };
     let effects = result.err().map(BtEffect::Tell).into_iter().collect();
     (
         BtReady {
             busy,
-            sheet,
+            asking,
             ..page
         },
         effects,

@@ -27,15 +27,3 @@ pub enum AddEnd {
     /// The account could not be added, or the service could not be reached.
     Failed,
 }
-
-impl AddEnd {
-    /// The line the person reads, if the end has one to say.
-    pub fn line(&self) -> Option<&'static str> {
-        match self {
-            Self::Added | Self::Closed => None,
-            Self::AlreadyThere(_) => Some("This account is already added."),
-            Self::Busy => Some("An Add Account window is already open."),
-            Self::Failed => Some("Could not add an account. Try again later."),
-        }
-    }
-}

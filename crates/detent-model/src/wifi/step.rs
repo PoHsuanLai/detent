@@ -5,8 +5,7 @@ use super::account::WifiLogin;
 use super::hidden::HiddenNetwork;
 use super::model::{NetworkLink, NetworkLock, Remembered, Ssid, WifiRadio, WifiStatus};
 use super::passphrase::Passphrase;
-use super::words::OTHER_FAILED;
-use crate::missing::Missing;
+use crate::Absence;
 
 /// Where the page stands.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -15,7 +14,7 @@ pub enum WifiState {
     #[default]
     Looking,
     /// There is nothing to show, for this reason.
-    Unavailable(Missing),
+    Unavailable(Absence),
     /// The switch and the networks.
     Ready(WifiReady),
 }
@@ -25,17 +24,17 @@ pub enum WifiState {
 pub struct WifiReady {
     /// What the service last said.
     pub status: WifiStatus,
-    /// The sheet over the page, if any.
-    pub sheet: WifiSheet,
+    /// What the person is asked or shown over the page, if anything.
+    pub asking: WifiAsking,
     /// The network a join was started for and has not ended.
     pub joining: Option<Ssid>,
 }
 
-/// A sheet over the page.
+/// What the person is asked or shown over the page.
 #[derive(Debug, Clone, PartialEq)]
-pub enum WifiSheet {
-    /// None.
-    Closed,
+pub enum WifiAsking {
+    /// Nothing.
+    Nothing,
     /// The password of a network, or the username and password of one that signs in.
     Password(PasswordAsk),
     /// The details of the network this computer is on.
@@ -98,7 +97,7 @@ pub enum JoinFailure {
 #[derive(Debug, Clone)]
 pub enum WifiInput {
     /// A read of the service, or why there is none.
-    Heard(Result<WifiStatus, Missing>),
+    Heard(Result<WifiStatus, Absence>),
     /// The person moved the switch.
     Switch(WifiRadio),
     /// The person chose a network to join.
@@ -119,8 +118,8 @@ pub enum WifiInput {
     Joined(Ssid, Result<(), JoinFailure>),
     /// The person opened the details of the network they are on.
     OpenDetails,
-    /// The person closed the sheet.
-    CloseSheet,
+    /// The person turned away from what was asked or shown.
+    Dismiss,
     /// The service refused a request, in these words.
     Refused(String),
 }
@@ -140,6 +139,8 @@ pub enum WifiEffect {
     Forget(Ssid),
     /// Say this to the person.
     Tell(String),
+    /// Say that a network that was typed in could not be joined.
+    CouldNotJoin,
 }
 
 fn ready(state: WifiState) -> Option<WifiReady> {
@@ -163,15 +164,15 @@ pub fn wifi_step(state: WifiState, input: WifiInput) -> (WifiState, Vec<WifiEffe
     }
 }
 
-fn heard_step(state: WifiState, heard: Result<WifiStatus, Missing>) -> WifiState {
+fn heard_step(state: WifiState, heard: Result<WifiStatus, Absence>) -> WifiState {
     let status = match heard {
         Ok(status) => status,
         Err(missing) => return WifiState::Unavailable(missing),
     };
     let before = ready(state);
-    let sheet = before
+    let asking = before
         .as_ref()
-        .map_or(WifiSheet::Closed, |page| page.sheet.clone());
+        .map_or(WifiAsking::Nothing, |page| page.asking.clone());
     let joining = before.and_then(|page| page.joining).filter(|ssid| {
         status
             .network(ssid)
@@ -179,7 +180,7 @@ fn heard_step(state: WifiState, heard: Result<WifiStatus, Missing>) -> WifiState
     });
     WifiState::Ready(WifiReady {
         status,
-        sheet,
+        asking,
         joining,
     })
 }
@@ -191,7 +192,7 @@ fn press_step(page: WifiReady, input: WifiInput) -> (WifiReady, Vec<WifiEffect>)
         WifiInput::Pick(ssid) => pick(page, ssid),
         WifiInput::Password(ssid, passphrase) => (
             WifiReady {
-                sheet: WifiSheet::Closed,
+                asking: WifiAsking::Nothing,
                 joining: Some(ssid.clone()),
                 ..page
             },
@@ -199,22 +200,22 @@ fn press_step(page: WifiReady, input: WifiInput) -> (WifiReady, Vec<WifiEffect>)
         ),
         WifiInput::SignIn(ssid, account) => (
             WifiReady {
-                sheet: WifiSheet::Closed,
+                asking: WifiAsking::Nothing,
                 joining: Some(ssid.clone()),
                 ..page
             },
             vec![WifiEffect::SignIn(ssid, account)],
         ),
-        WifiInput::OpenOther => (with_sheet(page, WifiSheet::Other), Vec::new()),
+        WifiInput::OpenOther => (with_asking(page, WifiAsking::Other), Vec::new()),
         WifiInput::JoinOther(network) => (
             WifiReady {
-                sheet: WifiSheet::Closed,
+                asking: WifiAsking::Nothing,
                 joining: Some(network.ssid.clone()),
                 ..page
             },
             vec![WifiEffect::JoinHidden(network)],
         ),
-        WifiInput::AskForget(ssid) => (with_sheet(page, WifiSheet::Forget(ssid)), Vec::new()),
+        WifiInput::AskForget(ssid) => (with_asking(page, WifiAsking::Forget(ssid)), Vec::new()),
         WifiInput::ConfirmForget => confirm_forget(page),
         WifiInput::Joined(ssid, Ok(())) => (without_joining(page, &ssid), Vec::new()),
         WifiInput::Joined(ssid, Err(JoinFailure::WrongPassword)) => ask_again(page, ssid),
@@ -222,9 +223,9 @@ fn press_step(page: WifiReady, input: WifiInput) -> (WifiReady, Vec<WifiEffect>)
             (without_joining(page, &ssid), vec![WifiEffect::Tell(words)])
         }
         WifiInput::OpenDetails => open_details(page),
-        WifiInput::CloseSheet => (
+        WifiInput::Dismiss => (
             WifiReady {
-                sheet: WifiSheet::Closed,
+                asking: WifiAsking::Nothing,
                 ..page
             },
             Vec::new(),
@@ -233,19 +234,20 @@ fn press_step(page: WifiReady, input: WifiInput) -> (WifiReady, Vec<WifiEffect>)
     }
 }
 
-fn with_sheet(page: WifiReady, sheet: WifiSheet) -> WifiReady {
-    WifiReady { sheet, ..page }
+fn with_asking(page: WifiReady, asking: WifiAsking) -> WifiReady {
+    WifiReady { asking, ..page }
 }
 
 fn confirm_forget(page: WifiReady) -> (WifiReady, Vec<WifiEffect>) {
-    match page.sheet.clone() {
-        WifiSheet::Forget(ssid) => (
-            with_sheet(page, WifiSheet::Closed),
+    match page.asking.clone() {
+        WifiAsking::Forget(ssid) => (
+            with_asking(page, WifiAsking::Nothing),
             vec![WifiEffect::Forget(ssid)],
         ),
-        WifiSheet::Closed | WifiSheet::Password(_) | WifiSheet::Details(_) | WifiSheet::Other => {
-            (page, Vec::new())
-        }
+        WifiAsking::Nothing
+        | WifiAsking::Password(_)
+        | WifiAsking::Details(_)
+        | WifiAsking::Other => (page, Vec::new()),
     }
 }
 
@@ -260,9 +262,9 @@ fn ask_again(page: WifiReady, ssid: Ssid) -> (WifiReady, Vec<WifiEffect>) {
                 standing: AskStanding::Wrong,
                 kind: AskKind::of(lock),
             };
-            (with_sheet(page, WifiSheet::Password(ask)), Vec::new())
+            (with_asking(page, WifiAsking::Password(ask)), Vec::new())
         }
-        None => (page, vec![WifiEffect::Tell(OTHER_FAILED.to_owned())]),
+        None => (page, vec![WifiEffect::CouldNotJoin]),
     }
 }
 
@@ -295,12 +297,12 @@ fn pick(page: WifiReady, ssid: Ssid) -> (WifiReady, Vec<WifiEffect>) {
         standing: AskStanding::First,
         kind: AskKind::of(network.lock),
     };
-    (with_sheet(page, WifiSheet::Password(ask)), Vec::new())
+    (with_asking(page, WifiAsking::Password(ask)), Vec::new())
 }
 
 fn open_details(page: WifiReady) -> (WifiReady, Vec<WifiEffect>) {
-    let sheet = page.status.joined().map_or(WifiSheet::Closed, |network| {
-        WifiSheet::Details(network.ssid.clone())
+    let asking = page.status.joined().map_or(WifiAsking::Nothing, |network| {
+        WifiAsking::Details(network.ssid.clone())
     });
-    (WifiReady { sheet, ..page }, Vec::new())
+    (WifiReady { asking, ..page }, Vec::new())
 }

@@ -3,9 +3,10 @@
 use super::book::use_program_book;
 use super::io::{NOT_AVAILABLE, forget, is_valued, set};
 use super::program_view::Listed;
+use crate::copy::{Subject, absence as absence_words};
 use crate::env::Env;
 use crate::live::{Daemon, Followed, follow, reread};
-use detent_model::{Absence, PrivacyEffect, PrivacyInput, PrivacyState, privacy_step};
+use detent_model::{PrivacyEffect, PrivacyInput, PrivacyState, privacy_step};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -13,17 +14,6 @@ use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;
 use ds_settings::live::LiveClient;
 use std::collections::VecDeque;
-
-/// What the absence of the compositor says.
-fn absence_help(absence: &Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => "Settings is not connected to the desktop.",
-        Absence::NotRunning => "The desktop is not running.",
-        Absence::NotPermitted => "Open Settings from the desktop to see Privacy.",
-        Absence::Unavailable => "The desktop is not available now.",
-        Absence::Failed(_) => "The desktop did not answer. Try again in a moment.",
-    }
-}
 
 /// The programs that have been answered, with a choice for each power.
 #[component]
@@ -88,7 +78,7 @@ pub(crate) fn PrivacyPane() -> Element {
                 FieldGroup { title: Some("Privacy & Security".to_owned()),
                     FieldRow {
                         label: TextLine::from("Privacy & Security"),
-                        help: Some(TextLine::from(absence_help(&absence))),
+                        help: Some(TextLine::from(absence_words(Subject::Privacy, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
                     }

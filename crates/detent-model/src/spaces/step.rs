@@ -1,7 +1,7 @@
 //! The Spaces list's one transition: `(state, input) -> (state, effects)`. Remove asks first; what
-//! the sheet sends goes to memory before the registry is asked to remove the Space.
+//! the answer sends goes to memory before the registry is asked to remove the Space.
 
-use super::removal::{RemovalSheet, SheetInput};
+use super::removal::{RemovalAsk, RemovalInput};
 use crate::Absence;
 use crate::Live;
 use almanac_core::Removal;
@@ -28,13 +28,13 @@ pub struct SpacesReady {
     pub stage: RemovalStage,
 }
 
-/// Where a removal stands: nothing, a sheet asking about one, or one under way.
+/// Where a removal stands: nothing, a question about one, or one under way.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RemovalStage {
     /// No removal is asked or under way.
     Idle,
-    /// The sheet asking about a removal is up.
-    Asking(RemovalSheet),
+    /// The person is asked about a removal.
+    Asking(RemovalAsk),
     /// The Space whose removal is under way: nothing else is asked meanwhile.
     Removing(SpaceKey),
 }
@@ -59,11 +59,11 @@ pub enum SpacesInput {
     Found(Result<Vec<SpaceRow>, Absence>),
     /// The person pressed Remove on a Space.
     AskRemove(SpaceKey),
-    /// The person changed a choice on the sheet.
-    Sheet(SheetInput),
-    /// The person pressed Remove on the sheet.
+    /// The person answered the question.
+    Answer(RemovalInput),
+    /// The person confirmed the removal.
     Confirm,
-    /// The person pressed Cancel on the sheet.
+    /// The person called the removal off.
     Cancel,
     /// The removal ended: the registry no longer lists the Space, or why it still does.
     Removed(Result<(), String>),
@@ -102,10 +102,10 @@ fn fresh(rows: Vec<SpaceRow>) -> SpacesReady {
     }
 }
 
-/// The list read again: the sheet stays while its Space is still listed.
+/// The list read again: the question stays while its Space is still listed.
 fn refreshed(ready: SpacesReady, rows: Vec<SpaceRow>) -> SpacesReady {
     let stage = match ready.stage {
-        RemovalStage::Asking(sheet) if !rows.iter().any(|row| row.id == sheet.space) => {
+        RemovalStage::Asking(ask) if !rows.iter().any(|row| row.id == ask.space) => {
             RemovalStage::Idle
         }
         other => other,
@@ -122,23 +122,23 @@ fn ready_step(mut ready: SpacesReady, input: SpacesInput) -> (SpacesReady, Vec<S
                 .iter()
                 .find(|row| row.id == key)
                 .map_or(RemovalStage::Idle, |row| {
-                    RemovalStage::Asking(RemovalSheet::of(row.id.clone(), row.name.clone()))
+                    RemovalStage::Asking(RemovalAsk::of(row.id.clone(), row.name.clone()))
                 });
         }
-        SpacesInput::Sheet(change) => {
+        SpacesInput::Answer(change) => {
             ready.stage = match ready.stage {
-                RemovalStage::Asking(sheet) => RemovalStage::Asking(sheet.after(change)),
+                RemovalStage::Asking(ask) => RemovalStage::Asking(ask.after(change)),
                 other => other,
             };
         }
         SpacesInput::Confirm => {
             ready.stage = match ready.stage {
-                RemovalStage::Asking(sheet) => {
+                RemovalStage::Asking(ask) => {
                     effects.push(SpacesEffect::Remove {
-                        space: sheet.space.clone(),
-                        removal: sheet.removal(),
+                        space: ask.space.clone(),
+                        removal: ask.removal(),
                     });
-                    RemovalStage::Removing(sheet.space)
+                    RemovalStage::Removing(ask.space)
                 }
                 other => other,
             };

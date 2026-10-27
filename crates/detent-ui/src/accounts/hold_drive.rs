@@ -1,6 +1,7 @@
 //! Running the held deletions' effects, and "Sync now", against the sync service: the one place the
 //! pane calls it.
 
+use crate::copy::account_sync::{HOLD_NOT_REMOVED, sync_now_line};
 use crate::live::{BusSource, confirm_discard, hold_now, sync_now};
 use detent_model::{DatasetName, HoldEffect, HoldInput, Holds, hold_step};
 use dioxus::prelude::*;
@@ -25,7 +26,7 @@ pub(super) async fn drive_holds(
                     queue.extend(confirm_discard(&bus, dataset).await);
                 }
                 HoldEffect::Refresh(dataset) => queue.push_back(hold_now(&bus, dataset).await),
-                HoldEffect::Tell(text) => toasts.push(text, None),
+                HoldEffect::CouldNotRemove => toasts.push(HOLD_NOT_REMOVED.to_owned(), None),
             }
         }
     }
@@ -33,5 +34,8 @@ pub(super) async fn drive_holds(
 
 /// Asks the sync service to sync `dataset` now and tells the person how it went.
 pub(super) async fn drive_sync_now(bus: BusSource, toasts: ToastHub, dataset: DatasetName) {
-    toasts.push(sync_now(&bus, dataset).await.line().to_owned(), None);
+    toasts.push(
+        sync_now_line(sync_now(&bus, dataset).await).to_owned(),
+        None,
+    );
 }

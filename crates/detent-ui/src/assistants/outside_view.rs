@@ -6,11 +6,12 @@
 use super::add_flow;
 use super::add_view::{AddSheet, RemoveAlert};
 use crate::accounts::{AccountLink, OpenButton};
+use crate::copy::{assistants, coding_agents};
 use crate::env::Env;
 use detent_files::{installed_agents, load_agents, remove_agent, save_agent_choice};
 use detent_model::{
-    AccountsPane, AddForm, Assistant, Entry, FoundAgent, RemoveQuestion, assistants_of,
-    model_choice, model_menu, model_word, removal_of, remove_refusal, unlisted_found, way_choice,
+    AccountsPane, AddForm, Assistant, Entry, FoundAgent, RemoveAnswer, RemoveQuestion,
+    assistants_of, model_choice, model_menu, model_word, removal_of, unlisted_found, way_choice,
     way_menu,
 };
 use dioxus::prelude::*;
@@ -28,7 +29,10 @@ const TITLE: &str = "Coding assistants";
 
 fn items_of(menu: &[Entry]) -> Vec<MenuItem<String>> {
     menu.iter()
-        .map(|entry| MenuItem::new(entry.word.clone(), entry.name.clone()))
+        .map(|entry| {
+            let name = entry.name.as_deref().unwrap_or(assistants::agents_own());
+            MenuItem::new(entry.word.clone(), name.to_owned())
+        })
         .collect()
 }
 
@@ -72,13 +76,15 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
     });
     let answer = EventHandler::new({
         let env = env.clone();
-        move |yes: bool| {
+        move |answer: RemoveAnswer| {
             let Some(question) = removing.peek().clone() else {
                 return;
             };
             removing.set(None);
-            if yes && let Err(fault) = remove_agent(&env.config_home, &question.program) {
-                toasts.push(remove_refusal(fault).to_owned(), None);
+            if answer == RemoveAnswer::Remove
+                && let Err(fault) = remove_agent(&env.config_home, &question.program)
+            {
+                toasts.push(coding_agents::remove_refusal(fault).to_owned(), None);
             }
             now.set(shown(&env));
         }
@@ -164,7 +170,7 @@ fn OutsideRow(
     rsx! {
         FieldRow { label: TextLine::from(name.clone()), help: help.map(TextLine::from),
             if let Some(account) = account.clone() {
-                Label { text: account.status.label(), role: LabelRole::Secondary, style: LabelStyle::Footnote }
+                Label { text: crate::copy::accounts::status_label(&account.status), role: LabelRole::Secondary, style: LabelStyle::Footnote }
                 OpenButton {
                     label: if account.reauth.is_some() { "Sign in" } else { "Manage" },
                     subject: account.label.clone(),

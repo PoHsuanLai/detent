@@ -1,5 +1,5 @@
 //! How a sign-in the person started from Settings ended, as the module announces it on the
-//! account's `reauth` row, and the calm line the person reads for it.
+//! account's `reauth` row.
 
 use ds_settings::schema::KeyPath;
 
@@ -29,19 +29,6 @@ impl ReauthEnd {
             "failed" => Self::Failed,
             _ => return None,
         })
-    }
-
-    /// The line the person reads for the account called `label`.
-    pub fn line(self, label: &str) -> String {
-        match self {
-            Self::Done => format!("Signed in to {label} again."),
-            Self::Cancelled => format!("Signing in to {label} was cancelled."),
-            Self::Refused => format!("The sign-in to {label} was refused."),
-            Self::NoLauncher => {
-                format!("The app that runs {label} is not open. Open it and try again.")
-            }
-            Self::Failed => format!("Could not sign in to {label}. Try again later."),
-        }
     }
 }
 

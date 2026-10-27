@@ -22,7 +22,7 @@ pub(crate) fn AssistantPicker(
     let ready = match &state {
         PickerState::Ready(ready) => ready,
         PickerState::Unavailable(absence) => {
-            return rsx! { Unavailable { absence: absence.clone() } };
+            return rsx! { Unavailable { absence: *absence } };
         }
         PickerState::Looking => return rsx! {},
     };

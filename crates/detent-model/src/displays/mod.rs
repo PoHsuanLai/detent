@@ -8,7 +8,6 @@ mod model;
 mod modes;
 mod page;
 mod step;
-mod words;
 
 pub use arrange::{ArrangeSide, place_beside, side_of};
 pub use brightness::{Brightness, BrightnessList};
@@ -18,12 +17,11 @@ pub use model::{
     Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli,
 };
 pub use modes::{mode_at, mode_sizes, native_size};
-pub use page::{DISPLAYS_SLUG, displays_page, is_displays};
+pub use page::{DISPLAYS_SLUG, displays_page};
 pub use step::{
     DisplayChange, DisplayEdit, DisplaysEffect, DisplaysInput, DisplaysReady, DisplaysState,
     displays_step,
 };
-pub use words::{hertz_words, missing_words, size_words};
 
 #[cfg(test)]
 mod tests;

@@ -3,13 +3,14 @@
 //! says an engine changed state. Nothing shows while the assistant is not running: opening
 //! Settings must not start it.
 
-use super::io::{Watch, press, read};
+use super::io::{Watch, act, read};
+use crate::copy;
 use crate::env::Env;
 use crate::inference::NoteLine;
 use crate::key_row::row_id;
 use crate::live::{BusSource, Daemon, connect, next_owner, owner_changes};
 use detent_model::{
-    InFlight, Live, RunButton, RunEffect, RunInput, RunPane, RunRowView, running_step,
+    InFlight, Live, RunAction, RunEffect, RunInput, RunPane, RunRowView, running_step,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -35,11 +36,11 @@ fn drive(mut pane: Signal<RunPane>, bus: BusSource, input: RunInput) {
                     drive(pane, bus, RunInput::Found(found));
                 }
                 RunEffect::Start(model) => {
-                    let ended = press(&bus, &model, RunButton::Start).await;
+                    let ended = act(&bus, &model, RunAction::Start).await;
                     drive(pane, bus, RunInput::Answered(model, ended));
                 }
                 RunEffect::Stop(model) => {
-                    let ended = press(&bus, &model, RunButton::Stop).await;
+                    let ended = act(&bus, &model, RunAction::Stop).await;
                     drive(pane, bus, RunInput::Answered(model, ended));
                 }
             }
@@ -99,7 +100,7 @@ pub(crate) fn RunningModels() -> Element {
     }
     let bus = env.bus.clone();
     let onpress = EventHandler::new(move |model: String| {
-        drive(pane, bus.clone(), RunInput::Press(model));
+        drive(pane, bus.clone(), RunInput::Act(model));
     });
     rsx! {
         div { class: "running-models", "data-running": "list",
@@ -127,21 +128,23 @@ fn ModelRow(row: RunRowView, onpress: EventHandler<String>) -> Element {
         InFlight::No => Availability::Enabled,
     };
     let model = row.model.clone();
+    let name = copy::running::model_name(&row.model);
+    let action = copy::running::action(row.action);
     rsx! {
         FieldRow {
-            label: TextLine::from(row.name.clone()),
+            label: TextLine::from(name),
             common,
-            Label { text: row.standing.word(), role: LabelRole::Secondary, style: LabelStyle::Footnote }
-            if let Some(memory) = row.memory.clone() {
-                Label { text: memory, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
+            Label { text: copy::running::standing(&row.standing), role: LabelRole::Secondary, style: LabelStyle::Footnote }
+            if let Some(mib) = row.memory_mib {
+                Label { text: copy::running::memory_words(mib), role: LabelRole::Tertiary, style: LabelStyle::Footnote }
             }
             Button {
-                label: row.button.label(),
+                label: action,
                 size: ControlSize::Small,
                 availability,
                 common: Common {
                     id: Some(row_id("run", &row.model)),
-                    aria_label: Some(format!("{} {}", row.button.label(), row.name)),
+                    aria_label: Some(format!("{action} {name}")),
                     ..Common::default()
                 },
                 onclick: move |_| onpress.call(model.clone()),

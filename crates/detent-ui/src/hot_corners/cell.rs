@@ -3,6 +3,10 @@
 
 use super::sheet::{SheetState, Step};
 use crate::controls::FileOnlyControl;
+use crate::copy::hot_corners::{
+    add_fault, choice_label, corner_label, corner_name, keys_glyphs, keys_names, modifier_glyph,
+    modifier_name,
+};
 use crate::files::{Edit, Files, value_of, written_value};
 use crate::key_row::row_id;
 use detent_model::{
@@ -36,7 +40,7 @@ fn menu_items() -> Vec<MenuItem<CornerChoice>> {
     corner_menu()
         .into_iter()
         .map(|line| match line {
-            CornerMenuLine::Choice(choice) => MenuItem::new(choice, choice.label()),
+            CornerMenuLine::Choice(choice) => MenuItem::new(choice, choice_label(choice)),
             CornerMenuLine::Separator => MenuItem::Separator,
         })
         .collect()
@@ -72,7 +76,7 @@ pub(super) fn CornerCell(
 ) -> Element {
     if let Some(value) = written_value(&files(), &entry) {
         return rsx! {
-            div { class: cell_class(corner), "aria-label": corner.name(), "data-corner": corner.path(),
+            div { class: cell_class(corner), "aria-label": corner_name(corner), "data-corner": corner.path(),
                 FileOnlyControl { value }
             }
         };
@@ -83,7 +87,7 @@ pub(super) fn CornerCell(
         .map(|keys| (pop_up_id(corner, &keys), keys))
         .collect();
     rsx! {
-        div { class: cell_class(corner), "aria-label": corner.name(), "data-corner": corner.path(),
+        div { class: cell_class(corner), "aria-label": corner_name(corner), "data-corner": corner.path(),
             for (id, keys) in rows {
                 CornerRow {
                     key: "{id}",
@@ -113,7 +117,8 @@ fn CornerRow(
     onedit: EventHandler<Edit>,
     state: SheetState,
 ) -> Element {
-    let shown = corner_shown(binding_for(&bindings, &keys), &known);
+    let shown = corner_shown(binding_for(&bindings, &keys));
+    let title = shown.says.as_ref().map(|does| corner_label(does, &known));
     let pick = {
         let (entry, keys, bindings) = (entry.clone(), keys.clone(), bindings.clone());
         let mut step = state.step;
@@ -139,18 +144,18 @@ fn CornerRow(
             state.set_extra(corner, rows);
         })
     };
-    let names = keys.names();
+    let names = keys_names(&keys);
     rsx! {
         div { class: "hot-corners-row",
             if !keys.is_empty() {
                 div { class: "hot-corners-keys", "aria-label": "{names}",
-                    Label { text: keys.glyphs(), role: LabelRole::Secondary }
+                    Label { text: keys_glyphs(&keys), role: LabelRole::Secondary }
                 }
             }
             PopUpButton::<CornerChoice> {
                 items: menu_items(),
                 value: shown.value,
-                title: shown.title,
+                title,
                 size: ControlSize::Small,
                 common: Common { id: Some(pop_up_id(corner, &keys)), ..Common::default() },
                 onpick: pick,
@@ -204,7 +209,7 @@ fn AddWithKeys(corner: Corner, bindings: Vec<HotBinding>, state: SheetState) -> 
                     state.told.set(None);
                     state.adding.set(None);
                 }
-                Err(fault) => state.told.set(Some(fault.words().to_owned())),
+                Err(fault) => state.told.set(Some(add_fault(fault).to_owned())),
             }
         })
     };
@@ -213,7 +218,7 @@ fn AddWithKeys(corner: Corner, bindings: Vec<HotBinding>, state: SheetState) -> 
             for (word, modifier) in HotModifier::ALL.map(|modifier| (modifier.word(), modifier)) {
                 Checkbox {
                     key: "{word}",
-                    label: format!("{} {}", modifier.glyph(), modifier.name()),
+                    label: format!("{} {}", modifier_glyph(modifier), modifier_name(modifier)),
                     value: if keys.holds(modifier) { Check::On } else { Check::Off },
                     size: ControlSize::Small,
                     onchange: {

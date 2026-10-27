@@ -9,8 +9,3 @@ pub const WIFI_SLUG: &str = "wifi";
 pub fn wifi_page() -> Page {
     Page::declared(WIFI_SLUG)
 }
-
-/// Whether `page` is the Wi-Fi page.
-pub fn is_wifi(page: &Page) -> bool {
-    *page == wifi_page()
-}

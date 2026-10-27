@@ -4,15 +4,13 @@
 mod model;
 mod page;
 mod step;
-mod words;
 
 pub use model::{
     BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, PairingAnswer,
     PairingAsk, PairingCode, PairingQuestion,
 };
-pub use page::{BLUETOOTH_SLUG, bluetooth_page, is_bluetooth};
-pub use step::{BtEffect, BtInput, BtReady, BtSheet, BtState, bluetooth_step};
-pub use words::{forget_body, forget_title, missing_words, pairing_body, pairing_title};
+pub use page::{BLUETOOTH_SLUG, bluetooth_page};
+pub use step::{BtAsking, BtEffect, BtInput, BtReady, BtState, bluetooth_step};
 
 #[cfg(test)]
 mod tests;

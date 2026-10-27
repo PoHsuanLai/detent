@@ -2,8 +2,8 @@
 
 use super::{
     ComputerRow, ComputersEffect as Effect, ComputersFound, ComputersInput as Input,
-    ComputersState as State, KeyField, ServerDraft, ServerEdit, ServerFault, ServerForm,
-    ServerModel, ServerModels, ServerPhase, ServerReach, ServerSheet, computers_step,
+    ComputersState as State, KeyField, NewServer, ServerDraft, ServerEdit, ServerFault, ServerForm,
+    ServerModel, ServerModels, ServerPhase, ServerReach, ServerRefusal, computers_step,
 };
 use porter_core::{ModelId, SecretText};
 use std::io;
@@ -28,7 +28,7 @@ fn ready() -> State {
     computers_step(State::Looking, Input::Found(Ok(found))).0
 }
 
-fn sheet_of(state: &State) -> Option<&ServerSheet> {
+fn sheet_of(state: &State) -> Option<&NewServer> {
     match state {
         State::Ready(ready) => ready.server.as_ref(),
         other => panic!("not ready: {other:?}"),
@@ -173,7 +173,7 @@ fn add_with_a_bad_sheet_tells_why_and_asks_for_nothing() {
     let (state, effects) = computers_step(opened(), Input::AddServer);
     assert!(effects.is_empty());
     let sheet = sheet_of(&state).expect("still open");
-    assert_eq!(sheet.fault.as_deref(), Some(ServerFault::NoName.words()));
+    assert_eq!(sheet.fault, Some(ServerRefusal::Form(ServerFault::NoName)));
     assert_eq!(sheet.phase, ServerPhase::Editing);
 }
 
@@ -223,7 +223,10 @@ fn a_refusal_stays_on_the_sheet_in_the_services_words() {
     let (state, effects) = computers_step(adding(), Input::ServerAdded(Err("Taken.".to_owned())));
     assert!(effects.is_empty());
     let sheet = sheet_of(&state).expect("open");
-    assert_eq!(sheet.fault.as_deref(), Some("Taken."));
+    assert_eq!(
+        sheet.fault,
+        Some(ServerRefusal::Service("Taken.".to_owned()))
+    );
     assert_eq!(sheet.phase, ServerPhase::Editing);
     assert_eq!(sheet.form.name, "Lab");
 }

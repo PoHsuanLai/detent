@@ -1,8 +1,6 @@
 //! What the person's own styles have to say: the notes under "Use my styles" on the Appearance
 //! page, and the sheet that lists them (customization design section 7.5). The lint that finds
-//! them is quire's; this is only how they are counted and worded for the window.
-
-use crate::words::{note_count_words, note_place_words};
+//! them is quire's; this is only how they are counted and placed for the window.
 
 /// Whose style file this is.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,7 +26,7 @@ impl StyleOwner {
 pub struct StyleNote {
     /// The 1-based line.
     pub line: u32,
-    /// What it says, in plain words.
+    /// What it says, in the plain words quire's lint gives it.
     pub words: String,
 }
 
@@ -46,8 +44,10 @@ pub struct StyleFile {
 pub struct NoteRow {
     /// What the note says.
     pub words: String,
-    /// Which file and line it is on.
-    pub place: String,
+    /// The file it is in, as the person finds it under their settings folder.
+    pub file: String,
+    /// The 1-based line it is on.
+    pub line: u32,
 }
 
 /// The notes of every style file that could be read and has any. A file that could not be read is
@@ -73,14 +73,6 @@ impl StyleNotes {
         self.files.iter().map(|file| file.notes.len()).sum()
     }
 
-    /// `3 notes`, or `None` when there are none, so no line is drawn.
-    pub fn summary(&self) -> Option<String> {
-        match self.total() {
-            0 => None,
-            count => Some(note_count_words(count)),
-        }
-    }
-
     /// The sheet's lines: each file's notes in turn, each with its file and line.
     pub fn rows(&self) -> Vec<NoteRow> {
         self.files
@@ -89,7 +81,8 @@ impl StyleNotes {
                 let name = file.owner.file_name();
                 file.notes.iter().map(move |note| NoteRow {
                     words: note.words.clone(),
-                    place: note_place_words(&name, note.line),
+                    file: name.clone(),
+                    line: note.line,
                 })
             })
             .collect()
@@ -114,20 +107,20 @@ mod tests {
     }
 
     #[test]
-    fn the_summary_counts_every_note_and_is_silent_with_none() {
+    fn the_total_counts_every_note_of_every_file_that_has_any() {
         let app = |name: &str| StyleOwner::App(name.to_owned());
-        // `(case, files, the summary)`.
-        let cases: Vec<(&str, Vec<StyleFile>, Option<&str>)> = vec![
-            ("no files", vec![], None),
+        // `(case, files, the total)`.
+        let cases: Vec<(&str, Vec<StyleFile>, usize)> = vec![
+            ("no files", vec![], 0),
             (
                 "a file with nothing to say",
                 vec![file(app("sill"), &[])],
-                None,
+                0,
             ),
             (
-                "one note is singular",
+                "one note",
                 vec![file(StyleOwner::Desktop, &[(3, "Animates everything")])],
-                Some("1 note"),
+                1,
             ),
             (
                 "two files add up",
@@ -135,11 +128,11 @@ mod tests {
                     file(StyleOwner::Desktop, &[(1, "a"), (2, "b")]),
                     file(app("sill"), &[(9, "c")]),
                 ],
-                Some("3 notes"),
+                3,
             ),
         ];
         for (case, files, want) in cases {
-            assert_eq!(StyleNotes::new(files).summary().as_deref(), want, "{case}");
+            assert_eq!(StyleNotes::new(files).total(), want, "{case}");
         }
     }
 
@@ -159,16 +152,17 @@ mod tests {
                 &[(2, "Could not be read")],
             ),
         ]);
-        let row = |words: &str, place: &str| NoteRow {
+        let row = |words: &str, file: &str, line: u32| NoteRow {
             words: words.to_owned(),
-            place: place.to_owned(),
+            file: file.to_owned(),
+            line,
         };
         assert_eq!(
             notes.rows(),
             [
-                row("Heavy blur may slow the desktop", "quire/style.css, line 4"),
-                row("This animation never stops", "quire/style.css, line 12"),
-                row("Could not be read", "files/style.css, line 2"),
+                row("Heavy blur may slow the desktop", "quire/style.css", 4),
+                row("This animation never stops", "quire/style.css", 12),
+                row("Could not be read", "files/style.css", 2),
             ]
         );
     }

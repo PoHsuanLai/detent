@@ -20,7 +20,7 @@ pub(super) async fn list(bus: &BusSource) -> Result<Vec<ScreenGrant>, Absence> {
     let proxy = portal(&running).await.map_err(|e| absence_of_bus(&e))?;
     let rows = within(Deadline::READ, peer::PORTAL, proxy.list_grants())
         .await
-        .map_err(|silent| Absence::Failed(silent.to_string()))?
+        .map_err(|_| Absence::Failed)?
         .map_err(|e| absence_of_bus(&e))?;
     Ok(grants_of(&rows))
 }

@@ -46,7 +46,7 @@ fn absence_of(error: ClientError) -> Absence {
             Absence::NotRunning
         }
         ClientError::Transport(TransportError::Denied(_)) => Absence::NotPermitted,
-        other => Absence::Failed(other.to_string()),
+        _ => Absence::Failed,
     }
 }
 
@@ -82,7 +82,7 @@ pub(super) async fn read(bus: &BusSource) -> Result<ComputersFound, Absence> {
     };
     let (places, guests) = within(Deadline::READ, peer::ASSISTANT, asked)
         .await
-        .map_err(|silent| Absence::Failed(silent.to_string()))??;
+        .map_err(|_| Absence::Failed)??;
     Ok(ComputersFound {
         computers: places.iter().filter_map(ComputerRow::of).collect(),
         guests,
@@ -104,7 +104,7 @@ pub(super) async fn candidates(bus: &BusSource) -> Result<Vec<ComputerCandidate>
 async fn add_server(bus: &BusSource, draft: ServerDraft) -> Result<(), String> {
     let key = draft
         .secret(|path: &Path| std::fs::read_to_string(path))
-        .map_err(|fault| fault.words().to_owned())?;
+        .map_err(|fault| crate::copy::server_fault(fault).to_owned())?;
     let reach = match draft.reach {
         ServerReach::Port(port) => ComputerReach::Port(port),
         ServerReach::Socket(path) => ComputerReach::Socket(path),
@@ -202,7 +202,7 @@ impl Watch {
         };
         let (guests, engines) = within(Deadline::READ, peer::ASSISTANT, subscribed)
             .await
-            .map_err(|silent| Absence::Failed(silent.to_string()))??;
+            .map_err(|_| Absence::Failed)??;
         let (ticker, ticks) = Ticks::channel();
         let ticks = ticks
             .with_relay(tokio::spawn(relay(guests, ticker.clone())))

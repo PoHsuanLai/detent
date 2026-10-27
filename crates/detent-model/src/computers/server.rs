@@ -2,13 +2,42 @@
 //! draft that leaves it. The sheet asks for a name, the model it runs, where it answers on this
 //! computer (a number, or a connection file: exactly one) and, if it wants one, a key.
 
-use super::words::ServerFault;
 use crate::Described;
 use crate::picker::Ready;
 use ds_settings::schema::ChoicePlace;
 use porter_core::{ModelId, SecretText};
 use std::io;
 use std::path::{Path, PathBuf};
+
+/// What is wrong with the Add a server sheet.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ServerFault {
+    /// The name is empty.
+    NoName,
+    /// The name is over 64 characters.
+    LongName,
+    /// No model was picked.
+    NoModel,
+    /// Neither a number nor a file was given.
+    NoReach,
+    /// Both were.
+    BothReach,
+    /// The number is not 1 to 65535.
+    BadPort,
+    /// The key file could not be read.
+    KeyFileUnreadable,
+    /// The key file has nothing in it.
+    KeyFileEmpty,
+}
+
+/// Why the last Add did not go through.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ServerRefusal {
+    /// The sheet itself is wrong.
+    Form(ServerFault),
+    /// The service refused, in its own sentence.
+    Service(String),
+}
 
 /// The longest name a server may be given, in characters.
 pub const NAME_MOST: usize = 64;
@@ -212,23 +241,23 @@ pub enum ServerPhase {
     Adding,
 }
 
-/// The open sheet.
+/// The server being added.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ServerSheet {
+pub struct NewServer {
     /// What it holds.
     pub form: ServerForm,
     /// The models to pick from.
     pub models: ServerModels,
     /// Whether it takes edits.
     pub phase: ServerPhase,
-    /// The sentence under the fields, when the last Add did not go through.
-    pub fault: Option<String>,
+    /// Why the last Add did not go through, when it did not.
+    pub fault: Option<ServerRefusal>,
 }
 
-impl ServerSheet {
+impl NewServer {
     /// A sheet just opened, with the models still being looked up.
-    pub fn opened() -> ServerSheet {
-        ServerSheet {
+    pub fn opened() -> NewServer {
+        NewServer {
             form: ServerForm::default(),
             models: ServerModels::Looking,
             phase: ServerPhase::Editing,
@@ -237,7 +266,7 @@ impl ServerSheet {
     }
 
     /// The sheet with `models` on offer, the first picked unless one is.
-    pub fn offering(mut self, models: Vec<ServerModel>) -> ServerSheet {
+    pub fn offering(mut self, models: Vec<ServerModel>) -> NewServer {
         if self.form.model.is_none() {
             self.form.model = models.first().map(|model| model.id.clone());
         }
@@ -246,9 +275,9 @@ impl ServerSheet {
     }
 
     /// The sheet, back to editing with `sentence` under the fields.
-    pub fn refused(mut self, sentence: String) -> ServerSheet {
+    pub fn refused(mut self, sentence: String) -> NewServer {
         self.phase = ServerPhase::Editing;
-        self.fault = Some(sentence);
+        self.fault = Some(ServerRefusal::Service(sentence));
         self
     }
 }

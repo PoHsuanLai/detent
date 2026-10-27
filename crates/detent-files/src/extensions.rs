@@ -9,7 +9,7 @@ use crate::save::save_keys;
 use crate::values::{ConfigHome, DataHome};
 use detent_model::{
     ConfigFile, ExtensionKeep, ExtensionList, ExtensionPower, ExtensionRow, ExtensionStanding,
-    InstalledExtensions, Offer, Offers, UNREADABLE_MANIFEST,
+    ExtensionTrouble, InstalledExtensions, Offer, Offers,
 };
 use ds_extensions::bayonet::manifest::Raw;
 use ds_extensions::bayonet::registry::Candidate;
@@ -172,12 +172,12 @@ fn list_of(found: &Found, own: ExtensionKeep) -> ExtensionList {
         .flat_map(|(_, capability)| found.resolve(*capability).problems())
         .collect();
     let standing_of = |id: &str| {
-        problems
-            .iter()
-            .find(|problem| problem.id.0 == id)
-            .map_or(ExtensionStanding::On, |problem| {
-                ExtensionStanding::Unusable(problem.words().to_owned())
-            })
+        problems.iter().find(|problem| problem.id.0 == id).map_or(
+            ExtensionStanding::On,
+            |problem| {
+                ExtensionStanding::Unusable(ExtensionTrouble::Reported(problem.words().to_owned()))
+            },
+        )
     };
     let on = found
         .candidates
@@ -195,7 +195,7 @@ fn list_of(found: &Found, own: ExtensionKeep) -> ExtensionList {
             name: folder.to_owned(),
             summary: None,
             provides: Vec::new(),
-            standing: ExtensionStanding::Unusable(UNREADABLE_MANIFEST.to_owned()),
+            standing: ExtensionStanding::Unusable(ExtensionTrouble::Unreadable),
             keep: ExtensionKeep::Free,
         })
     });

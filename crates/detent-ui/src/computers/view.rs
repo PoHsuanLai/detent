@@ -4,11 +4,11 @@
 use super::io::{Change, Watch, candidates, change, models, read};
 use super::server_sheet::ServerSheetView;
 use crate::assistants::{PlaceEntry, PlaceRow};
+use crate::copy::{Subject, absence as absence_words, guest_standing};
 use crate::env::Env;
 use crate::live::{BusSource, Daemon, next_owner, owner_changes};
 use detent_model::{
-    Absence, AddList, ComputersEffect, ComputersInput, ComputersReady, ComputersState,
-    computers_step, guest_line,
+    AddList, ComputersEffect, ComputersInput, ComputersReady, ComputersState, computers_step,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -39,23 +39,6 @@ const NOBODY_LENDING: &str = "None of your other computers is lending its models
 
 /// What the Add list says while Tailscale is asked.
 const LOOKING: &str = "Looking for your computers on Tailscale\u{2026}";
-
-/// What the absence of the assistant says here.
-fn absence_help(absence: &Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => {
-            "Settings is not connected to the desktop, so your computers cannot be listed."
-        }
-        Absence::NotRunning => "The assistant is not running, so your computers cannot be listed.",
-        Absence::NotPermitted => {
-            "Your computers can only be managed when Settings is opened from the desktop."
-        }
-        Absence::Unavailable => {
-            "The assistant could not be confirmed, so your computers cannot be listed."
-        }
-        Absence::Failed(_) => "The assistant did not answer. Try again in a moment.",
-    }
-}
 
 fn change_of(effect: ComputersEffect) -> Option<Change> {
     match effect {
@@ -181,7 +164,7 @@ pub(crate) fn Computers(
                 FieldGroup { title: Some(TITLE.to_owned()),
                     FieldRow {
                         label: TextLine::from(TITLE),
-                        help: Some(TextLine::from(absence_help(&absence))),
+                        help: Some(TextLine::from(absence_words(Subject::Computers, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
                     }
@@ -308,7 +291,7 @@ fn GuestLine(guest: GuestRow, feed: EventHandler<ComputersInput>) -> Element {
     let deny = guest.state != RowState::Denied;
     let (a, b, c) = (guest.node.clone(), guest.node.clone(), guest.node.clone());
     rsx! {
-        FieldRow { label: TextLine::from(guest.name.clone()), help: Some(TextLine::from(guest_line(&guest))),
+        FieldRow { label: TextLine::from(guest.name.clone()), help: Some(TextLine::from(guest_standing(guest.state))),
             if allow {
                 GuestButton { label: "Allow", subject: guest.name.clone(),
                     onpress: move |()| feed.call(ComputersInput::Answer(a.clone(), GuestAnswer::Allow)) }

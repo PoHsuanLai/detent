@@ -6,7 +6,7 @@ use crate::support::Sandbox;
 use crate::support::bluetooth::{Asked, Bluetooth};
 use crate::support::drive::{click, page_of, settle, showing, sidebar_row, title_of, type_into};
 use detent_model::{
-    BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, Missing,
+    Absence, BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus,
     PairingAnswer, PairingAsk, PairingCode, PairingQuestion,
 };
 use detent_ui::Opening;
@@ -103,7 +103,7 @@ fn the_page_is_second_in_the_sidebar_and_says_plainly_when_nothing_serves_blueto
 
 #[test]
 fn a_computer_without_bluetooth_says_so() {
-    let service = Bluetooth::missing(Missing::NoDevice);
+    let service = Bluetooth::missing(Absence::NoDevice);
     let (_sandbox, mut harness) = world("bluetooth-no-device", &service);
     showing(
         &mut harness,

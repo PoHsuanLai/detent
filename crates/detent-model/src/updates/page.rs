@@ -5,17 +5,12 @@
 use ds_settings::schema::Page;
 
 /// The name a person reads for the page.
-const NAME: &str = "Software Update";
+pub(crate) const SOFTWARE_UPDATE_NAME: &str = "Software Update";
 
 /// The page's slug: what `--page` takes.
-pub(crate) const SLUG: &str = "software-update";
+pub(crate) const SOFTWARE_UPDATE_SLUG: &str = "software-update";
 
 /// The Software Update page as the catalogue holds it.
 pub(crate) fn software_update_page() -> Page {
-    Page::App(NAME.to_owned())
-}
-
-/// Whether `page` is the Software Update page.
-pub fn is_software_update(page: &Page) -> bool {
-    matches!(page, Page::App(name) if name == NAME)
+    Page::App(SOFTWARE_UPDATE_NAME.to_owned())
 }

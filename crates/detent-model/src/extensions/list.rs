@@ -19,8 +19,30 @@ pub enum ExtensionStanding {
     On,
     /// Turned off.
     Off,
-    /// Found and not usable, with why in plain words.
-    Unusable(String),
+    /// Found and not usable, with why.
+    Unusable(ExtensionTrouble),
+}
+
+/// Why an Extension cannot be used.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExtensionTrouble {
+    /// Its description could not be read at all.
+    Unreadable,
+    /// The Extensions library found something wrong, and said it in its own sentence.
+    Reported(String),
+}
+
+/// The kinds of group the page lists, in the order they come.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExtensionKind {
+    /// Extensions that provide a look.
+    Looks,
+    /// Extensions that provide file icons.
+    FileIcons,
+    /// Extensions that provide none of those.
+    Other,
+    /// Extensions that cannot be used, last.
+    Unusable,
 }
 
 /// Whether an Extension may be switched off (and so taken away): the one that holds the
@@ -52,13 +74,10 @@ pub struct ExtensionRow {
 }
 
 /// The capability words that have a group of their own, in the order the groups come.
-const GROUPS: &[(&str, &str)] = &[("look", "Looks"), ("file_icons", "File Icons")];
-
-/// The group of Extensions that provide none of those words.
-const OTHER: &str = "Other";
-
-/// The group of Extensions that cannot be used, last.
-const UNUSABLE: &str = "Can\u{2019}t Be Used";
+const GROUPS: &[(&str, ExtensionKind)] = &[
+    ("look", ExtensionKind::Looks),
+    ("file_icons", ExtensionKind::FileIcons),
+];
 
 impl ExtensionRow {
     /// The switch this row draws: none for an Extension that cannot be used.
@@ -75,30 +94,22 @@ impl ExtensionRow {
         matches!(self.standing, ExtensionStanding::Unusable(_))
     }
 
-    /// The line under the name: why it cannot be used, else what it says of itself.
-    pub fn line(&self) -> Option<&str> {
-        match &self.standing {
-            ExtensionStanding::Unusable(reason) => Some(reason),
-            ExtensionStanding::On | ExtensionStanding::Off => self.summary.as_deref(),
-        }
-    }
-
-    fn group(&self) -> &'static str {
+    fn kind(&self) -> ExtensionKind {
         if matches!(self.standing, ExtensionStanding::Unusable(_)) {
-            return UNUSABLE;
+            return ExtensionKind::Unusable;
         }
         GROUPS
             .iter()
             .find(|(word, _)| self.provides.iter().any(|provided| provided == word))
-            .map_or(OTHER, |(_, title)| *title)
+            .map_or(ExtensionKind::Other, |(_, kind)| *kind)
     }
 }
 
 /// Extensions that provide the same kind of thing, or that cannot be used.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtensionGroup {
-    /// The heading over the card.
-    pub title: String,
+    /// What its Extensions have in common.
+    pub kind: ExtensionKind,
     /// Its rows, by name.
     pub rows: Vec<ExtensionRow>,
 }
@@ -106,7 +117,7 @@ pub struct ExtensionGroup {
 /// The page's groups, empty ones left out.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ExtensionList {
-    /// In the order Looks, File Icons, Other, Can't Be Used.
+    /// In the order of [`ExtensionKind`].
     pub groups: Vec<ExtensionGroup>,
 }
 
@@ -115,20 +126,17 @@ impl ExtensionList {
     pub fn of(rows: Vec<ExtensionRow>) -> ExtensionList {
         let order = GROUPS
             .iter()
-            .map(|(_, title)| *title)
-            .chain([OTHER, UNUSABLE]);
+            .map(|(_, kind)| *kind)
+            .chain([ExtensionKind::Other, ExtensionKind::Unusable]);
         let groups = order
-            .filter_map(|title| {
+            .filter_map(|kind| {
                 let mut rows: Vec<ExtensionRow> = rows
                     .iter()
-                    .filter(|row| row.group() == title)
+                    .filter(|row| row.kind() == kind)
                     .cloned()
                     .collect();
                 rows.sort_by_cached_key(|row| (row.name.to_lowercase(), row.id.clone()));
-                (!rows.is_empty()).then(|| ExtensionGroup {
-                    title: title.to_owned(),
-                    rows,
-                })
+                (!rows.is_empty()).then_some(ExtensionGroup { kind, rows })
             })
             .collect();
         ExtensionList { groups }
@@ -151,7 +159,10 @@ pub struct InstalledExtensions {
 
 #[cfg(test)]
 mod tests {
-    use super::{ExtensionKeep, ExtensionList, ExtensionPower, ExtensionRow, ExtensionStanding};
+    use super::{
+        ExtensionKeep, ExtensionKind, ExtensionList, ExtensionPower, ExtensionRow,
+        ExtensionStanding, ExtensionTrouble,
+    };
 
     fn row(id: &str, name: &str, provides: &[&str], standing: ExtensionStanding) -> ExtensionRow {
         ExtensionRow {
@@ -166,7 +177,7 @@ mod tests {
 
     #[test]
     fn rows_are_grouped_by_what_they_provide_then_the_unusable_last() {
-        let broken = ExtensionStanding::Unusable("Some files could not be read".to_owned());
+        let broken = ExtensionStanding::Unusable(ExtensionTrouble::Unreadable);
         let list = ExtensionList::of(vec![
             row("c.broken", "Broken", &["look"], broken),
             row("b.zed", "Zed", &["look"], ExtensionStanding::On),
@@ -179,12 +190,12 @@ mod tests {
                 ExtensionStanding::On,
             ),
         ]);
-        let shape: Vec<(&str, Vec<&str>)> = list
+        let shape: Vec<(ExtensionKind, Vec<&str>)> = list
             .groups
             .iter()
             .map(|group| {
                 (
-                    group.title.as_str(),
+                    group.kind,
                     group.rows.iter().map(|row| row.id.as_str()).collect(),
                 )
             })
@@ -192,29 +203,27 @@ mod tests {
         assert_eq!(
             shape,
             [
-                ("Looks", vec!["e.both", "b.zed"]),
-                ("File Icons", vec!["a.icons"]),
-                ("Other", vec!["d.other"]),
-                ("Can\u{2019}t Be Used", vec!["c.broken"]),
+                (ExtensionKind::Looks, vec!["e.both", "b.zed"]),
+                (ExtensionKind::FileIcons, vec!["a.icons"]),
+                (ExtensionKind::Other, vec!["d.other"]),
+                (ExtensionKind::Unusable, vec!["c.broken"]),
             ]
         );
     }
 
     #[test]
-    fn only_a_usable_extension_has_a_switch_and_the_reason_replaces_its_summary() {
+    fn only_a_usable_extension_has_a_switch() {
         let mut usable = row("a.b", "Paper", &["look"], ExtensionStanding::Off);
         usable.summary = Some("Warm paper".to_owned());
         assert_eq!(usable.power(), Some(ExtensionPower::Off));
-        assert_eq!(usable.line(), Some("Warm paper"));
         let mut broken = row(
             "a.c",
             "Torn",
             &["look"],
-            ExtensionStanding::Unusable("Torn".to_owned()),
+            ExtensionStanding::Unusable(ExtensionTrouble::Reported("Torn".to_owned())),
         );
         broken.summary = Some("Warm paper".to_owned());
         assert_eq!(broken.power(), None);
-        assert_eq!(broken.line(), Some("Torn"));
         assert!(ExtensionList::of(Vec::new()).is_empty());
     }
 

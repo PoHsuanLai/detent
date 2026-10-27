@@ -2,7 +2,7 @@
 //! many sessions look for devices, and lets a test make a device ask something.
 
 use detent_model::{
-    BtAddress, BtLink, BtPairing, BtPower, BtStatus, Missing, PairingAnswer, PairingQuestion, Work,
+    Absence, BtAddress, BtLink, BtPairing, BtPower, BtStatus, PairingAnswer, PairingQuestion, Work,
 };
 use detent_ui::{BluetoothLink, BtSession, PairingReply, PairingRequest, Ticker, Ticks};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -21,7 +21,7 @@ pub enum Asked {
 
 #[derive(Debug)]
 struct Shared {
-    standing: Mutex<Result<BtStatus, Missing>>,
+    standing: Mutex<Result<BtStatus, Absence>>,
     asked: Mutex<Vec<Asked>>,
     listeners: Mutex<Vec<Ticker>>,
     looking: Arc<AtomicUsize>,
@@ -48,11 +48,11 @@ impl Bluetooth {
     }
 
     /// No BlueZ, for this reason.
-    pub fn missing(why: Missing) -> Bluetooth {
+    pub fn missing(why: Absence) -> Bluetooth {
         Bluetooth::standing(Err(why))
     }
 
-    fn standing(standing: Result<BtStatus, Missing>) -> Bluetooth {
+    fn standing(standing: Result<BtStatus, Absence>) -> Bluetooth {
         Bluetooth(Arc::new(Shared {
             standing: Mutex::new(standing),
             asked: Mutex::default(),
@@ -104,18 +104,18 @@ impl Bluetooth {
 }
 
 impl BluetoothLink for Bluetooth {
-    fn read(&self) -> Work<'_, Result<BtStatus, Missing>> {
+    fn read(&self) -> Work<'_, Result<BtStatus, Absence>> {
         let standing = self.0.standing.lock().expect("lock").clone();
         Box::pin(std::future::ready(standing))
     }
 
-    fn changes(&self) -> Work<'_, Result<Ticks, Missing>> {
+    fn changes(&self) -> Work<'_, Result<Ticks, Absence>> {
         let (listener, ticks) = Ticks::channel();
         self.0.listeners.lock().expect("lock").push(listener);
         Box::pin(std::future::ready(Ok(ticks)))
     }
 
-    fn open(&self) -> Work<'_, Result<BtSession, Missing>> {
+    fn open(&self) -> Work<'_, Result<BtSession, Absence>> {
         let (sender, asks) = mpsc::unbounded_channel();
         *self.0.questions.lock().expect("lock") = Some(sender);
         self.0.looking.fetch_add(1, Ordering::SeqCst);

@@ -30,7 +30,7 @@ pub fn sidebar_items(
                 rsx! {
                     Row {
                         title: TextLine::from(label),
-                        leading: RowLeading::Icon(icon_of(&model.page)),
+                        leading: RowLeading::Icon(icon_of(model.kind)),
                         state: RowState { selection, ..RowState::default() },
                         onclick: move |_| page.set(slug.clone()),
                     }

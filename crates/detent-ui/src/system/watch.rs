@@ -4,7 +4,7 @@ use super::bus::system_connection;
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
 use crate::ticks::{Ticker, Ticks};
-use detent_model::Missing;
+use detent_model::Absence;
 use ds_peer::within;
 use std::pin::Pin;
 use zbus::export::futures_core::Stream;
@@ -50,7 +50,7 @@ pub(crate) async fn watch_service(
     bus: &BusSource,
     name: &'static str,
     matters: Matters,
-) -> Result<Ticks, Missing> {
+) -> Result<Ticks, Absence> {
     let connection = system_connection(bus).await?;
     watch_on(&connection, name, matters).await
 }
@@ -60,7 +60,7 @@ pub(crate) async fn watch_on(
     connection: &Connection,
     name: &'static str,
     matters: Matters,
-) -> Result<Ticks, Missing> {
+) -> Result<Ticks, Absence> {
     let subscribed = async {
         let owners = DBusProxy::new(connection)
             .await?
@@ -75,7 +75,7 @@ pub(crate) async fn watch_on(
     };
     let (owners, signals) = match within(Deadline::READ, peer::DESKTOP, subscribed).await {
         Ok(Ok(streams)) => streams,
-        Ok(Err(_)) | Err(_) => return Err(Missing::Failed),
+        Ok(Err(_)) | Err(_) => return Err(Absence::Failed),
     };
     let (ticker, ticks) = Ticks::channel();
     Ok(ticks

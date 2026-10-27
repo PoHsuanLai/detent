@@ -8,7 +8,7 @@ use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use crate::support::drive::{click, scroll_into_view};
 use crate::support::engines::{Fake, serve};
-use detent_model::{PageSlug, RELEASES_LINE, SETUP_LINE, START_USING};
+use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::Harness;
 use std::time::Duration;
@@ -17,6 +17,15 @@ const NOTE: &str = "[data-engine-note]";
 const COMMAND: &str = "[data-engine-note] .ds-command-line-text";
 const START: &str = ".engine-note-start .ds-button";
 const ASKED: &str = ".ds-alert";
+/// What the note says over the install command.
+const SETUP_LINE: &str = "To run models on this computer, install llama.cpp.";
+
+/// What the note says when there is no package to install.
+const RELEASES_LINE: &str = "Get llama.cpp's server from its releases page";
+
+/// What the button that makes the assistant look again says.
+const START_USING: &str = "Start using it";
+
 const RESTART: &str = ".ds-alert .ds-button[data-answers=\"return\"]";
 const CANCEL: &str = ".ds-alert .ds-button[data-answers=\"escape\"]";
 const RESTART_CALL: &str = "RestartUnit inferd.service replace";

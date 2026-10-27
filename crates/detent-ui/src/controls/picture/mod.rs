@@ -7,6 +7,7 @@ mod grid;
 mod header;
 
 use crate::Pictures;
+use crate::copy::pictures::add_failure;
 use crate::env::Env;
 use detent_model::{AddOutcome, Picture, PictureSections, picture_sections};
 use dioxus::prelude::*;
@@ -87,7 +88,7 @@ pub fn PictureControl(
         let pictures = pictures.clone();
         spawn(async move {
             let outcome = pictures.add().await;
-            told.set(outcome.failure());
+            told.set(add_failure(&outcome));
             if let AddOutcome::Added(path) = outcome {
                 onchange.call(toml::Value::String(path.to_string_lossy().into_owned()));
                 found.set(pictures.list().await);

@@ -1,11 +1,9 @@
-//! What the sync service says of a dataset (`Sync1.Status`) and the two lines under a synced
-//! service: when it last synced, and how much of the account's storage it uses. Pure; the window
-//! reads the service and hands the numbers in.
+//! What the sync service says of a dataset (`Sync1.Status`): when it last synced, what is left to
+//! do, and how much of the account's storage it uses. Pure; the window reads the service and hands
+//! the numbers in.
 
 use super::hold::{DatasetName, segment_of};
 use super::model::{Account, AccountKey, AccountService, AccountsPane};
-use crate::engine_install::size_words;
-use crate::updates::elapsed_words;
 use std::collections::BTreeMap;
 
 /// The services whose data the sync service keeps whole under the service's own name: their
@@ -28,21 +26,6 @@ pub struct StorageQuota {
     pub used: u64,
     /// Bytes allowed; none when the provider reports no limit.
     pub total: Option<u64>,
-}
-
-impl StorageQuota {
-    /// "2.1 GB of 15 GB", or "2.1 GB used" when there is no limit.
-    pub fn line(&self) -> String {
-        match self.total {
-            Some(total) => format!("{} of {}", storage_words(self.used), storage_words(total)),
-            None => format!("{} used", storage_words(self.used)),
-        }
-    }
-}
-
-/// A size in gigabytes with a whole number read plainly: "15 GB", not "15.0 GB".
-fn storage_words(bytes: u64) -> String {
-    size_words(bytes).replace(".0 ", " ")
 }
 
 /// Whether the sync service is moving data for a dataset now.
@@ -75,28 +58,6 @@ impl SyncStatus {
         match self.pause {
             SyncPause::Running if self.pending > 0 => SyncWork::Working,
             SyncPause::Running | SyncPause::Paused => SyncWork::Resting,
-        }
-    }
-
-    /// The line under the service: "Synced 5 minutes ago", "Syncing 3 items", "Paused".
-    pub fn sync_line(&self) -> String {
-        match (self.pause, self.anchor_age) {
-            (SyncPause::Paused, _) => "Paused".to_owned(),
-            _ if self.work() == SyncWork::Working => format!(
-                "Syncing {} {}",
-                self.pending,
-                if self.pending == 1 { "item" } else { "items" }
-            ),
-            (SyncPause::Running, Some(age)) => format!("Synced {}", elapsed_words(age)),
-            (SyncPause::Running, None) => "Waiting to sync".to_owned(),
-        }
-    }
-
-    /// Both lines in one, as the row's second line: "Synced 5 minutes ago. 2.1 GB of 15 GB".
-    pub fn lines(&self) -> String {
-        match &self.quota {
-            Some(quota) => format!("{}. {}", self.sync_line(), quota.line()),
-            None => self.sync_line(),
         }
     }
 }
@@ -148,12 +109,12 @@ impl Account {
         let switches = self
             .sync
             .iter()
-            .filter(|sync| sync.on)
+            .filter(|sync| sync.on.is_on())
             .map(|sync| DatasetName::of_switch(&self.key, &sync.path));
         let services = self
             .services
             .iter()
-            .filter(|service| service.on)
+            .filter(|service| service.on.is_on())
             .filter_map(|service| service.dataset(&self.key));
         switches.chain(services).collect()
     }
@@ -168,70 +129,27 @@ impl AccountsPane {
 
 #[cfg(test)]
 mod tests {
-    use super::{StorageQuota, SyncPause, SyncStatus, SyncWork};
+    use super::{SyncPause, SyncStatus, SyncWork};
 
-    fn status(
-        anchor_age: Option<i64>,
-        pending: u64,
-        pause: SyncPause,
-        quota: Option<StorageQuota>,
-    ) -> SyncStatus {
+    fn status(pending: u64, pause: SyncPause) -> SyncStatus {
         SyncStatus {
-            anchor_age,
+            anchor_age: Some(60),
             pending,
             conflicts: 0,
             pause,
-            quota,
+            quota: None,
         }
     }
 
     #[test]
-    fn a_dataset_says_when_it_synced_how_full_the_storage_is_and_whether_it_is_working() {
-        let some = |used, total| Some(StorageQuota { used, total });
+    fn a_dataset_is_working_only_while_it_has_items_left_and_is_not_paused() {
         let cases = [
-            (
-                status(
-                    Some(300),
-                    0,
-                    SyncPause::Running,
-                    some(2_100_000_000, Some(15_000_000_000)),
-                ),
-                "Synced 5 minutes ago. 2.1 GB of 15 GB",
-                SyncWork::Resting,
-            ),
-            (
-                status(Some(10), 0, SyncPause::Running, some(500_000_000, None)),
-                "Synced just now. 500 MB used",
-                SyncWork::Resting,
-            ),
-            (
-                status(Some(90_000), 0, SyncPause::Running, None),
-                "Synced yesterday",
-                SyncWork::Resting,
-            ),
-            (
-                status(None, 0, SyncPause::Running, None),
-                "Waiting to sync",
-                SyncWork::Resting,
-            ),
-            (
-                status(Some(60), 3, SyncPause::Running, None),
-                "Syncing 3 items",
-                SyncWork::Working,
-            ),
-            (
-                status(Some(60), 1, SyncPause::Running, None),
-                "Syncing 1 item",
-                SyncWork::Working,
-            ),
-            (
-                status(Some(60), 3, SyncPause::Paused, None),
-                "Paused",
-                SyncWork::Resting,
-            ),
+            (status(0, SyncPause::Running), SyncWork::Resting),
+            (status(3, SyncPause::Running), SyncWork::Working),
+            (status(1, SyncPause::Running), SyncWork::Working),
+            (status(3, SyncPause::Paused), SyncWork::Resting),
         ];
-        for (held, lines, work) in cases {
-            assert_eq!(held.lines(), lines, "{held:?}");
+        for (held, work) in cases {
             assert_eq!(held.work(), work, "{held:?}");
         }
     }

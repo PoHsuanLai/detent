@@ -7,10 +7,13 @@ use super::attention_view::AttentionBanner;
 use super::avatar_view::{AccountAvatar, AvatarPlace};
 use super::grants_view::AppsWithAccess;
 use super::list_view::Note;
+use super::switch::{check_of, switch_of};
+use crate::copy::account_sync::{spend_line, sync_lines};
+use crate::copy::accounts::{reauth_help, service_label, sign_in_words, status_label};
 use crate::marks::ProviderMarks;
 use detent_model::{
     Account, AccountKey, AccountService, AccountSync, Attention, DatasetName, HoldInput, Holds,
-    ModuleId, ModuleRow, SyncBook, SyncHold, reauth_help, sign_in_words,
+    ModuleId, ModuleRow, SwitchState, SyncBook, SyncHold,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -24,7 +27,7 @@ use ds_settings::schema::ActionWeight;
 #[derive(Clone, Copy, PartialEq)]
 pub(super) struct Handlers {
     /// A service was switched.
-    pub switched: EventHandler<(ModuleRow, bool)>,
+    pub switched: EventHandler<(ModuleRow, SwitchState)>,
     /// A permission's action or Sign in again was pressed.
     pub ran: EventHandler<ModuleRow>,
     /// Remove was pressed.
@@ -37,27 +40,18 @@ pub(super) struct Handlers {
     pub sync_now: EventHandler<DatasetName>,
 }
 
-fn availability_of(busy: bool) -> Availability {
-    if busy {
-        Availability::Disabled
-    } else {
-        Availability::Enabled
-    }
-}
-
-/// `account`'s screen. `busy` is whether a change is in flight: its actions wait. `holds` are the
-/// deletions waiting for the person's word; `marks` draw the provider; `book` is what the sync
-/// service says of the account's datasets.
+/// `account`'s screen. `availability` is `Disabled` while a change is in flight: its actions
+/// wait. `holds` are the deletions waiting for the person's word; `marks` draw the provider;
+/// `book` is what the sync service says of the account's datasets.
 #[component]
 pub(super) fn AccountDetail(
     account: Account,
-    busy: bool,
+    availability: Availability,
     holds: Holds,
     marks: ProviderMarks,
     book: SyncBook,
     on: Handlers,
 ) -> Element {
-    let availability = availability_of(busy);
     let attention = Attention::of(&account);
     rsx! {
         div { class: "accounts-detail", "data-accounts": "detail", "data-account": "{account.key.0}",
@@ -73,7 +67,7 @@ pub(super) fn AccountDetail(
             FieldGroup {
                 FieldRow {
                     label: TextLine::from("Status"),
-                    Label { text: account.status.label(), role: LabelRole::Secondary }
+                    Label { text: status_label(&account.status), role: LabelRole::Secondary }
                 }
                 if let (None, Some(expiry)) = (&attention, account.expires.clone()) {
                     FieldRow {
@@ -123,7 +117,7 @@ pub(super) fn AccountDetail(
                             module: account.module,
                             line: service
                                 .dataset(&account.key)
-                                .and_then(|dataset| book.status_of(&dataset).map(|status| status.lines())),
+                                .and_then(|dataset| book.status_of(&dataset).map(sync_lines)),
                             service,
                             availability,
                             on,
@@ -136,7 +130,7 @@ pub(super) fn AccountDetail(
                 FieldGroup { title: Some("Spending".to_owned()),
                     FieldRow {
                         label: TextLine::from("This month"),
-                        help: Some(TextLine::from(bar.line.words())),
+                        help: Some(TextLine::from(spend_line(bar.line))),
                         ProgressIndicator {
                             style: ProgressStyle::Bar,
                             progress: Progress::Known(Fraction(bar.permille)),
@@ -152,13 +146,13 @@ pub(super) fn AccountDetail(
                     }
                     for sync in account.sync.iter().cloned() {
                         SyncRow { key: "{sync.path.0}", module: account.module, sync: sync.clone(), availability, on }
-                        if sync.on {
+                        if sync.on.is_on() {
                             SyncNowRow {
                                 key: "now-{sync.path.0}",
                                 account: account.key.clone(),
                                 line: book
                                     .status_of(&DatasetName::of_switch(&account.key, &sync.path))
-                                    .map(|status| status.lines()),
+                                    .map(sync_lines),
                                 sync: sync.clone(),
                                 availability,
                                 on,
@@ -250,7 +244,7 @@ fn ServiceRow(
     availability: Availability,
     on: Handlers,
 ) -> Element {
-    let label = service.label();
+    let label = service_label(&service);
     let row = ModuleRow::new(module, service.path.clone());
     rsx! {
         FieldRow {
@@ -259,9 +253,9 @@ fn ServiceRow(
             availability,
             Toggle {
                 label,
-                value: if service.on { Check::On } else { Check::Off },
+                value: check_of(service.on),
                 availability,
-                onchange: move |next| on.switched.call((row.clone(), next == Check::On)),
+                onchange: move |next| on.switched.call((row.clone(), switch_of(next))),
             }
         }
     }
@@ -284,9 +278,9 @@ fn SyncRow(
             availability,
             Toggle {
                 label: sync.label.clone(),
-                value: if sync.on { Check::On } else { Check::Off },
+                value: check_of(sync.on),
                 availability,
-                onchange: move |next| on.switched.call((row.clone(), next == Check::On)),
+                onchange: move |next| on.switched.call((row.clone(), switch_of(next))),
             }
         }
     }
@@ -311,9 +305,9 @@ fn ShowInFilesRow(
             availability,
             Toggle {
                 label: files.label.clone(),
-                value: if files.on { Check::On } else { Check::Off },
+                value: check_of(files.on),
                 availability,
-                onchange: move |next| on.switched.call((row.clone(), next == Check::On)),
+                onchange: move |next| on.switched.call((row.clone(), switch_of(next))),
             }
         }
     }

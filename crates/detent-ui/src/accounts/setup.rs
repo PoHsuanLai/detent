@@ -5,11 +5,13 @@
 use super::add_io::add_account;
 use super::avatar_view::{AccountAvatar, AvatarPlace};
 use super::watch::{Listed, use_listed};
+use crate::copy::account_notices::add_end_line;
+use crate::copy::accounts::status_label;
 use crate::env::Env;
 use crate::key_row::row_id;
 use crate::marks::ProviderMarks;
 use detent_model::{
-    Adding, Pressable, SetupButton, SignedIn, SyncWork, accounts_setup_button, signed_in,
+    Adding, SetupAction, SetupAvailability, SignedIn, SyncWork, accounts_setup_offer, signed_in,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -32,9 +34,10 @@ const NOTHING_YET: &str =
 
 /// The line under an account that needs a new sign-in.
 fn standing_line(row: &SignedIn) -> String {
-    row.provider
-        .as_ref()
-        .map_or_else(|| row.status.label(), |provider| provider.name.clone())
+    row.provider.as_ref().map_or_else(
+        || status_label(&row.status),
+        |provider| provider.name.clone(),
+    )
 }
 
 /// The accounts signed in, one row each.
@@ -86,8 +89,8 @@ pub(crate) fn AccountsSetup() -> Element {
         Listed::Accounts(pane) => signed_in(&pane),
         Listed::Looking | Listed::Absent(_) => Vec::new(),
     };
-    let skip = availability_of(accounts_setup_button(&rows, SetupButton::Skip));
-    let next = availability_of(accounts_setup_button(&rows, SetupButton::Continue));
+    let skip = availability_of(accounts_setup_offer(&rows, SetupAction::Skip));
+    let next = availability_of(accounts_setup_offer(&rows, SetupAction::Continue));
     let add = match adding() {
         Adding::Idle => Availability::Enabled,
         Adding::SheetOpen => Availability::Disabled,
@@ -126,7 +129,7 @@ pub(crate) fn AccountsSetup() -> Element {
                     spawn(async move {
                         let end = add_account(&bus).await;
                         adding.set(Adding::Idle);
-                        if let Some(line) = end.line() {
+                        if let Some(line) = add_end_line(&end) {
                             toasts.push(line.to_owned(), None);
                         }
                     });
@@ -155,10 +158,10 @@ pub(crate) fn AccountsSetup() -> Element {
 }
 
 /// A button that can be pressed now is enabled.
-fn availability_of(pressable: Pressable) -> Availability {
-    match pressable {
-        Pressable::Now => Availability::Enabled,
-        Pressable::NotYet => Availability::Disabled,
+fn availability_of(availability: SetupAvailability) -> Availability {
+    match availability {
+        SetupAvailability::Now => Availability::Enabled,
+        SetupAvailability::NotYet => Availability::Disabled,
     }
 }
 

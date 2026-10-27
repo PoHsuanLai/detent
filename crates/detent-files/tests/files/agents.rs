@@ -29,10 +29,10 @@ fn homes(name: &str) -> (Scratch, ConfigHome, DataHome) {
     (scratch, ConfigHome(config), DataHome(data))
 }
 
-fn words(entries: &[detent_model::Entry]) -> Vec<(&str, &str)> {
+fn words(entries: &[detent_model::Entry]) -> Vec<(&str, Option<&str>)> {
     entries
         .iter()
-        .map(|e| (e.word.as_str(), e.name.as_str()))
+        .map(|e| (e.word.as_str(), e.name.as_deref()))
         .collect()
 }
 
@@ -46,16 +46,16 @@ fn the_rows_and_menus_are_what_the_agent_offered_and_what_the_file_names() {
     assert_eq!(
         words(&model_menu(claude)),
         [
-            (AGENTS_OWN, "The agent\u{2019}s own choice"),
-            ("sonnet", "Sonnet 5.5"),
-            ("opus", "Opus"),
-            ("haiku-old", "haiku-old"),
+            (AGENTS_OWN, None),
+            ("sonnet", Some("Sonnet 5.5")),
+            ("opus", Some("Opus")),
+            ("haiku-old", Some("haiku-old")),
         ],
         "what is written is never hidden"
     );
     assert_eq!(
         words(&way_menu(claude)),
-        [("login", "Sign in with your account")]
+        [("login", Some("Sign in with your account"))]
     );
     let mine = agents.get("mine").expect("listed");
     assert_eq!(

@@ -6,8 +6,9 @@ use crate::support::Sandbox;
 use crate::support::displays::Displays;
 use crate::support::drive::{click, page_of, settle, showing, sidebar_row, title_of};
 use detent_model::{
-    DisplayChange, DisplayEdit, DisplayMode, DisplayPosition, DisplayRotation, DisplaysStatus,
-    Millimetres, Missing, ModePreference, Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli,
+    Absence, DisplayChange, DisplayEdit, DisplayMode, DisplayPosition, DisplayRotation,
+    DisplaysStatus, Millimetres, ModePreference, Monitor, OutputId, PixelSize, RefreshMilliHz,
+    ScaleMilli,
 };
 use detent_ui::Opening;
 use ds_harness::{Harness, Input};
@@ -132,7 +133,7 @@ fn the_page_sits_after_desktop_and_dock_and_says_plainly_when_there_is_no_compos
 
 #[test]
 fn a_computer_with_no_display_connected_says_so() {
-    let service = Displays::missing(Missing::NoDevice);
+    let service = Displays::missing(Absence::NoDevice);
     let (_sandbox, mut harness) = world("displays-none", &service);
     showing(
         &mut harness,

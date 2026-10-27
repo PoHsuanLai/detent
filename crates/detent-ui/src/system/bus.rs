@@ -5,7 +5,7 @@
 
 use crate::deadline::{Deadline, peer};
 use crate::live::BusSource;
-use detent_model::Missing;
+use detent_model::Absence;
 use ds_peer::within;
 use zbus::Connection;
 use zbus::fdo::DBusProxy;
@@ -13,21 +13,21 @@ use zbus::names::BusName;
 
 /// A connection to the system bus. The session source means the real system bus; a test's private
 /// bus is used as it is; no bus is no service.
-pub(crate) async fn system_connection(bus: &BusSource) -> Result<Connection, Missing> {
+pub(crate) async fn system_connection(bus: &BusSource) -> Result<Connection, Absence> {
     match within(Deadline::READ, peer::DESKTOP, dial(bus)).await {
         Ok(dialled) => dialled,
-        Err(_) => Err(Missing::Failed),
+        Err(_) => Err(Absence::Failed),
     }
 }
 
-async fn dial(bus: &BusSource) -> Result<Connection, Missing> {
+async fn dial(bus: &BusSource) -> Result<Connection, Absence> {
     match bus {
-        BusSource::Absent => Err(Missing::NoService),
-        BusSource::Session => Connection::system().await.map_err(|_| Missing::NoService),
+        BusSource::Absent => Err(Absence::NotRunning),
+        BusSource::Session => Connection::system().await.map_err(|_| Absence::NotRunning),
         BusSource::Address(address, _) => {
             let builder = zbus::connection::Builder::address(address.as_str())
-                .map_err(|_| Missing::Failed)?;
-            builder.build().await.map_err(|_| Missing::NoService)
+                .map_err(|_| Absence::Failed)?;
+            builder.build().await.map_err(|_| Absence::NotRunning)
         }
     }
 }

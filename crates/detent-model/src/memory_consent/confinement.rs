@@ -1,4 +1,4 @@
-//! Whether memory keeps itself to its own folders, and the one plain line that says so.
+//! Whether memory keeps itself to its own folders.
 
 use super::state::is_memory_setting;
 use crate::catalogue::SectionModel;
@@ -34,18 +34,6 @@ impl Confinement {
             "not-available" => Confinement::NotAvailable,
             "off" => Confinement::Off,
             _ => Confinement::Unknown,
-        }
-    }
-
-    /// The plain line for the person; nothing for `Off` and `Unknown`.
-    pub fn line(self) -> Option<&'static str> {
-        match self {
-            Confinement::Confined => Some("Memory keeps itself to its own folders"),
-            Confinement::Partial => Some(
-                "Memory keeps itself to its own folders, though this computer can only enforce part of that",
-            ),
-            Confinement::NotAvailable => Some("This computer can't keep memory to its own folders"),
-            Confinement::Off | Confinement::Unknown => None,
         }
     }
 }

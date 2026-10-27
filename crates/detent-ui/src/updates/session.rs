@@ -3,12 +3,11 @@
 
 use super::link::{InstallRefusal, UpdateTicks, UpdatesLink};
 use super::wire::wire_of;
+use crate::copy::{self, Subject};
 use crate::deadline::{Deadline, peer};
 use crate::live::{BusSource, Pinned, connect, pinned};
 use crate::ticks::{Ticker, Ticks};
-use detent_model::{
-    Absence, UPDATES_NOT_AVAILABLE, UnixSeconds, UpdateStatus, UpdateVersion, Work,
-};
+use detent_model::{Absence, UnixSeconds, UpdateStatus, UpdateVersion, Work};
 use ds_peer::{NotAnswering, within};
 use porter_dbus::{BusFailure, classify};
 use std::collections::HashMap;
@@ -68,15 +67,20 @@ fn absence(error: zbus::Error) -> Absence {
     match classify(&error) {
         BusFailure::NoDaemon => Absence::NotRunning,
         BusFailure::Denied(_) => Absence::NotPermitted,
-        _ => Absence::Failed(error.to_string()),
+        _ => Absence::Failed,
     }
+}
+
+/// What the person reads when no service answers.
+fn not_available() -> String {
+    copy::absence(Subject::Updates, Absence::NotRunning).to_owned()
 }
 
 /// The sentence for a request that failed: the service's own words when it refused, else the
 /// general one.
 fn sentence_of(error: &zbus::Error) -> String {
     match (classify(error), error) {
-        (BusFailure::NoDaemon, _) => UPDATES_NOT_AVAILABLE.to_owned(),
+        (BusFailure::NoDaemon, _) => not_available(),
         (_, zbus::Error::MethodError(name, Some(words), _))
             if SENTENCE_ERRORS.contains(&name.as_str()) && !words.is_empty() =>
         {
@@ -112,8 +116,8 @@ async fn proxy(running: &Pinned) -> Result<UpdatesProxy<'_>, zbus::Error> {
 }
 
 /// Who did not answer, as the page says it.
-fn silent(error: NotAnswering) -> Absence {
-    Absence::Failed(error.to_string())
+fn silent(_error: NotAnswering) -> Absence {
+    Absence::Failed
 }
 
 /// Every property of the service at once.
@@ -126,8 +130,7 @@ async fn get_all(running: &Pinned) -> Result<HashMap<String, OwnedValue>, Absenc
         .build()
         .await
         .map_err(absence)?;
-    let interface =
-        InterfaceName::try_from(INTERFACE).map_err(|e| Absence::Failed(e.to_string()))?;
+    let interface = InterfaceName::try_from(INTERFACE).map_err(|_| Absence::Failed)?;
     properties
         .get_all(interface)
         .await
@@ -192,7 +195,7 @@ async fn ask(bus: &BusSource, request: Ask) -> Result<(), InstallRefusal> {
     let told = InstallRefusal::Told;
     let running = pinned(bus, BUS_NAME)
         .await
-        .map_err(|_| told(UPDATES_NOT_AVAILABLE.to_owned()))?;
+        .map_err(|_| told(not_available()))?;
     let service = proxy(&running).await.map_err(|e| told(sentence_of(&e)))?;
     let call = async {
         match &request {

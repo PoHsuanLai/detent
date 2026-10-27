@@ -9,8 +9,3 @@ pub const DISPLAYS_SLUG: &str = "displays";
 pub fn displays_page() -> Page {
     Page::declared(DISPLAYS_SLUG)
 }
-
-/// Whether `page` is the Displays page.
-pub fn is_displays(page: &Page) -> bool {
-    *page == displays_page()
-}

@@ -3,11 +3,12 @@
 //! where the line would be, and no switch.
 
 use super::link::ExtensionLink;
+use crate::copy::{
+    EXTENSIONS_EMPTY_HELP, EXTENSIONS_EMPTY_TITLE, NOT_AVAILABLE, extension_line, group_title,
+};
 use crate::env::Env;
 use crate::key_row::{HIT_CLASS, Match, row_id};
-use detent_model::{
-    EXTENSIONS_EMPTY_HELP, EXTENSIONS_EMPTY_TITLE, ExtensionPower, ExtensionRow, NOT_AVAILABLE,
-};
+use detent_model::{ExtensionPower, ExtensionRow};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -53,7 +54,7 @@ pub(crate) fn ExtensionsPane() -> Element {
     rsx! {
         div { class: "extensions", "data-extensions": "list",
             for group in shown.groups {
-                FieldGroup { key: "{group.title}", title: Some(group.title.clone()),
+                FieldGroup { key: "{group.kind:?}", title: Some(group_title(group.kind).to_owned()),
                     for row in group.rows {
                         ExtensionLine {
                             key: "{row.id}",
@@ -92,7 +93,7 @@ fn ExtensionLine(
     rsx! {
         FieldRow {
             label: TextLine::from(row.name.clone()),
-            help: row.line().map(|line| TextLine::from(line.to_owned())),
+            help: extension_line(&row).map(|line| TextLine::from(line.to_owned())),
             common,
             match row.power() {
                 Some(power) => rsx! {

@@ -13,16 +13,6 @@ pub enum HotAddFault {
     Already,
 }
 
-impl HotAddFault {
-    /// The sentence that says why nothing was added.
-    pub fn words(self) -> &'static str {
-        match self {
-            HotAddFault::NoKeys => "Tick at least one key.",
-            HotAddFault::Already => "This corner already has a row for those keys.",
-        }
-    }
-}
-
 /// The sets of keys the corner shows a pop-up for: none held, then the sets that have a binding
 /// or that the person added and has not filled yet (`added`), each once, in key order.
 pub fn shown_rows(bindings: &[HotBinding], added: &[HotKeys]) -> Vec<HotKeys> {

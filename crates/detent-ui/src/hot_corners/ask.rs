@@ -3,6 +3,7 @@
 
 use super::cell::{bindings_in, store};
 use super::sheet::{SheetState, Step};
+use crate::copy::hot_corners::open_kind_label;
 use crate::env::Env;
 use crate::files::{Edit, Files};
 use crate::key_row::row_id;
@@ -285,7 +286,7 @@ fn OpenAsk(
                 div { class: "hot-corners-row",
                     Label { text: words, role: LabelRole::Secondary }
                     Button {
-                        label: format!("Choose {}\u{2026}", kind.label()),
+                        label: format!("Choose {}\u{2026}", open_kind_label(kind)),
                         common: Common { id: Some("hot-corner-chooser".to_owned()), ..Common::default() },
                         onclick: move |_| {
                             let corners = corners.clone();
@@ -321,7 +322,7 @@ fn OpenAsk(
         AskTitle { title: "Open", words: "Open an app, a file, a folder or a web address when the pointer rests in the corner." }
         SegmentedControl::<HotOpenKind> {
             label: "What to open",
-            choices: Choice::pairs(HotOpenKind::ALL.map(|kind| (kind, kind.label()))),
+            choices: Choice::pairs(HotOpenKind::ALL.map(|kind| (kind, open_kind_label(kind)))),
             tracking: Tracking::SelectOne(shown.kind),
             size: ControlSize::Small,
             onchange: move |kind: HotOpenKind| {

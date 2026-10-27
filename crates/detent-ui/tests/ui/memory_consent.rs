@@ -7,7 +7,7 @@ use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use crate::support::drive::{click, scroll_into_view};
 use crate::support::memory::{Fake, serve};
-use detent_model::{Confinement, PageSlug, Trouble};
+use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::Harness;
 use std::time::Duration;
@@ -91,15 +91,26 @@ fn confining(name: &str, file: Option<&str>, word: &'static str) -> World {
 
 #[test]
 fn the_memory_section_says_in_one_line_whether_memory_keeps_to_its_own_folders() {
-    // `(case, the word memory carries)`; each shows the line the model gives that word.
+    // `(case, the word memory carries, the line shown)`.
     let cases = [
-        ("confined", "confined"),
-        ("part-enforced", "partial"),
-        ("not-available", "not-available"),
+        (
+            "confined",
+            "confined",
+            "Memory keeps itself to its own folders",
+        ),
+        (
+            "part-enforced",
+            "partial",
+            "Memory keeps itself to its own folders, though this computer can only enforce part of that",
+        ),
+        (
+            "not-available",
+            "not-available",
+            "This computer can't keep memory to its own folders",
+        ),
     ];
-    for (name, word) in cases {
+    for (name, word, line) in cases {
         let mut w = confining(&format!("confinement-{name}"), None, word);
-        let line = Confinement::from_word(word).line().expect("a line to show");
         settle(&mut w.harness, name, |h| h.count(LINE) == 1);
         assert_eq!(
             w.harness.text_of(LINE).as_deref().map(str::trim),
@@ -175,15 +186,17 @@ fn a_refusal_is_told_in_a_calm_line_and_the_value_keeps_waiting() {
     let mut w = world("consent-refused", Some(TYPED_BY_HAND));
     settle(&mut w.harness, "the note", |h| h.count(NOTE) == 1);
     scroll_into_view(&mut w.harness, CONFIRM);
-    for (refusal, trouble) in [
-        ("Invalid", Trouble::Invalid),
-        ("NotAllowed", Trouble::NotAllowed),
+    const INVALID: &str = "Memory could not accept this value, so it keeps its own.";
+    for (refusal, line) in [
+        ("Invalid", INVALID),
+        (
+            "NotAllowed",
+            "Memory would not take this confirmation from here.",
+        ),
     ] {
         w.fake.refuse_next(refusal);
         click(&mut w.harness, CONFIRM);
-        settle(&mut w.harness, refusal, |h| {
-            h.html().contains(trouble.words())
-        });
+        settle(&mut w.harness, refusal, |h| h.html().contains(line));
         assert_eq!(w.harness.count(NOTE), 1, "{refusal}: it still waits");
         assert!(
             w.fake.confirms().is_empty(),
@@ -191,7 +204,7 @@ fn a_refusal_is_told_in_a_calm_line_and_the_value_keeps_waiting() {
         );
     }
     assert!(
-        !w.harness.html().contains(Trouble::Invalid.words()),
+        !w.harness.html().contains(INVALID),
         "the first line is replaced"
     );
 }

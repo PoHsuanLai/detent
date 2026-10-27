@@ -60,15 +60,6 @@ pub enum PowerStanding {
 }
 
 impl PowerStanding {
-    /// The word on the page.
-    pub fn label(self) -> &'static str {
-        match self {
-            PowerStanding::Allowed => "Allowed",
-            PowerStanding::Denied => "Denied",
-            PowerStanding::Ask => "Ask",
-        }
-    }
-
     /// Every standing a person can pick, in the order of the menu.
     pub const CHOICES: [PowerStanding; 3] = [
         PowerStanding::Allowed,

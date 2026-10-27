@@ -1,7 +1,8 @@
 //! The list's state, read from the portal when the page is shown and driven by Remove.
 
 use super::io::{list, revoke};
-use super::view::{Listed, absence_help};
+use super::view::Listed;
+use crate::copy::{Subject, absence as absence_words};
 use crate::env::Env;
 use crate::live::BusSource;
 use crate::privacy::use_program_book;
@@ -50,7 +51,7 @@ pub(crate) fn ScreenSharingPane() -> Element {
                 FieldGroup { title: Some(TITLE.to_owned()),
                     FieldRow {
                         label: TextLine::from(TITLE),
-                        help: Some(TextLine::from(absence_help(&absence))),
+                        help: Some(TextLine::from(absence_words(Subject::ScreenSharing, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
                     }

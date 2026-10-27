@@ -6,12 +6,12 @@ mod page;
 mod row;
 mod setup;
 
+pub(crate) use page::ASSISTANT_MODEL_NAME;
 pub use page::{
-    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, assistant_model_page, is_assistant_model,
-    is_assistant_setup,
+    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, assistant_model_page, is_assistant_setup,
 };
 pub use row::assistant_of;
-pub use setup::{Pressable, SetupButton, setup_button};
+pub use setup::{SetupAction, SetupAvailability, setup_availability};
 
 #[cfg(test)]
 mod tests;

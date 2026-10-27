@@ -13,21 +13,28 @@ pub const AGENTS_OWN: &str = "";
 pub struct Entry {
     /// What the file holds (empty for the agent's own).
     pub word: String,
-    /// What the person reads.
-    pub name: String,
+    /// What the person reads; none for the agent's own choice, which the window words itself.
+    pub name: Option<String>,
 }
 
 fn entry(word: &str, name: &str) -> Entry {
     Entry {
         word: word.to_owned(),
-        name: name.to_owned(),
+        name: Some(name.to_owned()),
+    }
+}
+
+fn agents_own() -> Entry {
+    Entry {
+        word: AGENTS_OWN.to_owned(),
+        name: None,
     }
 }
 
 /// The models `row` can run: its own choice first, then what it offered, then the one the file
 /// names when the agent no longer offers it (so the menu never hides what is written).
 pub fn model_menu(row: &AgentRow) -> Vec<Entry> {
-    let mut menu = vec![entry(AGENTS_OWN, "The agent\u{2019}s own choice")];
+    let mut menu = vec![agents_own()];
     if let Offers::Seen { models, .. } = &row.offers {
         menu.extend(models.iter().map(|m| entry(&m.id, &m.name)));
     }

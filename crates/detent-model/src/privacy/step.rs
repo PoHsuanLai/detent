@@ -9,9 +9,6 @@ use crate::Live;
 use crate::picker::Described;
 use ds_settings::schema::KeyPath;
 
-/// What the compositor says under a row it fixed: the line the page repeats.
-pub const SET_BY_ADMINISTRATOR: &str = "Set by your administrator";
-
 /// What the page knows.
 pub type PrivacyState = Live<PrivacyReady>;
 

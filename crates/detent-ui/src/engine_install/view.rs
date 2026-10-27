@@ -2,9 +2,9 @@
 //! place, then what the download came to.
 
 use super::board::Board;
+use crate::copy;
 use detent_model::{
-    EngineSheet, EngineSheetInput, INSTALL_FOR, InstallScope, SheetButton, SheetWords, Waiting,
-    sheet_words,
+    EngineAction, EngineBrief, EngineOffer, EngineOfferInput, InstallScope, Waiting, engine_brief,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -39,17 +39,17 @@ pub(crate) fn EngineSheetView() -> Element {
     let Some(board) = try_use_context::<Board>() else {
         return rsx! {};
     };
-    let sheet = board.state.read().sheet.clone();
-    let Some(words) = sheet_words(&sheet) else {
+    let offer = board.state.read().offer.clone();
+    let Some(brief) = engine_brief(&offer) else {
         return rsx! {};
     };
-    let kind = kind_of(&sheet);
+    let kind = kind_of(&offer);
+    let name = brief.engine.name.as_str();
+    let title = copy::engine_install::title(name, &brief.matter);
+    let message = copy::engine_install::message(name, &brief.matter);
     // Escape does what the leaving button does, and Return what the going-on button does.
-    let leave = words
-        .secondary
-        .or(words.primary)
-        .map(|button| button.press.input());
-    let go = words.primary.map(|button| button.press.input());
+    let leave = brief.secondary.or(brief.primary).map(EngineAction::input);
+    let go = brief.primary.map(EngineAction::input);
     let ask = board.ask;
     let close = EventHandler::new(move |()| {
         if let Some(input) = leave.clone() {
@@ -63,23 +63,23 @@ pub(crate) fn EngineSheetView() -> Element {
     });
     rsx! {
         Sheet {
-            label: words.title.clone(),
+            label: title.clone(),
             width: SheetWidth::Regular,
             onclose: close,
             on_return: enter,
             div { class: "engine-sheet", "data-engine-sheet": kind,
-                Label { text: words.title.clone(), role: LabelRole::Primary, style: LabelStyle::Headline }
-                if !words.message.is_empty() {
-                    Label { text: words.message.clone(), role: LabelRole::Secondary }
+                Label { text: title.clone(), role: LabelRole::Primary, style: LabelStyle::Headline }
+                if !message.is_empty() {
+                    Label { text: message.clone(), role: LabelRole::Secondary }
                 }
-                Scopes { words: words.clone(), ask }
-                Meter { words: words.clone() }
+                Scopes { brief: brief.clone(), ask }
+                Meter { brief: brief.clone() }
                 div { class: "engine-sheet-buttons",
-                    if let Some(button) = words.secondary {
-                        Pressed { button, answers: Answers::Escape, ask }
+                    if let Some(action) = brief.secondary {
+                        ActionButton { action, answers: Answers::Escape, ask }
                     }
-                    if let Some(button) = words.primary {
-                        Pressed { button, answers: Answers::Return, ask }
+                    if let Some(action) = brief.primary {
+                        ActionButton { action, answers: Answers::Return, ask }
                     }
                 }
             }
@@ -88,38 +88,43 @@ pub(crate) fn EngineSheetView() -> Element {
 }
 
 /// Which of the sheet's states this is, for a test to find.
-fn kind_of(sheet: &EngineSheet) -> &'static str {
-    match sheet {
-        EngineSheet::Closed => "closed",
-        EngineSheet::Asking { .. } => "asking",
-        EngineSheet::Pointing { .. } => "pointing",
-        EngineSheet::Working { .. } => "working",
-        EngineSheet::Done { .. } => "done",
-        EngineSheet::Failed { .. } => "failed",
+fn kind_of(offer: &EngineOffer) -> &'static str {
+    match offer {
+        EngineOffer::Idle => "closed",
+        EngineOffer::Asking { .. } => "asking",
+        EngineOffer::Pointing { .. } => "pointing",
+        EngineOffer::Working { .. } => "working",
+        EngineOffer::Done { .. } => "done",
+        EngineOffer::Failed { .. } => "failed",
     }
 }
 
 /// "Install for", when there is more than one way.
 #[component]
-fn Scopes(words: SheetWords, ask: EventHandler<EngineSheetInput>) -> Element {
-    if words.scopes.is_empty() {
+fn Scopes(brief: EngineBrief, ask: EventHandler<EngineOfferInput>) -> Element {
+    if brief.scopes.is_empty() {
         return rsx! {};
     }
-    let items: Vec<MenuItem<String>> = words
+    let items: Vec<MenuItem<String>> = brief
         .scopes
         .iter()
-        .map(|scope| MenuItem::new(word_of(*scope).to_owned(), scope.label().to_owned()))
+        .map(|scope| {
+            MenuItem::new(
+                word_of(*scope).to_owned(),
+                copy::engine_install::scope(*scope).to_owned(),
+            )
+        })
         .collect();
     rsx! {
         FieldGroup {
             FieldRow {
-                label: TextLine::from(INSTALL_FOR),
+                label: TextLine::from(copy::engine_install::install_for()),
                 common: Common { id: Some("engine-sheet-scope".to_owned()), ..Common::default() },
                 PopUpButton::<String> {
                     items,
-                    value: Some(word_of(words.scope).to_owned()),
+                    value: Some(word_of(brief.scope).to_owned()),
                     size: ControlSize::Small,
-                    onpick: move |word: String| ask.call(EngineSheetInput::Scope(scope_of(&word))),
+                    onpick: move |word: String| ask.call(EngineOfferInput::Scope(scope_of(&word))),
                 }
             }
         }
@@ -128,8 +133,8 @@ fn Scopes(words: SheetWords, ask: EventHandler<EngineSheetInput>) -> Element {
 
 /// The bar of a download, or of work with no end in sight.
 #[component]
-fn Meter(words: SheetWords) -> Element {
-    match (words.progress, words.waiting) {
+fn Meter(brief: EngineBrief) -> Element {
+    match (brief.progress, brief.waiting) {
         (Some(permille), _) => rsx! {
             ProgressIndicator {
                 style: ProgressStyle::Bar,
@@ -156,12 +161,16 @@ fn Pending() -> Element {
 
 /// One of the sheet's buttons.
 #[component]
-fn Pressed(button: SheetButton, answers: Answers, ask: EventHandler<EngineSheetInput>) -> Element {
+fn ActionButton(
+    action: EngineAction,
+    answers: Answers,
+    ask: EventHandler<EngineOfferInput>,
+) -> Element {
     rsx! {
         Button {
-            label: button.label,
+            label: copy::engine_install::action(action),
             answers,
-            onclick: move |_| ask.call(button.press.input()),
+            onclick: move |_| ask.call(action.input()),
         }
     }
 }

@@ -1,5 +1,5 @@
 use super::*;
-use crate::missing::Missing;
+use crate::Absence;
 
 fn addr(last: u8) -> BtAddress {
     BtAddress(format!("AA:BB:CC:DD:EE:{last:02X}"))
@@ -103,25 +103,25 @@ fn a_failure_is_said_and_frees_the_device() {
 fn forgetting_asks_first_and_only_confirming_forgets() {
     let (asked, effects) = bluetooth_step(ready(), BtInput::AskForget(addr(2)));
     assert_eq!(effects, []);
-    assert_eq!(page_of(&asked).sheet, BtSheet::Forget(addr(2)));
+    assert_eq!(page_of(&asked).asking, BtAsking::Forget(addr(2)));
     let (cancelled, effects) = bluetooth_step(asked.clone(), BtInput::Cancel);
     assert_eq!(
-        (page_of(&cancelled).sheet.clone(), effects),
-        (BtSheet::Closed, vec![])
+        (page_of(&cancelled).asking.clone(), effects),
+        (BtAsking::Nothing, vec![])
     );
     let (confirmed, effects) = bluetooth_step(asked, BtInput::ConfirmForget);
     assert_eq!(effects, [BtEffect::Forget(addr(2))]);
-    assert_eq!(page_of(&confirmed).sheet, BtSheet::Closed);
+    assert_eq!(page_of(&confirmed).asking, BtAsking::Nothing);
 }
 
 #[test]
 fn a_pairing_question_opens_a_sheet_and_an_answer_goes_to_the_device() {
     let asked = question(PairingAsk::Compare(PairingCode(42)));
     let (open, _) = bluetooth_step(ready(), BtInput::Asked(asked.clone()));
-    assert_eq!(page_of(&open).sheet, BtSheet::Pairing(asked));
+    assert_eq!(page_of(&open).asking, BtAsking::Pairing(asked));
     let (closed, effects) = bluetooth_step(open, BtInput::Answer(PairingAnswer::Yes));
     assert_eq!(effects, [BtEffect::Answer(PairingAnswer::Yes)]);
-    assert_eq!(page_of(&closed).sheet, BtSheet::Closed);
+    assert_eq!(page_of(&closed).asking, BtAsking::Nothing);
 }
 
 #[test]
@@ -129,7 +129,7 @@ fn closing_a_pairing_sheet_says_no_to_the_device() {
     let (open, _) = bluetooth_step(ready(), BtInput::Asked(question(PairingAsk::Allow)));
     let (closed, effects) = bluetooth_step(open, BtInput::Cancel);
     assert_eq!(effects, [BtEffect::Answer(PairingAnswer::No)]);
-    assert_eq!(page_of(&closed).sheet, BtSheet::Closed);
+    assert_eq!(page_of(&closed).asking, BtAsking::Nothing);
 }
 
 #[test]
@@ -139,25 +139,20 @@ fn a_pairing_that_ends_closes_its_own_sheet() {
         BtInput::Asked(question(PairingAsk::Show(PairingCode(7)))),
     );
     let (closed, _) = bluetooth_step(open, BtInput::Ended(addr(4), Ok(())));
-    assert_eq!(page_of(&closed).sheet, BtSheet::Closed);
+    assert_eq!(page_of(&closed).asking, BtAsking::Nothing);
 }
 
 #[test]
-fn the_code_is_six_digits_and_the_sheet_says_which_device() {
+fn only_a_number_to_type_on_the_device_wants_no_answer() {
     let q = question(PairingAsk::Compare(PairingCode(4_217)));
-    assert_eq!(
-        pairing_body(&q),
-        "Confirm that the number 004217 is shown on \u{201c}Nearby Pad\u{201d}."
-    );
     assert!(q.wants_answer());
     assert!(!question(PairingAsk::Show(PairingCode(1))).wants_answer());
-    assert_eq!(forget_title("Zed Buds"), "Forget \u{201c}Zed Buds\u{201d}?");
 }
 
 #[test]
 fn a_service_that_goes_leaves_nothing_and_a_return_brings_the_page_back() {
-    let (gone, _) = bluetooth_step(ready(), BtInput::Heard(Err(Missing::NoService)));
-    assert_eq!(gone, BtState::Unavailable(Missing::NoService));
+    let (gone, _) = bluetooth_step(ready(), BtInput::Heard(Err(Absence::NotRunning)));
+    assert_eq!(gone, BtState::Unavailable(Absence::NotRunning));
     let (back, _) = bluetooth_step(gone, BtInput::Heard(Ok(world())));
     assert!(matches!(back, BtState::Ready(_)));
 }
@@ -187,22 +182,12 @@ fn a_pin_is_one_to_sixteen_characters_and_a_passkey_up_to_six_digits() {
 }
 
 #[test]
-fn typing_a_pin_is_answered_to_the_device_and_the_sheet_says_what_to_type() {
+fn typing_a_pin_is_answered_to_the_device() {
     let asked = question(PairingAsk::PinCode);
     assert!(asked.wants_answer());
-    assert_eq!(
-        pairing_body(&asked),
-        "Enter the PIN for \u{201c}Nearby Pad\u{201d}."
-    );
     let (open, _) = bluetooth_step(ready(), BtInput::Asked(asked));
     let typed = PairingAnswer::Typed("0000".to_owned());
     let (closed, effects) = bluetooth_step(open, BtInput::Answer(typed.clone()));
     assert_eq!(effects, [BtEffect::Answer(typed)]);
-    assert_eq!(page_of(&closed).sheet, BtSheet::Closed);
-}
-
-#[test]
-fn a_battery_reads_as_a_percentage() {
-    assert_eq!(BatteryLevel(80).words(), "80%");
-    assert_eq!(BatteryLevel(250).words(), "100%");
+    assert_eq!(page_of(&closed).asking, BtAsking::Nothing);
 }

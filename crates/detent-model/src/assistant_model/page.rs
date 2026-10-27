@@ -7,7 +7,7 @@ use crate::page::PageSlug;
 use ds_settings::schema::Page;
 
 /// The name a person reads for the page.
-const NAME: &str = "Assistant Model";
+pub(crate) const ASSISTANT_MODEL_NAME: &str = "Assistant Model";
 
 /// The page's slug: what `--page` and `open-page` take.
 pub const ASSISTANT_MODEL_SLUG: &str = "assistant-model";
@@ -17,12 +17,7 @@ pub const ASSISTANT_SETUP_SLUG: &str = "assistant-model-setup";
 
 /// The Assistant Model page as the catalogue holds it.
 pub fn assistant_model_page() -> Page {
-    Page::App(NAME.to_owned())
-}
-
-/// Whether `page` is the Assistant Model page.
-pub fn is_assistant_model(page: &Page) -> bool {
-    matches!(page, Page::App(name) if name == NAME)
+    Page::App(ASSISTANT_MODEL_NAME.to_owned())
 }
 
 /// Whether `slug` names the first-run step.

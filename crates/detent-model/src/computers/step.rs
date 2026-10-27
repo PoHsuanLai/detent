@@ -8,7 +8,7 @@ use porter_core::NodeId;
 use porter_core::lending::{ComputerCandidate, GuestAnswer, GuestRow};
 use porter_infer::{ComputerName, PlaceKind, PlaceRow, PlaceState, PlaceTarget};
 
-use super::server::{ServerDraft, ServerEdit, ServerModel, ServerPhase, ServerSheet};
+use super::server::{NewServer, ServerDraft, ServerEdit, ServerModel, ServerPhase, ServerRefusal};
 
 /// Whether a computer answers now.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -80,7 +80,7 @@ pub struct ComputersReady {
     /// The Add list.
     pub adding: AddList,
     /// The Add a server sheet, while it is open.
-    pub server: Option<ServerSheet>,
+    pub server: Option<NewServer>,
 }
 
 /// Where the computers stand.
@@ -221,7 +221,7 @@ fn server_step(
 ) {
     match (input, ready.server.take()) {
         (ComputersInput::OpenServer, _) => {
-            ready.server = Some(ServerSheet::opened());
+            ready.server = Some(NewServer::opened());
             effects.push(ComputersEffect::LoadServerModels);
         }
         (ComputersInput::ServerModels(models), Some(sheet)) => {
@@ -241,7 +241,7 @@ fn server_step(
                     sheet.fault = None;
                     effects.push(ComputersEffect::AddServer(draft));
                 }
-                Err(fault) => sheet.fault = Some(fault.words().to_owned()),
+                Err(fault) => sheet.fault = Some(ServerRefusal::Form(fault)),
             }
             ready.server = Some(sheet);
         }

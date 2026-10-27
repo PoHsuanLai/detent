@@ -9,16 +9,6 @@ pub enum InstallScope {
     JustMe,
 }
 
-impl InstallScope {
-    /// What the pop-up button says.
-    pub fn label(self) -> &'static str {
-        match self {
-            Self::AllUsers => "All Users",
-            Self::JustMe => "Just for Me",
-        }
-    }
-}
-
 /// What can be done about an engine that is not there.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EngineWay {

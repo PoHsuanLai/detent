@@ -1,11 +1,12 @@
 //! The coding agents as a third kind of choice for the assistant's model, beside the models inferd
 //! runs: `agent/<program>` in the text slot's rows, in a group of their own, each one either
 //! ready or greyed with a plain reason. Choosing one hands the assistant's whole conversation to
-//! that agent. Automatic never takes one: its list shows them greyed, "Choose it directly".
+//! that agent. Automatic never takes one: its list shows them greyed.
 //!
 //! inferd owns the model rows and knows nothing of `agents.toml`; docket owns the agents. So the
-//! words are added here, to the rows the module described, from what docket's settings say of the
-//! agents: [`offers`] makes the list, [`with_agents`] lays it over the rows. Pure.
+//! agents are added here, to the rows the module described, from what docket's settings say of
+//! them: [`offers`] makes the list, [`with_agents`] lays it over the rows. The words a person reads
+//! for them (the group's name, the reasons) come from the caller. Pure.
 
 mod add;
 mod add_choice;
@@ -14,29 +15,34 @@ mod offer;
 #[cfg(test)]
 mod add_tests;
 #[cfg(test)]
+mod pick_tests;
+#[cfg(test)]
 mod tests;
 
 pub use add::{
-    AddForm, FoundAgent, INTERNET_LINE, NOTHING_NEW, RemoveQuestion, Request, add_refusal,
-    removal_of, remove_refusal, unlisted_found,
+    AddForm, AddRefusal, FoundAgent, RemoveAnswer, RemoveQuestion, Request, removal_of,
+    unlisted_found,
 };
-pub use add_choice::{
-    AddButton, Candidate, DOWNLOAD_FAILED, LIST_FAILED, LOADING, Listing, Presence, Step,
-    download_failure, list_failure,
-};
+pub use add_choice::{AddAction, Candidate, Listing, Presence, Step};
 pub use offer::{AgentOffer, AgentReason, AgentStanding, offers};
 
 use crate::picker::Described;
 use ds_settings::schema::{ChoiceGroup, ChoiceWord, KeyKind, KeySpec, UnavailableReason};
 
-/// The group the agents are listed under.
-pub const GROUP: &str = "Coding Agents";
+/// The reason key of an agent whose switch is off: picking it asks to turn the switch on. A key
+/// the picker matches, never shown; the window words `Gate::TurnOn` itself.
+pub(crate) const TURNED_OFF: &str = "agents:turned-off";
 
-/// The reason an agent is greyed in Automatic's list.
-pub const CHOOSE_DIRECTLY: &str = "Choose it directly";
-
-/// The reason of an agent whose switch is off: picking it asks to turn the switch on.
-pub const TURNED_OFF: &str = "Turned off";
+/// A word of the window `with_agents` needs from its caller.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AgentWord<'a> {
+    /// The name of the group the agents are listed under.
+    Group,
+    /// The reason an agent is greyed in Automatic's list.
+    ChooseDirectly,
+    /// The reason an agent cannot be chosen now.
+    Reason(&'a AgentReason),
+}
 
 /// The prefix of an agent's word.
 pub const WORD_PREFIX: &str = "agent/";
@@ -76,7 +82,12 @@ fn variants_of(kind: &mut KeyKind) -> Option<&mut Vec<String>> {
     }
 }
 
-fn lay(spec: &mut KeySpec, place: ChoiceKind, offers: &[AgentOffer]) {
+fn lay(
+    spec: &mut KeySpec,
+    place: ChoiceKind,
+    offers: &[AgentOffer],
+    says: &dyn Fn(AgentWord<'_>) -> String,
+) {
     let KeySpec {
         kind,
         labels,
@@ -93,10 +104,15 @@ fn lay(spec: &mut KeySpec, place: ChoiceKind, offers: &[AgentOffer]) {
         }
         labels.0.insert(offer.word.clone(), offer.label.clone());
         let word = ChoiceWord(offer.word.clone());
-        groups.insert(word.clone(), ChoiceGroup(GROUP.to_owned()));
+        groups.insert(word.clone(), ChoiceGroup(says(AgentWord::Group)));
         let reason = match (place, &offer.standing) {
-            (ChoiceKind::Pool, _) => Some(CHOOSE_DIRECTLY.to_owned()),
-            (ChoiceKind::Choice, AgentStanding::Blocked(reason)) => Some(reason.words()),
+            (ChoiceKind::Pool, _) => Some(says(AgentWord::ChooseDirectly)),
+            (ChoiceKind::Choice, AgentStanding::Blocked(AgentReason::TurnedOff)) => {
+                Some(TURNED_OFF.to_owned())
+            }
+            (ChoiceKind::Choice, AgentStanding::Blocked(reason)) => {
+                Some(says(AgentWord::Reason(reason)))
+            }
             (ChoiceKind::Choice, AgentStanding::Ready) => None,
         };
         match reason {
@@ -111,14 +127,18 @@ fn lay(spec: &mut KeySpec, place: ChoiceKind, offers: &[AgentOffer]) {
 }
 
 /// `described` with the agents of `offers` laid over the text slot's rows and its Automatic
-/// list. The other slots' rows are as the module described them.
-pub fn with_agents(mut described: Described, offers: &[AgentOffer]) -> Described {
+/// list, their words from `says`. The other slots' rows are as the module described them.
+pub fn with_agents(
+    mut described: Described,
+    offers: &[AgentOffer],
+    says: &dyn Fn(AgentWord<'_>) -> String,
+) -> Described {
     if offers.is_empty() {
         return described;
     }
     for spec in &mut described.keys {
         if let Some(place) = place_of(&spec.path.0) {
-            lay(spec, place, offers);
+            lay(spec, place, offers, says);
         }
     }
     described

@@ -3,10 +3,9 @@
 
 use super::drive::use_bluetooth;
 use super::sheets::{ForgetSheet, PairingSheet};
+use crate::copy::{self, Subject};
 use crate::system::Unavailable;
-use detent_model::{
-    BtDevice, BtInput, BtKind, BtLink, BtPower, BtReady, BtSheet, BtState, bluetooth_missing_words,
-};
+use detent_model::{BtAsking, BtDevice, BtInput, BtKind, BtLink, BtPower, BtReady, BtState};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::controls::button_model::Bezel;
@@ -21,8 +20,8 @@ pub(crate) fn BluetoothPane() -> Element {
     let state = driver.state.read().clone();
     match state {
         BtState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
-        BtState::Unavailable(missing) => rsx! {
-            Unavailable { title: "Bluetooth", words: bluetooth_missing_words(missing) }
+        BtState::Unavailable(absence) => rsx! {
+            Unavailable { title: "Bluetooth", subject: Subject::Bluetooth, absence }
         },
         BtState::Ready(page) => {
             let press = EventHandler::new(move |input: BtInput| driver.feed(input));
@@ -109,9 +108,9 @@ fn Listed(page: BtReady, press: EventHandler<BtInput>) -> Element {
                 }
                 Devices { title: "Nearby Devices", rows: nearby, press }
             }
-            match page.sheet.clone() {
-                BtSheet::Closed => rsx! {},
-                BtSheet::Forget(address) => rsx! {
+            match page.asking.clone() {
+                BtAsking::Nothing => rsx! {},
+                BtAsking::Forget(address) => rsx! {
                     ForgetSheet {
                         name: page
                             .status
@@ -120,7 +119,7 @@ fn Listed(page: BtReady, press: EventHandler<BtInput>) -> Element {
                         press,
                     }
                 },
-                BtSheet::Pairing(question) => rsx! { PairingSheet { question, press } },
+                BtAsking::Pairing(question) => rsx! { PairingSheet { question, press } },
             }
         }
     }
@@ -156,8 +155,8 @@ fn DeviceRow(
     press: EventHandler<BtInput>,
 ) -> Element {
     let help = match group {
-        Group::Mine if work == RowWork::Working => BtLink::Connecting.words(),
-        Group::Mine => device.link.words(),
+        Group::Mine if work == RowWork::Working => copy::bluetooth::link(BtLink::Connecting),
+        Group::Mine => copy::bluetooth::link(device.link),
         Group::Nearby => "Not Paired",
     };
     let availability = match work {
@@ -175,7 +174,7 @@ fn DeviceRow(
             }
             if let Some(level) = device.battery {
                 div { class: "system-battery", "data-system": "battery",
-                    Label { text: level.words(), role: LabelRole::Secondary }
+                    Label { text: copy::bluetooth::battery(level), role: LabelRole::Secondary }
                 }
             }
             match (group, device.link) {

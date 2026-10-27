@@ -2,7 +2,7 @@
 //! service that only answers from memory.
 
 use crate::ticks::Ticks;
-use detent_model::{BtAddress, BtPower, BtStatus, Missing, PairingAnswer, PairingQuestion, Work};
+use detent_model::{Absence, BtAddress, BtPower, BtStatus, PairingAnswer, PairingQuestion, Work};
 use std::fmt::{self, Debug};
 use tokio::sync::{mpsc, oneshot};
 
@@ -64,13 +64,13 @@ impl Debug for BtSession {
 /// What the page needs of BlueZ.
 pub trait BluetoothLink: Debug + Send + Sync {
     /// The switch and the devices now, or why there are none.
-    fn read(&self) -> Work<'_, Result<BtStatus, Missing>>;
+    fn read(&self) -> Work<'_, Result<BtStatus, Absence>>;
     /// A tick each time the standing may have changed, also when the service appears or goes;
     /// only the bus being unreachable is an error.
-    fn changes(&self) -> Work<'_, Result<Ticks, Missing>>;
+    fn changes(&self) -> Work<'_, Result<Ticks, Absence>>;
     /// Starts looking for devices and listening for pairing questions, for as long as the session
     /// is held.
-    fn open(&self) -> Work<'_, Result<BtSession, Missing>>;
+    fn open(&self) -> Work<'_, Result<BtSession, Absence>>;
     /// Moves the switch; BlueZ's words when it cannot.
     fn set_power(&self, power: BtPower) -> Work<'_, Result<(), String>>;
     /// Connects to a device this computer is paired with.

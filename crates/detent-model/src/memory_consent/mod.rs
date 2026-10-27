@@ -3,8 +3,9 @@
 
 mod confinement;
 mod state;
-mod words;
 
 pub use confinement::{Confinement, MEMORY_SECTION, tells_confinement};
-pub use state::{ConsentState, SettingPair, Trouble, is_memory_setting, to_confirm};
-pub use words::{CONFIRM, holds_memory_settings, waiting_note};
+pub use state::{
+    ConsentState, KeptValue, SettingPair, Trouble, holds_memory_settings, is_memory_setting,
+    kept_value, to_confirm,
+};

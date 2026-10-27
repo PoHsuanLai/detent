@@ -4,6 +4,7 @@
 use super::drive::{Picker, use_picker};
 use super::tier_row::TierRow;
 use super::turn_on::TurnOnAlert;
+use crate::copy::{self, Subject, picker};
 use crate::engine_install::EngineSheetView;
 use crate::env::Env;
 use crate::files::{Files, value_of};
@@ -59,7 +60,11 @@ pub fn ModelPicker(reasons: Shown) -> Element {
                     for (at, kind) in ready.kinds.iter().cloned().enumerate() {
                         KindCard {
                             key: "{kind.area:?}/{kind.label}",
-                            titled: at == 0 || ready.kinds[at - 1].area != kind.area,
+                            heading: if at == 0 || ready.kinds[at - 1].area != kind.area {
+                                AreaHeading::Title
+                            } else {
+                                AreaHeading::Continued
+                            },
                             kind,
                             applying: applying.clone(),
                             adding,
@@ -77,16 +82,6 @@ pub fn ModelPicker(reasons: Shown) -> Element {
     }
 }
 
-/// What the absence of the picker says.
-fn absence_help(absence: &Absence) -> String {
-    match absence {
-        Absence::NoBus => "Settings is not connected to the desktop.".to_owned(),
-        Absence::NotRunning | Absence::Unavailable => "Models are not available now.".to_owned(),
-        Absence::NotPermitted => "Open Settings from the desktop to choose models.".to_owned(),
-        Absence::Failed(_) => "Models did not answer. Try again in a moment.".to_owned(),
-    }
-}
-
 /// The picker's place when the model service cannot be reached: one row that says so, blocking nothing.
 #[component]
 pub(crate) fn Unavailable(absence: Absence) -> Element {
@@ -95,7 +90,7 @@ pub(crate) fn Unavailable(absence: Absence) -> Element {
             FieldGroup { title: Some("Model choice".to_owned()),
                 FieldRow {
                     label: TextLine::from("Models"),
-                    help: Some(TextLine::from(absence_help(&absence))),
+                    help: Some(TextLine::from(copy::absence(Subject::Models, absence))),
                     availability: Availability::Disabled,
                     Label { text: "Unavailable", role: LabelRole::Secondary }
                 }
@@ -114,16 +109,25 @@ fn AreaTitle(title: String) -> Element {
     }
 }
 
+/// Whether a slot's card opens with the title of its area, or goes on under the one above.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AreaHeading {
+    /// The first slot of an area: the area's title comes first.
+    Title,
+    /// A later slot of the same area.
+    Continued,
+}
+
 /// One slot: a card of its tiers.
 #[component]
 fn KindCard(
     kind: KindRows,
-    titled: bool,
+    heading: AreaHeading,
     applying: Option<detent_model::Applying>,
     adding: Adding,
     onask: EventHandler<PickerInput>,
 ) -> Element {
-    let area = kind.area.clone().filter(|_| titled);
+    let area = kind.area.clone().filter(|_| heading == AreaHeading::Title);
     rsx! {
         if let Some(title) = area {
             AreaTitle { title }
@@ -144,7 +148,7 @@ fn ReasonFooter(reason: Option<Reason>) -> Element {
     let Some(reason) = reason else {
         return rsx! {};
     };
-    let text = reason.line();
+    let text = picker::reason(&reason);
     rsx! {
         div { class: "picker-reason",
             Label { text, role: LabelRole::Tertiary, style: LabelStyle::Footnote }

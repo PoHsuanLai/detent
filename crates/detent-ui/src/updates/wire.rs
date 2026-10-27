@@ -15,7 +15,7 @@ fn field<'a, T: TryFrom<&'a OwnedValue>>(
 ) -> Result<T, Absence> {
     all.get(name)
         .and_then(|value| T::try_from(value).ok())
-        .ok_or_else(|| Absence::Failed(format!("the update service's {name} is missing or odd")))
+        .ok_or(Absence::Failed)
 }
 
 /// The properties of `org.quire.Updates1` in `all`.

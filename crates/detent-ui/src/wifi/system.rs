@@ -11,7 +11,7 @@ use crate::system::{every, system_connection, watch_service};
 use crate::ticks::Ticks;
 use airwaves_nm::{NetworkManagerProxy, SERVICE};
 use detent_model::{
-    HiddenNetwork, JoinFailure, Missing, Passphrase, Ssid, WifiLogin, WifiRadio, WifiStatus, Work,
+    Absence, HiddenNetwork, JoinFailure, Passphrase, Ssid, WifiLogin, WifiRadio, WifiStatus, Work,
 };
 use ds_peer::within;
 use std::collections::HashMap;
@@ -24,11 +24,11 @@ const COULD_NOT_SWITCH: &str = "Wi-Fi couldn\u{2019}t be switched. Try again in 
 pub(crate) struct OnSystem(pub(crate) BusSource);
 
 impl WifiLink for OnSystem {
-    fn read(&self) -> Work<'_, Result<WifiStatus, Missing>> {
+    fn read(&self) -> Work<'_, Result<WifiStatus, Absence>> {
         Box::pin(read(&self.0))
     }
 
-    fn changes(&self) -> Work<'_, Result<Ticks, Missing>> {
+    fn changes(&self) -> Work<'_, Result<Ticks, Absence>> {
         Box::pin(watch_service(&self.0, SERVICE, every))
     }
 

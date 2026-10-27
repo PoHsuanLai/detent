@@ -1,11 +1,12 @@
 //! The note, its install line and its button.
 
 use super::io::{look, restart};
+use crate::copy;
 use crate::env::Env;
 use crate::live::{BusSource, Daemon, connect, next_owner, owner_changes};
 use detent_model::{
-    CANCEL, EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LlamaCpp, RELEASES_LINE,
-    RESTART, START_USING, StartButton, engines_step, install_advice, restart_question, setup_note,
+    EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LlamaCpp, Restart, StartStanding,
+    engines_step, install_advice, setup_note,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -23,7 +24,9 @@ fn drive(mut state: Signal<EnginesState>, toasts: ToastHub, bus: BusSource, inpu
     for effect in effects {
         let bus = bus.clone();
         match effect {
-            EnginesEffect::Tell(words) => toasts.push(words.to_owned(), None),
+            EnginesEffect::RestartFailed => {
+                toasts.push(copy::engines::restart_failed().to_owned(), None)
+            }
             EnginesEffect::Look => {
                 spawn(async move {
                     let found = look(&bus).await;
@@ -60,10 +63,10 @@ async fn follow(state: Signal<EnginesState>, toasts: ToastHub, bus: BusSource) {
 }
 
 /// What the "Start using it" button does while it is not pressable.
-fn availability_of(button: StartButton) -> Availability {
-    match button {
-        StartButton::Ready => Availability::Enabled,
-        StartButton::Working => Availability::Busy,
+fn availability_of(start: StartStanding) -> Availability {
+    match start {
+        StartStanding::Ready => Availability::Enabled,
+        StartStanding::Working => Availability::Busy,
     }
 }
 
@@ -87,7 +90,8 @@ pub(crate) fn LocalEnginesNote() -> Element {
         return rsx! {};
     };
     let (press, allow, cancel) = (env.bus.clone(), env.bus.clone(), env.bus.clone());
-    let question = restart_question(&state()).map(|(title, message)| {
+    let question = (state().restart == Restart::Asking).then(|| {
+        let (title, message) = copy::engines::restart_question();
         rsx! {
             Alert {
                 title,
@@ -95,14 +99,14 @@ pub(crate) fn LocalEnginesNote() -> Element {
                 style: AlertStyle::Informational,
                 buttons: vec![
                     AlertButton::new(
-                        RESTART,
+                        copy::engines::restart(),
                         AlertRole::Normal,
                         EventHandler::new(move |()| {
                             drive(state, toasts, allow.clone(), EnginesInput::Allowed);
                         }),
                     ),
                     AlertButton::new(
-                        CANCEL,
+                        copy::sharing::CANCEL,
                         AlertRole::Cancel,
                         EventHandler::new(move |()| {
                             drive(state, toasts, cancel.clone(), EnginesInput::Cancelled);
@@ -114,7 +118,7 @@ pub(crate) fn LocalEnginesNote() -> Element {
     });
     rsx! {
         div { class: "engine-note", "data-engine-note": "llama-cpp",
-            Label { text: note.line, role: LabelRole::Secondary, style: LabelStyle::Footnote }
+            Label { text: copy::engines::setup_line(), role: LabelRole::Secondary, style: LabelStyle::Footnote }
             match note.install {
                 InstallAdvice::Command(text) => rsx! {
                     CommandLine {
@@ -127,14 +131,14 @@ pub(crate) fn LocalEnginesNote() -> Element {
                     }
                 },
                 InstallAdvice::ReleasesPage => rsx! {
-                    Label { text: RELEASES_LINE, role: LabelRole::Secondary, style: LabelStyle::Footnote }
+                    Label { text: copy::engines::releases_line(), role: LabelRole::Secondary, style: LabelStyle::Footnote }
                 },
             }
             div { class: "engine-note-start",
                 Button {
-                    label: START_USING,
+                    label: copy::engines::start_using(),
                     size: ControlSize::Small,
-                    availability: availability_of(note.button),
+                    availability: availability_of(note.start),
                     onclick: move |_| {
                         drive(state, toasts, press.clone(), EnginesInput::StartUsing);
                     },

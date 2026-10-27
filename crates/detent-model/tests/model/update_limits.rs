@@ -38,7 +38,7 @@ fn a_version_that_is_long_or_not_a_version_is_a_service_that_makes_no_sense() {
             ..wire()
         };
         assert!(
-            matches!(UpdateStatus::of_wire(offered), Err(Absence::Failed(_))),
+            matches!(UpdateStatus::of_wire(offered), Err(Absence::Failed)),
             "{odd:?}"
         );
         let installed = UpdateWire {
@@ -46,7 +46,7 @@ fn a_version_that_is_long_or_not_a_version_is_a_service_that_makes_no_sense() {
             ..wire()
         };
         assert!(
-            matches!(UpdateStatus::of_wire(installed), Err(Absence::Failed(_))),
+            matches!(UpdateStatus::of_wire(installed), Err(Absence::Failed)),
             "{odd:?}"
         );
     }

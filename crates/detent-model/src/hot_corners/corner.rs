@@ -37,16 +37,6 @@ impl Corner {
         }
     }
 
-    /// What names the corner to a person who cannot see the sheet's picture.
-    pub fn name(self) -> &'static str {
-        match self {
-            Corner::TopLeft => "Top left",
-            Corner::TopRight => "Top right",
-            Corner::BottomLeft => "Bottom left",
-            Corner::BottomRight => "Bottom right",
-        }
-    }
-
     /// The corner whose bindings the key `path` holds.
     pub fn of_path(path: &str) -> Option<Corner> {
         Corner::ALL.into_iter().find(|corner| corner.path() == path)

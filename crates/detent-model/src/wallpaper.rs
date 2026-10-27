@@ -1,16 +1,10 @@
 //! The Wallpaper page: the page quire's schemas declare as `wallpaper`, and the pictures its grid
 //! shows. The page holds one key, `wallpaper.picture`, drawn by the picture control.
 
-use ds_settings::schema::Page;
 use std::path::{Path, PathBuf};
 
 /// The page's slug: what `--page` and an `open-page` action take.
-pub(crate) const SLUG: &str = "wallpaper";
-
-/// Whether `page` is the Wallpaper page.
-pub fn is_wallpaper(page: &Page) -> bool {
-    matches!(page, Page::App(id) if id == SLUG)
-}
+pub(crate) const WALLPAPER_SLUG: &str = "wallpaper";
 
 /// What the desktop can draw as a wallpaper (png, jpeg and webp), by the end of the file's name.
 const PICTURE_ENDINGS: &[&str] = &["png", "jpg", "jpeg", "webp"];
@@ -191,11 +185,7 @@ pub fn picture_sections(found: &[Picture], current: &str) -> PictureSections {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        Picture, PictureFrom, PictureMark, current_place, is_picture, is_wallpaper,
-        picture_sections,
-    };
-    use ds_settings::schema::Page;
+    use super::{Picture, PictureFrom, PictureMark, current_place, is_picture, picture_sections};
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -212,13 +202,6 @@ mod tests {
         for (path, want) in cases {
             assert_eq!(is_picture(Path::new(path)), *want, "{path}");
         }
-    }
-
-    #[test]
-    fn the_declared_wallpaper_page_is_recognised() {
-        assert!(is_wallpaper(&Page::declared("wallpaper")));
-        assert!(!is_wallpaper(&Page::Appearance));
-        assert!(!is_wallpaper(&Page::declared("displays")));
     }
 
     fn listed(system: &[&str], added: &[&str]) -> Vec<Picture> {

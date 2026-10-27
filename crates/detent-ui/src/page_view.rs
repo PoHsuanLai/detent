@@ -23,7 +23,6 @@ use crate::updates::SoftwareUpdatePane;
 use crate::wifi::WifiPane;
 use detent_model::{
     Block, Offers, PageModel, PageSlug, advanced_sections, blocks, holds_memory_settings,
-    modules_read,
 };
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
@@ -42,7 +41,7 @@ pub fn PageView(
     let started = env
         .catalogue
         .page(&slug)
-        .map_or(&[][..], |page| modules_read(&page.page));
+        .map_or(&[][..], |page| page.kind.modules_read());
     use_future({
         let bus = env.bus.clone();
         move || {

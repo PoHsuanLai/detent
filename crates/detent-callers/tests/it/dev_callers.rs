@@ -11,7 +11,6 @@ use peephole_bus::peephole_core::{
 /// Where a checkout builds accountd's stand-in: an image the person can write.
 const STAND_IN: &str = "/home/p/proj/target/debug/accountd_standin";
 const SCOPE: &str = "/user.slice/user-1000.slice/user@1000.service/app.slice/run-u7.scope";
-const ROWS: &str = "[[peer]]\napp = \"org.quire.Accounts\"\nrole = \"accounts\"\nexe = [\"/home/p/proj/target/debug/accountd_standin\"]\n";
 
 /// A process running `image`, which its owner can write, in no unit.
 fn facts(image: &str) -> Facts {
@@ -61,11 +60,15 @@ fn a_build_without_the_feature_accepts_only_the_real_proof() {
 #[cfg(feature = "dev-callers")]
 mod with_feature {
     use super::*;
+
     use detent_callers::{load_dev_rows, use_dev_rows};
     use detent_testkit::Scratch;
     use std::fs;
     use std::os::unix::fs::{PermissionsExt, symlink};
     use std::path::{Path, PathBuf};
+
+    /// A rows file naming the stand-in as accountd.
+    const ROWS: &str = "[[peer]]\napp = \"org.quire.Accounts\"\nrole = \"accounts\"\nexe = [\"/home/p/proj/target/debug/accountd_standin\"]\n";
 
     fn write(dir: &Path, name: &str, text: &str, mode: u32) -> PathBuf {
         let path = dir.join(name);

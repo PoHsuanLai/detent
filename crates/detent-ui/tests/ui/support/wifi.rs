@@ -2,7 +2,7 @@
 //! and moves its own standing the way the real service would.
 
 use detent_model::{
-    HiddenNetwork, JoinFailure, Missing, NetworkLink, Passphrase, Remembered, Ssid, WifiLogin,
+    Absence, HiddenNetwork, JoinFailure, NetworkLink, Passphrase, Remembered, Ssid, WifiLogin,
     WifiRadio, WifiStatus, Work,
 };
 use detent_ui::{Ticker, Ticks, WifiLink};
@@ -20,7 +20,7 @@ pub enum Asked {
 
 #[derive(Debug)]
 struct Shared {
-    standing: Mutex<Result<WifiStatus, Missing>>,
+    standing: Mutex<Result<WifiStatus, Absence>>,
     asked: Mutex<Vec<Asked>>,
     join_fails: Mutex<Option<JoinFailure>>,
     listeners: Mutex<Vec<Ticker>>,
@@ -37,11 +37,11 @@ impl Wifi {
     }
 
     /// No service, for this reason.
-    pub fn missing(why: Missing) -> Wifi {
+    pub fn missing(why: Absence) -> Wifi {
         Wifi::standing(Err(why))
     }
 
-    fn standing(standing: Result<WifiStatus, Missing>) -> Wifi {
+    fn standing(standing: Result<WifiStatus, Absence>) -> Wifi {
         Wifi(Arc::new(Shared {
             standing: Mutex::new(standing),
             asked: Mutex::default(),
@@ -99,12 +99,12 @@ impl Wifi {
 }
 
 impl WifiLink for Wifi {
-    fn read(&self) -> Work<'_, Result<WifiStatus, Missing>> {
+    fn read(&self) -> Work<'_, Result<WifiStatus, Absence>> {
         let standing = self.0.standing.lock().expect("lock").clone();
         Box::pin(std::future::ready(standing))
     }
 
-    fn changes(&self) -> Work<'_, Result<Ticks, Missing>> {
+    fn changes(&self) -> Work<'_, Result<Ticks, Absence>> {
         let (listener, ticks) = Ticks::channel();
         self.0.listeners.lock().expect("lock").push(listener);
         Box::pin(std::future::ready(Ok(ticks)))

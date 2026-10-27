@@ -1,6 +1,6 @@
 //! A held deletion: the sync service saw that files an account keeps on this computer are gone
 //! on the server, and waits for the person before it removes them here too. What the pane knows
-//! of one, and the words it shows.
+//! of one.
 
 use super::model::AccountKey;
 use ds_settings::schema::KeyPath;
@@ -55,16 +55,6 @@ pub struct SyncHold {
 }
 
 impl SyncHold {
-    /// The sentence on the banner.
-    pub fn banner(&self) -> String {
-        let HoldCounts { discard, held } = self.counts;
-        if discard == held {
-            format!("All {held} files were removed on the server.")
-        } else {
-            format!("{discard} of {held} files were removed on the server. Remove them here too?")
-        }
-    }
-
     /// Whether the hold is on a dataset of `account`.
     pub(super) fn belongs_to(&self, account: &AccountKey) -> bool {
         self.dataset.segment() == segment_of(account)
@@ -91,6 +81,3 @@ pub(super) fn segment_of(account: &AccountKey) -> String {
         .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
         .collect()
 }
-
-/// The word the banner's Keep button carries as its help.
-pub const KEEP_HELP: &str = "Keep the files here. You will be asked again if they are still gone.";

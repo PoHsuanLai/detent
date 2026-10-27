@@ -1,18 +1,23 @@
 //! Adding and removing a coding assistant: the installed ones that are not offered yet, the form
-//! the Add sheet shows, the question before one is removed, and the sentences for every refusal.
-//! Pure; the files are read and written by `detent-files`.
+//! the Add sheet shows, the question before one is removed, and the facts behind every refusal
+//! (the window words them). Pure; the files are read and written by `detent-files`.
 
-use super::add_choice::{
-    AddButton, Candidate, Listing, Presence, Step, download_failure, list_failure,
-};
+use super::add_choice::{AddAction, Candidate, Listing, Presence, Step, said_line};
 use crate::outside::Assistant;
-use docket_settings::{AddFault, AgentRow, ChoiceFault, NewAgent, Source, edit_agent_add};
+use docket_settings::{AddFault, AgentRow, NewAgent, Source, edit_agent_add};
 
-/// Said on the Add sheet before Add: what the assistant reaches.
-pub const INTERNET_LINE: &str = "It signs in to its own service and uses the internet.";
-
-/// Said on the Add sheet when no installed assistant is waiting to be offered.
-pub const NOTHING_NEW: &str = "Nothing new is installed yet.";
+/// Why Add did not add the assistant.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AddRefusal {
+    /// No installed assistant is waiting to be offered, so none is picked.
+    NothingNew,
+    /// docket refused the entry, or could not write it.
+    Fault(AddFault),
+    /// The download failed, and the downloader said this.
+    DownloadSaid(String),
+    /// The download failed and nothing says why.
+    DownloadFailed,
+}
 
 /// An installed assistant, as found in the folder docket keeps them in.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -80,8 +85,8 @@ pub struct AddForm {
     label: String,
     list: Listing,
     step: Step,
-    /// Why the last Add was refused, in words.
-    pub refusal: Option<String>,
+    /// Why the last Add was refused.
+    pub refusal: Option<AddRefusal>,
 }
 
 fn listed_words(rows: &[AgentRow]) -> Vec<String> {
@@ -154,7 +159,7 @@ impl AddForm {
     /// form still loading takes it.
     pub fn unreachable(mut self, said: &str) -> Self {
         if self.list == Listing::Loading {
-            self.list = Listing::Failed(list_failure(said));
+            self.list = Listing::Failed(said_line(said));
         }
         self
     }
@@ -190,11 +195,11 @@ impl AddForm {
     }
 
     /// What the Add button can do now.
-    pub fn button(&self) -> AddButton {
+    pub fn button(&self) -> AddAction {
         match (&self.list, self.step, self.choices.is_empty()) {
-            (_, Step::Starting | Step::Downloading, _) => AddButton::Busy,
-            (Listing::Loading, _, _) | (_, _, true) => AddButton::Off,
-            _ => AddButton::Ready,
+            (_, Step::Starting | Step::Downloading, _) => AddAction::Busy,
+            (Listing::Loading, _, _) | (_, _, true) => AddAction::Off,
+            _ => AddAction::Ready,
         }
     }
 
@@ -219,16 +224,16 @@ impl AddForm {
         self
     }
 
-    /// What Add does, checked the way docket checks the entry; the sentence for what it refuses.
-    pub fn request(&self) -> Result<Request, &'static str> {
-        let found = self.picked().ok_or(NOTHING_NEW)?;
+    /// What Add does, checked the way docket checks the entry; the refusal when it cannot.
+    pub fn request(&self) -> Result<Request, AddRefusal> {
+        let found = self.picked().ok_or(AddRefusal::NothingNew)?;
         let new = NewAgent {
             program: found.id.clone(),
             registry: found.id.clone(),
             version: found.version.clone(),
             label: self.label.trim().to_owned(),
         };
-        edit_agent_add("", &new).map_err(add_refusal)?;
+        edit_agent_add("", &new).map_err(AddRefusal::Fault)?;
         Ok(match found.presence {
             Presence::Installed => Request::Add(new),
             Presence::Online => Request::Install {
@@ -254,53 +259,36 @@ impl AddForm {
         self
     }
 
-    /// What is said once the download has begun; nothing before.
-    pub fn download_line(&self) -> Option<String> {
-        let one = self.picked()?;
-        (self.step == Step::Downloading).then(|| format!("Downloading {}\u{2026}", one.name))
+    /// The assistant being downloaded, once the download has begun; nothing before.
+    pub fn download_of(&self) -> Option<&Candidate> {
+        self.picked().filter(|_| self.step == Step::Downloading)
     }
 
     /// The form with the download's failure shown, ready for another Add.
     pub fn install_failed(mut self, said: &str) -> Self {
         self.step = Step::Idle;
-        self.refusal = Some(download_failure(said));
+        self.refusal = Some(match said_line(said) {
+            Some(line) => AddRefusal::DownloadSaid(line),
+            None => AddRefusal::DownloadFailed,
+        });
         self
     }
 
     /// The form with the refusal of the write shown.
     pub fn refused(mut self, fault: AddFault) -> Self {
         self.step = Step::Idle;
-        self.refusal = Some(add_refusal(fault).to_owned());
+        self.refusal = Some(AddRefusal::Fault(fault));
         self
     }
 }
 
-/// The sentence for why an assistant was not added.
-pub fn add_refusal(fault: AddFault) -> &'static str {
-    match fault {
-        AddFault::Unreadable => {
-            "The list of coding assistants can\u{2019}t be read, so nothing was changed."
-        }
-        AddFault::Listed => "That coding assistant is already offered.",
-        AddFault::BadName => {
-            "That coding assistant\u{2019}s name has characters that can\u{2019}t be kept."
-        }
-        AddFault::BadLabel => "Give it a name of up to 64 letters.",
-        AddFault::Io => "The list of coding assistants can\u{2019}t be written.",
-    }
-}
-
-/// The sentence for why an assistant was not removed.
-pub fn remove_refusal(fault: ChoiceFault) -> &'static str {
-    match fault {
-        ChoiceFault::NoSuchAgent => "That coding assistant isn\u{2019}t on the list any more.",
-        ChoiceFault::Unreadable => {
-            "The list of coding assistants can\u{2019}t be read, so nothing was changed."
-        }
-        ChoiceFault::BadModel | ChoiceFault::BadWay | ChoiceFault::Io => {
-            "The list of coding assistants can\u{2019}t be written."
-        }
-    }
+/// The person's answer to the question before an assistant is removed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RemoveAnswer {
+    /// Take it off the list.
+    Remove,
+    /// Leave it where it is.
+    Keep,
 }
 
 /// The question before an assistant is removed.
@@ -310,19 +298,6 @@ pub struct RemoveQuestion {
     pub program: String,
     /// What the person calls it.
     pub label: String,
-}
-
-impl RemoveQuestion {
-    /// The question's title.
-    pub fn title(&self) -> String {
-        format!("Remove {}?", self.label)
-    }
-
-    /// What removing does and does not do: only the list changes; the sign-in and the installed
-    /// files stay where they are.
-    pub fn message(&self) -> &'static str {
-        "It won\u{2019}t be offered any more. Its sign-in stays."
-    }
 }
 
 /// The question for `assistant`, when it can be removed: an assistant added from the installed

@@ -1,10 +1,11 @@
 use super::{
-    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Pressable, SetupButton, assistant_model_page,
-    assistant_of, is_assistant_model, is_assistant_setup, setup_button,
+    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, SetupAction, SetupAvailability,
+    assistant_model_page, assistant_of, is_assistant_setup, setup_availability,
 };
 use crate::accounts::AddEnd;
 use crate::catalogue::Catalogue;
 use crate::page::PageSlug;
+use crate::page_kind::PageKind;
 use crate::picker::{Described, PickerInput, PickerState, step};
 use ds_settings::schema::{
     AgentSetting, ChoiceWord, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page, Section,
@@ -153,66 +154,66 @@ fn the_setup_buttons_follow_what_is_chosen() {
         (
             "still looking for the module",
             PickerState::Looking,
-            Pressable::Now,
-            Pressable::NotYet,
+            SetupAvailability::Now,
+            SetupAvailability::NotYet,
         ),
         (
             "the module is not there",
             PickerState::Unavailable(crate::Absence::NotRunning),
-            Pressable::Now,
-            Pressable::NotYet,
+            SetupAvailability::Now,
+            SetupAvailability::NotYet,
         ),
         (
             "nothing chosen yet",
             picker(""),
-            Pressable::Now,
-            Pressable::NotYet,
+            SetupAvailability::Now,
+            SetupAvailability::NotYet,
         ),
         (
             "Automatic with no model to choose from",
             picker("auto"),
-            Pressable::Now,
-            Pressable::NotYet,
+            SetupAvailability::Now,
+            SetupAvailability::NotYet,
         ),
         (
             "Automatic with a model to choose from",
             picker_with_pool("auto", &["local/qwen"]),
-            Pressable::Now,
-            Pressable::Now,
+            SetupAvailability::Now,
+            SetupAvailability::Now,
         ),
         (
             "a model is chosen",
             picker("local/qwen"),
-            Pressable::Now,
-            Pressable::Now,
+            SetupAvailability::Now,
+            SetupAvailability::Now,
         ),
         (
             "the pick is still being written",
             writing,
-            Pressable::Now,
-            Pressable::NotYet,
+            SetupAvailability::Now,
+            SetupAvailability::NotYet,
         ),
         (
             "the pick waits on an account",
             waiting_on_account,
-            Pressable::Now,
-            Pressable::NotYet,
+            SetupAvailability::Now,
+            SetupAvailability::NotYet,
         ),
         (
             "the module lists no row for the assistant",
             no_assistant_row,
-            Pressable::Now,
-            Pressable::NotYet,
+            SetupAvailability::Now,
+            SetupAvailability::NotYet,
         ),
     ];
     for (case, state, skip, next) in cases {
         assert_eq!(
-            setup_button(&state, SetupButton::Skip),
+            setup_availability(&state, SetupAction::Skip),
             skip,
             "{case}: Skip"
         );
         assert_eq!(
-            setup_button(&state, SetupButton::Continue),
+            setup_availability(&state, SetupAction::Continue),
             next,
             "{case}: Continue"
         );
@@ -223,15 +224,18 @@ fn the_setup_buttons_follow_what_is_chosen() {
 fn continue_opens_once_the_pick_is_written_and_stays_shut_if_it_is_not() {
     let writing = chose(picker(""), "local/qwen");
     assert_eq!(
-        setup_button(&writing, SetupButton::Continue),
-        Pressable::NotYet,
+        setup_availability(&writing, SetupAction::Continue),
+        SetupAvailability::NotYet,
         "nothing is chosen until the module has taken it"
     );
     let (done, _) = step(
         writing,
         PickerInput::Applied(path("ai.model.text.balanced")),
     );
-    assert_eq!(setup_button(&done, SetupButton::Continue), Pressable::Now);
+    assert_eq!(
+        setup_availability(&done, SetupAction::Continue),
+        SetupAvailability::Now
+    );
 
     let (refused, _) = step(
         chose(picker(""), "local/qwen"),
@@ -241,8 +245,8 @@ fn continue_opens_once_the_pick_is_written_and_stays_shut_if_it_is_not() {
         },
     );
     assert_eq!(
-        setup_button(&refused, SetupButton::Continue),
-        Pressable::NotYet,
+        setup_availability(&refused, SetupAction::Continue),
+        SetupAvailability::NotYet,
         "a refused pick leaves nothing chosen"
     );
 
@@ -251,8 +255,8 @@ fn continue_opens_once_the_pick_is_written_and_stays_shut_if_it_is_not() {
         PickerInput::AccountSheetEnded(AddEnd::Closed),
     );
     assert_eq!(
-        setup_button(&closed, SetupButton::Continue),
-        Pressable::NotYet,
+        setup_availability(&closed, SetupAction::Continue),
+        SetupAvailability::NotYet,
         "closing the account sheet chooses nothing"
     );
 }
@@ -260,9 +264,12 @@ fn continue_opens_once_the_pick_is_written_and_stays_shut_if_it_is_not() {
 #[test]
 fn the_page_has_its_own_slug_label_and_place_and_the_setup_step_is_never_listed() {
     let page = assistant_model_page();
-    assert!(is_assistant_model(&page));
-    assert!(!is_assistant_model(&Page::App("anyview".to_owned())));
-    assert!(!is_assistant_model(&Page::Intelligence));
+    assert_eq!(PageKind::of(&page), PageKind::AssistantModel);
+    assert_eq!(
+        PageKind::of(&Page::App("anyview".to_owned())),
+        PageKind::Program
+    );
+    assert_eq!(PageKind::of(&Page::Intelligence), PageKind::Intelligence);
     assert_eq!(PageSlug::of(&page).0, ASSISTANT_MODEL_SLUG);
     assert_eq!(page.label(), "Assistant Model");
 
@@ -307,10 +314,13 @@ fn opening_local_writes_nothing_so_skipping_leaves_the_model_unset() {
     assert_eq!(effects, [], "Local is a question, not a model");
     let row = assistant_of(&open).expect("the assistant's row");
     assert_eq!(row.value, "", "still unset");
-    assert_eq!(setup_button(&open, SetupButton::Skip), Pressable::Now);
     assert_eq!(
-        setup_button(&open, SetupButton::Continue),
-        Pressable::NotYet,
+        setup_availability(&open, SetupAction::Skip),
+        SetupAvailability::Now
+    );
+    assert_eq!(
+        setup_availability(&open, SetupAction::Continue),
+        SetupAvailability::NotYet,
         "Local is not a model until one is chosen"
     );
 }

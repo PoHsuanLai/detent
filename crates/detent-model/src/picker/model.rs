@@ -358,12 +358,20 @@ pub(super) fn places_of(spec: &KeySpec) -> BTreeMap<String, ChoicePlace> {
         .collect()
 }
 
-/// What a row shows while `word` is being set: "Loading <model>…" for a model, "Applying" for
-/// the two words that name no model.
-pub fn loading_text(row: &ModelRow, word: &str) -> String {
+/// What a row shows while `word` is being set.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Loading {
+    /// One of the two words that name no model: the empty one and Automatic.
+    Applying,
+    /// A model, by the name the menu gives it.
+    Model(String),
+}
+
+/// What the row shows while `word` is being set.
+pub fn loading_of(row: &ModelRow, word: &str) -> Loading {
     if word.is_empty() || word == AUTO {
-        "Applying".to_owned()
+        Loading::Applying
     } else {
-        format!("Loading {}…", row.label_of(word))
+        Loading::Model(row.label_of(word))
     }
 }

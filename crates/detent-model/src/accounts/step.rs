@@ -1,121 +1,16 @@
 //! The pane's one transition: `(state, input) -> (state, effects)`.
 
 use super::add_account::{AddEnd, Adding};
+use super::effect::{AccountsEffect, AccountsNotice};
+use super::input::AccountsInput;
 use super::model::{
-    AccountKey, AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, LocalFiles,
-    RemovalQuestion, toggle_word,
+    AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, LocalFiles, RemovalQuestion,
+    SwitchState,
 };
 use super::module::{ModuleId, ModuleRow, Sources};
-use super::reauth_end::ReauthEnd;
-use super::sign_in_client::{ClientChange, ClientText, Secret, SignInClient};
-use super::sign_out::SignOutEnd;
+use super::sign_in_client::{ClientChange, ClientText, SignInClient};
 use crate::Absence;
 use crate::picker::Described;
-
-/// What happened to the pane.
-#[derive(Debug, Clone, PartialEq)]
-pub enum AccountsInput {
-    /// A module was found: the first time it was read, or when it came back; or it is not there.
-    Found(ModuleId, Result<Described, Absence>),
-    /// A module was read again after a change; a failed read keeps what is shown.
-    Reread(ModuleId, Result<Described, Absence>),
-    /// A link asked for an account: it is chosen, as if the person had chosen it in the list.
-    Open(AccountKey),
-    /// The person chose an account in the list; its detail is beside the list.
-    Select(AccountKey),
-    /// Nothing is chosen: a link asked for the list.
-    Back,
-    /// The person turned a service on or off.
-    Switched {
-        /// The service's row.
-        row: ModuleRow,
-        /// What it is now.
-        on: bool,
-    },
-    /// The person pressed a permission's action or Sign in again.
-    Ran(ModuleRow),
-    /// The person asked to remove an account.
-    AskRemove(ModuleRow),
-    /// The person asked to sign a assistant's account out.
-    AskSignOut(ModuleRow),
-    /// The person answered the question: no.
-    Keep,
-    /// The person answered the question: yes.
-    Remove,
-    /// The person finished a sign-in client id.
-    ClientEdited {
-        /// The row.
-        row: ModuleRow,
-        /// What the field holds.
-        text: ClientText,
-    },
-    /// The person pressed Clear beside a sign-in secret that is set.
-    SecretCleared(ModuleRow),
-    /// The module did what was asked at `path`.
-    Done(ModuleRow),
-    /// The module refused what was asked at `path`.
-    Failed {
-        /// The row.
-        row: ModuleRow,
-        /// What the module said.
-        why: String,
-    },
-    /// The person pressed Add Account….
-    AddAccount,
-    /// The person pressed Add AI Key….
-    AddAiKey,
-    /// The add sheet ended; it was the one of `module`.
-    AddEnded(ModuleId, AddEnd),
-    /// The module says something changed.
-    Changed(ModuleId),
-    /// The module says how the sign-in the person started at `path` ended.
-    SignedIn {
-        /// The account's reauth row.
-        row: ModuleRow,
-        /// How it ended.
-        end: ReauthEnd,
-    },
-    /// The module says how an assistant's sign-out at `path` ended.
-    SignedOut {
-        /// The account's sign-out row.
-        row: ModuleRow,
-        /// How it ended.
-        end: SignOutEnd,
-    },
-}
-
-/// What the caller must do.
-#[derive(Debug, Clone, PartialEq)]
-pub enum AccountsEffect {
-    /// Call `Set(path, value)` on the module.
-    Set {
-        /// The row.
-        row: ModuleRow,
-        /// The value.
-        value: toml::Value,
-    },
-    /// Call `Set(path, text)` on the module with a sign-in secret, which is never read back.
-    SetSecret {
-        /// The row.
-        row: ModuleRow,
-        /// The secret.
-        secret: Secret,
-    },
-    /// Run the action at the row.
-    Invoke(ModuleRow),
-    /// Open the add sheet for an identity and tell how it ended as `AddEnded`.
-    OpenAddSheet,
-    /// Open the add sheet for an AI key and tell how it ended as `AddEnded`.
-    OpenAiKeySheet,
-    /// Read the module again.
-    Reload(ModuleId),
-    /// Read the module again after a short wait: the last read failed.
-    Retry(ModuleId),
-    /// Open the account with this key once the rows are read again.
-    Show(AccountKey),
-    /// Tell the person something went wrong.
-    Tell(String),
-}
 
 /// The state after `input`, and what to do about it.
 pub fn accounts_step(
@@ -222,65 +117,17 @@ fn ready_step(
             ready.confirming = None;
         }
         AccountsInput::Switched { row, on } if idle => {
-            // A service, a sync switch and Show in Files are each a path and a state: the same Set.
-            let switch = ready
-                .pane
-                .accounts
-                .iter_mut()
-                .filter(|account| account.module == row.module)
-                .flat_map(|account| {
-                    let services = account.services.iter_mut().map(|s| (&s.path, &mut s.on));
-                    let sync = account
-                        .sync
-                        .iter_mut()
-                        .chain(account.show_in_files.as_mut());
-                    services.chain(sync.map(|s| (&s.path, &mut s.on)))
-                })
-                .find(|(path, held)| **path == row.path && **held != on);
-            if let Some((_, held)) = switch {
-                *held = on;
-                effects.push(AccountsEffect::Set {
-                    row: row.clone(),
-                    value: toml::Value::String(toggle_word(on).to_owned()),
-                });
-                ready.pending = Some(row);
-            }
+            effects.extend(switched(&mut ready, row, on));
         }
         AccountsInput::Ran(row) if idle && runs_without_asking(&ready.pane, &row) => {
             effects.push(AccountsEffect::Invoke(row.clone()));
             ready.pending = Some(row);
         }
         AccountsInput::AskRemove(row) if idle => {
-            ready.confirming = ready.pane.owner(&row).and_then(|account| {
-                account
-                    .remove
-                    .as_ref()
-                    .filter(|(path, _)| *path == row.path)
-                    .map(|_| RemovalQuestion {
-                        ask: Ask::Remove,
-                        row,
-                        account: account.label.clone(),
-                        files: if account.sync.iter().any(|sync| sync.on) {
-                            LocalFiles::Kept
-                        } else {
-                            LocalFiles::None
-                        },
-                    })
-            });
+            ready.confirming = removal_question(&ready.pane, row, Ask::Remove);
         }
         AccountsInput::AskSignOut(row) if idle => {
-            ready.confirming = ready.pane.owner(&row).and_then(|account| {
-                account
-                    .sign_out
-                    .as_ref()
-                    .filter(|(path, _)| *path == row.path)
-                    .map(|_| RemovalQuestion {
-                        ask: Ask::SignOut,
-                        row,
-                        account: account.label.clone(),
-                        files: LocalFiles::None,
-                    })
-            });
+            ready.confirming = removal_question(&ready.pane, row, Ask::SignOut);
         }
         AccountsInput::Keep => ready.confirming = None,
         AccountsInput::Remove if idle => {
@@ -290,50 +137,10 @@ fn ready_step(
             }
         }
         AccountsInput::ClientEdited { row, text } if idle => {
-            let change = ready
-                .pane
-                .clients
-                .iter_mut()
-                .find(|client| client.module == row.module && client.path == row.path)
-                .map_or(ClientChange::Nothing, |client| client.edited(text));
-            match change {
-                ClientChange::Nothing => {}
-                ClientChange::KeyFirst => {
-                    effects.push(AccountsEffect::Tell(SignInClient::KEY_FIRST.to_owned()));
-                }
-                ClientChange::Key(text) => {
-                    effects.push(AccountsEffect::Set {
-                        row: row.clone(),
-                        value: toml::Value::String(text),
-                    });
-                    ready.pending = Some(row);
-                }
-                ClientChange::NewSecret(secret) => {
-                    effects.push(AccountsEffect::SetSecret {
-                        row: row.clone(),
-                        secret,
-                    });
-                    ready.pending = Some(row);
-                }
-                // Only Clear produces this, and it has its own input.
-                ClientChange::ClearSecret => {}
-            }
+            effects.extend(client_edited(&mut ready, row, text));
         }
         AccountsInput::SecretCleared(row) if idle => {
-            let change = ready
-                .pane
-                .clients
-                .iter_mut()
-                .find(|client| client.module == row.module && client.path == row.path)
-                .map_or(ClientChange::Nothing, SignInClient::cleared);
-            if change == ClientChange::ClearSecret {
-                // The empty text carries no secret, so it travels as a plain value.
-                effects.push(AccountsEffect::Set {
-                    row: row.clone(),
-                    value: toml::Value::String(String::new()),
-                });
-                ready.pending = Some(row);
-            }
+            effects.extend(secret_cleared(&mut ready, row));
         }
         AccountsInput::Done(row) => {
             if ready.pending.as_ref() == Some(&row) {
@@ -345,7 +152,7 @@ fn ready_step(
             if ready.pending.as_ref() == Some(&row) {
                 ready.pending = None;
             }
-            effects.push(AccountsEffect::Tell(why));
+            effects.push(AccountsEffect::Tell(AccountsNotice::Refused(why)));
             effects.push(AccountsEffect::Reload(row.module));
         }
         AccountsInput::AddAccount if idle && ready.adding == Adding::Idle => {
@@ -358,7 +165,9 @@ fn ready_step(
         }
         AccountsInput::AddEnded(module, end) => {
             ready.adding = Adding::Idle;
-            effects.extend(end.line().map(|line| AccountsEffect::Tell(line.to_owned())));
+            if !matches!(end, AddEnd::Added | AddEnd::Closed) {
+                effects.push(AccountsEffect::Tell(AccountsNotice::AddEnded(end.clone())));
+            }
             effects.push(AccountsEffect::Reload(module));
             if let AddEnd::AlreadyThere(key) = end {
                 effects.push(AccountsEffect::Show(key));
@@ -366,19 +175,19 @@ fn ready_step(
         }
         AccountsInput::Changed(module) => effects.push(AccountsEffect::Reload(module)),
         AccountsInput::SignedIn { row, end } => {
-            let label = ready
-                .pane
-                .owner(&row)
-                .map_or("this account", |account| account.label.as_str());
-            effects.push(AccountsEffect::Tell(end.line(label)));
+            let account = ready.pane.owner(&row).map(|account| account.label.clone());
+            effects.push(AccountsEffect::Tell(AccountsNotice::SignedIn {
+                end,
+                account,
+            }));
             effects.push(AccountsEffect::Reload(row.module));
         }
         AccountsInput::SignedOut { row, end } => {
-            let label = ready
-                .pane
-                .owner(&row)
-                .map_or("this account", |account| account.label.as_str());
-            effects.push(AccountsEffect::Tell(end.line(label)));
+            let account = ready.pane.owner(&row).map(|account| account.label.clone());
+            effects.push(AccountsEffect::Tell(AccountsNotice::SignedOut {
+                end,
+                account,
+            }));
             if end.settles() {
                 effects.push(AccountsEffect::Reload(row.module));
             }
@@ -386,6 +195,101 @@ fn ready_step(
         _ => {}
     }
     (ready, effects)
+}
+
+/// The `Set` a switch asks for, and the pane with the switch already turned: a service, a sync
+/// switch and Show in Files are each a path and a state, the same `Set`. None when no switch of
+/// the row's module is at the path or it is already in that state.
+fn switched(ready: &mut AccountsReady, row: ModuleRow, on: SwitchState) -> Option<AccountsEffect> {
+    let (_, held) = ready
+        .pane
+        .accounts
+        .iter_mut()
+        .filter(|account| account.module == row.module)
+        .flat_map(|account| {
+            let services = account.services.iter_mut().map(|s| (&s.path, &mut s.on));
+            let sync = account
+                .sync
+                .iter_mut()
+                .chain(account.show_in_files.as_mut());
+            services.chain(sync.map(|s| (&s.path, &mut s.on)))
+        })
+        .find(|(path, held)| **path == row.path && **held != on)?;
+    *held = on;
+    ready.pending = Some(row.clone());
+    Some(AccountsEffect::Set {
+        row,
+        value: toml::Value::String(on.word().to_owned()),
+    })
+}
+
+/// The question asked before `ask` runs at `row`; none when the row is not that account's action.
+fn removal_question(pane: &AccountsPane, row: ModuleRow, ask: Ask) -> Option<RemovalQuestion> {
+    let account = pane.owner(&row)?;
+    let action = match ask {
+        Ask::Remove => account.remove.as_ref(),
+        Ask::SignOut => account.sign_out.as_ref(),
+    };
+    action.filter(|(path, _)| *path == row.path)?;
+    let files = match ask {
+        Ask::Remove if account.sync.iter().any(|sync| sync.on.is_on()) => LocalFiles::Kept,
+        Ask::Remove | Ask::SignOut => LocalFiles::None,
+    };
+    Some(RemovalQuestion {
+        ask,
+        row,
+        account: account.label.clone(),
+        files,
+    })
+}
+
+/// What the person typing into a sign-in row asks of the module, if anything; the row waits for
+/// the answer.
+fn client_edited(
+    ready: &mut AccountsReady,
+    row: ModuleRow,
+    text: ClientText,
+) -> Option<AccountsEffect> {
+    let change = ready
+        .pane
+        .clients
+        .iter_mut()
+        .find(|client| client.module == row.module && client.path == row.path)
+        .map_or(ClientChange::Nothing, |client| client.edited(text));
+    let effect = match change {
+        ClientChange::Nothing => return None,
+        ClientChange::KeyFirst => return Some(AccountsEffect::Tell(AccountsNotice::KeyFirst)),
+        ClientChange::Key(text) => AccountsEffect::Set {
+            row: row.clone(),
+            value: toml::Value::String(text),
+        },
+        ClientChange::NewSecret(secret) => AccountsEffect::SetSecret {
+            row: row.clone(),
+            secret,
+        },
+        // Only Clear produces this, and it has its own input.
+        ClientChange::ClearSecret => return None,
+    };
+    ready.pending = Some(row);
+    Some(effect)
+}
+
+/// What pressing Clear beside a sign-in secret asks of the module, if anything.
+fn secret_cleared(ready: &mut AccountsReady, row: ModuleRow) -> Option<AccountsEffect> {
+    let change = ready
+        .pane
+        .clients
+        .iter_mut()
+        .find(|client| client.module == row.module && client.path == row.path)
+        .map_or(ClientChange::Nothing, SignInClient::cleared);
+    (change == ClientChange::ClearSecret).then(|| {
+        ready.pending = Some(row.clone());
+        // The empty text carries no secret, so it travels as a plain value.
+        AccountsEffect::Set {
+            row,
+            value: toml::Value::String(String::new()),
+        }
+    })
 }
 
 /// Whether `row` is an action that may run on one press: a permission's, Sign in again, or

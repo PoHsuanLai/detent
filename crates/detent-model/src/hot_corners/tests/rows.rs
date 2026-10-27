@@ -13,24 +13,22 @@ fn a_keyed_row_is_added_once_and_removed_with_its_binding() {
     );
 
     // adding: (case, keys ticked, result)
-    let cases: Vec<(&str, HotKeys, Result<usize, &str>)> = vec![
-        ("nothing ticked", keys(&[]), Err("Tick at least one key.")),
+    let cases: Vec<(&str, HotKeys, Result<usize, HotAddFault>)> = vec![
+        ("nothing ticked", keys(&[]), Err(HotAddFault::NoKeys)),
         (
             "a set that has a binding",
             keys(&[Alt]),
-            Err("This corner already has a row for those keys."),
+            Err(HotAddFault::Already),
         ),
         (
             "a set that was added and not filled",
             keys(&[Command]),
-            Err("This corner already has a row for those keys."),
+            Err(HotAddFault::Already),
         ),
         ("a new set", keys(&[Command, Alt]), Ok(2)),
     ];
     for (case, ticked, want) in cases {
-        let got = add_row(&bindings, &[keys(&[Command])], ticked)
-            .map(|rows| rows.len())
-            .map_err(|fault| fault.words());
+        let got = add_row(&bindings, &[keys(&[Command])], ticked).map(|rows| rows.len());
         assert_eq!(got, want, "{case}");
     }
 

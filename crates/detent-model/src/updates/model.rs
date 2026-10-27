@@ -175,17 +175,14 @@ impl UpdateStatus {
     /// The status the service's properties describe; the service did not make sense when one of
     /// them is a state this window has no word for.
     pub fn of_wire(wire: UpdateWire) -> Result<UpdateStatus, Absence> {
-        let phase = UpdatePhase::of_word(&wire.state).ok_or_else(|| {
-            Absence::Failed(format!("the update service is in a state {:?}", wire.state))
-        })?;
-        let odd = |what: &str| Absence::Failed(format!("the update service sent an odd {what}"));
+        let phase = UpdatePhase::of_word(&wire.state).ok_or(Absence::Failed)?;
         let current = match some_text(wire.current) {
-            Some(text) => Some(version_of(&text).ok_or_else(|| odd("version"))?),
+            Some(text) => Some(version_of(&text).ok_or(Absence::Failed)?),
             None => None,
         };
         let offer = match some_text(wire.available) {
             Some(text) => Some(UpdateOffer {
-                version: UpdateVersion::parse(&text).ok_or_else(|| odd("version on offer"))?,
+                version: UpdateVersion::parse(&text).ok_or(Absence::Failed)?,
                 notes: notes_of(&wire.notes),
                 size: ByteCount(wire.size),
             }),

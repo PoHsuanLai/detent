@@ -20,27 +20,27 @@ use desktop_client::{
     Desktop, DesktopCommand, DesktopConfig, DesktopEvent, OutputName, Point, Protocol, Ticket,
 };
 use detent_model::{
-    Brightness, BrightnessList, DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, Missing,
+    Absence, Brightness, BrightnessList, DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus,
     OutputId, Work, mode_at,
 };
 use ds_peer::within;
 
 const CANNOT: &str = "Displays can\u{2019}t be changed right now.";
 
-fn connect() -> Result<DesktopClient, Missing> {
+fn connect() -> Result<DesktopClient, Absence> {
     DesktopClient::connect(WaylandRoute::Environment, DesktopConfig::default())
-        .map_err(|_| Missing::NoService)
+        .map_err(|_| Absence::NotRunning)
 }
 
-fn read_blocking() -> Result<DisplaysStatus, Missing> {
+fn read_blocking() -> Result<DisplaysStatus, Absence> {
     let client = connect()?;
     let state = client.state();
     if !state.protocols.contains(Protocol::WlrOutputManagement) {
-        return Err(Missing::NoService);
+        return Err(Absence::NotRunning);
     }
     let displays = monitors_of(&state.outputs);
     if displays.is_empty() {
-        return Err(Missing::NoDevice);
+        return Err(Absence::NoDevice);
     }
     Ok(DisplaysStatus { displays })
 }
@@ -136,15 +136,15 @@ fn outcome_words(outcome: ConfigOutcome) -> Result<(), String> {
 
 /// Runs `work` on a thread of its own, under the read deadline.
 async fn off_thread<T: Send + 'static>(
-    work: impl FnOnce() -> Result<T, Missing> + Send + 'static,
-) -> Result<T, Missing> {
+    work: impl FnOnce() -> Result<T, Absence> + Send + 'static,
+) -> Result<T, Absence> {
     let ran = within(Deadline::READ, peer::DISPLAYS, async {
         tokio::task::spawn_blocking(work).await
     })
     .await;
     match ran {
         Ok(Ok(done)) => done,
-        Ok(Err(_)) | Err(_) => Err(Missing::Failed),
+        Ok(Err(_)) | Err(_) => Err(Absence::Failed),
     }
 }
 
@@ -153,23 +153,23 @@ async fn off_thread<T: Send + 'static>(
 pub(crate) struct OnCompositor(pub(crate) BusSource);
 
 impl OnCompositor {
-    fn reachable(&self) -> Result<(), Missing> {
+    fn reachable(&self) -> Result<(), Absence> {
         match self.0 {
             BusSource::Session => Ok(()),
-            BusSource::Address(..) | BusSource::Absent => Err(Missing::NoService),
+            BusSource::Address(..) | BusSource::Absent => Err(Absence::NotRunning),
         }
     }
 }
 
 impl DisplaysLink for OnCompositor {
-    fn read(&self) -> Work<'_, Result<DisplaysStatus, Missing>> {
+    fn read(&self) -> Work<'_, Result<DisplaysStatus, Absence>> {
         match self.reachable() {
             Ok(()) => Box::pin(off_thread(read_blocking)),
             Err(missing) => Box::pin(std::future::ready(Err(missing))),
         }
     }
 
-    fn changes(&self) -> Work<'_, Result<Ticks, Missing>> {
+    fn changes(&self) -> Work<'_, Result<Ticks, Absence>> {
         let reachable = self.reachable();
         Box::pin(async move {
             reachable?;
@@ -203,11 +203,11 @@ impl DisplaysLink for OnCompositor {
         })
     }
 
-    fn brightness(&self) -> Work<'_, Result<BrightnessList, Missing>> {
+    fn brightness(&self) -> Work<'_, Result<BrightnessList, Absence>> {
         Box::pin(brightness::read(&self.0))
     }
 
-    fn brightness_changes(&self) -> Work<'_, Result<Ticks, Missing>> {
+    fn brightness_changes(&self) -> Work<'_, Result<Ticks, Absence>> {
         Box::pin(brightness::changes(&self.0))
     }
 

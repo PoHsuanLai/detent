@@ -131,21 +131,6 @@ impl ShortcutGroup {
         ShortcutGroup::System,
     ];
 
-    /// The group's title.
-    pub fn title(self) -> &'static str {
-        match self {
-            ShortcutGroup::Launcher => "Launcher",
-            ShortcutGroup::Windows => "Apps and windows",
-            ShortcutGroup::Tiling => "Window tiling",
-            ShortcutGroup::Spaces => "Spaces",
-            ShortcutGroup::Screenshots => "Screenshots",
-            ShortcutGroup::Input => "Input",
-            ShortcutGroup::Text => "Text",
-            ShortcutGroup::Documents => "Documents and views",
-            ShortcutGroup::System => "System",
-        }
-    }
-
     /// Whether the group is the desktop's own (it lists only what the desktop handles) rather
     /// than an app's (every app handles its own).
     pub fn is_desktop(self) -> bool {

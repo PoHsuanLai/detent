@@ -2,7 +2,8 @@
 //! and the line under the Memory section that says whether memory keeps to its own folders.
 
 use super::drive::MemoryConsent;
-use detent_model::{CONFIRM, KeyEntry, Trouble, waiting_note};
+use crate::copy::{CONFIRM, confinement_line, trouble_line, waiting_note};
+use detent_model::{KeyEntry, kept_value};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::prelude::*;
@@ -19,8 +20,8 @@ pub(crate) fn ConsentNote(entry: KeyEntry) -> Element {
     let Some(setting) = state.waiting_for(&key) else {
         return rsx! {};
     };
-    let words = waiting_note(&entry, setting);
-    let trouble = state.trouble_for(&key).map(Trouble::words);
+    let words = waiting_note(&kept_value(&entry, setting));
+    let trouble = state.trouble_for(&key).map(trouble_line);
     let aria = format!("Confirm {}", entry.spec.label.0);
     let pressed = key.clone();
     rsx! {
@@ -46,7 +47,7 @@ pub(crate) fn ConsentNote(entry: KeyEntry) -> Element {
 #[component]
 pub(crate) fn ConfinementNote() -> Element {
     let consent = use_context::<MemoryConsent>();
-    let Some(line) = consent.state().confinement().line() else {
+    let Some(line) = confinement_line(consent.state().confinement()) else {
         return rsx! {};
     };
     rsx! {

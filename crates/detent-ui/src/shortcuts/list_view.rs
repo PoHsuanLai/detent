@@ -3,7 +3,9 @@
 
 use super::pane::{Pane, use_pane};
 use super::row_view::ShortcutLine;
-use detent_model::{CANCEL, ShortcutSection, ShortcutsInput, replace_question};
+use crate::copy::sharing::CANCEL;
+use crate::copy::shortcuts::{REPLACE, group_title, problem_line, replace_words};
+use detent_model::{ShortcutSection, ShortcutsInput, replace_question};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::FieldGroup;
@@ -11,9 +13,6 @@ use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
-
-/// What the answer that takes a chord over is called.
-const REPLACE: &str = "Replace";
 
 /// The desktop's shortcuts.
 #[component]
@@ -36,9 +35,9 @@ pub(crate) fn ShortcutsPane() -> Element {
     rsx! {
         div { class: "shortcuts", "data-shortcuts": "list",
             for section in state.sections() {
-                Group { key: "{section.group.title()}", section, drive }
+                Group { key: "{group_title(section.group)}", section, drive }
             }
-            Footer { problems: state.problems().to_vec(), reset, drive }
+            Footer { problems: state.problems().iter().map(problem_line).collect(), reset, drive }
             {question(&pane)}
         }
     }
@@ -47,9 +46,9 @@ pub(crate) fn ShortcutsPane() -> Element {
 #[component]
 fn Group(section: ShortcutSection, drive: EventHandler<ShortcutsInput>) -> Element {
     rsx! {
-        FieldGroup { title: Some(section.group.title().to_owned()),
+        FieldGroup { title: Some(group_title(section.group).to_owned()),
             for row in section.rows {
-                ShortcutLine { key: "{row.name}", row, drive }
+                ShortcutLine { key: "{row.action.slug()}", row, drive }
             }
         }
     }
@@ -86,11 +85,12 @@ fn question(pane: &Pane) -> Element {
     let Some(question) = replace_question(&pane.state.read()) else {
         return rsx! {};
     };
+    let (title, message) = replace_words(&question);
     let (replace, cancel) = (pane.clone(), pane.clone());
     rsx! {
         Alert {
-            title: question.title,
-            message: Some(TextLine::from(question.message)),
+            title,
+            message: Some(TextLine::from(message)),
             style: AlertStyle::Informational,
             buttons: vec![
                 AlertButton::new(

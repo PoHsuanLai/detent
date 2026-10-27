@@ -5,7 +5,7 @@ use crate::computers::{inferd, relay};
 use crate::deadline::{Deadline, answered, peer};
 use crate::live::{BusSource, absence_of_bus};
 use crate::ticks::Ticks;
-use detent_model::{Absence, ModelRun, RunButton, RunStanding};
+use detent_model::{Absence, ModelRun, RunAction, RunStanding};
 use ds_peer::within;
 use porter_client::TransportError;
 use porter_dbus::{InferenceProxy, RunState, RunningModel};
@@ -40,7 +40,7 @@ fn absence_of(error: &TransportError) -> Absence {
     match error {
         TransportError::Unreachable | TransportError::Closed => Absence::NotRunning,
         TransportError::Denied(_) => Absence::NotPermitted,
-        other => Absence::Failed(other.to_string()),
+        _ => Absence::Failed,
     }
 }
 
@@ -50,7 +50,7 @@ pub(super) async fn read(bus: &BusSource) -> Result<Vec<ModelRun>, Absence> {
     let transport = running.inference()?;
     let found = answered(Deadline::READ, peer::ASSISTANT, transport.list_running())
         .await
-        .ok_or_else(|| Absence::Failed(COULD_NOT.to_owned()))?
+        .ok_or(Absence::Failed)?
         .map_err(|error| absence_of(&error))?;
     Ok(found.rows.iter().map(run_of).collect())
 }
@@ -64,14 +64,14 @@ fn words_of(error: &TransportError) -> String {
     }
 }
 
-/// Does what `button` says to `model`; the words it was refused with when it was. A Start returns
+/// Does `action` to `model`; the words it was refused with when it was. A Start returns
 /// once the model answers, which can take minutes, so it waits as long as a person's answer does;
 /// a Stop is an ordinary action.
-pub(super) async fn press(bus: &BusSource, model: &str, button: RunButton) -> Result<(), String> {
+pub(super) async fn act(bus: &BusSource, model: &str, action: RunAction) -> Result<(), String> {
     let running = inferd(bus).await.map_err(|_| COULD_NOT.to_owned())?;
     let transport = running.inference().map_err(|_| COULD_NOT.to_owned())?;
-    let done = match button {
-        RunButton::Start => {
+    let done = match action {
+        RunAction::Start => {
             answered(
                 Deadline::PROMPT,
                 peer::ASSISTANT,
@@ -79,7 +79,7 @@ pub(super) async fn press(bus: &BusSource, model: &str, button: RunButton) -> Re
             )
             .await
         }
-        RunButton::Stop => {
+        RunAction::Stop => {
             answered(
                 Deadline::ACTION,
                 peer::ASSISTANT,
@@ -114,7 +114,7 @@ impl Watch {
         };
         let changes = within(Deadline::READ, peer::ASSISTANT, subscribed)
             .await
-            .map_err(|silent| Absence::Failed(silent.to_string()))??;
+            .map_err(|_| Absence::Failed)??;
         let (ticker, ticks) = Ticks::channel();
         let ticks = ticks.with_relay(tokio::spawn(relay(changes, ticker)));
         Ok(Watch { ticks })

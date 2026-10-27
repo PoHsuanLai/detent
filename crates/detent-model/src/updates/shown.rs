@@ -1,44 +1,24 @@
-//! What the Software Update page shows for a state: the words, the progress bar, the buttons and
-//! the notes sheet, worked out once and drawn as they are.
+//! What the Software Update page shows for a state, as facts: the standing, the bar, the actions
+//! on offer and the notes. The window words them (`detent-ui`'s copy).
 
 use super::model::{ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus};
 use super::step::{NotesState, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState};
-use super::words::{age_words, size_words};
 use crate::Absence;
 
-/// What the page says when nothing serves updates.
-pub const UPDATES_NOT_AVAILABLE: &str = "Software updates are not available on this computer.";
-
-/// What it says when the service is there and did not make sense.
-const NOT_ANSWERING: &str = "Software updates did not answer. Try again in a moment.";
-
-/// What the daily check is, as the page tells it.
-const AUTOMATIC: &str = "Quire checks once a day and asks before it installs anything.";
-
-/// Said when a failure came with no words.
-const DID_NOT_FINISH: &str = "The update did not finish. Try again in a moment.";
-
-/// Said under the offer when a newer version arrived after the person had looked, and nothing
-/// was installed.
-const NEWER_VERSION: &str = "A newer version arrived. Check what's new before installing.";
-
-/// Said when a release came with no notes.
-const NO_NOTES: &str = "No release notes came with this update.";
-
-/// Whether a button is waiting for something.
+/// Whether the check is under way.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ButtonActivity {
-    /// It is waiting: it shows a spinner and takes no press.
-    Busy,
-    /// It is not.
-    Still,
+pub enum CheckActivity {
+    /// A check is under way: nothing more can be asked of it yet.
+    Running,
+    /// None is.
+    Resting,
 }
 
-/// A button of the page.
+/// What the person may do on the page.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum UpdateButton {
+pub enum UpdateAction {
     /// Look for a newer version.
-    Check(ButtonActivity),
+    Check(CheckActivity),
     /// Read what the newer version changes.
     MoreInfo,
     /// Install the newer version.
@@ -49,28 +29,26 @@ pub enum UpdateButton {
     LogOut,
 }
 
-impl UpdateButton {
-    /// The words on the button.
-    pub fn label(self) -> &'static str {
+impl UpdateAction {
+    /// What taking the action tells the page.
+    pub fn input(self) -> UpdatesInput {
         match self {
-            UpdateButton::Check(_) => "Check for Updates",
-            UpdateButton::MoreInfo => "More Info\u{2026}",
-            UpdateButton::UpdateNow => "Update Now",
-            UpdateButton::TryAgain => "Try Again",
-            UpdateButton::LogOut => "Log Out\u{2026}",
+            UpdateAction::Check(_) => UpdatesInput::Check,
+            UpdateAction::MoreInfo => UpdatesInput::MoreInfo,
+            UpdateAction::UpdateNow => UpdatesInput::UpdateNow,
+            UpdateAction::TryAgain => UpdatesInput::TryAgain,
+            UpdateAction::LogOut => UpdatesInput::LogOut,
         }
     }
+}
 
-    /// What pressing it tells the page.
-    pub fn press(self) -> UpdatesInput {
-        match self {
-            UpdateButton::Check(_) => UpdatesInput::Check,
-            UpdateButton::MoreInfo => UpdatesInput::MoreInfo,
-            UpdateButton::UpdateNow => UpdatesInput::UpdateNow,
-            UpdateButton::TryAgain => UpdatesInput::TryAgain,
-            UpdateButton::LogOut => UpdatesInput::LogOut,
-        }
-    }
+/// How much of a download is done, of how much.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Downloaded {
+    /// What has come.
+    pub done: ByteCount,
+    /// All of it.
+    pub total: ByteCount,
 }
 
 /// The bar under the title.
@@ -78,45 +56,75 @@ impl UpdateButton {
 pub enum UpdateMeter {
     /// There is none.
     None,
-    /// How far a download has come, with "12 MB of 45 MB" when the size is known.
+    /// How far a download has come, with how much of how much when the size is known.
     Known {
         /// The share done.
         share: Permille,
         /// How much of how much, when the total is known.
-        words: Option<String>,
+        done: Option<Downloaded>,
     },
     /// Work with no end in sight.
     Pending,
 }
 
-/// The release notes in their sheet.
+/// The release notes of a version.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NotesSheet {
+pub struct ReleaseNotes {
     /// The version the notes are for.
-    pub title: String,
-    /// The notes.
-    pub body: String,
+    pub version: String,
+    /// The notes; `None` when the release came with none.
+    pub text: Option<String>,
+}
+
+/// What is true of the version the row is about.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UpdateStanding {
+    /// Nothing newer waits.
+    UpToDate,
+    /// Looking for a newer version.
+    Checking,
+    /// A newer version waits, of this size (zero when it is not known).
+    Available(ByteCount),
+    /// Downloading it.
+    Downloading,
+    /// Downloaded, about to be installed.
+    Preparing,
+    /// Switching to it.
+    Installing,
+    /// Installed; a new login starts it.
+    Installed,
+    /// The last thing tried did not work, in the service's words when it said.
+    Failed(Option<String>),
+}
+
+/// When the last check was, when it is worth saying.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Checked {
+    /// It is not said.
+    Unsaid,
+    /// There has been none.
+    Never,
+    /// It finished this many seconds ago (a clock a little ahead counts as none).
+    Ago(i64),
 }
 
 /// A page whose service answered.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UpdatesPage {
-    /// The version the row is about: "Quire 0.3.1".
-    pub title: String,
-    /// What is true of it, under the title.
-    pub detail: String,
-    /// A word of caution under the row, when there is one.
-    pub notice: Option<&'static str>,
+    /// The version the row is about; `None` when no version is known.
+    pub version: Option<String>,
+    /// What is true of it.
+    pub standing: UpdateStanding,
+    /// What the page says besides the standing.
+    pub notice: UpdatesNotice,
     /// The bar, if the work has one.
     pub meter: UpdateMeter,
-    /// The buttons, the one to press last.
-    pub buttons: Vec<UpdateButton>,
-    /// When the last check was, when it is worth saying.
-    pub checked: Option<String>,
-    /// What the daily check is.
-    pub automatic: &'static str,
+    /// The actions, the one to take last.
+    pub actions: Vec<UpdateAction>,
+    /// When the last check was.
+    pub checked: Checked,
     /// The notes, while they are up.
-    pub notes: Option<NotesSheet>,
+    pub notes: Option<ReleaseNotes>,
 }
 
 /// What the page draws.
@@ -124,125 +132,110 @@ pub struct UpdatesPage {
 pub enum UpdatesShown {
     /// Still looking: nothing yet.
     Looking,
-    /// No updates here, in these words.
-    Unavailable(&'static str),
+    /// No updates here, and why.
+    Unavailable(Absence),
     /// The service answered.
     Page(UpdatesPage),
 }
 
-/// What the page draws for `state`, `now` being the time the "last checked" line counts from.
+/// What the page draws for `state`, `now` being the time the last check counts from.
 pub fn updates_shown(state: &UpdatesState, now: UnixSeconds) -> UpdatesShown {
     match state {
         UpdatesState::Looking => UpdatesShown::Looking,
-        UpdatesState::Unavailable(Absence::Failed(_)) => UpdatesShown::Unavailable(NOT_ANSWERING),
-        UpdatesState::Unavailable(_) => UpdatesShown::Unavailable(UPDATES_NOT_AVAILABLE),
+        UpdatesState::Unavailable(absence) => UpdatesShown::Unavailable(*absence),
         UpdatesState::Ready(ready) => UpdatesShown::Page(page(ready, now)),
     }
 }
 
-fn named(version: Option<&str>) -> String {
-    version.map_or_else(|| "Quire".to_owned(), |version| format!("Quire {version}"))
+fn checked_of(status: &UpdateStatus, now: UnixSeconds) -> Checked {
+    status.last_checked.map_or(Checked::Never, |then| {
+        Checked::Ago(now.0.saturating_sub(then.0))
+    })
 }
 
-fn checked_line(status: &UpdateStatus, now: UnixSeconds) -> String {
-    status.last_checked.map_or_else(
-        || "Not checked yet".to_owned(),
-        |then| format!("Last checked {}", age_words(now, then)),
-    )
-}
-
-/// The row of a state that has nothing to add: `title` and `detail`.
-fn plain(title: String, detail: &str) -> UpdatesPage {
+/// The page of a state that has nothing to add: `version` and `standing`.
+fn plain(version: Option<String>, standing: UpdateStanding) -> UpdatesPage {
     UpdatesPage {
-        title,
-        detail: detail.to_owned(),
-        notice: None,
+        version,
+        standing,
+        notice: UpdatesNotice::Nothing,
         meter: UpdateMeter::None,
-        buttons: Vec::new(),
-        checked: None,
-        automatic: AUTOMATIC,
+        actions: Vec::new(),
+        checked: Checked::Unsaid,
         notes: None,
     }
 }
 
 fn page(ready: &UpdatesReady, now: UnixSeconds) -> UpdatesPage {
     let status = &ready.status;
-    let current = status.current.as_deref();
+    let current = status.current.clone();
     let offered = status.offer.as_ref();
-    let newer = named(offered.map(|offer| offer.version.as_str()).or(current));
-    let installed = named(current);
+    let newer = offered
+        .map(|offer| offer.version.as_str().to_owned())
+        .or_else(|| current.clone());
     match (status.phase, offered) {
         (UpdatePhase::Available, Some(offer)) => available(ready, offer, now),
         (UpdatePhase::Idle | UpdatePhase::Available, _) => UpdatesPage {
-            buttons: vec![UpdateButton::Check(ButtonActivity::Still)],
-            checked: Some(checked_line(status, now)),
-            ..plain(installed, "Your computer is up to date")
+            actions: vec![UpdateAction::Check(CheckActivity::Resting)],
+            checked: checked_of(status, now),
+            ..plain(current, UpdateStanding::UpToDate)
         },
         (UpdatePhase::Checking, _) => UpdatesPage {
-            buttons: vec![UpdateButton::Check(ButtonActivity::Busy)],
-            ..plain(installed, "Checking for updates\u{2026}")
+            actions: vec![UpdateAction::Check(CheckActivity::Running)],
+            ..plain(current, UpdateStanding::Checking)
         },
         (UpdatePhase::Downloading, _) => UpdatesPage {
             meter: UpdateMeter::Known {
                 share: status.progress,
-                words: offered.and_then(|offer| done_of(offer.size, status.progress)),
+                done: offered.and_then(|offer| done_of(offer.size, status.progress)),
             },
-            ..plain(newer, "Downloading\u{2026}")
+            ..plain(newer, UpdateStanding::Downloading)
         },
         (UpdatePhase::Ready, _) => UpdatesPage {
             meter: UpdateMeter::Pending,
-            ..plain(newer, "Preparing to install\u{2026}")
+            ..plain(newer, UpdateStanding::Preparing)
         },
         (UpdatePhase::Installing, _) => UpdatesPage {
             meter: UpdateMeter::Pending,
-            ..plain(newer, "Installing\u{2026}")
+            ..plain(newer, UpdateStanding::Installing)
         },
         (UpdatePhase::Installed, _) => UpdatesPage {
-            buttons: vec![UpdateButton::LogOut],
-            ..plain(installed, "Log out to finish the update")
+            actions: vec![UpdateAction::LogOut],
+            ..plain(current, UpdateStanding::Installed)
         },
         (UpdatePhase::Failed, _) => UpdatesPage {
-            buttons: vec![UpdateButton::TryAgain],
-            checked: Some(checked_line(status, now)),
-            ..plain(newer, status.problem.as_deref().unwrap_or(DID_NOT_FINISH))
+            actions: vec![UpdateAction::TryAgain],
+            checked: checked_of(status, now),
+            ..plain(newer, UpdateStanding::Failed(status.problem.clone()))
         },
     }
 }
 
 fn available(ready: &UpdatesReady, offer: &UpdateOffer, now: UnixSeconds) -> UpdatesPage {
-    let detail = match offer.size {
-        ByteCount(0) => "Update available".to_owned(),
-        size => format!("Update available \u{b7} {}", size_words(size)),
-    };
+    let version = offer.version.as_str().to_owned();
     let notes = match ready.info {
-        NotesState::Open => Some(NotesSheet {
-            title: named(Some(offer.version.as_str())),
-            body: if offer.notes.trim().is_empty() {
-                NO_NOTES.to_owned()
-            } else {
-                offer.notes.clone()
-            },
+        NotesState::Open => Some(ReleaseNotes {
+            version: version.clone(),
+            text: Some(offer.notes.clone()).filter(|text| !text.trim().is_empty()),
         }),
         NotesState::Closed => None,
     };
     UpdatesPage {
-        notice: match ready.notice {
-            UpdatesNotice::NewerVersion => Some(NEWER_VERSION),
-            UpdatesNotice::Nothing => None,
-        },
-        buttons: vec![UpdateButton::MoreInfo, UpdateButton::UpdateNow],
-        checked: Some(checked_line(&ready.status, now)),
+        notice: ready.notice,
+        actions: vec![UpdateAction::MoreInfo, UpdateAction::UpdateNow],
+        checked: checked_of(&ready.status, now),
         notes,
-        ..plain(named(Some(offer.version.as_str())), &detail)
+        ..plain(Some(version), UpdateStanding::Available(offer.size))
     }
 }
 
-/// "12.3 MB of 45.6 MB" for a download of `size` that is `progress` done; nothing when the size
-/// is not known.
-fn done_of(size: ByteCount, progress: Permille) -> Option<String> {
+/// How much of a download of `size` is done at `progress`; nothing when the size is not known.
+fn done_of(size: ByteCount, progress: Permille) -> Option<Downloaded> {
     (size.0 > 0).then(|| {
         let done = u128::from(size.0) * u128::from(progress.0) / 1000;
-        let done = ByteCount(u64::try_from(done).unwrap_or(size.0));
-        format!("{} of {}", size_words(done), size_words(size))
+        Downloaded {
+            done: ByteCount(u64::try_from(done).unwrap_or(size.0)),
+            total: size,
+        }
     })
 }

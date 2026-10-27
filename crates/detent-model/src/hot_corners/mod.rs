@@ -21,7 +21,7 @@ pub use corner::{Corner, HOT_CORNERS_CONTROL};
 pub use forms::{HotOpenForm, HotOpenKind, command_binding, web_address};
 pub use keys::{HotKeys, HotModifier};
 pub use menu::{
-    CornerAsk, CornerChoice, CornerMenuLine, HotPicked, HotShown, corner_label, corner_menu,
-    corner_picked, corner_shown,
+    CornerAsk, CornerChoice, CornerMenuLine, HotPicked, HotShown, corner_menu, corner_picked,
+    corner_shown,
 };
 pub use rows::{HotAddFault, add_row, binding_for, remove_row, shown_rows, with_binding};

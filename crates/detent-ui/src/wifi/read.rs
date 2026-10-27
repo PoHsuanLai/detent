@@ -11,7 +11,7 @@ use airwaves_nm::{
     SettingsProxy, WirelessDeviceProxy,
 };
 use detent_model::{
-    AccessPoint, Missing, NetworkLink, NetworkLock, SignalStrength, Ssid, WifiRadio, WifiStatus,
+    Absence, AccessPoint, NetworkLink, NetworkLock, SignalStrength, Ssid, WifiRadio, WifiStatus,
     WifiWire,
 };
 use ds_peer::within;
@@ -24,23 +24,23 @@ const MOST_ACCESS_POINTS: usize = 128;
 /// `NM_DEVICE_TYPE_WIFI`.
 const WIFI_DEVICE: u32 = 2;
 
-fn failed<E>(_: E) -> Missing {
-    Missing::Failed
+fn failed<E>(_: E) -> Absence {
+    Absence::Failed
 }
 
 /// The switch, the networks in range and the ones with a kept password.
-pub(super) async fn read(bus: &BusSource) -> Result<WifiStatus, Missing> {
+pub(super) async fn read(bus: &BusSource) -> Result<WifiStatus, Absence> {
     let connection = system_connection(bus).await?;
     if !is_running(&connection, SERVICE).await {
-        return Err(Missing::NoService);
+        return Err(Absence::NotRunning);
     }
     match within(Deadline::READ, peer::NETWORK, wire_of(&connection)).await {
         Ok(wire) => wire.map(WifiStatus::of_wire),
-        Err(_) => Err(Missing::Failed),
+        Err(_) => Err(Absence::Failed),
     }
 }
 
-async fn wire_of(connection: &Connection) -> Result<WifiWire, Missing> {
+async fn wire_of(connection: &Connection) -> Result<WifiWire, Absence> {
     let manager = NetworkManagerProxy::new(connection).await.map_err(failed)?;
     let radio = radio_of(&manager).await;
     let device = wifi_device(connection, &manager).await?;
@@ -69,20 +69,20 @@ async fn radio_of(manager: &NetworkManagerProxy<'_>) -> WifiRadio {
 pub(super) async fn wifi_device(
     connection: &Connection,
     manager: &NetworkManagerProxy<'_>,
-) -> Result<OwnedObjectPath, Missing> {
+) -> Result<OwnedObjectPath, Absence> {
     for path in manager.get_all_devices().await.map_err(failed)? {
         let device = device_at(connection, &path).await?;
         if device.device_type().await.map_err(failed)? == WIFI_DEVICE {
             return Ok(path);
         }
     }
-    Err(Missing::NoDevice)
+    Err(Absence::NoDevice)
 }
 
 pub(super) async fn device_at<'a>(
     connection: &'a Connection,
     path: &OwnedObjectPath,
-) -> Result<DeviceProxy<'a>, Missing> {
+) -> Result<DeviceProxy<'a>, Absence> {
     DeviceProxy::builder(connection)
         .path(path.clone())
         .map_err(failed)?
@@ -94,7 +94,7 @@ pub(super) async fn device_at<'a>(
 pub(super) async fn wireless_at<'a>(
     connection: &'a Connection,
     path: &OwnedObjectPath,
-) -> Result<WirelessDeviceProxy<'a>, Missing> {
+) -> Result<WirelessDeviceProxy<'a>, Absence> {
     WirelessDeviceProxy::builder(connection)
         .path(path.clone())
         .map_err(failed)?
@@ -106,7 +106,7 @@ pub(super) async fn wireless_at<'a>(
 async fn access_points(
     connection: &Connection,
     device_path: &OwnedObjectPath,
-) -> Result<Vec<AccessPoint>, Missing> {
+) -> Result<Vec<AccessPoint>, Absence> {
     let wireless = wireless_at(connection, device_path).await?;
     let state = device_at(connection, device_path)
         .await?

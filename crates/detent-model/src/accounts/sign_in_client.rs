@@ -2,8 +2,8 @@
 //! is drawn as it is; a secret is write-only, so the pane knows only whether there is one and the
 //! text of a secret exists just while it is typed and on its way to the service.
 
-use super::model::{CLIENTS, PREFIX};
 use super::module::ModuleId;
+use super::rows::{CLIENTS, PREFIX};
 use crate::picker::Described;
 use ds_settings::schema::{KeyPath, KeySpec};
 
@@ -77,16 +77,6 @@ pub enum SecretStanding {
     NotSet,
 }
 
-impl SecretStanding {
-    /// The word the field shows in place of the text.
-    pub fn label(self) -> &'static str {
-        match self {
-            SecretStanding::Set => "Set",
-            SecretStanding::NotSet => "Not set",
-        }
-    }
-}
-
 /// What a sign-in row holds, as far as the window may know.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientValue {
@@ -101,7 +91,7 @@ impl ClientValue {
     pub fn key(&self) -> String {
         match self {
             ClientValue::Text(text) => text.clone(),
-            ClientValue::Secret(standing) => standing.label().to_owned(),
+            ClientValue::Secret(standing) => format!("{standing:?}"),
         }
     }
 
@@ -156,9 +146,6 @@ pub(super) enum ClientChange {
 }
 
 impl SignInClient {
-    /// The line the person reads when they try to fill in a secret before its key.
-    pub const KEY_FIRST: &'static str = "Set the sign-in key first, then its secret.";
-
     /// The row `spec` describes, holding `text` as the service read it. A secret's text is
     /// dropped here: only whether it is empty is kept (`standing_only` has already marked it).
     pub(super) fn read(module: ModuleId, spec: &KeySpec, text: &str) -> SignInClient {

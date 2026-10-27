@@ -11,11 +11,6 @@ impl Cents {
     pub(super) fn parse(word: &str) -> Option<Cents> {
         word.parse().ok().map(Cents)
     }
-
-    /// "$12.40".
-    pub fn words(self) -> String {
-        format!("${}.{:02}", self.0 / 100, self.0 % 100)
-    }
 }
 
 /// How the month stands against the cap.
@@ -23,24 +18,17 @@ impl Cents {
 pub struct SpendBar {
     /// How much of the cap is used, in thousandths; a month over the cap reads full.
     pub permille: u16,
-    /// What the bar says beside it: "$12.40 of $50.00 this month".
+    /// What the bar stands for: the amount spent and the cap.
     pub line: SpendLine,
 }
 
-/// The words beside the bar, kept as the two amounts so a test reads them whole.
+/// What stands beside the bar, kept as the two amounts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SpendLine {
     /// Spent so far.
     pub spent: Cents,
     /// The cap.
     pub cap: Cents,
-}
-
-impl SpendLine {
-    /// "$12.40 of $50.00 this month".
-    pub fn words(self) -> String {
-        format!("{} of {} this month", self.spent.words(), self.cap.words())
-    }
 }
 
 /// The two rows an AI account may publish.
@@ -69,7 +57,7 @@ impl AccountSpend {
 
 #[cfg(test)]
 mod tests {
-    use super::{AccountSpend, Cents};
+    use super::{AccountSpend, Cents, SpendLine};
 
     #[test]
     fn the_bar_is_the_share_of_the_cap_and_waits_for_both_rows() {
@@ -77,30 +65,24 @@ mod tests {
             spent: spent.map(Cents),
             cap: cap.map(Cents),
         };
+        let line = |spent, cap| SpendLine {
+            spent: Cents(spent),
+            cap: Cents(cap),
+        };
         let cases = [
-            (
-                spend(Some(1240), Some(5000)),
-                Some((248, "$12.40 of $50.00 this month")),
-            ),
+            (spend(Some(1240), Some(5000)), Some((248, line(1240, 5000)))),
             (
                 spend(Some(9000), Some(5000)),
-                Some((1000, "$90.00 of $50.00 this month")),
+                Some((1000, line(9000, 5000))),
             ),
-            (
-                spend(Some(0), Some(5000)),
-                Some((0, "$0.00 of $50.00 this month")),
-            ),
+            (spend(Some(0), Some(5000)), Some((0, line(0, 5000)))),
             (spend(Some(10), Some(0)), None),
             (spend(None, Some(5000)), None),
             (spend(Some(10), None), None),
         ];
         for (held, want) in cases {
-            let got = held.bar().map(|bar| (bar.permille, bar.line.words()));
-            assert_eq!(
-                got,
-                want.map(|(share, words)| (share, words.to_owned())),
-                "{held:?}"
-            );
+            let got = held.bar().map(|bar| (bar.permille, bar.line));
+            assert_eq!(got, want, "{held:?}");
         }
         assert_eq!(Cents::parse("1240"), Some(Cents(1240)));
         assert_eq!(Cents::parse("12.40"), None);

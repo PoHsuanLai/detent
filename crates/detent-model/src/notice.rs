@@ -44,6 +44,15 @@ impl fmt::Display for WindowGone {
 
 impl std::error::Error for WindowGone {}
 
+/// Whether the window is still there to hear.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ReceiverState {
+    /// It is listening.
+    Waiting,
+    /// It was dropped: nothing sent now will be heard.
+    Gone,
+}
+
 /// The notices that wait, and who is still on either end.
 #[derive(Debug)]
 struct Queue {
@@ -52,7 +61,7 @@ struct Queue {
     waker: Option<Waker>,
     /// How many [`Outbox`]es are alive.
     senders: usize,
-    receiver_gone: bool,
+    receiver: ReceiverState,
 }
 
 type Shared = Arc<Mutex<Queue>>;
@@ -101,7 +110,7 @@ impl Outbox {
     /// dropped after the window caught up is said in the log, the rest of that flood are not.
     pub fn send(&self, notice: Notice) -> Result<(), WindowGone> {
         let mut queue = locked(&self.queue);
-        if queue.receiver_gone {
+        if queue.receiver == ReceiverState::Gone {
             return Err(WindowGone);
         }
         if queue.waiting.len() >= NOTICE_INBOX {
@@ -159,7 +168,7 @@ impl Receiver {
 impl Drop for Receiver {
     fn drop(&mut self) {
         let mut queue = locked(&self.queue);
-        queue.receiver_gone = true;
+        queue.receiver = ReceiverState::Gone;
         queue.waiting.clear();
     }
 }
@@ -181,7 +190,7 @@ fn pair() -> (Outbox, Receiver) {
         waiting: VecDeque::new(),
         waker: None,
         senders: 1,
-        receiver_gone: false,
+        receiver: ReceiverState::Waiting,
     }));
     let outbox = Outbox {
         queue: queue.clone(),

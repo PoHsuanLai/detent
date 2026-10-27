@@ -4,7 +4,7 @@
 
 use super::model::{AccountKey, AccountProvider, AccountStatus, AccountsPane};
 use super::module::ModuleId;
-use crate::assistant_model::{Pressable, SetupButton};
+use crate::assistant_model::{SetupAction, SetupAvailability};
 use crate::page::PageSlug;
 use porter_core::sheet::ProviderGroup;
 
@@ -44,21 +44,21 @@ pub fn signed_in(pane: &AccountsPane) -> Vec<SignedIn> {
 }
 
 /// Whether `button` can be pressed: Skip always; Continue once an account is listed.
-pub fn accounts_setup_button(listed: &[SignedIn], button: SetupButton) -> Pressable {
+pub fn accounts_setup_offer(listed: &[SignedIn], button: SetupAction) -> SetupAvailability {
     match (button, listed.is_empty()) {
-        (SetupButton::Skip, _) | (SetupButton::Continue, false) => Pressable::Now,
-        (SetupButton::Continue, true) => Pressable::NotYet,
+        (SetupAction::Skip, _) | (SetupAction::Continue, false) => SetupAvailability::Now,
+        (SetupAction::Continue, true) => SetupAvailability::NotYet,
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        ACCOUNTS_SETUP_SLUG, SignedIn, accounts_setup_button, is_accounts_setup, signed_in,
+        ACCOUNTS_SETUP_SLUG, SignedIn, accounts_setup_offer, is_accounts_setup, signed_in,
     };
     use crate::accounts::tests::described;
     use crate::accounts::{AccountsPane, ModuleId};
-    use crate::assistant_model::{Pressable, SetupButton};
+    use crate::assistant_model::{SetupAction, SetupAvailability};
     use crate::page::PageSlug;
 
     #[test]
@@ -68,15 +68,15 @@ mod tests {
         let labels: Vec<&str> = listed.iter().map(|row| row.label.as_str()).collect();
         assert_eq!(labels, ["Home cloud", "Work mail"]);
         let cases = [
-            (SetupButton::Skip, true, Pressable::Now),
-            (SetupButton::Skip, false, Pressable::Now),
-            (SetupButton::Continue, false, Pressable::NotYet),
-            (SetupButton::Continue, true, Pressable::Now),
+            (SetupAction::Skip, true, SetupAvailability::Now),
+            (SetupAction::Skip, false, SetupAvailability::Now),
+            (SetupAction::Continue, false, SetupAvailability::NotYet),
+            (SetupAction::Continue, true, SetupAvailability::Now),
         ];
         for (button, any, want) in cases {
             let shown: &[SignedIn] = if any { &listed[..] } else { &[] };
             assert_eq!(
-                accounts_setup_button(shown, button),
+                accounts_setup_offer(shown, button),
                 want,
                 "{button:?} {any}"
             );

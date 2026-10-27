@@ -70,8 +70,8 @@ pub enum HoldEffect {
     Confirm(DatasetName),
     /// Ask the sync service for the dataset's state again and tell it as `Told`.
     Refresh(DatasetName),
-    /// Tell the person something went wrong.
-    Tell(String),
+    /// Tell the person the files could not be removed.
+    CouldNotRemove,
 }
 
 /// The holds after `input`, and what to do about it.
@@ -94,9 +94,7 @@ pub fn hold_step(holds: Holds, input: HoldInput) -> (Holds, Vec<HoldEffect>) {
             }
         }
         HoldInput::NothingHeld(dataset) => effects.push(HoldEffect::Refresh(dataset)),
-        HoldInput::Refused(_) => effects.push(HoldEffect::Tell(
-            "Could not remove the files. Try again later.".to_owned(),
-        )),
+        HoldInput::Refused(_) => effects.push(HoldEffect::CouldNotRemove),
     }
     (Holds(list), effects)
 }

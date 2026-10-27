@@ -1,9 +1,7 @@
 //! The sheets that forget a network, and join one that does not announce its name.
 
-use detent_model::{
-    HiddenForm, HiddenSecurity, OTHER_HELP, OTHER_TITLE, WifiInput, forget_network_body,
-    forget_network_title,
-};
+use crate::copy::wifi::{forget_body, forget_title, hidden_security, other_help, other_title};
+use detent_model::{HiddenForm, HiddenSecurity, WifiInput};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button_model::{Answers, ButtonRole};
@@ -16,8 +14,8 @@ use ds::style::tokens::control_size::ControlSize;
 /// Asks before a network is forgotten.
 #[component]
 pub(super) fn ForgetSheet(name: String, press: EventHandler<WifiInput>) -> Element {
-    let close = EventHandler::new(move |()| press.call(WifiInput::CloseSheet));
-    let title = forget_network_title(&name);
+    let close = EventHandler::new(move |()| press.call(WifiInput::Dismiss));
+    let title = forget_title(&name);
     rsx! {
         Sheet {
             label: title.clone(),
@@ -25,7 +23,7 @@ pub(super) fn ForgetSheet(name: String, press: EventHandler<WifiInput>) -> Eleme
             onclose: close,
             div { class: "system-sheet", "data-system": "forget",
                 Label { text: title, role: LabelRole::Primary, style: LabelStyle::Headline }
-                Label { text: forget_network_body(), role: LabelRole::Secondary }
+                Label { text: forget_body(), role: LabelRole::Secondary }
                 div { class: "system-sheet-buttons",
                     Button {
                         label: "Cancel",
@@ -56,7 +54,7 @@ fn edit(mut form: Signal<HiddenForm>, change: impl FnOnce(HiddenForm) -> HiddenF
 #[component]
 pub(super) fn OtherSheet(press: EventHandler<WifiInput>) -> Element {
     let form = use_signal(HiddenForm::default);
-    let close = EventHandler::new(move |()| press.call(WifiInput::CloseSheet));
+    let close = EventHandler::new(move |()| press.call(WifiInput::Dismiss));
     let join = EventHandler::new(move |()| {
         let network = form.peek().network();
         if let Some(network) = network {
@@ -68,13 +66,13 @@ pub(super) fn OtherSheet(press: EventHandler<WifiInput>) -> Element {
     let ready = shown.network().is_some();
     rsx! {
         Sheet {
-            label: OTHER_TITLE.to_owned(),
+            label: other_title().to_owned(),
             width: SheetWidth::Narrow,
             onclose: close,
             on_return: join,
             div { class: "system-sheet", "data-system": "other",
-                Label { text: OTHER_TITLE, role: LabelRole::Primary, style: LabelStyle::Headline }
-                Label { text: OTHER_HELP, role: LabelRole::Secondary }
+                Label { text: other_title(), role: LabelRole::Primary, style: LabelStyle::Headline }
+                Label { text: other_help(), role: LabelRole::Secondary }
                 TextField {
                     label: "Network Name",
                     value: shown.name.clone(),
@@ -87,15 +85,17 @@ pub(super) fn OtherSheet(press: EventHandler<WifiInput>) -> Element {
                 PopUpButton::<String> {
                     items: HiddenSecurity::ALL
                         .iter()
-                        .map(|choice| MenuItem::new(choice.words().to_owned(), choice.words()))
+                        .map(|choice| {
+                            MenuItem::new(hidden_security(*choice).to_owned(), hidden_security(*choice))
+                        })
                         .collect::<Vec<_>>(),
-                    value: Some(security.words().to_owned()),
+                    value: Some(hidden_security(security).to_owned()),
                     size: ControlSize::Small,
                     common: Common { id: Some("wifi-security".to_owned()), ..Common::default() },
                     onpick: move |word: String| {
                         if let Some(security) = HiddenSecurity::ALL
                             .into_iter()
-                            .find(|choice| choice.words() == word)
+                            .find(|choice| hidden_security(*choice) == word)
                         {
                             edit(form, |form| HiddenForm { security, ..form });
                         }

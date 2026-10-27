@@ -1,7 +1,6 @@
-//! Why an account needs the person, and the words that say so: the sign-in ended, or the provider
-//! will end it on a known day.
+//! Why an account needs the person: the sign-in ended, or the provider will end it on a known day.
 
-use super::grant::day_words;
+use super::day::CalendarDay;
 use super::model::{Account, AccountStatus};
 
 /// What is wrong with an account that its screen puts first. One at a time: a sign-in that has
@@ -10,17 +9,17 @@ use super::model::{Account, AccountStatus};
 pub enum Attention {
     /// The sign-in ended; the account does nothing until the person signs in again.
     SignInEnded,
-    /// The provider signs the account out on `day`, in the person's date words ("14 Oct").
+    /// The provider signs the account out on `day`.
     SignInEnding {
-        /// The day, as words.
-        day: String,
+        /// The day.
+        day: CalendarDay,
     },
 }
 
 /// The day an `expires` row names: its last word is `YYYY-MM-DD` ("Google signs this account out
-/// on 2026-10-14"), read as the date words; none for a row of another shape.
-fn expiry_day(text: &str) -> Option<String> {
-    day_words(text.rsplit(' ').next()?)
+/// on 2026-10-14"); none for a row of another shape.
+fn expiry_day(text: &str) -> Option<CalendarDay> {
+    CalendarDay::parse(text.rsplit(' ').next()?)
 }
 
 impl Attention {
@@ -33,28 +32,6 @@ impl Attention {
         let day = expiry_day(&account.expires.as_ref()?.text)?;
         Some(Attention::SignInEnding { day })
     }
-
-    /// The sentence of the banner.
-    pub fn words(&self, account: &Account) -> String {
-        match self {
-            Attention::SignInEnded => format!("Sign in again to keep using {}.", account.label),
-            Attention::SignInEnding { day } => {
-                let provider = account
-                    .provider
-                    .as_ref()
-                    .map_or("The provider", |provider| provider.name.as_str());
-                format!("{provider} will sign this account out on {day}.")
-            }
-        }
-    }
-
-    /// The name of the dot on the account's row.
-    pub fn badge_label(&self) -> &'static str {
-        match self {
-            Attention::SignInEnded => "Needs sign-in",
-            Attention::SignInEnding { .. } => "Sign-in ends soon",
-        }
-    }
 }
 
 #[cfg(test)]
@@ -65,7 +42,13 @@ mod tests {
     use ds_settings::schema::KeyPath;
     use porter_core::sheet::ProviderGroup;
 
-    fn account(status: AccountStatus, expires: Option<&str>, reauth: bool) -> Account {
+    /// Whether the account has a Sign in again row.
+    enum Reauth {
+        Offered,
+        Missing,
+    }
+
+    fn account(status: AccountStatus, expires: Option<&str>, reauth: Reauth) -> Account {
         Account {
             key: AccountKey("work".to_owned()),
             module: ModuleId::Accountd,
@@ -87,12 +70,13 @@ mod tests {
             sync: Vec::new(),
             show_in_files: None,
             permissions: Vec::new(),
-            reauth: reauth.then(|| {
-                (
+            reauth: match reauth {
+                Reauth::Offered => Some((
                     KeyPath("accounts.work.reauth".to_owned()),
                     "Sign in again".to_owned(),
-                )
-            }),
+                )),
+                Reauth::Missing => None,
+            },
             sign_out: None,
             remove: None,
             used_by: Vec::new(),
@@ -104,30 +88,34 @@ mod tests {
     fn attention_follows_the_status_and_the_expiry_row() {
         let ending = Some("Google signs this account out on 2026-10-14");
         let ended = Some("Signed out by Google on 2026-10-14");
+        let day = CalendarDay {
+            month: 10,
+            date: 14,
+        };
         let cases = [
             (
                 "ended",
-                account(AccountStatus::NeedsReauth, ended, true),
-                Some("Sign in again to keep using Work mail."),
+                account(AccountStatus::NeedsReauth, ended, Reauth::Offered),
+                Some(Attention::SignInEnded),
             ),
             (
                 "ended without an expiry row",
-                account(AccountStatus::NeedsReauth, None, true),
-                Some("Sign in again to keep using Work mail."),
+                account(AccountStatus::NeedsReauth, None, Reauth::Offered),
+                Some(Attention::SignInEnded),
             ),
             (
                 "ending",
-                account(AccountStatus::Ok, ending, true),
-                Some("Google will sign this account out on 14 Oct."),
+                account(AccountStatus::Ok, ending, Reauth::Offered),
+                Some(Attention::SignInEnding { day }),
             ),
             (
                 "ended wins over ending",
-                account(AccountStatus::NeedsReauth, ending, true),
-                Some("Sign in again to keep using Work mail."),
+                account(AccountStatus::NeedsReauth, ending, Reauth::Offered),
+                Some(Attention::SignInEnded),
             ),
             (
                 "ending with no sign-in row",
-                account(AccountStatus::Ok, ending, false),
+                account(AccountStatus::Ok, ending, Reauth::Missing),
                 None,
             ),
             (
@@ -135,30 +123,18 @@ mod tests {
                 account(
                     AccountStatus::Ok,
                     Some("Google signs this account out"),
-                    true,
+                    Reauth::Offered,
                 ),
                 None,
             ),
-            ("fine", account(AccountStatus::Ok, None, true), None),
+            (
+                "fine",
+                account(AccountStatus::Ok, None, Reauth::Offered),
+                None,
+            ),
         ];
         for (name, account, want) in cases {
-            let got = Attention::of(&account).map(|a| a.words(&account));
-            assert_eq!(got.as_deref(), want, "{name}");
+            assert_eq!(Attention::of(&account), want, "{name}");
         }
-    }
-
-    #[test]
-    fn a_missing_provider_is_named_in_general_words() {
-        let mut account = account(
-            AccountStatus::Ok,
-            Some("Google signs this account out on 2026-01-02"),
-            true,
-        );
-        account.provider = None;
-        let words = Attention::of(&account).map(|a| a.words(&account));
-        assert_eq!(
-            words.as_deref(),
-            Some("The provider will sign this account out on 2 Jan.")
-        );
     }
 }

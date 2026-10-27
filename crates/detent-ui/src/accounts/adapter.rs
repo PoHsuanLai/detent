@@ -2,10 +2,9 @@
 //! plain text field, initial focus on an alert). Every use of them in the pane goes through here,
 //! so the switch to R2a is these few lines and nothing else.
 
-use detent_model::{
-    Adding, Ask, ClientValue, HoldCounts, KEEP_HELP, LocalFiles, RemovalQuestion, SecretStanding,
-    SyncHold,
-};
+use crate::copy::account_sync::{KEEP_HELP, hold_banner};
+use crate::copy::accounts::{removal, secret_standing};
+use detent_model::{Adding, ClientValue, HoldCounts, RemovalQuestion, SecretStanding, SyncHold};
 use dioxus::prelude::*;
 use ds::components::controls::button::Button;
 use ds::components::controls::button_model::{Answers, Bezel, ButtonRole, ImagePosition};
@@ -80,40 +79,18 @@ pub(crate) fn OpenButton(label: String, subject: String, onpress: EventHandler<(
 pub(super) fn RemoveAlert(
     question: RemovalQuestion,
     remove_name: String,
-    onanswer: EventHandler<bool>,
+    onkeep: EventHandler<()>,
+    onremove: EventHandler<()>,
 ) -> Element {
-    let (title, message, keep, action) = match question.ask {
-        Ask::Remove => (
-            format!("{remove_name} {}?", question.account),
-            match question.files {
-                LocalFiles::Kept => {
-                    "Its stored credentials and every permission given for it are deleted. \
-                     Files kept on this computer for the account are deleted too. \
-                     It cannot be undone."
-                }
-                LocalFiles::None => {
-                    "Its stored credentials and every permission given for it are deleted. \
-                     It cannot be undone."
-                }
-            },
-            "Keep",
-            remove_name.clone(),
-        ),
-        Ask::SignOut => (
-            format!("Sign out of {}?", question.account),
-            "You'll need to sign in again to use it.",
-            "Cancel",
-            "Sign Out".to_owned(),
-        ),
-    };
+    let words = removal(&question, &remove_name);
     rsx! {
         Alert {
-            title,
-            message: Some(TextLine::from(message)),
+            title: words.title,
+            message: Some(TextLine::from(words.message)),
             style: AlertStyle::Critical,
             buttons: vec![
-                AlertButton::new(keep, AlertRole::Cancel, EventHandler::new(move |()| onanswer.call(false))),
-                AlertButton::new(action, AlertRole::Destructive, EventHandler::new(move |()| onanswer.call(true))),
+                AlertButton::new(words.keep, AlertRole::Cancel, onkeep),
+                AlertButton::new(words.action, AlertRole::Destructive, onremove),
             ],
         }
     }
@@ -176,7 +153,7 @@ fn SecretField(
             TextField {
                 label,
                 value: String::new(),
-                placeholder: standing.label().to_owned(),
+                placeholder: secret_standing(standing).to_owned(),
                 kind: FieldKind::Secure,
                 availability,
                 size: ControlSize::Small,
@@ -269,7 +246,7 @@ pub(super) fn HoldBanner(
     rsx! {
         InlineBanner {
             severity: Severity::Warn,
-            text: TextLine::from(hold.banner()),
+            text: TextLine::from(hold_banner(&hold)),
             detail: Some(TextLine::from(KEEP_HELP)),
             common: Common {
                 aria_label: Some(format!("{held} files removed on the server")),

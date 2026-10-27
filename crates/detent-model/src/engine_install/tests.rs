@@ -31,28 +31,28 @@ fn strata(standing: EngineStanding) -> EngineRow {
     row("strata", "Strata", standing, EngineWay::Folder)
 }
 
-fn state(rows: Vec<EngineRow>) -> EngineSheetState {
-    EngineSheetState {
+fn state(rows: Vec<EngineRow>) -> EngineOfferState {
+    EngineOfferState {
         rows,
-        sheet: EngineSheet::Closed,
+        offer: EngineOffer::Idle,
     }
 }
 
 fn step(
-    state: EngineSheetState,
-    inputs: impl IntoIterator<Item = EngineSheetInput>,
-) -> (EngineSheetState, Vec<EngineSheetEffect>) {
+    state: EngineOfferState,
+    inputs: impl IntoIterator<Item = EngineOfferInput>,
+) -> (EngineOfferState, Vec<EngineOfferEffect>) {
     inputs
         .into_iter()
         .fold((state, Vec::new()), |(state, mut said), input| {
-            let (next, effects) = engine_sheet_step(state, input);
+            let (next, effects) = engine_offer_step(state, input);
             said.extend(effects);
             (next, said)
         })
 }
 
-fn chose(id: &str) -> EngineSheetInput {
-    EngineSheetInput::Chose(id.to_owned())
+fn chose(id: &str) -> EngineOfferInput {
+    EngineOfferInput::Chose(id.to_owned())
 }
 
 #[test]
@@ -63,28 +63,31 @@ fn an_engine_that_is_not_there_is_asked_about_and_one_that_is_ready_is_not() {
     ];
     let (asked, effects) = step(state(rows.clone()), [chose("llama_cpp")]);
     assert!(effects.is_empty());
-    let words = sheet_words(&asked.sheet).expect("a sheet");
-    assert_eq!(words.title, "Download llama.cpp?");
+    let brief = engine_brief(&asked.offer).expect("an offer");
+    assert_eq!(brief.engine.name, "llama.cpp");
     assert_eq!(
-        words.message,
-        "Your assistant needs llama.cpp to run models on this computer. It's about 30 MB."
+        brief.matter,
+        EngineMatter::Download {
+            replacing: Replacing::No,
+            size: Some(30_497_889)
+        }
     );
-    assert_eq!(words.scopes, BOTH);
+    assert_eq!(brief.scopes, BOTH);
     assert_eq!(
-        words.scope,
+        brief.scope,
         InstallScope::AllUsers,
         "everyone's is the default"
     );
-    assert_eq!(words.primary.map(|b| b.label), Some("Download"));
-    assert_eq!(words.secondary.map(|b| b.label), Some("Not Now"));
+    assert_eq!(brief.primary, Some(EngineAction::Download));
+    assert_eq!(brief.secondary, Some(EngineAction::NotNow));
     let (nothing, _) = step(state(rows), [chose("strata")]);
     assert_eq!(
-        nothing.sheet,
-        EngineSheet::Closed,
+        nothing.offer,
+        EngineOffer::Idle,
         "a ready engine asks nothing"
     );
     let (unknown, _) = step(nothing, [chose("kokoro")]);
-    assert_eq!(unknown.sheet, EngineSheet::Closed);
+    assert_eq!(unknown.offer, EngineOffer::Idle);
 }
 
 #[test]
@@ -92,7 +95,7 @@ fn not_now_leaves_nothing_started_and_the_engines_as_they_were() {
     let rows = vec![llama(EngineStanding::NotInstalled)];
     let (left, effects) = step(
         state(rows.clone()),
-        [chose("llama_cpp"), EngineSheetInput::NotNow],
+        [chose("llama_cpp"), EngineOfferInput::NotNow],
     );
     assert_eq!(left, state(rows));
     assert!(effects.is_empty());
@@ -107,15 +110,15 @@ fn only_the_persons_own_way_is_the_default_when_it_is_the_only_one_and_asks_no_c
         download(&[InstallScope::JustMe], Some(4_411_066_545)),
     );
     let (asked, _) = step(state(vec![only]), [chose("vllm")]);
-    let words = sheet_words(&asked.sheet).expect("a sheet");
+    let brief = engine_brief(&asked.offer).expect("an offer");
+    assert_eq!(brief.scope, InstallScope::JustMe);
+    assert!(brief.scopes.is_empty(), "one way asks no choice");
     assert_eq!(
-        (words.scope, words.scopes.is_empty()),
-        (InstallScope::JustMe, true)
-    );
-    assert!(
-        words.message.ends_with("It's about 4.4 GB."),
-        "{}",
-        words.message
+        brief.matter,
+        EngineMatter::Download {
+            replacing: Replacing::No,
+            size: Some(4_411_066_545)
+        }
     );
 }
 
@@ -126,79 +129,83 @@ fn a_download_follows_its_row_to_done_and_continue_restarts_the_assistant() {
         state(rows),
         [
             chose("llama_cpp"),
-            EngineSheetInput::Scope(InstallScope::JustMe),
-            EngineSheetInput::Go,
+            EngineOfferInput::Scope(InstallScope::JustMe),
+            EngineOfferInput::Go,
         ],
     );
     assert_eq!(
         effects,
-        [EngineSheetEffect::Install {
+        [EngineOfferEffect::Install {
             engine: "llama_cpp".to_owned(),
             scope: InstallScope::JustMe
         }]
     );
     let (halfway, _) = step(
         working,
-        [EngineSheetInput::Rows(vec![llama(
+        [EngineOfferInput::Rows(vec![llama(
             EngineStanding::Installing(500),
         )])],
     );
     assert_eq!(
-        sheet_words(&halfway.sheet).and_then(|w| w.progress),
+        engine_brief(&halfway.offer).and_then(|w| w.progress),
         Some(500)
     );
     let (done, _) = step(
         halfway,
-        [EngineSheetInput::Rows(vec![llama(EngineStanding::Ready)])],
+        [EngineOfferInput::Rows(vec![llama(EngineStanding::Ready)])],
     );
-    let words = sheet_words(&done.sheet).expect("a sheet");
-    assert_eq!(words.title, "llama.cpp Is Ready");
-    assert_eq!(words.primary.map(|b| b.press), Some(Press::Continue));
-    let (closed, effects) = step(done, [EngineSheetInput::Continue]);
-    assert_eq!(closed.sheet, EngineSheet::Closed);
-    assert_eq!(effects, [EngineSheetEffect::Restart]);
+    let brief = engine_brief(&done.offer).expect("an offer");
+    assert_eq!(brief.matter, EngineMatter::Ready);
+    assert_eq!(brief.primary, Some(EngineAction::Continue));
+    let (closed, effects) = step(done, [EngineOfferInput::Continue]);
+    assert_eq!(closed.offer, EngineOffer::Idle);
+    assert_eq!(effects, [EngineOfferEffect::Restart]);
 }
 
 #[test]
 fn a_failed_download_says_why_and_try_again_asks_again_and_a_stop_closes_it() {
     let (working, _) = step(
         state(vec![llama(EngineStanding::NotInstalled)]),
-        [chose("llama_cpp"), EngineSheetInput::Go],
+        [chose("llama_cpp"), EngineOfferInput::Go],
     );
     let (failed, _) = step(
         working.clone(),
-        [EngineSheetInput::Rows(vec![llama(EngineStanding::Failed(
+        [EngineOfferInput::Rows(vec![llama(EngineStanding::Failed(
             "The download didn't finish.".to_owned(),
         ))])],
     );
-    let words = sheet_words(&failed.sheet).expect("a sheet");
-    assert_eq!(words.title, "Couldn't Download llama.cpp");
-    assert_eq!(words.message, "The download didn't finish.");
-    assert_eq!(words.primary.map(|b| b.label), Some("Try Again"));
-    let (again, effects) = step(failed.clone(), [EngineSheetInput::Go]);
+    let brief = engine_brief(&failed.offer).expect("an offer");
+    assert_eq!(
+        brief.matter,
+        EngineMatter::Failed {
+            reason: "The download didn't finish.".to_owned()
+        }
+    );
+    assert_eq!(brief.primary, Some(EngineAction::TryAgain));
+    let (again, effects) = step(failed.clone(), [EngineOfferInput::Go]);
     assert!(effects.is_empty());
-    assert!(matches!(again.sheet, EngineSheet::Asking { .. }));
-    let (left, _) = step(failed, [EngineSheetInput::NotNow]);
-    assert_eq!(left.sheet, EngineSheet::Closed);
+    assert!(matches!(again.offer, EngineOffer::Asking { .. }));
+    let (left, _) = step(failed, [EngineOfferInput::NotNow]);
+    assert_eq!(left.offer, EngineOffer::Idle);
 
-    let (stopping, effects) = step(working, [EngineSheetInput::Stop]);
-    assert_eq!(effects, [EngineSheetEffect::Cancel("llama_cpp".to_owned())]);
+    let (stopping, effects) = step(working, [EngineOfferInput::Stop]);
+    assert_eq!(effects, [EngineOfferEffect::Cancel("llama_cpp".to_owned())]);
     let (stopped, _) = step(
         stopping,
-        [EngineSheetInput::Rows(vec![llama(
+        [EngineOfferInput::Rows(vec![llama(
             EngineStanding::NotInstalled,
         )])],
     );
-    assert_eq!(stopped.sheet, EngineSheet::Closed, "a stop says nothing");
+    assert_eq!(stopped.offer, EngineOffer::Idle, "a stop says nothing");
     let (refused, _) = step(
         state(vec![llama(EngineStanding::NotInstalled)]),
         [
             chose("llama_cpp"),
-            EngineSheetInput::Go,
-            EngineSheetInput::NotStarted("Nothing can be installed.".to_owned()),
+            EngineOfferInput::Go,
+            EngineOfferInput::NotStarted("Nothing can be installed.".to_owned()),
         ],
     );
-    assert!(matches!(refused.sheet, EngineSheet::Failed { .. }));
+    assert!(matches!(refused.offer, EngineOffer::Failed { .. }));
 }
 
 #[test]
@@ -207,12 +214,13 @@ fn an_install_that_was_changed_asks_to_download_again() {
         state(vec![llama(EngineStanding::Changed)]),
         [chose("llama_cpp")],
     );
-    let words = sheet_words(&asked.sheet).expect("a sheet");
-    assert_eq!(words.title, "Download llama.cpp Again?");
-    assert!(
-        words
-            .message
-            .starts_with("llama.cpp was changed since it was installed")
+    let brief = engine_brief(&asked.offer).expect("an offer");
+    assert_eq!(
+        brief.matter,
+        EngineMatter::Download {
+            replacing: Replacing::Yes,
+            size: Some(30_497_889)
+        }
     );
 }
 
@@ -222,46 +230,43 @@ fn an_engine_with_no_download_asks_for_a_folder_and_counts_the_one_chosen() {
         state(vec![strata(EngineStanding::NotInstalled)]),
         [chose("strata")],
     );
-    let words = sheet_words(&asked.sheet).expect("a sheet");
-    assert_eq!(words.title, "Strata Isn't Available to Download");
-    assert_eq!(
-        words.primary.map(|b| b.label),
-        Some("Choose Folder\u{2026}")
-    );
-    let (chosen, effects) = step(asked.clone(), [EngineSheetInput::Go]);
-    assert_eq!(effects, [EngineSheetEffect::ChooseFolder]);
-    let (closed_chooser, effects) = step(chosen, [EngineSheetInput::Folder(None)]);
-    assert!(effects.is_empty() && matches!(closed_chooser.sheet, EngineSheet::Asking { .. }));
+    let brief = engine_brief(&asked.offer).expect("an offer");
+    assert_eq!(brief.matter, EngineMatter::Folder);
+    assert_eq!(brief.primary, Some(EngineAction::ChooseFolder));
+    let (chosen, effects) = step(asked.clone(), [EngineOfferInput::Go]);
+    assert_eq!(effects, [EngineOfferEffect::ChooseFolder]);
+    let (closed_chooser, effects) = step(chosen, [EngineOfferInput::Folder(None)]);
+    assert!(effects.is_empty() && matches!(closed_chooser.offer, EngineOffer::Asking { .. }));
     let (pointing, effects) = step(
         closed_chooser,
-        [EngineSheetInput::Folder(Some(
+        [EngineOfferInput::Folder(Some(
             "/mnt/data/strata".to_owned(),
         ))],
     );
     assert_eq!(
         effects,
-        [EngineSheetEffect::Point {
+        [EngineOfferEffect::Point {
             engine: "strata".to_owned(),
             folder: "/mnt/data/strata".to_owned()
         }]
     );
-    // A look at the engines while it is checked does not close the sheet.
+    // A look at the engines while it is checked does not close the offer.
     let (still, _) = step(
         pointing.clone(),
-        [EngineSheetInput::Rows(vec![strata(
+        [EngineOfferInput::Rows(vec![strata(
             EngineStanding::NotInstalled,
         )])],
     );
-    assert!(matches!(still.sheet, EngineSheet::Pointing { .. }));
-    let (done, _) = step(pointing.clone(), [EngineSheetInput::Pointed(Ok(()))]);
-    assert!(matches!(done.sheet, EngineSheet::Done { .. }));
+    assert!(matches!(still.offer, EngineOffer::Pointing { .. }));
+    let (done, _) = step(pointing.clone(), [EngineOfferInput::Pointed(Ok(()))]);
+    assert!(matches!(done.offer, EngineOffer::Done { .. }));
     let (failed, _) = step(
         pointing,
-        [EngineSheetInput::Pointed(Err(
+        [EngineOfferInput::Pointed(Err(
             "That folder doesn't hold Strata.".to_owned(),
         ))],
     );
-    assert!(matches!(failed.sheet, EngineSheet::Failed { .. }));
+    assert!(matches!(failed.offer, EngineOffer::Failed { .. }));
 
     let nothing = row(
         "kokoro",
@@ -270,43 +275,11 @@ fn an_engine_with_no_download_asks_for_a_folder_and_counts_the_one_chosen() {
         EngineWay::Nothing,
     );
     let (told, _) = step(state(vec![nothing]), [chose("kokoro")]);
-    let words = sheet_words(&told.sheet).expect("a sheet");
+    let brief = engine_brief(&told.offer).expect("an offer");
+    assert_eq!(brief.matter, EngineMatter::Unavailable);
+    assert_eq!(brief.primary, Some(EngineAction::Acknowledge));
     assert_eq!(
-        words.message,
-        "There is no download of Kokoro for this computer."
+        brief.primary.map(EngineAction::input),
+        Some(EngineOfferInput::NotNow)
     );
-    assert_eq!(words.primary.map(|b| b.press), Some(Press::NotNow));
-}
-
-#[test]
-fn sizes_are_said_in_whole_megabytes_and_tenths_of_a_gigabyte() {
-    for (bytes, said) in [
-        (17_851_611, "18 MB"),
-        (30_497_889, "30 MB"),
-        (440_236_547, "440 MB"),
-        (996_000_000, "1.0 GB"),
-        (4_411_066_545, "4.4 GB"),
-        (1, "1 MB"),
-    ] {
-        assert_eq!(size_words(bytes), said, "{bytes}");
-    }
-}
-
-#[test]
-fn no_word_on_the_sheet_is_a_developer_word_or_a_path() {
-    let rows = vec![
-        llama(EngineStanding::NotInstalled),
-        strata(EngineStanding::NotInstalled),
-    ];
-    for id in ["llama_cpp", "strata"] {
-        let (asked, _) = step(state(rows.clone()), [chose(id)]);
-        let words = sheet_words(&asked.sheet).expect("a sheet");
-        let said = format!("{} {}", words.title, words.message).to_lowercase();
-        for banned in [
-            "pkexec", "polkit", "sha", "http", "tar", "/", "cli", "api", "mcp",
-        ] {
-            assert!(!said.split_whitespace().any(|w| w == banned), "{said}");
-        }
-        assert!(!said.contains('/'), "{said}");
-    }
 }

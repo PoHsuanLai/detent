@@ -25,16 +25,6 @@ impl HotOpenKind {
         HotOpenKind::Folder,
         HotOpenKind::Web,
     ];
-
-    /// What the chooser calls it.
-    pub fn label(self) -> &'static str {
-        match self {
-            HotOpenKind::App => "App",
-            HotOpenKind::File => "File",
-            HotOpenKind::Folder => "Folder",
-            HotOpenKind::Web => "Web Address",
-        }
-    }
 }
 
 /// What the "Open…" chooser holds.

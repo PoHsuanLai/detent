@@ -6,18 +6,6 @@ use super::advice::InstallAdvice;
 /// The engine's id in inferd's list.
 pub const LLAMA_CPP_ID: &str = "llama_cpp";
 
-/// The line over the install command.
-pub const SETUP_LINE: &str = "To run models on this computer, install llama.cpp.";
-
-/// The button that makes the assistant look again.
-pub const START_USING: &str = "Start using it";
-
-/// The button of the question that comes before.
-pub const RESTART: &str = "Restart";
-
-/// What the person reads when the restart did not go through.
-const COULD_NOT: &str = "The assistant could not be restarted. Try again in a moment.";
-
 /// Whether an engine's program is on this computer, as inferd lists it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Program {
@@ -96,11 +84,11 @@ pub struct EnginesState {
 pub enum EnginesInput {
     /// The assistant listed its engines.
     Listed(LlamaCpp),
-    /// "Start using it" was pressed.
+    /// The person asked to start using it.
     StartUsing,
-    /// The question was answered Restart.
+    /// The person allowed the restart.
     Allowed,
-    /// The question was answered Cancel.
+    /// The person called the restart off.
     Cancelled,
     /// The restart ended.
     Restarted(Restarted),
@@ -113,8 +101,8 @@ pub enum EnginesEffect {
     Restart,
     /// Ask the assistant for its engines again.
     Look,
-    /// Tell the person this.
-    Tell(&'static str),
+    /// Tell the person the restart did not go through.
+    RestartFailed,
 }
 
 /// The next state, and what to do about it.
@@ -139,16 +127,16 @@ pub fn engines_step(
         }
         (Restart::Working, EnginesInput::Restarted(Restarted::Failed)) => (
             at(Restart::Idle),
-            vec![EnginesEffect::Tell(COULD_NOT), EnginesEffect::Look],
+            vec![EnginesEffect::RestartFailed, EnginesEffect::Look],
         ),
         _ => (state, vec![]),
     }
 }
 
-/// How the "Start using it" button stands.
+/// Whether starting to use llama.cpp can be asked for.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum StartButton {
-    /// It takes a press.
+pub enum StartStanding {
+    /// It can be asked for.
     Ready,
     /// The assistant is being restarted.
     Working,
@@ -157,35 +145,19 @@ pub enum StartButton {
 /// The note under "Models on this computer" while llama.cpp's program is missing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SetupNote {
-    /// The quiet line.
-    pub line: &'static str,
     /// How to get it: a command to copy, or the releases page's words.
     pub install: InstallAdvice,
-    /// The button beside it.
-    pub button: StartButton,
+    /// Whether starting to use it can be asked for.
+    pub start: StartStanding,
 }
 
 /// The note, when llama.cpp's program is missing; nothing in any other state.
 pub fn setup_note(state: &EnginesState, advice: &InstallAdvice) -> Option<SetupNote> {
     (state.llama_cpp == LlamaCpp::Missing).then(|| SetupNote {
-        line: SETUP_LINE,
         install: advice.clone(),
-        button: match state.restart {
-            Restart::Working => StartButton::Working,
-            Restart::Idle | Restart::Asking => StartButton::Ready,
+        start: match state.restart {
+            Restart::Working => StartStanding::Working,
+            Restart::Idle | Restart::Asking => StartStanding::Ready,
         },
-    })
-}
-
-/// The question before the restart, while it is asked: a title and a message. It does not know
-/// whether a conversation is open, so it always says what happens to one.
-pub fn restart_question(state: &EnginesState) -> Option<(String, String)> {
-    (state.restart == Restart::Asking).then(|| {
-        (
-            "Restart the assistant to use llama.cpp?".to_owned(),
-            "The assistant restarts so it can find llama.cpp. A conversation that is open \
-             stops."
-                .to_owned(),
-        )
     })
 }

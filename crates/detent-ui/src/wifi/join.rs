@@ -175,16 +175,16 @@ async fn joining(connection: &Connection, attempt: &Attempt) -> Result<(), JoinF
         security,
     )
     .await?;
-    let mut under_way = false;
+    let mut progress = Progress::NotStarted;
     let ended = loop {
         let Some(change) = next(&mut changes).await else {
             break Err(could_not(ssid));
         };
         let Ok(args) = change.args() else { continue };
-        match verdict(*args.new_state(), *args.reason(), under_way, security, ssid) {
+        match verdict(*args.new_state(), *args.reason(), progress, security, ssid) {
             Verdict::Done => break Ok(()),
             Verdict::Failed(why) => break Err(why),
-            Verdict::Going => under_way = true,
+            Verdict::Going => progress = Progress::Started,
             Verdict::Waiting => {}
         }
     };
@@ -270,6 +270,15 @@ async fn start(
     Ok(Some(added))
 }
 
+/// How far the device has got with a join.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Progress {
+    /// It has not started on the join yet.
+    NotStarted,
+    /// It has started on the join.
+    Started,
+}
+
 /// What a change of the device's state means for a join.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Verdict {
@@ -283,8 +292,15 @@ enum Verdict {
     Waiting,
 }
 
-/// The meaning of the device entering `state` for `reason`, `under_way` once it had started.
-fn verdict(state: u32, reason: u32, under_way: bool, security: Security, ssid: &Ssid) -> Verdict {
+/// The meaning of the device entering `state` for `reason`, given how far it had got.
+fn verdict(
+    state: u32,
+    reason: u32,
+    progress: Progress,
+    security: Security,
+    ssid: &Ssid,
+) -> Verdict {
+    let under_way = progress == Progress::Started;
     let refused = security != Security::Open && REFUSED_REASONS.contains(&reason);
     match state {
         ACTIVATED => Verdict::Done,
@@ -300,20 +316,21 @@ fn verdict(state: u32, reason: u32, under_way: bool, security: Security, ssid: &
 
 #[cfg(test)]
 mod tests {
-    use super::{Security, Verdict, verdict};
+    use super::{Progress, Security, Verdict, verdict};
     use detent_model::{JoinFailure, Ssid};
 
     #[test]
     fn the_device_state_ends_a_join_or_does_not() {
         let home = Ssid("Home".to_owned());
         let wrong = Verdict::Failed(JoinFailure::WrongPassword);
-        // (case, state, reason, under way, security, verdict)
+        let (started, waiting) = (Progress::Started, Progress::NotStarted);
+        // (case, state, reason, progress, security, verdict)
         let cases = [
             (
                 "on the network",
                 100,
                 0,
-                false,
+                waiting,
                 Security::Psk,
                 Verdict::Done,
             ),
@@ -321,16 +338,16 @@ mod tests {
                 "asked for a secret",
                 60,
                 0,
-                true,
+                started,
                 Security::Psk,
                 wrong.clone(),
             ),
-            ("no secrets", 120, 7, true, Security::Psk, wrong.clone()),
+            ("no secrets", 120, 7, started, Security::Psk, wrong.clone()),
             (
                 "timed out in the handshake",
                 120,
                 11,
-                true,
+                started,
                 Security::Sae,
                 wrong.clone(),
             ),
@@ -338,7 +355,7 @@ mod tests {
                 "an open network cannot be wrong",
                 120,
                 7,
-                true,
+                started,
                 Security::Open,
                 Verdict::Failed(super::could_not(&home)),
             ),
@@ -346,7 +363,7 @@ mod tests {
                 "leaving the old network",
                 30,
                 0,
-                false,
+                waiting,
                 Security::Psk,
                 Verdict::Waiting,
             ),
@@ -354,15 +371,15 @@ mod tests {
                 "dropped after starting",
                 30,
                 0,
-                true,
+                started,
                 Security::Psk,
                 Verdict::Failed(super::could_not(&home)),
             ),
-            ("preparing", 40, 0, false, Security::Psk, Verdict::Going),
+            ("preparing", 40, 0, waiting, Security::Psk, Verdict::Going),
         ];
-        for (case, state, reason, under_way, security, want) in cases {
+        for (case, state, reason, progress, security, want) in cases {
             assert_eq!(
-                verdict(state, reason, under_way, security, &home),
+                verdict(state, reason, progress, security, &home),
                 want,
                 "{case}"
             );

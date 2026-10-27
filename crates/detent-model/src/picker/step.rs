@@ -8,9 +8,6 @@ use crate::Absence;
 use crate::accounts::AddEnd;
 use ds_settings::schema::KeyPath;
 
-/// What the person is told when the module refuses a change to Automatic's list.
-const POOL_REFUSED: &str = "Automatic could not use that model, so its list is unchanged.";
-
 /// What happened to the picker.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PickerInput {
@@ -110,8 +107,12 @@ pub enum PickerEffect {
     ReadAgain,
     /// Switch coding agents on (`agent.acp.agents`) and answer with `AgentsTurnedOn`.
     TurnOnAgents,
-    /// Tell the person something went wrong.
+    /// Tell the person something went wrong, in the words the module or the account service gave.
     Tell(String),
+    /// Tell the person the account they set out to add was not added, and why.
+    AccountNotAdded(AddEnd),
+    /// Tell the person the module refused a change to Automatic's list.
+    PoolRefused,
 }
 
 /// The state after `input`, and what to do about it.
@@ -152,7 +153,7 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (Ready, Vec<PickerEffect>
         }
         PickerInput::PoolRefused(path) => {
             take_pooling(&mut ready, &path);
-            effects.push(PickerEffect::Tell(POOL_REFUSED.to_owned()));
+            effects.push(PickerEffect::PoolRefused);
         }
         PickerInput::PoolChanged { path, words } => ready.set_pool(&path, &words),
         PickerInput::Applied(path) => {
@@ -170,7 +171,7 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (Ready, Vec<PickerEffect>
             AddEnd::Closed => ready.busy = Busy::Idle,
             other => {
                 ready.busy = Busy::Idle;
-                effects.extend(other.line().map(|line| PickerEffect::Tell(line.to_owned())));
+                effects.push(PickerEffect::AccountNotAdded(other));
             }
         },
         PickerInput::Reread(described) if ready.awaiting().is_some() => {

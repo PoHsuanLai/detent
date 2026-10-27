@@ -5,7 +5,7 @@ use crate::deadline::{Deadline, peer};
 use crate::system::is_running;
 use airwaves_bluez::{Objects, SERVICE};
 use detent_model::{
-    BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, Missing,
+    Absence, BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus,
 };
 use ds_peer::within;
 use std::collections::HashMap;
@@ -20,9 +20,9 @@ const BATTERY: &str = "org.bluez.Battery1";
 type Properties = HashMap<String, OwnedValue>;
 
 /// Every object BlueZ has, or why it cannot be read.
-pub(super) async fn managed(connection: &Connection) -> Result<Objects, Missing> {
+pub(super) async fn managed(connection: &Connection) -> Result<Objects, Absence> {
     if !is_running(connection, SERVICE).await {
-        return Err(Missing::NoService);
+        return Err(Absence::NotRunning);
     }
     let asked = async {
         ObjectManagerProxy::builder(connection)
@@ -35,7 +35,7 @@ pub(super) async fn managed(connection: &Connection) -> Result<Objects, Missing>
     };
     match within(Deadline::READ, peer::BLUETOOTH, asked).await {
         Ok(Ok(objects)) => Ok(objects),
-        Ok(Err(_)) | Err(_) => Err(Missing::Failed),
+        Ok(Err(_)) | Err(_) => Err(Absence::Failed),
     }
 }
 
@@ -83,8 +83,8 @@ fn under(path: &OwnedObjectPath, adapter: &OwnedObjectPath) -> bool {
 
 /// The status `objects` describe. A device this computer is not paired with is listed only while
 /// BlueZ hears it (it has a signal strength): BlueZ remembers the ones it saw for a while.
-pub(super) fn status_of(objects: &Objects) -> Result<BtStatus, Missing> {
-    let (adapter_path, adapter) = adapter(objects).ok_or(Missing::NoDevice)?;
+pub(super) fn status_of(objects: &Objects) -> Result<BtStatus, Absence> {
+    let (adapter_path, adapter) = adapter(objects).ok_or(Absence::NoDevice)?;
     let power = if flag(adapter, "Powered") {
         BtPower::On
     } else {
@@ -153,7 +153,7 @@ pub(super) fn find_device(
 #[cfg(test)]
 mod tests {
     use super::{Objects, find_device, status_of};
-    use detent_model::{BtAddress, BtLink, BtPairing, BtPower, Missing};
+    use detent_model::{Absence, BtAddress, BtLink, BtPairing, BtPower};
     use std::collections::HashMap;
     use zbus::names::OwnedInterfaceName;
     use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn no_adapter_is_no_bluetooth_on_this_computer() {
-        assert_eq!(status_of(&HashMap::new()), Err(Missing::NoDevice));
+        assert_eq!(status_of(&HashMap::new()), Err(Absence::NoDevice));
     }
 
     #[test]

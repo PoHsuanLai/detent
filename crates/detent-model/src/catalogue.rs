@@ -8,6 +8,7 @@ use crate::displays::displays_page;
 use crate::entry::KeyEntry;
 use crate::extensions::{Offers, extensions_page};
 use crate::page::{PageSlug, sidebar_place};
+use crate::page_kind::PageKind;
 use crate::updates::software_update_page;
 use crate::wifi::wifi_page;
 use ds_settings::schema::{Exposure, ForeignTables, KeyKind, KeyPath, KeySpec, Page, PageTable};
@@ -26,6 +27,8 @@ pub struct SectionModel {
 pub struct PageModel {
     /// The page as the schemas name it.
     pub page: Page,
+    /// What the page is, resolved once from `page`.
+    pub kind: PageKind,
     /// Its sidebar key.
     pub slug: PageSlug,
     /// What the sidebar and the titlebar call it: the declared title of a declared page, else the
@@ -180,6 +183,7 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
             Some(at) => at,
             None => {
                 pages.push(PageModel {
+                    kind: PageKind::of(&entry.spec.page),
                     page: entry.spec.page.clone(),
                     title: title_of(&table, &entry.spec.page),
                     slug,
@@ -212,6 +216,7 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
     ] {
         if !pages.iter().any(|page| page.page == live) {
             pages.push(PageModel {
+                kind: PageKind::of(&live),
                 slug: PageSlug::of(&live),
                 title: title_of(&table, &live),
                 page: live,

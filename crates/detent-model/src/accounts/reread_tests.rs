@@ -5,10 +5,7 @@ use super::*;
 use crate::Absence;
 
 fn failed() -> AccountsInput {
-    AccountsInput::Reread(
-        ModuleId::Accountd,
-        Err(Absence::Failed("unknown key".to_owned())),
-    )
+    AccountsInput::Reread(ModuleId::Accountd, Err(Absence::Failed))
 }
 
 #[test]
@@ -21,10 +18,7 @@ fn a_failed_reread_keeps_the_rows_and_tries_again() {
 
 #[test]
 fn an_unavailable_pane_reads_again_on_a_change_and_shows_the_list_when_found() {
-    let gone = AccountsState::Unavailable(
-        Absence::Failed("did not answer".to_owned()),
-        Sources::default(),
-    );
+    let gone = AccountsState::Unavailable(Absence::Failed, Sources::default());
     let (state, effects) = apply(gone, [AccountsInput::Changed(ModuleId::Accountd)]);
     assert_eq!(effects, [AccountsEffect::Reload(ModuleId::Accountd)]);
     let (state, _) = apply(

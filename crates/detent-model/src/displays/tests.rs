@@ -1,5 +1,5 @@
 use super::*;
-use crate::missing::Missing;
+use crate::Absence;
 
 fn mode(width: u32, height: u32, hz: u32, preferred: ModePreference) -> DisplayMode {
     DisplayMode {
@@ -100,20 +100,6 @@ fn a_narrow_display_is_not_offered_what_cannot_fit() {
             .all(|w| *w >= 640 || *w == 1280 * 1000 / default_scale(&small).0),
         "{widths:?}"
     );
-}
-
-#[test]
-fn refresh_rates_read_in_hertz() {
-    const CASES: &[(u32, &str)] = &[
-        (60_000, "60 Hertz"),
-        (59_940, "59.94 Hertz"),
-        (143_981, "143.98 Hertz"),
-        (74_500, "74.5 Hertz"),
-        (59_999, "60 Hertz"),
-    ];
-    for (milli, want) in CASES {
-        assert_eq!(hertz_words(RefreshMilliHz(*milli)), *want);
-    }
 }
 
 #[test]
@@ -244,9 +230,9 @@ fn a_refused_change_is_said_and_frees_the_page() {
 fn a_compositor_that_goes_leaves_nothing() {
     let (gone, _) = displays_step(
         ready(status(vec![laptop()])),
-        DisplaysInput::Heard(Err(Missing::NoService)),
+        DisplaysInput::Heard(Err(Absence::NotRunning)),
     );
-    assert_eq!(gone, DisplaysState::Unavailable(Missing::NoService));
+    assert_eq!(gone, DisplaysState::Unavailable(Absence::NotRunning));
 }
 
 #[test]
@@ -282,15 +268,4 @@ fn a_size_runs_at_the_refresh_rate_the_display_runs_now_else_at_its_fastest() {
     assert_eq!(mode_at(&modes, now, size(1280, 720)), Some(modes[4]));
     assert_eq!(mode_at(&modes, None, size(1920, 1080)), Some(modes[2]));
     assert_eq!(mode_at(&modes, now, size(800, 600)), None);
-}
-
-#[test]
-fn a_size_reads_with_the_times_sign() {
-    assert_eq!(
-        size_words(PixelSize {
-            width: 3024,
-            height: 1964
-        }),
-        "3024 \u{d7} 1964"
-    );
 }

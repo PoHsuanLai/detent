@@ -2,9 +2,10 @@
 //! models. It asks for a name, the model, where the server answers on this computer and, if it
 //! wants one, a key.
 
+use crate::copy::server_refusal;
 use crate::env::Env;
 use detent_model::{
-    ComputersInput, HotOpenKind, KeyField, ServerEdit, ServerModels, ServerPhase, ServerSheet,
+    ComputersInput, HotOpenKind, KeyField, NewServer, ServerEdit, ServerModels, ServerPhase,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -61,7 +62,7 @@ fn choose_file(
 
 /// The sheet, with the sentence of the last refusal under its fields.
 #[component]
-pub(super) fn ServerSheetView(sheet: ServerSheet, feed: EventHandler<ComputersInput>) -> Element {
+pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInput>) -> Element {
     let env = use_context::<Env>();
     let editing = sheet.phase == ServerPhase::Editing;
     let close = EventHandler::new(move |()| feed.call(ComputersInput::CloseServer));
@@ -164,7 +165,7 @@ pub(super) fn ServerSheetView(sheet: ServerSheet, feed: EventHandler<ComputersIn
                 }
                 if let Some(fault) = sheet.fault.clone() {
                     div { "data-system": "add-server-fault",
-                        Label { text: fault, role: LabelRole::Primary, severity: Some(Severity::Warn) }
+                        Label { text: server_refusal(&fault), role: LabelRole::Primary, severity: Some(Severity::Warn) }
                     }
                 }
                 div { class: "system-sheet-buttons",

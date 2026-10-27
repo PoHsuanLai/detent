@@ -5,10 +5,11 @@
 use super::drive::use_wifi;
 use super::network_sheets::{ForgetSheet, OtherSheet};
 use super::sheets::{DetailsSheet, PasswordSheet};
+use crate::copy::{self, Subject};
 use crate::system::Unavailable;
 use detent_model::{
-    NetworkLock, Remembered, SignalBars, Ssid, WIFI_BLOCKED, WifiInput, WifiNetwork, WifiRadio,
-    WifiReady, WifiSheet, WifiState, wifi_missing_words,
+    NetworkLock, Remembered, SignalBars, Ssid, WifiAsking, WifiInput, WifiNetwork, WifiRadio,
+    WifiReady, WifiState,
 };
 use dioxus::prelude::*;
 use ds::components::controls::button_model::Bezel;
@@ -23,8 +24,8 @@ pub(crate) fn WifiPane() -> Element {
     let state = driver.state.read().clone();
     match state {
         WifiState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
-        WifiState::Unavailable(missing) => rsx! {
-            Unavailable { title: "Wi-Fi", words: wifi_missing_words(missing) }
+        WifiState::Unavailable(absence) => rsx! {
+            Unavailable { title: "Wi-Fi", subject: Subject::Wifi, absence }
         },
         WifiState::Ready(page) => {
             let press = EventHandler::new(move |input: WifiInput| driver.feed(input));
@@ -49,7 +50,7 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
     } else {
         Availability::Enabled
     };
-    let help = blocked.then(|| TextLine::from(WIFI_BLOCKED));
+    let help = copy::wifi::radio_help(radio).map(TextLine::from);
     let others = |wanted: Remembered| -> Vec<WifiNetwork> {
         page.status
             .others()
@@ -80,16 +81,16 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
                 }
                 Networks { title: "Other Networks", networks: new, busy: busy.clone(), closing: Closing::OtherRow, press }
             }
-            match page.sheet.clone() {
-                WifiSheet::Closed => rsx! {},
-                WifiSheet::Password(ask) => rsx! { PasswordSheet { ask, press } },
-                WifiSheet::Details(ssid) => rsx! {
+            match page.asking.clone() {
+                WifiAsking::Nothing => rsx! {},
+                WifiAsking::Password(ask) => rsx! { PasswordSheet { ask, press } },
+                WifiAsking::Details(ssid) => rsx! {
                     if let Some(network) = page.status.network(&ssid).cloned() {
                         DetailsSheet { network, press }
                     }
                 },
-                WifiSheet::Forget(ssid) => rsx! { ForgetSheet { name: ssid.0, press } },
-                WifiSheet::Other => rsx! { OtherSheet { press } },
+                WifiAsking::Forget(ssid) => rsx! { ForgetSheet { name: ssid.0, press } },
+                WifiAsking::Other => rsx! { OtherSheet { press } },
             }
         }
     }
@@ -108,7 +109,7 @@ fn Glyphs(network: WifiNetwork) -> Element {
         div {
             class: "system-glyphs",
             "data-lock": if locked { "secured" } else { "open" },
-            "data-signal": network.strength.signal().words().to_lowercase(),
+            "data-signal": copy::wifi::signal(network.strength.signal()).to_lowercase(),
             if locked {
                 IconView { source: IconSource::from(Icon::Lock) }
             }

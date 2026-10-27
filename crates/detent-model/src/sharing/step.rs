@@ -3,12 +3,6 @@
 /// The key of the switch "Let my other computers use this computer's models".
 pub const SHARING_KEY: &str = "ai.tailnet.serve";
 
-/// The button that agrees.
-pub const ALLOW: &str = "Allow";
-
-/// The button that backs out.
-pub const CANCEL: &str = "Cancel";
-
 /// Which way the switch was turned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Way {
@@ -65,24 +59,6 @@ pub enum SharingEffect {
     Record(Way),
     /// Tell the person.
     Tell(String),
-}
-
-/// The question to put to the person while one is asked: `(title, message)`.
-pub fn sharing_question(state: Sharing) -> Option<(String, String)> {
-    let Sharing::Asking(existing) = state else {
-        return None;
-    };
-    let mut message = "Your other computers on your own Tailscale network will be able to reach \
-                       this computer and use the models that run on it. You can turn this off \
-                       at any time."
-        .to_owned();
-    if existing == Existing::Different {
-        message.push_str(" Sharing was set up here in another way before; allowing replaces it.");
-    }
-    Some((
-        "Let your other computers use this computer's models?".to_owned(),
-        message,
-    ))
 }
 
 /// The next state and what to do.

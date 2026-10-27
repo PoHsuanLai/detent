@@ -1,5 +1,5 @@
-//! "Sync now" on an account's sync row: which dataset the press names, and the line the person
-//! reads for how the sync service took it.
+//! "Sync now" on an account's sync row: which dataset the press names, and how the sync service
+//! took it.
 
 use super::hold::DatasetName;
 use super::model::AccountKey;
@@ -14,17 +14,6 @@ pub enum SyncNowEnd {
     Paused,
     /// It could not be asked, or did not take the request.
     Failed,
-}
-
-impl SyncNowEnd {
-    /// The line the person reads.
-    pub fn line(self) -> &'static str {
-        match self {
-            Self::Started => "Syncing now.",
-            Self::Paused => "Syncing is paused for this account.",
-            Self::Failed => "Could not start syncing. Try again later.",
-        }
-    }
 }
 
 impl DatasetName {

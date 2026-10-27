@@ -1,9 +1,7 @@
-//! The running models' transitions: the list inferd gives, the presses that wait for an answer,
-//! and the refusals that stay under their row until the next press.
+//! The running models' transitions: the list inferd gives, the asks that wait for an answer,
+//! and the refusals that stay under their row until the next ask.
 
-use super::words::{
-    InFlight, ModelRun, RunButton, RunRowView, RunStanding, memory_words, model_name,
-};
+use super::model::{InFlight, ModelRun, RunAction, RunRowView, RunStanding};
 use crate::{Absence, Live};
 use std::collections::BTreeMap;
 
@@ -15,8 +13,8 @@ pub type RunPane = Live<RunBoard>;
 pub struct RunBoard {
     /// The models, in the order inferd lists them.
     rows: Vec<ModelRun>,
-    /// The presses that have not ended, by model.
-    asked: BTreeMap<String, RunButton>,
+    /// The asks that have not ended, by model.
+    asked: BTreeMap<String, RunAction>,
     /// The words of the last refusal, by model.
     refused: BTreeMap<String, String>,
 }
@@ -26,8 +24,8 @@ pub struct RunBoard {
 pub enum RunInput {
     /// The list was read, or could not be.
     Found(Result<Vec<ModelRun>, Absence>),
-    /// The person pressed the button of the model.
-    Press(String),
+    /// The person asked for the row's action on the model.
+    Act(String),
     /// A Start or Stop ended: done, or the words it was refused with.
     Answered(String, Result<(), String>),
 }
@@ -51,7 +49,7 @@ impl RunBoard {
         }
     }
 
-    /// The same, with the list read again: presses and refusals of a model no longer listed go.
+    /// The same, with the list read again: asks and refusals of a model no longer listed go.
     fn relisted(self, rows: Vec<ModelRun>) -> RunBoard {
         let listed = |model: &String| rows.iter().any(|row| &row.model == model);
         RunBoard {
@@ -67,20 +65,20 @@ impl RunBoard {
 
     fn after(mut self, input: RunInput) -> (RunBoard, Vec<RunEffect>) {
         match input {
-            RunInput::Press(model) => {
-                let button = self
+            RunInput::Act(model) => {
+                let action = self
                     .rows
                     .iter()
                     .find(|row| row.model == model)
-                    .map(|row| row.standing.button());
-                let Some(button) = button.filter(|_| !self.asked.contains_key(&model)) else {
+                    .map(|row| row.standing.action());
+                let Some(action) = action.filter(|_| !self.asked.contains_key(&model)) else {
                     return (self, Vec::new());
                 };
-                self.asked.insert(model.clone(), button);
+                self.asked.insert(model.clone(), action);
                 self.refused.remove(&model);
-                let effect = match button {
-                    RunButton::Start => RunEffect::Start(model),
-                    RunButton::Stop => RunEffect::Stop(model),
+                let effect = match action {
+                    RunAction::Start => RunEffect::Start(model),
+                    RunAction::Stop => RunEffect::Stop(model),
                 };
                 (self, vec![effect])
             }
@@ -104,13 +102,12 @@ impl RunBoard {
                 let asked = self.asked.contains_key(&row.model);
                 RunRowView {
                     model: row.model.clone(),
-                    name: model_name(&row.model).to_owned(),
                     standing: row.standing.clone(),
-                    memory: (row.standing == RunStanding::Ready && row.memory_mib > 0)
-                        .then(|| memory_words(row.memory_mib)),
-                    button: match self.asked.get(&row.model) {
-                        Some(pressed) => *pressed,
-                        None => row.standing.button(),
+                    memory_mib: (row.standing == RunStanding::Ready && row.memory_mib > 0)
+                        .then_some(row.memory_mib),
+                    action: match self.asked.get(&row.model) {
+                        Some(asked) => *asked,
+                        None => row.standing.action(),
                     },
                     in_flight: if asked || stopping {
                         InFlight::Yes

@@ -27,7 +27,7 @@ pub mod wifi;
 
 use bluetooth::Bluetooth;
 use detent_files::{CacheHome, ConfigHome, DataHome, StateHome};
-use detent_model::{Missing, OriginRule, Outbox, inbox};
+use detent_model::{Absence, OriginRule, Outbox, inbox};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{
     App, BusSource, CornerDesk, Desk, Env, FirstRunApp, Homes, Lender, NoCorners, NoPictures,
@@ -93,9 +93,9 @@ impl Sandbox {
             // No manifest is read and no chooser is opened, whatever this computer has.
             corners: Arc::new(NoCorners),
             // No network, no Bluetooth and no display, whatever this computer has.
-            wifi: Wifi::missing(Missing::NoService),
-            bluetooth: Bluetooth::missing(Missing::NoService),
-            displays: Displays::missing(Missing::NoService),
+            wifi: Wifi::missing(Absence::NotRunning),
+            bluetooth: Bluetooth::missing(Absence::NotRunning),
+            displays: Displays::missing(Absence::NotRunning),
             // No program to list or download coding assistants with, whatever this computer has.
             agents_program: None,
         }

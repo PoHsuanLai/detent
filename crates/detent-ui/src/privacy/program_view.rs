@@ -1,10 +1,11 @@
 //! The list: a card for each program with its icon and name, and a row for each power with the
 //! standing it is at. Only the person's own answers can be changed; an administrator's says so.
 
+use crate::copy::{SET_BY_ADMINISTRATOR, power_label, program_name, standing_label};
 use crate::key_row::row_id;
 use detent_model::{
     CellKind, PowerCell, PowerStanding, PrivacyInput, PrivacyProgram, PrivacyReady, ProgramBook,
-    ProgramLook, ProgramSubject, SET_BY_ADMINISTRATOR,
+    ProgramLook, ProgramSubject,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -70,7 +71,7 @@ fn ProgramCard(
             div { class: "privacy-program-head",
                 ProgramIcon { look: look.clone() }
                 div { class: "privacy-program-name",
-                    Label { text: TextLine::from(look.name.clone()), role: LabelRole::Primary, style: LabelStyle::Headline }
+                    Label { text: TextLine::from(program_name(&look)), role: LabelRole::Primary, style: LabelStyle::Headline }
                     if let Some(place) = look.place.clone() {
                         Label {
                             text: TextLine::from(format!("In {place}")),
@@ -128,7 +129,7 @@ fn PowerLine(
     let power = cell.power;
     rsx! {
         FieldRow {
-            label: TextLine::from(power.label()),
+            label: TextLine::from(power_label(power)),
             help: locked.then(|| TextLine::from(SET_BY_ADMINISTRATOR)),
             availability: if locked { Availability::Disabled } else { availability },
             common: Common { id: Some(id), ..Common::default() },
@@ -136,15 +137,15 @@ fn PowerLine(
                 PopUpButton::<String> {
                     items: PowerStanding::CHOICES
                         .iter()
-                        .map(|choice| MenuItem::new(choice.label().to_owned(), choice.label()))
+                        .map(|choice| MenuItem::new(standing_label(*choice).to_owned(), standing_label(*choice)))
                         .collect::<Vec<_>>(),
-                    value: Some(standing.label().to_owned()),
+                    value: Some(standing_label(standing).to_owned()),
                     size: ControlSize::Small,
                     availability,
                     onpick: move |word: String| {
                         if let Some(standing) = PowerStanding::CHOICES
                             .into_iter()
-                            .find(|choice| choice.label() == word)
+                            .find(|choice| standing_label(*choice) == word)
                         {
                             pick.call(PrivacyInput::Pick {
                                 subject: subject.clone(),
@@ -155,7 +156,7 @@ fn PowerLine(
                     },
                 }
             } else {
-                Label { text: standing.label(), role: LabelRole::Secondary }
+                Label { text: standing_label(standing), role: LabelRole::Secondary }
             }
         }
     }

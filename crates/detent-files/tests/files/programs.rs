@@ -51,10 +51,10 @@ fn entries_are_read_in_the_order_of_their_folders_and_name_the_program_they_star
         "a link and a broken file are not apps"
     );
     let look = book.look_of(&ProgramSubject("/usr/bin/grim".to_owned()));
-    assert_eq!(look.name, "Grim");
+    assert_eq!(look.name.as_deref(), Some("Grim"));
     assert_eq!(look.icon, Some(PathBuf::from("/icons/grim.svg")));
     let loupe = book.look_of(&ProgramSubject("org.gnome.Loupe".to_owned()));
-    assert_eq!(loupe.name, "Image Viewer");
+    assert_eq!(loupe.name.as_deref(), Some("Image Viewer"));
     assert_eq!(loupe.icon, None, "an icon no theme has is no icon");
     assert_eq!(
         ProgramSubject("org.gnome.Loupe".to_owned()).kind(),
@@ -115,13 +115,13 @@ fn an_entry_in_a_folder_the_person_can_write_names_no_program() {
 
     assert_eq!(book.apps.len(), 2, "both are read; only one may name");
     let evil = book.look_of(&ProgramSubject("/tmp/evil".to_owned()));
-    assert_eq!((evil.name.as_str(), evil.icon), ("evil", None));
+    assert_eq!((evil.name.as_deref(), evil.icon), (Some("evil"), None));
     assert_eq!(evil.place.as_deref(), Some("/tmp"));
     let real = book.look_of(&ProgramSubject("/usr/bin/firefox".to_owned()));
-    assert_eq!(real.name, "Firefox");
+    assert_eq!(real.name.as_deref(), Some("Firefox"));
 
     // The scratch folder is the person's own: judged by who owns it, nothing in it names anyone.
     let by_owner = scan_programs(&[installed], &OriginRule::Ownership);
     let look = by_owner.look_of(&ProgramSubject("/usr/bin/firefox".to_owned()));
-    assert_eq!(look.name, "firefox");
+    assert_eq!(look.name.as_deref(), Some("firefox"));
 }

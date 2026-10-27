@@ -4,9 +4,10 @@
 use super::local_rows::LocalRows;
 use super::note::NoteLine;
 use super::pool_editor::PoolEditor;
+use crate::copy::picker as copy;
 use crate::key_row::row_id;
 use detent_model::{
-    Adding, Applying, Choice, Clearing, Gate, MenuLine, ModelRow, PickerInput, loading_text,
+    Adding, Applying, Choice, Clearing, Gate, MenuLine, ModelRow, PickerInput, loading_of,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
@@ -38,7 +39,7 @@ pub(crate) fn TierRow(
         (Some(_), None, _) | (None, None, Adding::SheetOpen) => Availability::Disabled,
         (None, None, Adding::Idle) => Availability::Enabled,
     };
-    let loading = here.map(|set| loading_text(&row, &set.word));
+    let loading = here.map(|set| copy::loading(&loading_of(&row, &set.word)));
     let shown = here.map_or_else(|| row.choice(), |set| row.choice_when(&set.word));
     let calm = if availability == Availability::Enabled {
         Availability::Enabled
@@ -48,7 +49,7 @@ pub(crate) fn TierRow(
     let items = menu_items(&row, clearing);
     let path = row.path.clone();
     let local = row.local_view();
-    let note = row.unready_note().filter(|_| local.is_none());
+    let note = row.unready_gap().filter(|_| local.is_none()).map(copy::gap);
     rsx! {
         FieldRow {
             label: TextLine::from(row.label.clone()),
@@ -105,9 +106,9 @@ pub(super) fn pick_items(word: &str, label: &str, gate: &Gate) -> Vec<MenuItem<S
     };
     match gate {
         Gate::Open => vec![item],
-        Gate::NeedsAccount => vec![item, info(gate.note().unwrap_or_default())],
+        Gate::NeedsAccount => vec![item, info(copy::gate_note(gate).unwrap_or_default())],
         Gate::Blocked(reason) => vec![item.with_availability(Availability::Disabled), info(reason)],
         // A coding agent while they are off: pickable, and picking asks to turn them on.
-        Gate::TurnOn => vec![item, info(gate.note().unwrap_or_default())],
+        Gate::TurnOn => vec![item, info(copy::gate_note(gate).unwrap_or_default())],
     }
 }

@@ -10,9 +10,6 @@ use std::collections::BTreeMap;
 /// The prefix of a pool's path: `ai.auto.pool.<slot>`.
 const POOL_PREFIX: &str = "ai.auto.pool.";
 
-/// What the models a pool holds but the module no longer offers are listed under.
-const GONE_GROUP: &str = "No longer available";
-
 /// Whether `spec` is a slot's pool: a list of choices from a menu.
 pub(super) fn is_pool(spec: &KeySpec) -> bool {
     spec.path.0.strip_prefix(POOL_PREFIX).is_some()
@@ -79,11 +76,22 @@ impl PoolEntry {
     }
 }
 
+/// What heads a run of the pool editor's lines.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PoolHeading {
+    /// Nothing: the ungrouped lines.
+    Unnamed,
+    /// One of the module's groups, by its name.
+    Named(String),
+    /// The models the pool holds and the module no longer offers.
+    NoLongerOffered,
+}
+
 /// A run of lines under one header: the ungrouped ones, or one group's.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PoolGroup {
-    /// The group's name; `None` for the ungrouped lines.
-    pub group: Option<String>,
+    /// What heads the lines.
+    pub heading: PoolHeading,
     /// The lines, in the module's order.
     pub entries: Vec<PoolEntry>,
 }
@@ -154,7 +162,10 @@ impl AutoPool {
     /// The editor's lines: what the module offers, then what the pool holds that it does not.
     pub fn groups(&self) -> Vec<PoolGroup> {
         let offered = self.sections.iter().map(|section| PoolGroup {
-            group: section.group.clone(),
+            heading: section
+                .group
+                .clone()
+                .map_or(PoolHeading::Unnamed, PoolHeading::Named),
             entries: section
                 .words
                 .iter()
@@ -167,8 +178,8 @@ impl AutoPool {
             .filter(|word| !self.offers(word))
             .map(|word| self.entry(word, PoolStanding::Gone))
             .collect();
-        let gone = (!gone.is_empty()).then(|| PoolGroup {
-            group: Some(GONE_GROUP.to_owned()),
+        let gone = (!gone.is_empty()).then_some(PoolGroup {
+            heading: PoolHeading::NoLongerOffered,
             entries: gone,
         });
         offered.chain(gone).collect()

@@ -6,8 +6,8 @@ use crate::env::Env;
 use crate::inference::{Picker, use_picker};
 use crate::live::start;
 use detent_model::{
-    Clearing, FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, PickerInput, PickerState, Stage,
-    assistant_model_page, first_run_step, modules_read,
+    Clearing, FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, PageKind, PickerInput,
+    PickerState, Stage, first_run_step,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -70,7 +70,7 @@ fn FirstRunWindow() -> Element {
         let bus = env.bus.clone();
         move || {
             let bus = bus.clone();
-            async move { start(&bus, modules_read(&assistant_model_page())).await }
+            async move { start(&bus, PageKind::AssistantModel.modules_read()).await }
         }
     });
 

@@ -4,6 +4,7 @@
 use super::add_io::{add_account, add_ai_key};
 use super::feeds::Feeds;
 use super::reload::{reload, reload_later};
+use crate::copy::account_notices::account_notice;
 use crate::deadline::{Deadline, peer};
 use crate::live::{BusSource, Daemon, plain};
 use detent_model::{
@@ -30,7 +31,7 @@ pub(crate) fn is_valued(kind: &KeyKind) -> bool {
 pub async fn read_accounts(bus: &BusSource) -> Result<Pane, Absence> {
     within(Deadline::ACTION, peer::ACCOUNTS, read_modules(bus))
         .await
-        .map_err(|silent| Absence::Failed(silent.to_string()))?
+        .map_err(|_| Absence::Failed)?
 }
 
 async fn read_modules(bus: &BusSource) -> Result<Pane, Absence> {
@@ -62,7 +63,7 @@ pub(super) async fn drive(
         for effect in effects {
             let opened = |module: ModuleId| feeds.of(module).client.peek().clone();
             match effect {
-                AccountsEffect::Tell(text) => toasts.push(text, None),
+                AccountsEffect::Tell(notice) => toasts.push(account_notice(&notice), None),
                 AccountsEffect::OpenAddSheet => {
                     let end = add_account(&bus).await;
                     queue.push_back(AccountsInput::AddEnded(ModuleId::Accountd, end));

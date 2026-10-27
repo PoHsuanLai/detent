@@ -2,10 +2,10 @@
 //! says no app is.
 
 use super::pane::TITLE;
+use crate::copy::{grant_line, program_name};
 use crate::key_row::row_id;
 use detent_model::{
-    Absence, ProgramBook, ProgramSubject, ScreenGrant, ScreenSharingInput, ScreenSharingReady,
-    UnixSeconds, grant_line,
+    ProgramBook, ProgramSubject, ScreenGrant, ScreenSharingInput, ScreenSharingReady, UnixSeconds,
 };
 use dioxus::prelude::*;
 use ds::components::controls::button_model::ButtonRole;
@@ -14,23 +14,6 @@ use ds::components::overlays::empty_state::EmptyState;
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
-
-/// What the absence of the portal says.
-pub(super) fn absence_help(absence: &Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => "Settings is not connected to the desktop, so there are no apps to show.",
-        Absence::NotRunning => {
-            "The screen sharing service could not be started, so there are no apps to show."
-        }
-        Absence::NotPermitted => {
-            "Apps that may share your screen can only be managed when Settings is opened from the desktop."
-        }
-        Absence::Unavailable => {
-            "The screen sharing service could not be confirmed, so there are no apps to show."
-        }
-        Absence::Failed(_) => "The screen sharing service did not answer. Try again in a moment.",
-    }
-}
 
 /// The apps, or the line that says none can share the screen without asking.
 #[component]
@@ -57,7 +40,7 @@ pub(super) fn Listed(
                     for grant in ready.grants.iter().cloned() {
                         AppLine {
                             key: "{grant.app.0}",
-                            name: book.look_of(&grant.app).name,
+                            name: program_name(&book.look_of(&grant.app)),
                             line: grant_line(&grant, now),
                             grant,
                             availability: busy,

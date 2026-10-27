@@ -9,8 +9,3 @@ pub const EXTENSIONS_SLUG: &str = "extensions";
 pub fn extensions_page() -> Page {
     Page::declared(EXTENSIONS_SLUG)
 }
-
-/// Whether `page` is the Extensions page.
-pub fn is_extensions(page: &Page) -> bool {
-    *page == extensions_page()
-}

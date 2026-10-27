@@ -1,6 +1,6 @@
 //! What each coding agent is to the person choosing: ready, or greyed with why.
 
-use super::{TURNED_OFF, WORD_PREFIX};
+use super::WORD_PREFIX;
 use docket_settings::{AcpAgents, AgentRow, Agents, Found, Install, SignInState, Source};
 
 /// Why an agent cannot be chosen now.
@@ -17,18 +17,6 @@ pub enum AgentReason {
     NotSetUp,
     /// Coding agents are switched off.
     TurnedOff,
-}
-
-impl AgentReason {
-    /// The line under the greyed choice.
-    pub fn words(&self) -> String {
-        match self {
-            AgentReason::NotInstalled => "Not installed".to_owned(),
-            AgentReason::NeedsSignIn { label } => format!("Sign in to {label} first"),
-            AgentReason::NotSetUp => "Not set up yet".to_owned(),
-            AgentReason::TurnedOff => TURNED_OFF.to_owned(),
-        }
-    }
 }
 
 /// Whether an agent can be chosen.

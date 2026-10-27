@@ -1,7 +1,6 @@
 //! What the Shortcuts list holds: the layers of the keymap and the rows drawn from them.
 
 use super::groups::ShortcutGroup;
-use super::names::name_of;
 use chordkit::{
     Action, Chord, Desktop, Keymap, Overrides, Platform, StandardAction, SystemBinding,
 };
@@ -49,24 +48,11 @@ pub enum Origin {
     You,
 }
 
-impl Origin {
-    /// How the row says it.
-    pub fn label(self) -> &'static str {
-        match self {
-            Origin::Standard => "Standard",
-            Origin::ThisComputer => "This computer",
-            Origin::You => "You",
-        }
-    }
-}
-
 /// One shortcut of the list.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ShortcutRow {
     /// The action.
     pub action: StandardAction,
-    /// Its name.
-    pub name: String,
     /// Its first chord, `None` when nothing triggers it.
     pub chord: Option<Chord>,
     /// The chord as this desktop shows it; empty when there is none.
@@ -75,19 +61,9 @@ pub struct ShortcutRow {
     pub also: Vec<String>,
     /// Who set it.
     pub origin: Origin,
-    /// The name of the action that has the chord this row was just given, while the person is
-    /// asked whether to take it over.
-    pub clash: Option<String>,
-}
-
-impl ShortcutRow {
-    /// The line under the name: who set the chord, and the other chords the action has.
-    pub fn note(&self) -> String {
-        match self.also.as_slice() {
-            [] => self.origin.label().to_owned(),
-            also => format!("{}. Also {}.", self.origin.label(), also.join(", ")),
-        }
-    }
+    /// The action that has the chord this row was just given, while the person is asked whether
+    /// to take it over.
+    pub clash: Option<Action>,
 }
 
 /// One titled group of rows.
@@ -108,13 +84,33 @@ pub(super) struct ShortcutReplacing {
     pub(super) holder: Action,
 }
 
-/// The words of the question asked before a chord is taken over.
+/// The question asked before a chord is taken over.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReplaceQuestion {
-    /// The question.
-    pub title: String,
-    /// What follows from answering Replace.
-    pub message: String,
+    /// The chord, as this desktop shows it.
+    pub chord: String,
+    /// The action that has it now and would lose it.
+    pub holder: Action,
+    /// The action that was given it.
+    pub wanted: StandardAction,
+}
+
+/// Whose keymap file a problem is in.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KeymapLayer {
+    /// This computer's keymap.
+    Machine,
+    /// The person's own.
+    Person,
+}
+
+/// Something in a keymap file that could not be used.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ShortcutProblem {
+    /// Whose file it is in.
+    pub layer: KeymapLayer,
+    /// What is wrong, in the words of whatever read it.
+    pub what: String,
 }
 
 /// The desktop's standard keymap: chordkit's conventions for our desktop with `system` (the
@@ -135,8 +131,8 @@ pub struct ShortcutsState {
     pub(super) person_text: String,
     /// Why the person's file cannot be written over: it could not be read.
     pub(super) person_trouble: Option<String>,
-    /// Lines and chords that were skipped, in plain words.
-    pub(super) problems: Vec<String>,
+    /// Lines and chords that were skipped.
+    pub(super) problems: Vec<ShortcutProblem>,
     pub(super) asking: Option<ShortcutReplacing>,
 }
 
@@ -165,9 +161,9 @@ impl ShortcutsState {
         machine.with_overrides(&self.person).0
     }
 
-    /// What was wrong in the files, in plain words: skipped lines, chords the desktop keeps for
-    /// itself, a file that could not be read.
-    pub fn problems(&self) -> &[String] {
+    /// What was wrong in the files: skipped lines, chords the desktop keeps for itself, a file
+    /// that could not be read.
+    pub fn problems(&self) -> &[ShortcutProblem] {
         &self.problems
     }
 
@@ -194,7 +190,6 @@ impl ShortcutsState {
         let shown: Vec<String> = chords.iter().map(|chord| chord.display(OURS)).collect();
         ShortcutRow {
             action,
-            name: name_of(&Action::Standard(action)),
             chord: chords.first().copied(),
             shown: shown.first().cloned().unwrap_or_default(),
             also: shown.into_iter().skip(1).collect(),
@@ -203,7 +198,7 @@ impl ShortcutsState {
                 .asking
                 .as_ref()
                 .filter(|asking| asking.action == action)
-                .map(|asking| name_of(&asking.holder)),
+                .map(|asking| asking.holder.clone()),
         }
     }
 
@@ -230,12 +225,9 @@ impl ShortcutsState {
 /// The question to ask while a chord waits to be taken over.
 pub fn replace_question(state: &ShortcutsState) -> Option<ReplaceQuestion> {
     let asking = state.asking.as_ref()?;
-    let (chord, holder) = (asking.chord.display(OURS), name_of(&asking.holder));
-    let wanted = name_of(&Action::Standard(asking.action));
     Some(ReplaceQuestion {
-        title: format!("{chord} is already used by \u{201c}{holder}\u{201d}."),
-        message: format!(
-            "Use it for \u{201c}{wanted}\u{201d} instead? \u{201c}{holder}\u{201d} will lose it."
-        ),
+        chord: asking.chord.display(OURS),
+        holder: asking.holder.clone(),
+        wanted: asking.action,
     })
 }

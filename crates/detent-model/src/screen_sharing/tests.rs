@@ -1,8 +1,8 @@
-//! The list's rows as the portal sends them, the line under an app, and the list's transitions.
+//! The list's rows as the portal sends them, and the list's transitions.
 
 use super::{
     APP_ID_MAX, ScreenGrant, ScreenSharingEffect, ScreenSharingInput, ScreenSharingState,
-    ShareLength, grant_line, screen_sharing_step,
+    ShareLength, screen_sharing_step,
 };
 use crate::Absence;
 use crate::privacy::ProgramSubject;
@@ -86,40 +86,6 @@ fn a_row_of_the_portal_is_a_grant_only_when_it_is_one() {
     let one = ScreenGrant::of_wire(MEET, 2, 1_799_999_000).expect("a grant");
     assert_eq!(one.app, subject(MEET));
     assert_eq!(one.granted, UnixSeconds(1_799_999_000));
-}
-
-#[test]
-fn the_line_says_when_and_for_how_long() {
-    let cases: &[(&str, ShareLength, i64, &str)] = &[
-        (
-            "now",
-            ShareLength::UntilRemoved,
-            5,
-            "Allowed just now, until you remove it",
-        ),
-        (
-            "hours",
-            ShareLength::UntilRemoved,
-            3 * HOUR,
-            "Allowed 3 hours ago, until you remove it",
-        ),
-        (
-            "yesterday",
-            ShareLength::WhileRunning,
-            DAY + HOUR,
-            "Allowed yesterday, while it is open",
-        ),
-        (
-            "days",
-            ShareLength::UntilRemoved,
-            12 * DAY,
-            "Allowed 12 days ago, until you remove it",
-        ),
-    ];
-    for (name, length, ago, want) in cases {
-        let line = grant_line(&grant(MEET, *length, *ago), NOW);
-        assert_eq!(line, *want, "{name}");
-    }
 }
 
 #[test]

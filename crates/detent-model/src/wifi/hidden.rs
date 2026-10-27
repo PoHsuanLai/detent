@@ -32,16 +32,6 @@ impl HiddenSecurity {
         HiddenSecurity::Enterprise,
     ];
 
-    /// The choice as a person reads it.
-    pub fn words(self) -> &'static str {
-        match self {
-            HiddenSecurity::Open => "None",
-            HiddenSecurity::Personal => "WPA2/WPA3 Personal",
-            HiddenSecurity::PersonalWpa3 => "WPA3 Personal",
-            HiddenSecurity::Enterprise => "WPA2/WPA3 Enterprise",
-        }
-    }
-
     /// Whether the sheet asks for a password.
     pub fn takes_password(self) -> bool {
         self != HiddenSecurity::Open

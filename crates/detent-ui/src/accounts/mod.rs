@@ -19,6 +19,7 @@ mod list_view;
 mod pane_view;
 mod reload;
 mod setup;
+mod switch;
 mod sync_read;
 mod watch;
 

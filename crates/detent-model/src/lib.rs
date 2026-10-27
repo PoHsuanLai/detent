@@ -25,7 +25,6 @@ mod hot_corners;
 mod layout;
 mod live;
 mod memory_consent;
-mod missing;
 mod navigation;
 mod notice;
 #[cfg(test)]
@@ -33,11 +32,11 @@ mod notice_tests;
 mod origin;
 mod outside;
 mod page;
+mod page_kind;
 mod picker;
 mod picture_add;
 mod privacy;
 mod range;
-mod reads;
 mod reason;
 mod rows;
 mod running;
@@ -59,44 +58,41 @@ pub use absence::Absence;
 pub use accounts::{
     ACCOUNTS_SETUP_SLUG, Account, AccountExpiry, AccountKey, AccountPermission, AccountProvider,
     AccountSegment, AccountService, AccountSpend, AccountStatus, AccountSync, AccountTarget,
-    AccountsEffect, AccountsInput, AccountsPane, AccountsReady, AccountsScreen, AccountsState,
-    AddEnd, Adding, Ask, Attention, Cents, ClientEntry, ClientText, ClientValue, DatasetName,
-    GrantDecision, GrantSentence, HoldCounts, HoldEffect, HoldInput, Holds, KEEP_HELP, LocalFiles,
-    ModuleId, ModuleRow, Place, ReadTurn, Reads, ReauthEnd, RemovalQuestion, Secret,
-    SecretStanding, SignInClient, SignOutEnd, SignedIn, Source, Sources, SpendBar, SpendLine,
-    StorageQuota, SyncAdd, SyncBook, SyncHold, SyncNowEnd, SyncPause, SyncStatus, SyncWork,
-    accounts_setup_button, accounts_step, hold_step, is_accounts_setup, reauth_help, sign_in_words,
-    signed_in,
+    AccountsEffect, AccountsInput, AccountsNotice, AccountsPane, AccountsReady, AccountsScreen,
+    AccountsState, AddEnd, Adding, Ask, Attention, CalendarDay, Cents, ClientEntry, ClientText,
+    ClientValue, DatasetName, GrantDecision, GrantScope, GrantSentence, HoldCounts, HoldEffect,
+    HoldInput, Holds, LocalFiles, ModuleId, ModuleRow, Place, ReadTurn, Reads, ReauthEnd,
+    RemovalQuestion, Secret, SecretStanding, SignInClient, SignOutEnd, SignedIn, Source, Sources,
+    SpendBar, SpendLine, StorageQuota, SwitchState, SyncAdd, SyncBook, SyncHold, SyncNowEnd,
+    SyncPause, SyncStatus, SyncWork, accounts_setup_offer, accounts_step, hold_step,
+    is_accounts_setup, signed_in,
 };
 pub use advanced::advanced_name;
 pub use arrival::{Arrival, arrival};
 pub use assistant_model::{
-    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Pressable, SetupButton, assistant_model_page,
-    assistant_of, is_assistant_model, is_assistant_setup, setup_button,
+    ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, SetupAction, SetupAvailability,
+    assistant_model_page, assistant_of, is_assistant_setup, setup_availability,
 };
 pub use assistants::{
     Confirm, ModelOffer, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, offers_for,
     places_step,
 };
 pub use bluetooth::{
-    BLUETOOTH_SLUG, BatteryLevel, BtAddress, BtDevice, BtEffect, BtInput, BtKind, BtLink,
-    BtPairing, BtPower, BtReady, BtSheet, BtState, BtStatus, PairingAnswer, PairingAsk,
-    PairingCode, PairingQuestion, bluetooth_page, bluetooth_step, forget_body, forget_title,
-    is_bluetooth, missing_words as bluetooth_missing_words, pairing_body, pairing_title,
+    BLUETOOTH_SLUG, BatteryLevel, BtAddress, BtAsking, BtDevice, BtEffect, BtInput, BtKind, BtLink,
+    BtPairing, BtPower, BtReady, BtState, BtStatus, PairingAnswer, PairingAsk, PairingCode,
+    PairingQuestion, bluetooth_page, bluetooth_step,
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use coding_agents::{
-    AddButton, AddForm, AgentOffer, AgentReason, AgentStanding, CHOOSE_DIRECTLY, Candidate,
-    DOWNLOAD_FAILED, FoundAgent, GROUP as CODING_AGENTS_GROUP, INTERNET_LINE, LIST_FAILED, LOADING,
-    Listing, NOTHING_NEW, Presence, RemoveQuestion, Request, Step, TURNED_OFF, WORD_PREFIX,
-    add_refusal, download_failure, list_failure, offers as agent_offers, removal_of,
-    remove_refusal, unlisted_found, with_agents,
+    AddAction, AddForm, AddRefusal, AgentOffer, AgentReason, AgentStanding, AgentWord, Candidate,
+    FoundAgent, Listing, Presence, RemoveAnswer, RemoveQuestion, Request, Step, WORD_PREFIX,
+    offers as agent_offers, removal_of, unlisted_found, with_agents,
 };
 pub use computers::{
     AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,
-    ComputersState, KeyField, NAME_MOST, ServerDraft, ServerEdit, ServerFault, ServerForm,
-    ServerModel, ServerModels, ServerPhase, ServerReach, ServerSheet, Standing, computers_step,
-    guest_line, server_models,
+    ComputersState, KeyField, NAME_MOST, NewServer, ServerDraft, ServerEdit, ServerFault,
+    ServerForm, ServerModel, ServerModels, ServerPhase, ServerReach, ServerRefusal, Standing,
+    computers_step, server_models,
 };
 pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
@@ -105,30 +101,27 @@ pub use displays::{
     ArrangeSide, Brightness, BrightnessList, DISPLAYS_SLUG, DisplayChange, DisplayEdit,
     DisplayMode, DisplayPosition, DisplayRotation, DisplaysEffect, DisplaysInput, DisplaysReady,
     DisplaysState, DisplaysStatus, LooksLike, Millimetres, ModePreference, Monitor, OutputId,
-    PixelSize, RefreshMilliHz, ScaleMilli, default_scale, displays_page, displays_step,
-    hertz_words, is_displays, looks_like, missing_words as displays_missing_words, mode_at,
-    mode_sizes, native_size, place_beside, side_of, size_words as display_size_words,
+    PixelSize, RefreshMilliHz, ScaleMilli, default_scale, displays_page, displays_step, looks_like,
+    mode_at, mode_sizes, native_size, place_beside, side_of,
 };
 /// Whether an agent may set a key: quire's own type, carried by each `KeySpec`.
 pub use ds_settings::schema::AgentSetting;
 pub use engine_install::{
-    EngineRef, EngineRow, EngineSheet, EngineSheetEffect, EngineSheetInput, EngineSheetState,
-    EngineStanding, EngineWay, INSTALL_FOR, InstallScope, Press, Replacing, SheetButton,
-    SheetWords, Waiting, engine_named, engine_sheet_step, sheet_words, size_words,
+    EngineAction, EngineBrief, EngineMatter, EngineOffer, EngineOfferEffect, EngineOfferInput,
+    EngineOfferState, EngineRef, EngineRow, EngineStanding, EngineWay, InstallScope, Replacing,
+    Waiting, engine_brief, engine_named, engine_offer_step,
 };
 pub use engines::{
-    EnginesEffect, EnginesInput, EnginesState, FOUND_AUTOMATICALLY, InstallAdvice, LLAMA_CPP_ID,
-    ListedEngine, LlamaCpp, PROGRAMS_SECTION, Program, ProgramRow, Programs, ProgramsEffect,
-    ProgramsInput, ProgramsPane, RELEASES_LINE, RESTART, Restart, Restarted, SETUP_LINE,
-    START_USING, SetupNote, StartButton, engines_step, install_advice, llama_cpp_of, program_rows,
-    programs_step, restart_question, setup_note,
+    EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LLAMA_CPP_ID, ListedEngine, LlamaCpp,
+    PROGRAMS_SECTION, Program, ProgramRow, Programs, ProgramsEffect, ProgramsInput, ProgramsPane,
+    Restart, Restarted, SetupNote, StartStanding, engines_step, install_advice, llama_cpp_of,
+    program_rows, programs_step, setup_note,
 };
 pub use entry::KeyEntry;
 pub use extensions::{
-    EXTENSIONS_EMPTY_HELP, EXTENSIONS_EMPTY_TITLE, EXTENSIONS_SLUG, ExtensionGroup, ExtensionKeep,
-    ExtensionList, ExtensionPower, ExtensionRow, ExtensionStanding, InstalledExtensions,
-    NOT_AVAILABLE, NOT_INSTALLED, Offer, Offers, UNREADABLE_MANIFEST, extensions_page,
-    is_extensions, stray_word,
+    EXTENSIONS_SLUG, ExtensionGroup, ExtensionKeep, ExtensionKind, ExtensionList, ExtensionPower,
+    ExtensionRow, ExtensionStanding, ExtensionTrouble, InstalledExtensions, Offer, Offers,
+    extensions_page, stray_word,
 };
 pub use first_run::{
     FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
@@ -138,16 +131,15 @@ pub use hot_corners::{
     HotActionGroup, HotAddFault, HotApp, HotBinding, HotDesk, HotDo, HotItem, HotKeys, HotKnown,
     HotModifier, HotOpenForm, HotOpenKind, HotPicked, HotShown, action_groups, actions_of,
     actions_of_all, add_row, apps_matching, binding_for, bindings_of, command_binding,
-    corner_admits, corner_label, corner_menu, corner_picked, corner_shown, corner_value,
-    remove_row, shown_rows, web_address, with_binding,
+    corner_admits, corner_menu, corner_picked, corner_shown, corner_value, remove_row, shown_rows,
+    web_address, with_binding,
 };
 pub use layout::{Block, advanced_sections, basic_sections, blocks};
 pub use live::Live;
 pub use memory_consent::{
-    CONFIRM, Confinement, ConsentState, MEMORY_SECTION, SettingPair, Trouble,
-    holds_memory_settings, is_memory_setting, tells_confinement, to_confirm, waiting_note,
+    Confinement, ConsentState, KeptValue, MEMORY_SECTION, SettingPair, Trouble,
+    holds_memory_settings, is_memory_setting, kept_value, tells_confinement, to_confirm,
 };
-pub use missing::Missing;
 pub use navigation::{landing, opening_page, visible_pages};
 pub use notice::{Inbox, Notice, Outbox, Receiver, WindowGone, inbox};
 pub use origin::{OriginRule, SchemaOrigin};
@@ -156,66 +148,59 @@ pub use outside::{
     way_menu,
 };
 pub use page::PageSlug;
+pub use page_kind::PageKind;
 pub use picker::{
     Applying, AutoPool, AwaitingAccount, Busy, Choice, ChoiceGap, ChoiceReadiness, ChoiceSection,
-    Clearing, Described, Gate, KindRows, LocalAsk, LocalEngine, LocalModel, LocalView, MenuLine,
-    ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup, PoolMembership,
-    PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_text, step,
+    Clearing, Described, Gate, KindRows, Loading, LocalAsk, LocalEngine, LocalModel, LocalView,
+    MenuLine, ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup, PoolHeading,
+    PoolMembership, PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_of, step,
 };
 pub use picture_add::AddOutcome;
 pub use privacy::{
     CellKind, DesktopApp, PowerCell, PowerStanding, PrivacyEffect, PrivacyInput, PrivacyPane,
     PrivacyPower, PrivacyProgram, PrivacyReady, PrivacyState, PrivacySwitch, ProgramBook,
-    ProgramLook, ProgramSubject, SET_BY_ADMINISTRATOR, SubjectKind, privacy_step,
+    ProgramLook, ProgramSubject, SubjectKind, privacy_step,
 };
 pub use range::{Number, Range};
-pub use reads::modules_read;
 pub use reason::Reason;
 pub use rows::Columns;
 pub use running::{
-    InFlight, ModelRun, RunBoard, RunButton, RunEffect, RunInput, RunPane, RunRowView, RunStanding,
-    memory_words, model_name, running_step,
+    InFlight, ModelRun, RunAction, RunBoard, RunEffect, RunInput, RunPane, RunRowView, RunStanding,
+    running_step,
 };
 pub use screen_sharing::{
     APP_ID_MAX, GRANTS_MAX, ScreenGrant, ScreenSharingEffect, ScreenSharingInput,
-    ScreenSharingReady, ScreenSharingState, ShareLength, grant_line, screen_sharing_step,
+    ScreenSharingReady, ScreenSharingState, ShareLength, screen_sharing_step,
 };
 pub use search::{Found, Hit, Rank, Search, search};
-pub use sharing::{
-    ALLOW, CANCEL, Existing, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way,
-    sharing_question, sharing_step,
-};
+pub use sharing::{Existing, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way, sharing_step};
 pub use shortcuts::{
-    KeymapText, KeymapTexts, MachineLayer, Origin, ReplaceQuestion, ShortcutGroup, ShortcutRow,
-    ShortcutSection, ShortcutsEffect, ShortcutsInput, ShortcutsState, desktop_keymap, name_of,
-    replace_question, shortcuts_step,
+    KeymapLayer, KeymapText, KeymapTexts, MachineLayer, Origin, ReplaceQuestion, ShortcutGroup,
+    ShortcutProblem, ShortcutRow, ShortcutSection, ShortcutsEffect, ShortcutsInput, ShortcutsState,
+    desktop_keymap, replace_question, shortcuts_step,
 };
 pub use spaces::{
-    HISTORY_CHOICES, HISTORY_NOTE, MEMORY_NOT_RUNNING, RemovalSheet, RemovalStage, SheetInput,
-    SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState, WithoutMemory,
-    spaces_step,
+    RemovalAsk, RemovalInput, RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput,
+    SpacesReady, SpacesState, WithoutMemory, spaces_step,
 };
 pub use style_notes::{NoteRow, StyleFile, StyleNote, StyleNotes, StyleOwner};
 pub use text_form::{TextFault, show_value};
 pub use updates::{
-    ButtonActivity, ByteCount, NotesSheet, NotesState, Permille, ProblemKind,
-    UPDATES_NOT_AVAILABLE, UnixSeconds, UpdateButton, UpdateMeter, UpdateOffer, UpdatePhase,
-    UpdateStatus, UpdateVersion, UpdateWire, UpdatesEffect, UpdatesInput, UpdatesNotice,
-    UpdatesPage, UpdatesReady, UpdatesShown, UpdatesState, is_software_update, updates_shown,
-    updates_step,
+    ByteCount, CheckActivity, Checked, Downloaded, NotesState, Permille, ProblemKind, ReleaseNotes,
+    UnixSeconds, UpdateAction, UpdateMeter, UpdateOffer, UpdatePhase, UpdateStanding, UpdateStatus,
+    UpdateVersion, UpdateWire, UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesPage,
+    UpdatesReady, UpdatesShown, UpdatesState, updates_shown, updates_step,
 };
 pub use wallpaper::{
     Picture, PictureFrom, PictureMark, PictureSections, PictureTile, current_place, is_picture,
-    is_wallpaper, picture_sections,
+    picture_sections,
 };
 pub use warning::{StaleReason, Warning};
 pub use wifi::{
     AccessPoint, AskKind, AskStanding, HiddenForm, HiddenLogin, HiddenNetwork, HiddenSecurity,
-    JoinFailure, NetworkLink, NetworkLock, OTHER_FAILED, OTHER_HELP, OTHER_TITLE, Passphrase,
-    PasswordAsk, Remembered, SignalBars, SignalStrength, Ssid, WIFI_BLOCKED, WIFI_SLUG, WifiEffect,
-    WifiInput, WifiLogin, WifiNetwork, WifiRadio, WifiReady, WifiSheet, WifiState, WifiStatus,
-    WifiWire, details_rows, forget_network_body, forget_network_title, is_wifi,
-    missing_words as wifi_missing_words, password_help, password_title, wifi_page, wifi_step,
+    JoinFailure, NetworkLink, NetworkLock, Passphrase, PasswordAsk, Remembered, SignalBars,
+    SignalStrength, Ssid, WIFI_SLUG, WifiAsking, WifiEffect, WifiInput, WifiLogin, WifiNetwork,
+    WifiRadio, WifiReady, WifiState, WifiStatus, WifiWire, wifi_page, wifi_step,
 };
-pub use words::{STYLE_NOTES_LEAD, STYLE_NOTES_TITLE, humanize, word_label};
+pub use words::{humanize, word_label};
 pub use work::Work;

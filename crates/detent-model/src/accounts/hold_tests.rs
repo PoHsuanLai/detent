@@ -1,4 +1,4 @@
-//! The held deletions: the banner's words and the one transition.
+//! The held deletions and their one transition.
 
 use super::*;
 
@@ -15,29 +15,6 @@ fn told(dataset: &DatasetName, discard: u64, held: u64) -> HoldInput {
 
 fn step(holds: Holds, input: HoldInput) -> (Holds, Vec<HoldEffect>) {
     hold_step(holds, input)
-}
-
-#[test]
-fn the_banner_counts_what_is_gone_or_says_all_of_it() {
-    let some = SyncHold {
-        dataset: files("a"),
-        counts: HoldCounts {
-            discard: 30,
-            held: 40,
-        },
-    };
-    assert_eq!(
-        some.banner(),
-        "30 of 40 files were removed on the server. Remove them here too?"
-    );
-    let all = SyncHold {
-        counts: HoldCounts {
-            discard: 40,
-            held: 40,
-        },
-        ..some
-    };
-    assert_eq!(all.banner(), "All 40 files were removed on the server.");
 }
 
 #[test]
@@ -81,17 +58,12 @@ fn keep_calls_nothing_and_remove_asks_the_service_to_discard() {
 }
 
 #[test]
-fn nothing_held_refreshes_and_a_refusal_is_told_calmly() {
+fn nothing_held_refreshes_and_a_refusal_is_told() {
     let dataset = files("home");
     let (_, effects) = step(Holds::default(), HoldInput::NothingHeld(dataset.clone()));
     assert_eq!(effects, [HoldEffect::Refresh(dataset.clone())]);
     let (_, effects) = step(Holds::default(), HoldInput::Refused(dataset));
-    assert_eq!(
-        effects,
-        [HoldEffect::Tell(
-            "Could not remove the files. Try again later.".to_owned()
-        )]
-    );
+    assert_eq!(effects, [HoldEffect::CouldNotRemove]);
 }
 
 #[test]
@@ -100,7 +72,7 @@ fn a_hold_belongs_to_its_account_and_sits_on_its_sync_row() {
         path: ds_settings::schema::KeyPath(format!("accounts.work.example.sync.{leaf}")),
         label: leaf.to_owned(),
         help: String::new(),
-        on: true,
+        on: SwitchState::On,
     };
     let account = |sync: Vec<AccountSync>| {
         let mut pane = AccountsPane::default();

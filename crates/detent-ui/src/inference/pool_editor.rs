@@ -2,6 +2,7 @@
 //! list holds and the module no longer offers is listed apart, and can be taken out.
 
 use super::note::NoteLine;
+use crate::copy::picker as copy;
 use crate::key_row::row_id;
 use detent_model::{AutoPool, PickerInput, PoolEntry, PoolMembership, PoolStanding};
 use dioxus::prelude::*;
@@ -32,9 +33,9 @@ pub(super) fn PoolEditor(
             Label { text: TITLE, role: LabelRole::Secondary }
         }
         for group in pool.groups() {
-            if let Some(name) = group.group.clone() {
+            if let Some(name) = copy::pool_heading(&group.heading) {
                 div { class: "picker-auto",
-                    Label { text: name, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
+                    Label { text: name.to_owned(), role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                 }
             }
             for entry in group.entries {
@@ -66,7 +67,7 @@ fn PoolRow(
     };
     let help = match &entry.standing {
         PoolStanding::Gone => Some(GONE.to_owned()),
-        PoolStanding::Offered(gate) => gate.note().map(str::to_owned),
+        PoolStanding::Offered(gate) => copy::gate_note(gate).map(str::to_owned),
     };
     let word = entry.word.clone();
     rsx! {

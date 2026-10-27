@@ -1,16 +1,10 @@
 //! What a page draws, top to bottom, before its Advanced disclosure (design/22 section 5).
 
-use crate::assistant_model::is_assistant_model;
-use crate::bluetooth::is_bluetooth;
 use crate::catalogue::{PageModel, SectionModel};
 use crate::control::Control;
-use crate::displays::is_displays;
 use crate::entry::KeyEntry;
-use crate::extensions::is_extensions;
 use crate::memory_consent::MEMORY_SECTION;
-use crate::updates::is_software_update;
-use crate::wifi::is_wifi;
-use ds_settings::schema::Page;
+use crate::page_kind::PageKind;
 
 /// One thing a page draws.
 #[derive(Debug, Clone, PartialEq)]
@@ -129,7 +123,7 @@ fn rank(title: &str) -> usize {
 /// section; and Accounts, whose live pane comes first.
 pub fn blocks(page: &PageModel) -> Vec<Block> {
     let corners = corner_keys(page);
-    let drawn = page_blocks(page);
+    let drawn = page.kind.blocks(page);
     let sheet = (!corners.is_empty()).then_some(Block::HotCorners(corners));
     drawn.into_iter().chain(sheet).collect()
 }
@@ -147,46 +141,41 @@ fn with_style_notes(block: Block) -> Vec<Block> {
     }
 }
 
-fn page_blocks(page: &PageModel) -> Vec<Block> {
-    let sections = basic_sections(page).into_iter().map(Block::Section);
-    match page.page {
-        Page::Accounts => {
-            return std::iter::once(Block::AccountsPane)
-                .chain(sections)
-                .collect();
-        }
-        Page::Privacy => {
-            return [Block::PrivacyPane, Block::ScreenSharing]
+impl PageKind {
+    /// What the page draws before its Advanced disclosure and the Hot Corners button.
+    fn blocks(self, page: &PageModel) -> Vec<Block> {
+        let sections = basic_sections(page).into_iter().map(Block::Section);
+        let live = |block: Block| std::iter::once(block);
+        match self {
+            PageKind::Accounts => live(Block::AccountsPane).chain(sections).collect(),
+            PageKind::Privacy => [Block::PrivacyPane, Block::ScreenSharing]
                 .into_iter()
                 .chain(sections)
-                .collect();
+                .collect(),
+            PageKind::Spaces => live(Block::SpacesPane).chain(sections).collect(),
+            PageKind::KeyboardAndShortcuts => sections.chain(live(Block::Shortcuts)).collect(),
+            PageKind::SoftwareUpdate => live(Block::SoftwareUpdate).collect(),
+            PageKind::AssistantModel => live(Block::AssistantModel).collect(),
+            PageKind::Wifi => live(Block::Wifi).collect(),
+            PageKind::Bluetooth => live(Block::Bluetooth).collect(),
+            PageKind::Displays => live(Block::Displays).collect(),
+            PageKind::Extensions => live(Block::Extensions).collect(),
+            PageKind::Intelligence => intelligence_blocks(page),
+            PageKind::Appearance => sections.flat_map(with_style_notes).collect(),
+            PageKind::Dock
+            | PageKind::MouseAndGestures
+            | PageKind::Notifications
+            | PageKind::Power
+            | PageKind::Apps
+            | PageKind::Viewer
+            | PageKind::Wallpaper
+            | PageKind::Program => sections.collect(),
         }
-        Page::Spaces => {
-            return std::iter::once(Block::SpacesPane).chain(sections).collect();
-        }
-        Page::KeyboardAndShortcuts => {
-            return sections.chain(std::iter::once(Block::Shortcuts)).collect();
-        }
-        Page::App(_) if is_software_update(&page.page) => {
-            return std::iter::once(Block::SoftwareUpdate).collect();
-        }
-        Page::App(_) if is_assistant_model(&page.page) => {
-            return std::iter::once(Block::AssistantModel).collect();
-        }
-        Page::App(_) if is_wifi(&page.page) => return std::iter::once(Block::Wifi).collect(),
-        Page::App(_) if is_bluetooth(&page.page) => {
-            return std::iter::once(Block::Bluetooth).collect();
-        }
-        Page::App(_) if is_displays(&page.page) => {
-            return std::iter::once(Block::Displays).collect();
-        }
-        Page::App(_) if is_extensions(&page.page) => {
-            return std::iter::once(Block::Extensions).collect();
-        }
-        Page::Intelligence => {}
-        Page::Appearance => return sections.flat_map(with_style_notes).collect(),
-        _ => return sections.collect(),
     }
+}
+
+/// The Intelligence page: its sections in design/22's order, with the live blocks slotted in.
+fn intelligence_blocks(page: &PageModel) -> Vec<Block> {
     // Two slots per rank: the section at the even one, the live blocks at the odd one after
     // Models (the sort is stable, so they keep this order).
     let mut slotted: Vec<(usize, Block)> = basic_sections(page)
@@ -207,10 +196,12 @@ mod tests {
     use super::{Block, blocks};
     use crate::catalogue::{PageModel, SectionModel};
     use crate::page::PageSlug;
+    use crate::page_kind::PageKind;
     use ds_settings::schema::Page;
 
     fn page(kind: Page, titles: &[&str]) -> PageModel {
         PageModel {
+            kind: PageKind::of(&kind),
             slug: PageSlug::of(&kind),
             title: kind.label().to_owned(),
             page: kind,

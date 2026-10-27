@@ -128,7 +128,7 @@ fn an_edit_goes_through_the_model_to_the_file_and_back_without_losing_a_line() {
         .sections()
         .into_iter()
         .flat_map(|section| section.rows)
-        .find(|row| row.name == "Copy")
+        .find(|row| row.action == StandardAction::Copy)
         .expect("the Copy row");
     assert_eq!(copy.origin, Origin::Standard);
 }

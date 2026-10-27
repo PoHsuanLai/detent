@@ -11,9 +11,6 @@ use std::collections::BTreeMap;
 /// The section of the module whose text rows these are.
 pub const PROGRAMS_SECTION: &str = "Local models";
 
-/// What an empty field says: the assistant looks for the program itself.
-pub const FOUND_AUTOMATICALLY: &str = "Found automatically";
-
 /// One engine's program row.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProgramRow {

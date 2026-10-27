@@ -12,12 +12,18 @@ pub use choice::{Choice, ChoiceGap, ChoiceReadiness, Gate};
 pub use local::{LocalAsk, LocalEngine, LocalModel, LocalView};
 pub use menu::{Clearing, MenuLine};
 pub use model::{
-    Applying, AwaitingAccount, Busy, ChoiceSection, Described, KindRows, ModelRow, PickerState,
-    Ready, TurnOn, loading_text,
+    Applying, AwaitingAccount, Busy, ChoiceSection, Described, KindRows, Loading, ModelRow,
+    PickerState, Ready, TurnOn, loading_of,
 };
-pub use pool::{AutoPool, PoolEntry, PoolGroup, PoolMembership, PoolStanding, PoolWrite};
+pub use pool::{
+    AutoPool, PoolEntry, PoolGroup, PoolHeading, PoolMembership, PoolStanding, PoolWrite,
+};
 pub use step::{PickerEffect, PickerInput, TurnOnAnswer, step};
 
+#[cfg(test)]
+mod gate_tests;
+#[cfg(test)]
+mod local_tests;
 #[cfg(test)]
 mod modes_tests;
 #[cfg(test)]

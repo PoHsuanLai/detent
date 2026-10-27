@@ -159,15 +159,16 @@ impl SettingsProvider {
 
     /// The accounts, a line each: labels, kinds and state, nothing that names or reaches one.
     async fn list_accounts(&self, space: prov::SpaceId) -> Result<Outcome, AppRefusal> {
-        let pane = self
-            .accounts
-            .read()
-            .await
-            .map_err(|absence| refusal(format!("the accounts cannot be listed: {absence}")))?;
+        let pane = self.accounts.read().await.map_err(|absence| {
+            refusal(format!(
+                "the accounts cannot be listed: {}",
+                absence_line(absence)
+            ))
+        })?;
         let lines: Vec<String> = pane
             .accounts
             .iter()
-            .map(detent_model::Account::line)
+            .map(crate::accounts::account_line)
             .collect();
         let mut out = outcome("", Undoable::No);
         out.value = Some(Labelled::new(
@@ -365,5 +366,17 @@ impl SettingsProvider {
                 .take(LISTED)
                 .collect(),
         )
+    }
+}
+
+/// Why the accounts cannot be listed, in the words an agent is told.
+fn absence_line(absence: detent_model::Absence) -> &'static str {
+    use detent_model::Absence;
+    match absence {
+        Absence::NoBus => "Settings is not connected to the desktop",
+        Absence::NotRunning => "the service is not running",
+        Absence::NotPermitted => "Settings was not opened from the desktop",
+        Absence::Unavailable => "the service could not be confirmed",
+        Absence::NoDevice | Absence::Failed => "the service did not answer",
     }
 }

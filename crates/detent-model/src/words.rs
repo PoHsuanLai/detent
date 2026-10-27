@@ -20,25 +20,6 @@ pub fn humanize(word: &str) -> String {
     }
 }
 
-/// The sheet's title, and the label of the line that opens it.
-pub const STYLE_NOTES_TITLE: &str = "Notes on your styles";
-
-/// The sentence over the notes in the sheet.
-pub const STYLE_NOTES_LEAD: &str = "These do not stop your styles from working. They point at things that may slow the desktop, change in an update or have no effect.";
-
-/// `3 notes`, or `1 note`: how many things the person's styles have to say.
-pub fn note_count_words(count: usize) -> String {
-    match count {
-        1 => "1 note".to_owned(),
-        many => format!("{many} notes"),
-    }
-}
-
-/// Where a note is: `quire/style.css, line 4`.
-pub fn note_place_words(file: &str, line: u32) -> String {
-    format!("{file}, line {line}")
-}
-
 #[cfg(test)]
 mod tests {
     use super::word_label;

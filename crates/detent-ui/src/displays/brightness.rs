@@ -8,7 +8,7 @@ use crate::live::{BusSource, connect, pinned};
 use crate::system::watch_on;
 use crate::ticks::Ticks;
 use detent_callers::DISPLAYS_BUS;
-use detent_model::{Brightness, BrightnessList, Missing, OutputId};
+use detent_model::{Absence, Brightness, BrightnessList, OutputId};
 use zbus::Message;
 
 const COULD_NOT_SET: &str = "The brightness can\u{2019}t be changed right now.";
@@ -27,20 +27,20 @@ trait Displays1 {
 }
 
 /// The displays that have a brightness now.
-pub(super) async fn read(bus: &BusSource) -> Result<BrightnessList, Missing> {
+pub(super) async fn read(bus: &BusSource) -> Result<BrightnessList, Absence> {
     let running = pinned(bus, DISPLAYS_BUS)
         .await
-        .map_err(|_| Missing::NoService)?;
+        .map_err(|_| Absence::NotRunning)?;
     let proxy = Displays1Proxy::builder(&running.connection)
         .destination(running.destination())
-        .map_err(|_| Missing::Failed)?
+        .map_err(|_| Absence::Failed)?
         .build()
         .await
-        .map_err(|_| Missing::Failed)?;
+        .map_err(|_| Absence::Failed)?;
     let rows = answered(Deadline::READ, peer::DISPLAYS, proxy.brightness())
         .await
-        .ok_or(Missing::Failed)?
-        .map_err(|_| Missing::Failed)?;
+        .ok_or(Absence::Failed)?
+        .map_err(|_| Absence::Failed)?;
     Ok(BrightnessList::of_wire(&rows))
 }
 
@@ -70,8 +70,8 @@ pub(super) async fn set(
 }
 
 /// A tick each time the shell says the levels changed, or its name changes hands.
-pub(super) async fn changes(bus: &BusSource) -> Result<Ticks, Missing> {
-    let connection = connect(bus).await.map_err(|_| Missing::NoService)?;
+pub(super) async fn changes(bus: &BusSource) -> Result<Ticks, Absence> {
+    let connection = connect(bus).await.map_err(|_| Absence::NotRunning)?;
     watch_on(&connection, DISPLAYS_BUS, is_levels).await
 }
 

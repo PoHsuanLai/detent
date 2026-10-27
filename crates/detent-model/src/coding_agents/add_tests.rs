@@ -1,15 +1,9 @@
 use super::add::{
-    AddForm, FoundAgent, NOTHING_NEW, RemoveQuestion, Request, add_refusal, removal_of,
-    remove_refusal, unlisted_found,
+    AddForm, AddRefusal, FoundAgent, RemoveQuestion, Request, removal_of, unlisted_found,
 };
-use super::add_choice::{
-    AddButton, Candidate, DOWNLOAD_FAILED, LIST_FAILED, Listing, Presence, Step, download_failure,
-    list_failure,
-};
+use super::add_choice::{AddAction, Candidate, Listing, Presence, Step};
 use crate::outside::Assistant;
-use docket_settings::{
-    AddFault, AgentRow, ChoiceFault, Install, ModelState, Offers, SignInState, Source,
-};
+use docket_settings::{AddFault, AgentRow, Install, ModelState, Offers, SignInState, Source};
 
 fn found(id: &str) -> FoundAgent {
     FoundAgent {
@@ -93,7 +87,7 @@ fn the_form_names_the_pick_after_itself_and_checks_the_name() {
     let empty = AddForm::offline(&[], &[]);
     assert_eq!(
         (empty.button(), empty.request()),
-        (AddButton::Off, Err(NOTHING_NEW))
+        (AddAction::Off, Err(AddRefusal::NothingNew))
     );
     let form = AddForm::offline(&[found("claude-code"), found("gemini")], &[]);
     assert_eq!(form.label(), "Claude Code");
@@ -102,14 +96,15 @@ fn the_form_names_the_pick_after_itself_and_checks_the_name() {
     let unchanged = form.clone().pick("nobody");
     assert_eq!(unchanged, form, "an id not offered changes nothing");
 
-    // `(typed, the name written, or the sentence it is refused with)`.
-    const CASES: &[(&str, Result<&str, &str>)] = &[
+    // `(typed, the name written, or the refusal it meets)`.
+    let bad_label = Err(AddRefusal::Fault(AddFault::BadLabel));
+    let cases = [
         ("  Gem  ", Ok("Gem")),
-        ("", Err("Give it a name of up to 64 letters.")),
-        ("   ", Err("Give it a name of up to 64 letters.")),
+        ("", bad_label.clone()),
+        ("   ", bad_label),
     ];
-    for (typed, want) in CASES {
-        let asked = form.clone().typed((*typed).to_owned()).request();
+    for (typed, want) in cases {
+        let asked = form.clone().typed(typed.to_owned()).request();
         let got = asked.map(|request| match request {
             Request::Add(new) => new.label,
             Request::Install { .. } => String::new(),
@@ -133,7 +128,7 @@ fn the_form_names_the_pick_after_itself_and_checks_the_name() {
 #[test]
 fn a_name_docket_cannot_keep_is_refused_before_anything_is_written() {
     let form = AddForm::offline(&[found("odd+name")], &[]);
-    assert_eq!(form.request(), Err(add_refusal(AddFault::BadName)));
+    assert_eq!(form.request(), Err(AddRefusal::Fault(AddFault::BadName)));
 }
 
 #[test]
@@ -143,7 +138,7 @@ fn the_sheet_waits_for_the_list_then_offers_it_without_what_is_added() {
     assert_eq!(form.listing(), &Listing::Loading);
     assert_eq!(
         form.button(),
-        AddButton::Off,
+        AddAction::Off,
         "nothing to add while it loads"
     );
 
@@ -159,9 +154,7 @@ fn the_sheet_waits_for_the_list_then_offers_it_without_what_is_added() {
         ["codex", "gemini"],
         "the added one is not offered"
     );
-    assert_eq!((form.label(), form.button()), ("Codex", AddButton::Ready));
-    assert_eq!(Presence::Installed.mark(), Some("Installed"));
-    assert_eq!(Presence::Online.mark(), None);
+    assert_eq!((form.label(), form.button()), ("Codex", AddAction::Ready));
     assert_eq!(
         form.clone().catalogue(Vec::new()),
         form,
@@ -178,13 +171,14 @@ fn a_list_that_cannot_be_fetched_says_why_and_offers_the_installed_ones() {
     let form = AddForm::loading(&[found("gemini")], &[]).unreachable("no route to the host\n");
     assert_eq!(
         form.listing(),
-        &Listing::Failed(format!("{LIST_FAILED} no route to the host"))
+        &Listing::Failed(Some("no route to the host".to_owned()))
     );
     assert_eq!(
         (ids(&form), form.button()),
-        (vec!["gemini"], AddButton::Ready)
+        (vec!["gemini"], AddAction::Ready)
     );
-    assert_eq!(list_failure(" \n"), LIST_FAILED);
+    let silent = AddForm::loading(&[], &[]).unreachable(" \n");
+    assert_eq!(silent.listing(), &Listing::Failed(None));
     let late = form.clone().unreachable("again");
     assert_eq!(late, form, "only a form still loading takes it");
 }
@@ -202,74 +196,52 @@ fn an_assistant_not_installed_is_downloaded_first_and_the_sheet_says_so() {
         ("codex", "Codex")
     );
 
-    assert_eq!((form.step(), form.download_line()), (Step::Idle, None));
+    assert_eq!((form.step(), form.download_of()), (Step::Idle, None));
     let form = form.installing();
     assert_eq!(
         (form.step(), form.button()),
-        (Step::Starting, AddButton::Busy)
+        (Step::Starting, AddAction::Busy)
     );
     assert_eq!(
-        form.download_line(),
+        form.download_of(),
         None,
         "nothing is said before the download begins"
     );
     let form = form.downloading();
     assert_eq!(form.step(), Step::Downloading);
     assert_eq!(
-        form.download_line().as_deref(),
-        Some("Downloading Codex\u{2026}")
+        form.download_of().map(|one| one.name.as_str()),
+        Some("Codex")
     );
     assert_eq!(form.clone().pick("nobody"), form);
 }
 
 #[test]
-fn a_download_that_fails_keeps_the_sheet_open_with_the_sentence() {
+fn a_download_that_fails_keeps_the_sheet_open_with_what_was_said() {
     let form = AddForm::loading(&[], &[])
         .catalogue(vec![online("codex", "Codex", Presence::Online)])
         .installing()
         .downloading()
         .install_failed("the archive did not match its checksum\n");
-    assert_eq!((form.step(), form.button()), (Step::Idle, AddButton::Ready));
+    assert_eq!((form.step(), form.button()), (Step::Idle, AddAction::Ready));
     assert_eq!(
-        form.refusal.as_deref(),
-        Some("the archive did not match its checksum")
+        form.refusal,
+        Some(AddRefusal::DownloadSaid(
+            "the archive did not match its checksum".to_owned()
+        ))
     );
-    assert_eq!(download_failure(""), DOWNLOAD_FAILED);
+    let silent = AddForm::loading(&[], &[])
+        .catalogue(vec![online("codex", "Codex", Presence::Online)])
+        .install_failed("");
+    assert_eq!(silent.refusal, Some(AddRefusal::DownloadFailed));
     assert_eq!(form.typed("x".to_owned()).refusal, None, "typing clears it");
 }
 
 #[test]
-fn every_refusal_has_a_sentence_without_developer_words() {
-    let adds = [
-        AddFault::Unreadable,
-        AddFault::Listed,
-        AddFault::BadName,
-        AddFault::BadLabel,
-        AddFault::Io,
-    ];
-    let removes = [
-        ChoiceFault::NoSuchAgent,
-        ChoiceFault::Unreadable,
-        ChoiceFault::BadModel,
-        ChoiceFault::BadWay,
-        ChoiceFault::Io,
-    ];
-    let sentences = adds
-        .into_iter()
-        .map(add_refusal)
-        .chain(removes.into_iter().map(remove_refusal));
-    for words in sentences {
-        assert!(words.ends_with('.'), "{words}");
-        for bad in ["agents.toml", "ACP", "registry", "TOML"] {
-            assert!(!words.contains(bad), "{bad} in {words}");
-        }
-    }
+fn a_refused_write_is_kept_until_the_name_is_typed_again() {
     let form = AddForm::offline(&[found("gemini")], &[]);
     let refused = form.refused(AddFault::Listed);
-    assert_eq!(
-        refused.refusal.as_deref(),
-        Some(add_refusal(AddFault::Listed))
-    );
+    assert_eq!(refused.refusal, Some(AddRefusal::Fault(AddFault::Listed)));
     assert_eq!(
         refused.typed("x".to_owned()).refusal,
         None,
@@ -278,7 +250,7 @@ fn every_refusal_has_a_sentence_without_developer_words() {
 }
 
 #[test]
-fn only_an_added_assistant_can_be_removed_and_the_question_says_what_stays() {
+fn only_an_added_assistant_can_be_removed() {
     let of = |source| Assistant {
         name: "Claude Code".to_owned(),
         agent: Some(row("claude-code", source)),
@@ -291,11 +263,6 @@ fn only_an_added_assistant_can_be_removed_and_the_question_says_what_stays() {
             program: "claude-code".to_owned(),
             label: "Claude Code".to_owned()
         }
-    );
-    assert_eq!(question.title(), "Remove Claude Code?");
-    assert_eq!(
-        question.message(),
-        "It won\u{2019}t be offered any more. Its sign-in stays."
     );
     assert_eq!(removal_of(&of(own())), None);
     let account_only = Assistant {

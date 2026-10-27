@@ -1,10 +1,8 @@
 //! Two sheets over the Wi-Fi page: the password (or account) of a network, and the details of the
 //! one this computer is on.
 
-use detent_model::{
-    AskKind, Passphrase, PasswordAsk, WifiInput, WifiLogin, WifiNetwork, details_rows,
-    password_help, password_title,
-};
+use crate::copy::wifi::{details_rows, password_help, password_title};
+use detent_model::{AskKind, Passphrase, PasswordAsk, WifiInput, WifiLogin, WifiNetwork};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button_model::Answers;
@@ -20,7 +18,7 @@ pub(super) fn PasswordSheet(ask: PasswordAsk, press: EventHandler<WifiInput>) ->
     let mut typed = use_signal(String::new);
     let mut username = use_signal(String::new);
     let title = password_title(&ask.ssid.0, ask.kind);
-    let close = EventHandler::new(move |()| press.call(WifiInput::CloseSheet));
+    let close = EventHandler::new(move |()| press.call(WifiInput::Dismiss));
     let (ssid, kind) = (ask.ssid.clone(), ask.kind);
     let join = EventHandler::new(move |()| match kind {
         AskKind::Password => {
@@ -91,7 +89,7 @@ pub(super) fn PasswordSheet(ask: PasswordAsk, press: EventHandler<WifiInput>) ->
 /// The name, security and signal of the network this computer is on, with Done.
 #[component]
 pub(super) fn DetailsSheet(network: WifiNetwork, press: EventHandler<WifiInput>) -> Element {
-    let close = EventHandler::new(move |()| press.call(WifiInput::CloseSheet));
+    let close = EventHandler::new(move |()| press.call(WifiInput::Dismiss));
     let title = network.ssid.0.clone();
     rsx! {
         Sheet {

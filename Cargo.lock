@@ -5163,11 +5163,13 @@ dependencies = [
 name = "porter-engines-install"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "porter-core",
  "porter-engines",
  "porter-http",
  "rustix",
  "sha2 0.10.9",
+ "tar",
  "thiserror 2.0.21",
  "tokio",
 ]
@@ -5180,6 +5182,7 @@ version = "0.1.0"
 name = "porter-http"
 version = "0.1.0"
 dependencies = [
+ "http",
  "http-body-util",
  "hyper",
  "hyper-rustls",

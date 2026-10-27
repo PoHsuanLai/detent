@@ -5,7 +5,8 @@
 use crate::round_trip::{key, word};
 use detent_files::{ConfigHome, DataHome, ExtensionHome, load};
 use detent_model::{
-    ConfigFile, ExtensionKeep, ExtensionPower, ExtensionStanding, FileSpec, InstalledExtensions,
+    ConfigFile, ExtensionKeep, ExtensionKind, ExtensionPower, ExtensionStanding, ExtensionTrouble,
+    FileSpec, InstalledExtensions,
 };
 use detent_testkit::{
     Changes, Scratch, install_file_icons, install_look, install_torn_look, install_your_changes,
@@ -29,7 +30,7 @@ fn world(name: &str) -> (Scratch, ExtensionHome) {
 type Rows = Vec<(String, ExtensionStanding)>;
 
 /// The ids on offer for a look, as the menu lists them, and the rows of the page by group.
-fn shape(read: &InstalledExtensions) -> (Vec<String>, Vec<(String, Rows)>) {
+fn shape(read: &InstalledExtensions) -> (Vec<String>, Vec<(ExtensionKind, Rows)>) {
     let offered = read.offers.of("look").words;
     let groups = read
         .list
@@ -41,7 +42,7 @@ fn shape(read: &InstalledExtensions) -> (Vec<String>, Vec<(String, Rows)>) {
                 .iter()
                 .map(|row| (row.id.clone(), row.standing.clone()))
                 .collect();
-            (group.title.clone(), rows)
+            (group.kind, rows)
         })
         .collect();
     (offered, groups)
@@ -64,16 +65,16 @@ fn a_look_is_offered_after_standard_and_a_torn_one_is_listed_apart_with_its_reas
         groups,
         [
             (
-                "Looks".to_owned(),
+                ExtensionKind::Looks,
                 vec![(PAPER.to_owned(), ExtensionStanding::On)]
             ),
             (
-                "Can\u{2019}t Be Used".to_owned(),
+                ExtensionKind::Unusable,
                 vec![(
                     "org.example.Torn".to_owned(),
-                    ExtensionStanding::Unusable(
+                    ExtensionStanding::Unusable(ExtensionTrouble::Reported(
                         "Some files in this Extension could not be read".to_owned()
-                    )
+                    ))
                 )]
             ),
         ]
@@ -101,7 +102,7 @@ fn turning_one_off_writes_the_file_keeps_its_other_lines_and_turning_it_on_remov
     assert_eq!(
         groups,
         [(
-            "Looks".to_owned(),
+            ExtensionKind::Looks,
             vec![(PAPER.to_owned(), ExtensionStanding::Off)]
         )],
         "off stays listed, with its switch"
@@ -180,8 +181,8 @@ fn a_file_icons_set_is_offered_after_standard_and_listed_under_file_icons() {
     let offer = read.offers.of("file_icons");
     assert_eq!(offer.words, ["standard", "org.example.Dots"]);
     assert_eq!(offer.labels.of("org.example.Dots"), Some("Dots"));
-    let titles: Vec<&str> = read.list.groups.iter().map(|g| g.title.as_str()).collect();
-    assert_eq!(titles, ["File Icons"]);
+    let kinds: Vec<ExtensionKind> = read.list.groups.iter().map(|g| g.kind).collect();
+    assert_eq!(kinds, [ExtensionKind::FileIcons]);
 }
 
 #[test]

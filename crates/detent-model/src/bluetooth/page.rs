@@ -9,8 +9,3 @@ pub const BLUETOOTH_SLUG: &str = "bluetooth";
 pub fn bluetooth_page() -> Page {
     Page::declared(BLUETOOTH_SLUG)
 }
-
-/// Whether `page` is the Bluetooth page.
-pub fn is_bluetooth(page: &Page) -> bool {
-    *page == bluetooth_page()
-}

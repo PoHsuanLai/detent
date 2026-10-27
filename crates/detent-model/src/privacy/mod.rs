@@ -13,8 +13,7 @@ pub use pane::{
 pub use power::PrivacyPower;
 pub use programs::{DesktopApp, ProgramBook, ProgramLook};
 pub use step::{
-    PrivacyEffect, PrivacyInput, PrivacyReady, PrivacyState, PrivacySwitch, SET_BY_ADMINISTRATOR,
-    privacy_step,
+    PrivacyEffect, PrivacyInput, PrivacyReady, PrivacyState, PrivacySwitch, privacy_step,
 };
 
 #[cfg(test)]

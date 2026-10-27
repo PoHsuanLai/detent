@@ -1,6 +1,7 @@
 //! More than five words: a pop-up button.
 
-use detent_model::{NOT_INSTALLED, stray_word, word_label};
+use crate::copy::NOT_INSTALLED;
+use detent_model::{stray_word, word_label};
 use dioxus::prelude::*;
 use ds::components::menus::pop_up_button::PopUpButton;
 use ds::prelude::*;

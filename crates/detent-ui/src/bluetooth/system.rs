@@ -10,7 +10,7 @@ use crate::live::BusSource;
 use crate::system::{system_connection, watch_service};
 use crate::ticks::Ticks;
 use airwaves_bluez::SERVICE;
-use detent_model::{BtAddress, BtPower, BtStatus, Missing, Work};
+use detent_model::{Absence, BtAddress, BtPower, BtStatus, Work};
 use std::collections::HashMap;
 use tokio::sync::OnceCell;
 use zbus::Connection;
@@ -55,7 +55,7 @@ impl OnSystem {
     }
 
     /// The one connection, made when first wanted.
-    async fn connection(&self) -> Result<Connection, Missing> {
+    async fn connection(&self) -> Result<Connection, Absence> {
         self.connection
             .get_or_try_init(|| system_connection(&self.bus))
             .await
@@ -76,15 +76,15 @@ impl OnSystem {
 }
 
 impl BluetoothLink for OnSystem {
-    fn read(&self) -> Work<'_, Result<BtStatus, Missing>> {
+    fn read(&self) -> Work<'_, Result<BtStatus, Absence>> {
         Box::pin(async move { status_of(&managed(&self.connection().await?).await?) })
     }
 
-    fn changes(&self) -> Work<'_, Result<Ticks, Missing>> {
+    fn changes(&self) -> Work<'_, Result<Ticks, Absence>> {
         Box::pin(watch_service(&self.bus, SERVICE, matters))
     }
 
-    fn open(&self) -> Work<'_, Result<BtSession, Missing>> {
+    fn open(&self) -> Work<'_, Result<BtSession, Absence>> {
         Box::pin(async move { open(self.connection().await?).await })
     }
 

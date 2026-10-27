@@ -70,21 +70,6 @@ impl HotDesk {
         }
     }
 
-    /// What the pop-up calls it.
-    pub fn label(self) -> &'static str {
-        match self {
-            HotDesk::Workspaces => "Mission Control",
-            HotDesk::AppWindows => "Application Windows",
-            HotDesk::ShowDesktop => "Desktop",
-            HotDesk::NotificationCenter => "Notification Centre",
-            HotDesk::ControlCenter => "Control Centre",
-            HotDesk::Launcher => "Launcher",
-            HotDesk::Assistant => "Assistant",
-            HotDesk::Lock => "Lock Screen",
-            HotDesk::DisplaySleep => "Put Display to Sleep",
-        }
-    }
-
     /// The action a file's word names.
     pub fn of_word(word: &str) -> Option<HotDesk> {
         HotDesk::ALL.into_iter().find(|desk| desk.word() == word)

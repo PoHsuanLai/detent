@@ -1,6 +1,6 @@
-//! The sharing switch's transitions and the words of its question.
+//! The sharing switch's transitions.
 
-use super::{Existing, Sharing, SharingEffect, SharingInput, Way, sharing_question, sharing_step};
+use super::{Existing, Sharing, SharingEffect, SharingInput, Way, sharing_step};
 
 fn failed() -> Result<(), String> {
     Err("It did not work.".to_owned())
@@ -74,22 +74,5 @@ fn the_transitions() {
     for (state, input, next, effects) in cases {
         let shown = format!("{state:?} + {input:?}");
         assert_eq!(sharing_step(state, input), (next, effects), "{shown}");
-    }
-}
-
-#[test]
-fn the_question_is_plain_and_mentions_a_replaced_setup_only_when_there_is_one() {
-    assert_eq!(sharing_question(Sharing::Idle), None);
-    let (title, message) = sharing_question(Sharing::Asking(Existing::Absent)).expect("asked");
-    assert_eq!(
-        title,
-        "Let your other computers use this computer's models?"
-    );
-    assert!(message.contains("your own Tailscale network"), "{message}");
-    assert!(!message.contains("replaces"), "{message}");
-    let (_, message) = sharing_question(Sharing::Asking(Existing::Different)).expect("asked");
-    assert!(message.contains("replaces"), "{message}");
-    for word in ["tailnet", "drop-in", "systemd", "daemon", "socket", "node"] {
-        assert!(!message.to_lowercase().contains(word), "{word}");
     }
 }

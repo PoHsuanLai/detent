@@ -6,7 +6,7 @@ use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
 use crate::support::spaces::{Fakes, serve};
-use detent_model::{MEMORY_NOT_RUNNING, PageSlug};
+use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::Harness;
 use std::time::Duration;
@@ -17,6 +17,7 @@ const REMOVE: &str = ".space-sheet .ds-button[data-answers=\"return\"]";
 const CANCEL: &str = ".space-sheet .ds-button[data-answers=\"escape\"]";
 const FLIP: &str = ".space-sheet .ds-button[data-variant=\"inline\"]";
 const DELETE_HISTORY: &str = ".space-sheet [role=\"radio\"]:last-child";
+const MEMORY_NOT_RUNNING: &str = "Memory isn\u{2019}t running right now, so this Space can\u{2019}t be deleted. Try again in a moment.";
 
 fn spaces() -> Opening {
     Opening {

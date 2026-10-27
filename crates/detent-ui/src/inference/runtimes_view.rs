@@ -4,6 +4,7 @@
 //! it has not found llama.cpp, and the row that opens the engines' programs.
 
 use crate::accounts::{AccountLink, Listed, OpenButton, use_listed};
+use crate::copy::{self, Subject};
 use crate::engines::{EnginePrograms, LocalEnginesNote};
 use crate::running::RunningModels;
 use detent_model::{Absence, Runtime};
@@ -57,7 +58,7 @@ pub fn LocalRuntimes() -> Element {
                 FieldGroup { title: Some(TITLE.to_owned()),
                     FieldRow {
                         label: TextLine::from("Local models"),
-                        help: Some(TextLine::from(absence_help(&absence))),
+                        help: Some(TextLine::from(copy::absence(Subject::Runtimes, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
                     }
@@ -97,26 +98,6 @@ pub fn LocalRuntimes() -> Element {
     }
 }
 
-/// What the absence of the account service says here.
-fn absence_help(absence: &Absence) -> String {
-    match absence {
-        Absence::NoBus => "Settings is not connected to the desktop.".to_owned(),
-        Absence::NotRunning => {
-            "The accounts service is not running, so nothing on this computer can be listed."
-                .to_owned()
-        }
-        Absence::NotPermitted => "Models on this computer can only be listed when Settings is \
-            opened from the desktop. Close this window and open Settings again from the launcher."
-            .to_owned(),
-        Absence::Unavailable => "The accounts service could not be confirmed, so nothing on this \
-            computer can be listed."
-            .to_owned(),
-        Absence::Failed(_) => {
-            "The accounts service did not answer. Try again in a moment.".to_owned()
-        }
-    }
-}
-
 /// One runtime: its round mark, how it stands, and the way to its account. A stopped runtime has
 /// a muted mark and a quiet state, and still opens.
 #[component]
@@ -149,7 +130,7 @@ fn RuntimeRow(runtime: Runtime, onopen: EventHandler<()>) -> Element {
                 tone: AvatarTone::Person(person_hue(&runtime.label)),
                 muting,
             }
-            Label { text: runtime.state_label(), role, style: LabelStyle::Footnote }
+            Label { text: copy::first_run::runtime_state(&runtime), role, style: LabelStyle::Footnote }
             OpenButton { label: "Manage", subject: runtime.label.clone(), onpress: move |()| onopen.call(()) }
         }
     }

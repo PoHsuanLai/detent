@@ -2,9 +2,10 @@
 
 use super::io::{list, remove};
 use super::sheet_view::{RemovalSheetView, SheetHandlers};
+use crate::copy::{Subject, absence as absence_words};
 use crate::env::Env;
 use detent_model::{
-    Absence, RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState,
+    RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState,
     spaces_step,
 };
 use dioxus::prelude::*;
@@ -15,25 +16,6 @@ use ds::components::overlays::empty_state::EmptyState;
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
-
-/// What the absence of the registry says.
-fn absence_help(absence: &Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => {
-            "Settings is not connected to the desktop, so there are no Spaces to show."
-        }
-        Absence::NotRunning => {
-            "The accounts service is not running, so there are no Spaces to show."
-        }
-        Absence::NotPermitted => {
-            "Spaces can only be managed when Settings is opened from the desktop."
-        }
-        Absence::Unavailable => {
-            "The accounts service could not be confirmed, so there are no Spaces to show."
-        }
-        Absence::Failed(_) => "The accounts service did not answer. Try again in a moment.",
-    }
-}
 
 /// The Spaces the desktop keeps, with a Remove on each.
 #[component]
@@ -103,7 +85,7 @@ pub(crate) fn SpacesPane() -> Element {
                 FieldGroup { title: Some("Spaces".to_owned()),
                     FieldRow {
                         label: TextLine::from("Spaces"),
-                        help: Some(TextLine::from(absence_help(&absence))),
+                        help: Some(TextLine::from(absence_words(Subject::Spaces, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
                     }
@@ -135,11 +117,11 @@ fn Listed(ready: SpacesReady, drive: EventHandler<SpacesInput>) -> Element {
                     }
                 }
             }
-            if let RemovalStage::Asking(sheet) = ready.stage.clone() {
+            if let RemovalStage::Asking(ask) = ready.stage.clone() {
                 RemovalSheetView {
-                    sheet,
+                    ask,
                     on: SheetHandlers {
-                        changed: EventHandler::new(move |change| drive.call(SpacesInput::Sheet(change))),
+                        changed: EventHandler::new(move |change| drive.call(SpacesInput::Answer(change))),
                         confirm: EventHandler::new(move |()| drive.call(SpacesInput::Confirm)),
                         cancel: EventHandler::new(move |()| drive.call(SpacesInput::Cancel)),
                     },

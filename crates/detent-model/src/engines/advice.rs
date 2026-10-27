@@ -3,9 +3,6 @@
 
 use ds_helpers::{Family, OsRelease};
 
-/// What the person reads when there is no package to install.
-pub const RELEASES_LINE: &str = "Get llama.cpp's server from its releases page";
-
 /// How to get llama.cpp here.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InstallAdvice {

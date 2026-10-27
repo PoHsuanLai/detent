@@ -2,10 +2,11 @@
 //! check was, the daily check, and the release notes in their sheet.
 
 use super::drive::use_updates;
+use crate::copy::{self, Subject};
 use crate::env::Env;
 use detent_model::{
-    ButtonActivity, NotesSheet, UpdateButton, UpdateMeter, UpdatesInput, UpdatesPage, UpdatesShown,
-    updates_shown,
+    CheckActivity, ReleaseNotes, UpdateAction, UpdateMeter, UpdatesInput, UpdatesPage,
+    UpdatesShown, updates_shown,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -23,12 +24,12 @@ pub(crate) fn SoftwareUpdatePane() -> Element {
     let shown = updates_shown(&standing.state.read(), env.updates.now());
     match shown {
         UpdatesShown::Looking => rsx! { div { class: "updates", "data-updates": "looking" } },
-        UpdatesShown::Unavailable(words) => rsx! {
+        UpdatesShown::Unavailable(absence) => rsx! {
             div { class: "updates", "data-updates": "unavailable",
                 FieldGroup {
                     FieldRow {
                         label: TextLine::from("Software Update"),
-                        help: Some(TextLine::from(words)),
+                        help: Some(TextLine::from(copy::absence(Subject::Updates, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
                     }
@@ -48,20 +49,20 @@ fn Listed(page: UpdatesPage, press: EventHandler<UpdatesInput>) -> Element {
         div { class: "updates", "data-updates": "page",
             FieldGroup {
                 FieldRow {
-                    label: TextLine::from(page.title.clone()),
-                    help: Some(TextLine::from(page.detail.clone())),
-                    for (at, button) in page.buttons.iter().copied().enumerate() {
-                        ActionButton { key: "{at}", button, press }
+                    label: TextLine::from(copy::updates::title(page.version.as_deref())),
+                    help: Some(TextLine::from(copy::updates::standing(&page.standing))),
+                    for (at, action) in page.actions.iter().copied().enumerate() {
+                        ActionButton { key: "{at}", action, press }
                     }
                 }
             }
-            if let Some(words) = page.notice {
+            if let Some(words) = copy::updates::notice(page.notice) {
                 div { class: "updates-notice",
                     Label { text: words, role: LabelRole::Secondary, style: LabelStyle::Footnote }
                 }
             }
             Meter { meter: page.meter.clone() }
-            if let Some(line) = page.checked.clone() {
+            if let Some(line) = copy::updates::checked(page.checked) {
                 div { class: "updates-note",
                     Label { text: line, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                 }
@@ -69,31 +70,32 @@ fn Listed(page: UpdatesPage, press: EventHandler<UpdatesInput>) -> Element {
             FieldGroup {
                 FieldRow {
                     label: TextLine::from("Automatic updates"),
-                    help: Some(TextLine::from(page.automatic)),
+                    help: Some(TextLine::from(copy::updates::automatic())),
                     Label { text: "Daily", role: LabelRole::Secondary }
                 }
             }
-            if let Some(sheet) = page.notes.clone() {
-                NotesView { sheet, press }
+            if let Some(notes) = page.notes.clone() {
+                NotesView { notes, press }
             }
         }
     }
 }
 
 #[component]
-fn ActionButton(button: UpdateButton, press: EventHandler<UpdatesInput>) -> Element {
-    let (bezel, availability) = match button {
-        UpdateButton::Check(ButtonActivity::Busy) => (Bezel::Push, Availability::Busy),
-        UpdateButton::MoreInfo => (Bezel::Inline, Availability::Enabled),
+fn ActionButton(action: UpdateAction, press: EventHandler<UpdatesInput>) -> Element {
+    let (bezel, availability) = match action {
+        UpdateAction::Check(CheckActivity::Running) => (Bezel::Push, Availability::Busy),
+        UpdateAction::MoreInfo => (Bezel::Inline, Availability::Enabled),
         _ => (Bezel::Push, Availability::Enabled),
     };
+    let label = copy::updates::action(action);
     rsx! {
         Button {
-            label: button.label(),
+            label,
             bezel,
             availability,
-            common: Common { aria_label: Some(button.label().to_owned()), ..Common::default() },
-            onclick: move |_| press.call(button.press()),
+            common: Common { aria_label: Some(label.to_owned()), ..Common::default() },
+            onclick: move |_| press.call(action.input()),
         }
     }
 }
@@ -103,15 +105,15 @@ fn ActionButton(button: UpdateButton, press: EventHandler<UpdatesInput>) -> Elem
 fn Meter(meter: UpdateMeter) -> Element {
     match meter {
         UpdateMeter::None => rsx! {},
-        UpdateMeter::Known { share, words } => rsx! {
+        UpdateMeter::Known { share, done } => rsx! {
             div { class: "updates-meter",
                 ProgressIndicator {
                     style: ProgressStyle::Bar,
                     progress: Progress::Known(Fraction(u16::try_from(share.0).unwrap_or(1000))),
                     common: Common { aria_label: Some("Download progress".to_owned()), ..Common::default() },
                 }
-                if let Some(words) = words {
-                    Label { text: words, role: LabelRole::Secondary, style: LabelStyle::Footnote }
+                if let Some(done) = done {
+                    Label { text: copy::updates::downloaded(done), role: LabelRole::Secondary, style: LabelStyle::Footnote }
                 }
             }
         },
@@ -135,10 +137,10 @@ fn PendingBar() -> Element {
 
 /// What the new version changes, in a sheet with Done.
 #[component]
-fn NotesView(sheet: NotesSheet, press: EventHandler<UpdatesInput>) -> Element {
+fn NotesView(notes: ReleaseNotes, press: EventHandler<UpdatesInput>) -> Element {
     let close = EventHandler::new(move |()| press.call(UpdatesInput::CloseInfo));
-    let lines: Vec<String> = sheet
-        .body
+    let title = copy::updates::title(Some(&notes.version));
+    let lines: Vec<String> = copy::updates::notes_body(&notes)
         .lines()
         .map(str::trim)
         .filter(|line| !line.is_empty())
@@ -146,12 +148,12 @@ fn NotesView(sheet: NotesSheet, press: EventHandler<UpdatesInput>) -> Element {
         .collect();
     rsx! {
         Sheet {
-            label: sheet.title.clone(),
+            label: title.clone(),
             width: SheetWidth::Regular,
             onclose: close,
             on_return: close,
             div { class: "updates-sheet", "data-updates": "notes",
-                Label { text: sheet.title.clone(), role: LabelRole::Primary, style: LabelStyle::Headline }
+                Label { text: title.clone(), role: LabelRole::Primary, style: LabelStyle::Headline }
                 for (at, line) in lines.into_iter().enumerate() {
                     Label { key: "{at}", text: line, role: LabelRole::Secondary }
                 }

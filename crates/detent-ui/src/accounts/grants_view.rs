@@ -2,6 +2,7 @@
 //! Revoke on a strip that shows under the pointer, and a card that names the services the app
 //! uses.
 
+use crate::copy::accounts::grant_when;
 use crate::key_row::row_id;
 use detent_model::{Account, AccountPermission, ModuleRow};
 use dioxus::prelude::*;
@@ -65,7 +66,7 @@ fn app_item(
     let row = rsx! {
         Row {
             title: permission.label.clone(),
-            detail: permission.when_line().map(TextLine::from),
+            detail: grant_when(permission).map(TextLine::from),
             accessory: Accessory::Slot(strip),
             common: Common { id: Some(row_id("permission", &permission.path.0)), ..Common::default() },
         }

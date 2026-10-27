@@ -1,8 +1,6 @@
 //! The program rows: which rows of the module they are, and what a set leaves behind.
 
-use super::programs::{
-    FOUND_AUTOMATICALLY, ProgramRow, ProgramsEffect, ProgramsInput, program_rows, programs_step,
-};
+use super::programs::{ProgramRow, ProgramsEffect, ProgramsInput, program_rows, programs_step};
 use crate::{Described, Live};
 use ds_settings::schema::{
     AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label, Page, Section,
@@ -72,7 +70,6 @@ fn only_the_advanced_text_rows_of_local_models_are_program_rows() {
     let rows = program_rows(&described);
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].value, "/usr/bin/llama-server");
-    assert_eq!(FOUND_AUTOMATICALLY, "Found automatically");
 }
 
 #[test]

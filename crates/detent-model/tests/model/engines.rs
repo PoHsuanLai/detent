@@ -3,8 +3,8 @@
 
 use detent_model::{
     EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LLAMA_CPP_ID, ListedEngine, LlamaCpp,
-    Program, Restart, Restarted, StartButton, engines_step, install_advice, llama_cpp_of,
-    restart_question, setup_note,
+    Program, Restart, Restarted, StartStanding, engines_step, install_advice, llama_cpp_of,
+    setup_note,
 };
 
 fn command(text: &str) -> InstallAdvice {
@@ -145,9 +145,9 @@ fn llama_cpp_stands_where_the_assistant_lists_it() {
 }
 
 #[test]
-fn the_note_shows_only_while_llama_cpp_is_missing_and_the_button_follows_the_restart() {
+fn the_note_shows_only_while_llama_cpp_is_missing_and_starting_follows_the_restart() {
     let advice = command("sudo dnf install llama-cpp");
-    // `(case, llama.cpp, the restart, whether the note shows, the button)`.
+    // `(case, llama.cpp, the restart, whether starting can be asked for when the note shows)`.
     let cases = [
         ("looking", LlamaCpp::Looking, Restart::Idle, None),
         ("unknown", LlamaCpp::Unknown, Restart::Idle, None),
@@ -162,29 +162,25 @@ fn the_note_shows_only_while_llama_cpp_is_missing_and_the_button_follows_the_res
             "missing",
             LlamaCpp::Missing,
             Restart::Idle,
-            Some(StartButton::Ready),
+            Some(StartStanding::Ready),
         ),
         (
             "missing and asked",
             LlamaCpp::Missing,
             Restart::Asking,
-            Some(StartButton::Ready),
+            Some(StartStanding::Ready),
         ),
         (
             "missing and restarting",
             LlamaCpp::Missing,
             Restart::Working,
-            Some(StartButton::Working),
+            Some(StartStanding::Working),
         ),
     ];
-    for (name, llama_cpp, restart, button) in cases {
+    for (name, llama_cpp, restart, start) in cases {
         let note = setup_note(&EnginesState { llama_cpp, restart }, &advice);
-        assert_eq!(note.as_ref().map(|note| note.button), button, "{name}");
+        assert_eq!(note.as_ref().map(|note| note.start), start, "{name}");
         if let Some(note) = note {
-            assert_eq!(
-                note.line, "To run models on this computer, install llama.cpp.",
-                "{name}"
-            );
             assert_eq!(note.install, advice, "{name}");
         }
     }
@@ -238,10 +234,7 @@ fn the_restart_asks_first_and_looks_again_when_it_ends() {
             at(Restart::Working),
             EnginesInput::Restarted(Restarted::Failed),
             missing,
-            vec![
-                EnginesEffect::Tell("The assistant could not be restarted. Try again in a moment."),
-                EnginesEffect::Look,
-            ],
+            vec![EnginesEffect::RestartFailed, EnginesEffect::Look],
         ),
         (
             "listed found",
@@ -318,30 +311,5 @@ fn the_restart_asks_first_and_looks_again_when_it_ends() {
             (*next, effects.clone()),
             "{name}"
         );
-    }
-}
-
-#[test]
-fn the_question_is_asked_only_while_asking_and_says_what_happens_to_a_conversation() {
-    for (restart, asked) in [
-        (Restart::Idle, false),
-        (Restart::Asking, true),
-        (Restart::Working, false),
-    ] {
-        let state = EnginesState {
-            llama_cpp: LlamaCpp::Missing,
-            restart,
-        };
-        let question = restart_question(&state);
-        assert_eq!(question.is_some(), asked, "{restart:?}");
-        if let Some((title, message)) = question {
-            assert!(
-                message.contains("conversation that is open stops"),
-                "{message}"
-            );
-            for word in ["systemd", "D-Bus", "inferd"] {
-                assert!(!title.contains(word) && !message.contains(word), "{word}");
-            }
-        }
     }
 }

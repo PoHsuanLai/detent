@@ -1,8 +1,8 @@
 use super::{
-    Corner, CornerAsk, CornerChoice, CornerMenuLine, HotActionChoice, HotApp, HotBinding, HotDesk,
-    HotDo, HotItem, HotKeys, HotKnown, HotModifier, HotOpenForm, HotOpenKind, HotPicked,
-    action_groups, actions_of, actions_of_all, add_row, apps_matching, binding_for, bindings_of,
-    command_binding, corner_admits, corner_label, corner_menu, corner_picked, corner_shown,
+    Corner, CornerAsk, CornerChoice, CornerMenuLine, HotActionChoice, HotAddFault, HotApp,
+    HotBinding, HotDesk, HotDo, HotItem, HotKeys, HotKnown, HotModifier, HotOpenForm, HotOpenKind,
+    HotPicked, action_groups, actions_of, actions_of_all, add_row, apps_matching, binding_for,
+    bindings_of, command_binding, corner_admits, corner_menu, corner_picked, corner_shown,
     corner_value, remove_row, shown_rows, web_address, with_binding,
 };
 use toml::Value;
