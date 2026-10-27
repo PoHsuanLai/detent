@@ -9,6 +9,7 @@ use std::collections::BTreeMap;
 
 fn spec(path: &str, kind: KeyKind, exposure: Exposure, section: &str) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: KeyPath(path.to_owned()),
         kind,

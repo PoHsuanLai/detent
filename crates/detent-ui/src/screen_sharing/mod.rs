@@ -2,10 +2,7 @@
 //! asking again, each with Remove. Showing the group starts the portal when it is not running (the
 //! portal remembers its apps on disk), and the owner must still hold the portal's role.
 
-mod io;
 mod pane;
-mod proxy;
 mod view;
-mod wire;
 
 pub(crate) use pane::ScreenSharingPane;

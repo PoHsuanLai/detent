@@ -1,12 +1,12 @@
 //! The Displays page's state and what it needs to act: following the compositor and asking it.
 //! The steps are `detent-model`'s `displays_step`.
 
-use super::link::DisplaysLink;
 use crate::env::Env;
 use detent_model::{
     Brightness, BrightnessList, DisplaysEffect, DisplaysInput, DisplaysState, OutputId,
     displays_step,
 };
+use detent_system::displays::DisplaysLink;
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;

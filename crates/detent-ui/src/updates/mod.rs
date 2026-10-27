@@ -3,14 +3,6 @@
 //! handle the environment carries.
 
 mod drive;
-mod leave;
-mod link;
-mod session;
 mod view;
-mod wire;
 
-pub use leave::Departure;
-pub(crate) use leave::PowerMenu;
-pub use link::{InstallRefusal, UpdateTicks, UpdatesLink};
-pub(crate) use session::OnBus;
 pub(crate) use view::SoftwareUpdatePane;

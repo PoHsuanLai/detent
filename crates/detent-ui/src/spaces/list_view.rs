@@ -1,6 +1,5 @@
 //! The Spaces list: one row per Space with Remove, or why the list is not there.
 
-use super::io::{list, remove};
 use super::sheet_view::{RemovalSheetView, SheetHandlers};
 use crate::copy::{Subject, absence as absence_words};
 use crate::env::Env;
@@ -25,17 +24,17 @@ pub(crate) fn SpacesPane() -> Element {
     let mut state = use_signal(SpacesState::default);
 
     let drive = EventHandler::new({
-        let bus = env.bus.clone();
+        let link = env.spaces.clone();
         move |input: SpacesInput| {
             let (next, effects) = spaces_step(state.peek().clone(), input);
             state.set(next);
             for effect in effects {
-                let bus = bus.clone();
+                let link = link.clone();
                 match effect {
                     SpacesEffect::Tell(text) => toasts.push(text, None),
                     SpacesEffect::Reload => {
                         spawn(async move {
-                            let found = list(&bus).await;
+                            let found = link.list().await;
                             let (next, _) =
                                 spaces_step(state.peek().clone(), SpacesInput::Found(found));
                             state.set(next);
@@ -43,7 +42,7 @@ pub(crate) fn SpacesPane() -> Element {
                     }
                     SpacesEffect::Remove { space, removal } => {
                         spawn(async move {
-                            let ended = remove(&bus, &space, &removal).await;
+                            let ended = link.remove(space, removal).await;
                             let (next, effects) =
                                 spaces_step(state.peek().clone(), SpacesInput::Removed(ended));
                             state.set(next);
@@ -51,7 +50,7 @@ pub(crate) fn SpacesPane() -> Element {
                                 match effect {
                                     SpacesEffect::Tell(text) => toasts.push(text, None),
                                     SpacesEffect::Reload => {
-                                        let found = list(&bus).await;
+                                        let found = link.list().await;
                                         let (next, _) = spaces_step(
                                             state.peek().clone(),
                                             SpacesInput::Found(found),
@@ -69,11 +68,11 @@ pub(crate) fn SpacesPane() -> Element {
     });
 
     use_future({
-        let bus = env.bus.clone();
+        let link = env.spaces.clone();
         move || {
-            let bus = bus.clone();
+            let link = link.clone();
             async move {
-                drive.call(SpacesInput::Found(list(&bus).await));
+                drive.call(SpacesInput::Found(link.list().await));
             }
         }
     });

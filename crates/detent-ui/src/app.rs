@@ -106,8 +106,6 @@ pub fn App() -> Element {
             appearance: now.settings.appearance.appearance(),
             system: now.system,
             material: Material::Window,
-            tint_alpha: Some(now.tint_alpha()),
-            stack: Some(now.material_stack()),
             window: WindowFrame::titlebar(title, TrafficLights::Shown),
             style { {crate::STYLE} }
             if assistant_setup {

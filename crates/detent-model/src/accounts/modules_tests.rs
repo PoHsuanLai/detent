@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 
 fn spec(key: &str, kind: KeyKind) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: KeyPath(key.to_owned()),
         kind,

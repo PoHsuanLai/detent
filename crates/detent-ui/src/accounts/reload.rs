@@ -1,8 +1,7 @@
 //! Reading accountd again one read at a time: the latest ask wins.
 
-use super::drive::is_valued;
-use crate::live::reread;
-use detent_model::{Absence, Described, ReadTurn, Reads};
+use detent_model::{Absence, Described, ReadTurn, Reads, accounts_row_is_valued};
+use detent_system::bus::reread;
 use dioxus::prelude::*;
 use ds_settings::live::LiveClient;
 use std::time::Duration;
@@ -22,7 +21,7 @@ pub(crate) async fn reload(
         return None;
     }
     loop {
-        let found = reread(opened, is_valued).await;
+        let found = reread(opened, accounts_row_is_valued).await;
         let (next, turn) = reads.peek().finish();
         reads.set(next);
         if turn == ReadTurn::Rest {

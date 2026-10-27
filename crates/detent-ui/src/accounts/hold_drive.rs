@@ -2,17 +2,18 @@
 //! pane calls it.
 
 use crate::copy::account_sync::{HOLD_NOT_REMOVED, sync_now_line};
-use crate::live::{BusSource, confirm_discard, hold_now, sync_now};
 use detent_model::{DatasetName, HoldEffect, HoldInput, Holds, hold_step};
+use detent_system::sync::SyncLink;
 use dioxus::prelude::*;
 use ds::stack::toast_hub::ToastHub;
 use std::collections::VecDeque;
+use std::sync::Arc;
 
 /// Applies `first` to the holds, then every input its effects lead to, until nothing is left to
 /// do.
 pub(super) async fn drive_holds(
     mut holds: Signal<Holds>,
-    bus: BusSource,
+    sync: Arc<dyn SyncLink>,
     toasts: ToastHub,
     first: HoldInput,
 ) {
@@ -23,9 +24,9 @@ pub(super) async fn drive_holds(
         for effect in effects {
             match effect {
                 HoldEffect::Confirm(dataset) => {
-                    queue.extend(confirm_discard(&bus, dataset).await);
+                    queue.extend(sync.confirm_discard(dataset).await);
                 }
-                HoldEffect::Refresh(dataset) => queue.push_back(hold_now(&bus, dataset).await),
+                HoldEffect::Refresh(dataset) => queue.push_back(sync.hold_now(dataset).await),
                 HoldEffect::CouldNotRemove => toasts.push(HOLD_NOT_REMOVED.to_owned(), None),
             }
         }
@@ -33,9 +34,10 @@ pub(super) async fn drive_holds(
 }
 
 /// Asks the sync service to sync `dataset` now and tells the person how it went.
-pub(super) async fn drive_sync_now(bus: BusSource, toasts: ToastHub, dataset: DatasetName) {
-    toasts.push(
-        sync_now_line(sync_now(&bus, dataset).await).to_owned(),
-        None,
-    );
+pub(super) async fn drive_sync_now(
+    sync: Arc<dyn SyncLink>,
+    toasts: ToastHub,
+    dataset: DatasetName,
+) {
+    toasts.push(sync_now_line(sync.sync_now(dataset).await).to_owned(), None);
 }

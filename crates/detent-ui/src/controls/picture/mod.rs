@@ -6,10 +6,10 @@
 mod grid;
 mod header;
 
-use crate::Pictures;
 use crate::copy::pictures::add_failure;
 use crate::env::Env;
 use detent_model::{AddOutcome, Picture, PictureSections, picture_sections};
+use detent_system::wallpaper::Pictures;
 use dioxus::prelude::*;
 use grid::pictures_grid;
 use header::picture_header;

@@ -21,6 +21,7 @@ RULES=(
   "detent-files: $PURE"
   "detent-callers: dioxus dioxus-core blitz-dom ds ds-blitz ds-harness ds-lint detent-model detent-files detent-intents detent-ui detent"
   "detent-testkit: $PURE zbus ds-settings detent-model detent-files detent-ui detent"
+  "detent-system: dioxus dioxus-core blitz-dom ds ds-blitz ds-harness ds-lint detent-ui detent-intents detent"
   "detent-ui: detent detent-intents"
   "detent-intents: dioxus dioxus-core blitz-dom ds ds-blitz ds-harness ds-lint detent-ui detent"
 )
@@ -59,8 +60,9 @@ EDGES=(
   "detent-model: almanac-core docket-core docket-settings ds-helpers ds-settings porter-core porter-infer"
   "detent-files: detent-model docket-agents docket-settings ds-extensions ds-helpers ds-settings"
   "detent-intents: detent-callers detent-files detent-model docket-client docket-core docket-dbus ds-peer ds-settings porter-core prov"
-  "detent-ui: almanac-core anyview-core anyview-fs anyview-image anyview-platform desktop-client detent-callers detent-files detent-model docket-settings ds ds-blitz ds-helpers ds-lint ds-peer ds-settings porter-client porter-core porter-daemon porter-dbus porter-engines porter-engines-install porter-infer porter-provider"
-  "detent: detent-callers detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
+  "detent-system: almanac-core anyview-core anyview-fs anyview-image anyview-platform desktop-client detent-callers detent-files detent-model ds-peer ds-settings porter-client porter-core porter-daemon porter-dbus porter-engines porter-engines-install"
+  "detent-ui: almanac-core detent-files detent-model detent-system docket-settings ds ds-blitz ds-helpers ds-lint ds-settings porter-client porter-core porter-infer porter-provider"
+  "detent: detent-callers detent-files detent-intents detent-model detent-system detent-ui ds-blitz ds-settings"
 )
 for edge in "${EDGES[@]}"; do
   crate="${edge%%:*}"

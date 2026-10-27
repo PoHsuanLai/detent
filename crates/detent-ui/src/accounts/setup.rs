@@ -2,7 +2,6 @@
 //! (the same sheet the Accounts page opens), Skip and Continue. Either button closes the window;
 //! the setup flow opens the next step.
 
-use super::add_io::add_account;
 use super::avatar_view::{AccountAvatar, AvatarPlace};
 use super::watch::{Listed, use_listed};
 use crate::copy::account_notices::add_end_line;
@@ -97,7 +96,7 @@ pub(crate) fn AccountsSetup() -> Element {
     };
     let items = rows_of(&rows, &env.marks);
     let empty = rows.is_empty();
-    let bus = env.bus.clone();
+    let accounts = env.accounts.clone();
     let (skip_app, next_app) = (app.clone(), app);
     rsx! {
         div { class: "accounts-setup", "data-accounts": "setup",
@@ -124,10 +123,10 @@ pub(crate) fn AccountsSetup() -> Element {
                 size: ControlSize::Large,
                 availability: add,
                 onclick: move |_| {
-                    let (bus, mut adding) = (bus.clone(), adding);
+                    let (accounts, mut adding) = (accounts.clone(), adding);
                     adding.set(Adding::SheetOpen);
                     spawn(async move {
-                        let end = add_account(&bus).await;
+                        let end = accounts.add_account().await;
                         adding.set(Adding::Idle);
                         if let Some(line) = add_end_line(&end) {
                             toasts.push(line.to_owned(), None);

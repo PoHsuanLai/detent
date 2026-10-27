@@ -2,9 +2,6 @@
 
 use almanac_core::{HistoryFate, MemoryFate};
 
-/// What the person reads when a delete choice cannot be carried out because memory is not running.
-pub(crate) const MEMORY_NOT_RUNNING: &str = "Memory isn\u{2019}t running right now, so this Space can\u{2019}t be deleted. Try again in a moment.";
-
 /// The line under the history choices.
 pub(crate) const HISTORY_NOTE: &str =
     "History is what happened in this Space, like files you saved and messages you sent.";

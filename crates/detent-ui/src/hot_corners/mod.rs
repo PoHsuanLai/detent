@@ -6,10 +6,6 @@
 mod ask;
 mod button;
 mod cell;
-mod desk;
 mod sheet;
-mod system;
 
 pub(crate) use button::HotCorners;
-pub use desk::{CornerDesk, NoCorners};
-pub(crate) use system::OnSystem;

@@ -7,6 +7,7 @@ mod menu;
 mod model;
 mod pool;
 mod step;
+mod valued;
 
 pub use choice::{Choice, ChoiceGap, ChoiceReadiness, Gate};
 pub use local::{LocalAsk, LocalEngine, LocalModel, LocalView};
@@ -19,6 +20,7 @@ pub use pool::{
     AutoPool, PoolEntry, PoolGroup, PoolHeading, PoolMembership, PoolStanding, PoolWrite,
 };
 pub use step::{PickerEffect, PickerInput, TurnOnAnswer, step};
+pub use valued::picker_row_is_choice;
 
 #[cfg(test)]
 mod gate_tests;

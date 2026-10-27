@@ -11,12 +11,12 @@ use super::list_view::{AccountList, ClientIds, FootHandlers};
 use super::sync_read::use_sync_book;
 use crate::copy::{Subject, absence as absence_words};
 use crate::env::Env;
-use crate::live::follow_holds;
 use crate::marks::ProviderMarks;
 use detent_model::{
     Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds, ModuleId,
     ModuleRow, SyncBook,
 };
+use detent_system::sync::follow_holds;
 use dioxus::prelude::*;
 use ds::components::chrome::split_view::model::{Collapsing, PaneSize, PaneSpec, SplitPane};
 use ds::components::chrome::split_view::view::SplitView;
@@ -45,12 +45,12 @@ pub fn AccountsPane() -> Element {
 
     // The sync service's held deletions are told apart from the accounts' rows.
     use_future({
-        let bus = env.bus.clone();
+        let (bus, sync) = (env.bus.clone(), env.sync.clone());
         move || {
-            let bus = bus.clone();
+            let (bus, sync) = (bus.clone(), sync.clone());
             async move {
                 follow_holds(&bus, |input| {
-                    spawn(drive_holds(holds, bus.clone(), toasts, input));
+                    spawn(drive_holds(holds, sync.clone(), toasts, input));
                 })
                 .await;
             }
@@ -59,41 +59,68 @@ pub fn AccountsPane() -> Element {
 
     // Each module is followed on its own: one that is not there leaves only its part out.
     use_future({
-        let bus = env.bus.clone();
-        move || follow_module(ModuleId::Accountd, bus.clone(), state, feeds, toasts)
+        let (bus, accounts) = (env.bus.clone(), env.accounts.clone());
+        move || {
+            follow_module(
+                ModuleId::Accountd,
+                bus.clone(),
+                accounts.clone(),
+                state,
+                feeds,
+                toasts,
+            )
+        }
     });
     use_future({
-        let bus = env.bus.clone();
-        move || follow_module(ModuleId::Inferd, bus.clone(), state, feeds, toasts)
+        let (bus, accounts) = (env.bus.clone(), env.accounts.clone());
+        move || {
+            follow_module(
+                ModuleId::Inferd,
+                bus.clone(),
+                accounts.clone(),
+                state,
+                feeds,
+                toasts,
+            )
+        }
     });
     use_future({
-        let bus = env.bus.clone();
-        move || follow_module(ModuleId::Syncd, bus.clone(), state, feeds, toasts)
+        let (bus, accounts) = (env.bus.clone(), env.accounts.clone());
+        move || {
+            follow_module(
+                ModuleId::Syncd,
+                bus.clone(),
+                accounts.clone(),
+                state,
+                feeds,
+                toasts,
+            )
+        }
     });
 
     let send = EventHandler::new({
-        let bus = env.bus.clone();
+        let accounts = env.accounts.clone();
         move |input: AccountsInput| {
-            spawn(drive(state, feeds, bus.clone(), toasts, input));
+            spawn(drive(state, feeds, accounts.clone(), toasts, input));
         }
     });
     let send_hold = EventHandler::new({
-        let bus = env.bus.clone();
+        let sync = env.sync.clone();
         move |input: HoldInput| {
-            spawn(drive_holds(holds, bus.clone(), toasts, input));
+            spawn(drive_holds(holds, sync.clone(), toasts, input));
         }
     });
 
     // What the sync service says of the accounts' datasets, read again once "Sync now" was asked.
     let again = use_signal(|| 0_u32);
-    let book = use_sync_book(env.bus.clone(), state, again);
+    let book = use_sync_book(env.sync.clone(), state, again);
     let send_sync = EventHandler::new({
-        let bus = env.bus.clone();
+        let sync = env.sync.clone();
         move |dataset: DatasetName| {
             let mut again = again;
-            let (bus, toasts) = (bus.clone(), toasts);
+            let (sync, toasts) = (sync.clone(), toasts);
             spawn(async move {
-                drive_sync_now(bus, toasts, dataset).await;
+                drive_sync_now(sync, toasts, dataset).await;
                 again += 1;
             });
         }

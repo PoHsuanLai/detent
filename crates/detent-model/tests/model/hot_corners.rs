@@ -11,6 +11,7 @@ use ds_settings::schema::{
 
 fn key(path: &str, kind: KeyKind, marked: bool, exposure: Exposure) -> KeySpec {
     KeySpec {
+        ends: None,
         control: marked.then(|| ControlName(HOT_CORNERS_CONTROL.to_owned())),
         path: KeyPath(path.to_owned()),
         kind,

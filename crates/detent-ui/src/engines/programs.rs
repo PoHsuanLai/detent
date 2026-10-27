@@ -3,16 +3,17 @@
 //! sheet. A path is set through the module when the caret leaves the field or Enter is pressed;
 //! the module's refusal, in its own words, stays under the field.
 
-use super::io::is_text;
-use crate::chooser::{Want, choose};
 use crate::copy;
 use crate::env::Env;
-use crate::inference::{NoteLine, set};
 use crate::key_row::row_id;
-use crate::live::{BusSource, Daemon, Followed, follow};
+use crate::live::{Followed, follow};
+use crate::picker::NoteLine;
 use detent_model::{
     Live, ProgramRow, ProgramsEffect, ProgramsInput, ProgramsPane, program_rows, programs_step,
 };
+use detent_system::bus::{BusSource, Daemon};
+use detent_system::chooser::{Want, choose};
+use detent_system::picker::PickerLink;
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button_model::Answers;
@@ -22,26 +23,38 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 use ds_settings::live::LiveClient;
-use ds_settings::schema::KeyPath;
+use ds_settings::schema::{KeyKind, KeyPath};
+use std::sync::Arc;
 
 /// What the row that opens the sheet is called, and the sheet.
 const TITLE: &str = "Programs for local models";
 
+/// The rows of inferd's module whose value the program rows read: its text rows.
+fn is_text(kind: &KeyKind) -> bool {
+    matches!(kind, KeyKind::Text)
+}
+
 /// Steps the pane on `input` and does what that asks; what each ask ends with is fed back in.
-fn drive(mut pane: Signal<ProgramsPane>, client: Signal<Option<LiveClient>>, input: ProgramsInput) {
+fn drive(
+    mut pane: Signal<ProgramsPane>,
+    client: Signal<Option<LiveClient>>,
+    picker: Arc<dyn PickerLink>,
+    input: ProgramsInput,
+) {
     let (next, effects) = programs_step(pane.peek().clone(), input);
     pane.set(next);
     for effect in effects {
+        let picker = picker.clone();
         spawn(async move {
             let ProgramsEffect::Set(path, value) = effect;
             let Some(opened) = client.peek().clone() else {
                 return;
             };
-            let ended = match set(&opened, &path, &value).await {
+            let ended = match picker.set(&opened, &path, &value).await {
                 Ok(()) => ProgramsInput::Applied(path, value),
                 Err(why) => ProgramsInput::Refused(path, why),
             };
-            drive(pane, client, ended);
+            drive(pane, client, picker, ended);
         });
     }
 }
@@ -51,6 +64,7 @@ async fn follow_rows(
     mut pane: Signal<ProgramsPane>,
     mut client: Signal<Option<LiveClient>>,
     bus: BusSource,
+    picker: Arc<dyn PickerLink>,
 ) {
     follow(
         &bus,
@@ -71,7 +85,12 @@ async fn follow_rows(
             }
             Followed::Changed(path, value) => {
                 if let toml::Value::String(word) = value {
-                    drive(pane, client, ProgramsInput::Changed(path, word));
+                    drive(
+                        pane,
+                        client,
+                        picker.clone(),
+                        ProgramsInput::Changed(path, word),
+                    );
                 }
             }
         },
@@ -87,8 +106,8 @@ pub(crate) fn EnginePrograms() -> Element {
     let client = use_signal(|| None::<LiveClient>);
     let mut opened = use_signal(|| Shown::Hidden);
     use_future({
-        let bus = env.bus.clone();
-        move || follow_rows(pane, client, bus.clone())
+        let (bus, picker) = (env.bus.clone(), env.picker.clone());
+        move || follow_rows(pane, client, bus.clone(), picker.clone())
     });
     let Live::Ready(programs) = pane() else {
         return rsx! {};
@@ -97,8 +116,14 @@ pub(crate) fn EnginePrograms() -> Element {
         return rsx! {};
     }
     let close = EventHandler::new(move |()| opened.set(Shown::Hidden));
+    let picker = env.picker.clone();
     let onset = EventHandler::new(move |(path, value): (KeyPath, String)| {
-        drive(pane, client, ProgramsInput::Set(path, value));
+        drive(
+            pane,
+            client,
+            picker.clone(),
+            ProgramsInput::Set(path, value),
+        );
     });
     rsx! {
         div { class: "engine-programs", "data-programs": "list",
@@ -179,9 +204,9 @@ fn ProgramField(
                     ..Common::default()
                 },
                 onclick: move |_| {
-                    let (bus, picked) = (env.bus.clone(), picked.clone());
+                    let (chooser, picked) = (env.chooser.clone(), picked.clone());
                     spawn(async move {
-                        if let Some(path) = choose(&bus, Want::File).await {
+                        if let Some(path) = choose(chooser.as_ref(), Want::File).await {
                             draft.set(path.clone());
                             onset.call((picked.path, path));
                         }

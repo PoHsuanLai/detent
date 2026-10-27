@@ -19,6 +19,7 @@ fn path(text: &str) -> KeyPath {
 
 fn row(key: &str, gated: &[&str]) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: path(key),
         kind: KeyKind::Menu {

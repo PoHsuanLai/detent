@@ -7,6 +7,7 @@ use toml::Value;
 
 fn spec(kind: KeyKind, default: Value) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: KeyPath("x.y".to_owned()),
         kind,

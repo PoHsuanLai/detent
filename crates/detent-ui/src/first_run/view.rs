@@ -3,12 +3,12 @@
 use super::io::save;
 use crate::assistant_model::AssistantPicker;
 use crate::env::Env;
-use crate::inference::{Picker, use_picker};
-use crate::live::start;
+use crate::picker::{Picker, use_picker};
 use detent_model::{
     Clearing, FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, PageKind, PickerInput,
     PickerState, Stage, first_run_step,
 };
+use detent_system::bus::start;
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button::Button;
@@ -48,8 +48,6 @@ pub fn FirstRunApp() -> Element {
             appearance: now.settings.appearance.appearance(),
             system: now.system,
             material: Material::Window,
-            tint_alpha: Some(now.tint_alpha()),
-            stack: Some(now.material_stack()),
             window: WindowFrame::titlebar("Welcome".to_owned(), TrafficLights::Shown),
             style { {crate::STYLE} }
             FirstRunWindow {}

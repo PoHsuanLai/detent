@@ -23,6 +23,7 @@ fn corner_key(path: &str) -> KeySpec {
         Some(ControlName("corners".to_owned())),
     );
     KeySpec {
+        ends: None,
         control,
         path: KeyPath(path.to_owned()),
         kind,
@@ -48,6 +49,7 @@ fn sill() -> Schema {
         .map(|corner| corner_key(&format!("hot_corners.{corner}")))
         .collect();
     Schema {
+        footnotes: Vec::new(),
         pages: Vec::new(),
         app: AppId("sill".to_owned()),
         file: FilePath(FILE.to_owned()),

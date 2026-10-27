@@ -2,7 +2,7 @@
 
 use crate::files::{Edit, Files};
 use crate::key_row::{KeyBlock, KeyRow, Match};
-use crate::memory::ConfinementNote;
+use crate::memory_consent::ConfinementNote;
 use detent_model::{Control as Kind, KeyEntry, SectionModel, tells_confinement};
 use dioxus::prelude::*;
 use ds::components::fields::field_row::FieldGroup;

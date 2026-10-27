@@ -14,7 +14,8 @@ use detent_intents::{
     ServeFault, SettingsProvider, hand_over_session, search_entries, serve_session,
 };
 use detent_model::{Catalogue, PageSlug, discover, inbox, is_assistant_setup};
-use detent_ui::{App, BusSource, Env, FirstRunApp, Homes, Opening};
+use detent_system::bus::BusSource;
+use detent_ui::{App, Env, FirstRunApp, Homes, Opening};
 use ds_blitz::{
     AppConfig, AppId, Decorations, FileRoots, LaunchError, WindowSize, enter_runtime, launch,
 };

@@ -21,6 +21,7 @@ pub(super) fn row(text: &str) -> ModuleRow {
 
 pub(super) fn spec(key: &str, label: &str, kind: KeyKind) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: path(key),
         kind,

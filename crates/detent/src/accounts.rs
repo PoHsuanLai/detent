@@ -1,7 +1,8 @@
 //! The accounts, as the intents provider asks for them: read from accountd over the session bus.
 
 use detent_intents::{AccountsRead, AccountsSource};
-use detent_ui::{BusSource, read_accounts};
+use detent_system::accounts::read_accounts;
+use detent_system::bus::BusSource;
 
 /// Reads accountd's accounts each time it is asked.
 #[derive(Debug, Clone)]

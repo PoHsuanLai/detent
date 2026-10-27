@@ -104,6 +104,7 @@ pub struct Compositor {
 
 fn spec(path: String, label: &str, kind: KeyKind) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: KeyPath(path),
         kind,

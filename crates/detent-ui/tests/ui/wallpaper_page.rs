@@ -16,12 +16,14 @@ const FILE: &str = "sill/settings.toml";
 /// A stand-in for sill's schema with only the wallpaper's key (sill's fixture predates it).
 fn sill() -> Schema {
     Schema {
+        footnotes: Vec::new(),
         pages: Vec::new(),
         app: AppId("sill".to_owned()),
         file: FilePath(FILE.to_owned()),
         foreign: Default::default(),
         version: 1,
         key: vec![KeySpec {
+            ends: None,
             control: Some(ControlName("picture".to_owned())),
             path: KeyPath("wallpaper.picture".to_owned()),
             kind: KeyKind::Text,

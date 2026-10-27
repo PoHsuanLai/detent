@@ -11,6 +11,7 @@ pub(super) fn path(text: &str) -> KeyPath {
 
 pub(super) fn menu(key: &str, label: &str) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: path(key),
         kind: KeyKind::Menu {

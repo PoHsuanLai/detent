@@ -4,9 +4,9 @@
 
 use super::picker::AssistantPicker;
 use crate::env::Env;
-use crate::inference::{Picker, use_picker};
-use crate::live::start;
+use crate::picker::{Picker, use_picker};
 use detent_model::{Clearing, PageKind, SetupAction, SetupAvailability, setup_availability};
+use detent_system::bus::start;
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button::Button;

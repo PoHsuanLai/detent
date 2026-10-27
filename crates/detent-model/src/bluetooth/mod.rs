@@ -4,6 +4,7 @@
 mod model;
 mod page;
 mod step;
+mod wire;
 
 pub use model::{
     BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus, PairingAnswer,
@@ -11,6 +12,7 @@ pub use model::{
 };
 pub use page::{BLUETOOTH_SLUG, bluetooth_page};
 pub use step::{BtAsking, BtEffect, BtInput, BtReady, BtState, bluetooth_step};
+pub use wire::{BtDeviceWire, BtHearing, bt_change_matters, bt_device_of, is_under_adapter};
 
 #[cfg(test)]
 mod tests;

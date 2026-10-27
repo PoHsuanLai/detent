@@ -192,6 +192,7 @@ impl Inferd {
     fn pool_spec(&self) -> KeySpec {
         let models = WORDS[2..].to_vec();
         KeySpec {
+            ends: None,
             control: None,
             path: KeyPath(POOL_KEY.to_owned()),
             kind: KeyKind::List(Box::new(KeyKind::Menu {
@@ -233,6 +234,7 @@ impl Inferd {
     /// The row of an engine program: advanced text in "Local models".
     fn program_spec(path: &str, label: &str) -> KeySpec {
         KeySpec {
+            ends: None,
             control: None,
             path: KeyPath(path.to_owned()),
             kind: KeyKind::Text,
@@ -269,6 +271,7 @@ impl Inferd {
             false => (format!("{slot}: {}", tier_word(tier)), "Models".to_owned()),
         };
         KeySpec {
+            ends: None,
             control: None,
             path: KeyPath(format!("ai.model.{kind}.{tier}")),
             kind: KeyKind::Menu {

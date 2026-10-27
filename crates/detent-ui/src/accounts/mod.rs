@@ -5,7 +5,6 @@
 //! `adapter.rs` and nowhere else. The first-run step that asks the person to sign in is `setup.rs`.
 
 mod adapter;
-mod add_io;
 mod attention_view;
 mod avatar_view;
 mod detail_view;
@@ -24,8 +23,6 @@ mod sync_read;
 mod watch;
 
 pub(crate) use adapter::OpenButton;
-pub(crate) use add_io::add_account;
-pub use drive::read_accounts;
 pub(crate) use link::AccountLink;
 pub(crate) use pane_view::AccountsPane;
 pub(crate) use setup::AccountsSetup;

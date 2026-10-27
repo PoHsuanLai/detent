@@ -25,6 +25,7 @@ mod step;
 mod sync_now;
 mod sync_status;
 mod target;
+mod valued;
 
 pub use add_account::{AddEnd, Adding};
 pub use attention::Attention;
@@ -54,6 +55,7 @@ pub use step::accounts_step;
 pub use sync_now::SyncNowEnd;
 pub use sync_status::{StorageQuota, SyncBook, SyncPause, SyncStatus, SyncWork};
 pub use target::{AccountSegment, AccountTarget};
+pub use valued::accounts_row_is_valued;
 
 #[cfg(test)]
 mod client_tests;

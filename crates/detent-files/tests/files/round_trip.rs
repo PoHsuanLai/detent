@@ -12,6 +12,7 @@ const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 
 pub(crate) fn key(path: &str, kind: KeyKind, default: Value) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: KeyPath(path.to_owned()),
         kind,

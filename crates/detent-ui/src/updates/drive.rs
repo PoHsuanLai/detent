@@ -1,10 +1,9 @@
 //! The Software Update page's state and what it needs to act: following the service, asking it,
 //! and starting the log-out. The steps are `detent-model`'s `updates_step`.
 
-use super::leave::Departure;
-use super::link::{InstallRefusal, UpdatesLink};
 use crate::env::Env;
 use detent_model::{UpdatesEffect, UpdatesInput, UpdatesState, updates_step};
+use detent_system::updates::{Departure, InstallRefusal, UpdatesLink};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;

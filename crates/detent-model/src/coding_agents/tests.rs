@@ -62,6 +62,7 @@ pub(super) fn agents() -> Agents {
 
 fn menu(key: &str, kind: KeyKind) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: path(key),
         kind,

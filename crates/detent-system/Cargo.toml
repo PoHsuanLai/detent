@@ -1,0 +1,49 @@
+[package]
+name = "detent-system"
+description = "Every service the Settings app reaches: one Link trait per service, the real zbus implementation, and an in-memory fake for tests."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[features]
+# The in-memory fakes of the links, for tests of the layers above.
+testing = []
+
+[dependencies]
+airwaves-bluez = { workspace = true }
+airwaves-nm = { workspace = true }
+almanac-core = { workspace = true }
+anyview-core = { workspace = true }
+anyview-fs = { workspace = true }
+anyview-image = { workspace = true }
+anyview-platform = { workspace = true }
+desktop-client = { workspace = true }
+detent-callers = { workspace = true }
+detent-files = { workspace = true }
+detent-model = { workspace = true }
+ds-peer = { workspace = true }
+ds-settings = { workspace = true, features = ["live", "tokio"] }
+md-5 = { workspace = true }
+porter-client = { workspace = true, features = ["infer", "lending"] }
+porter-core = { workspace = true }
+porter-daemon = { workspace = true }
+porter-dbus = { workspace = true }
+porter-engines = { workspace = true }
+porter-engines-install = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+toml = { workspace = true }
+zbus = { workspace = true, features = ["tokio"] }
+
+[dev-dependencies]
+# The integration tests use the fakes, which the library has behind `testing`.
+detent-system = { workspace = true, features = ["testing"] }
+detent-callers = { workspace = true, features = ["testing"] }
+ds-settings = { workspace = true, features = ["testing"] }
+
+[lints]
+workspace = true

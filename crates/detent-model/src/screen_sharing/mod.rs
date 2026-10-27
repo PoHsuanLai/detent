@@ -3,9 +3,11 @@
 //! asks next time. Pure; the portal is the window's (`detent-ui`).
 
 mod grant;
+mod rows;
 mod step;
 
 pub use grant::{APP_ID_MAX, GRANTS_MAX, ScreenGrant, ShareLength};
+pub use rows::{ScreenGrantRow, screen_grants_of};
 pub use step::{
     ScreenSharingEffect, ScreenSharingInput, ScreenSharingReady, ScreenSharingState,
     screen_sharing_step,

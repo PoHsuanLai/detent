@@ -2,12 +2,12 @@
 //! when a module appears, again when it says a row changed, and again when its name changes
 //! hands. A module that is not there leaves only its part out.
 
-use super::drive::is_valued;
 use super::feeds::Feeds;
 use super::reload::{reload, reload_later};
 use crate::env::Env;
-use crate::live::{BusSource, Daemon, Followed, follow};
-use detent_model::{Absence, AccountsPane, Described, ModuleId, Sources};
+use crate::live::{Followed, follow};
+use detent_model::{Absence, AccountsPane, Described, ModuleId, Sources, accounts_row_is_valued};
+use detent_system::bus::{BusSource, Daemon};
 use dioxus::prelude::*;
 
 /// How many times a failed read is tried again.
@@ -77,35 +77,40 @@ async fn watch(
 ) {
     let mut client = feeds.of(module).client;
     let reads = feeds.of(module).reads;
-    follow(&bus, &Daemon::of(module), is_valued, |followed| {
-        match followed {
-            Followed::Opened(opened, described) => {
-                client.set(Some(opened));
-                hear(sources, listed, module, Ok(described));
-            }
-            Followed::Gone(absence) => {
-                client.set(None);
-                hear(sources, listed, module, Err(absence));
-            }
-            Followed::Changed(..) => {
-                let Some(opened) = client.peek().clone() else {
-                    return;
-                };
-                spawn(async move {
-                    let mut found = reload(reads, &opened).await;
-                    // A failed read keeps the list and is tried again, a few times.
-                    for _ in 0..RETRIES {
-                        if !matches!(found, Some(Err(_))) {
-                            break;
+    follow(
+        &bus,
+        &Daemon::of(module),
+        accounts_row_is_valued,
+        |followed| {
+            match followed {
+                Followed::Opened(opened, described) => {
+                    client.set(Some(opened));
+                    hear(sources, listed, module, Ok(described));
+                }
+                Followed::Gone(absence) => {
+                    client.set(None);
+                    hear(sources, listed, module, Err(absence));
+                }
+                Followed::Changed(..) => {
+                    let Some(opened) = client.peek().clone() else {
+                        return;
+                    };
+                    spawn(async move {
+                        let mut found = reload(reads, &opened).await;
+                        // A failed read keeps the list and is tried again, a few times.
+                        for _ in 0..RETRIES {
+                            if !matches!(found, Some(Err(_))) {
+                                break;
+                            }
+                            found = reload_later(reads, &opened).await;
                         }
-                        found = reload_later(reads, &opened).await;
-                    }
-                    if let Some(Ok(described)) = found {
-                        hear(sources, listed, module, Ok(described));
-                    }
-                });
+                        if let Some(Ok(described)) = found {
+                            hear(sources, listed, module, Ok(described));
+                        }
+                    });
+                }
             }
-        }
-    })
+        },
+    )
     .await;
 }

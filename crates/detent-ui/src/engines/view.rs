@@ -1,13 +1,13 @@
 //! The note, its install line and its button.
 
-use super::io::{look, restart};
 use crate::copy;
 use crate::env::Env;
-use crate::live::{BusSource, Daemon, connect, next_owner, owner_changes};
 use detent_model::{
     EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LlamaCpp, Restart, StartStanding,
     engines_step, install_advice, setup_note,
 };
+use detent_system::bus::{BusSource, Daemon, connect, next_owner, owner_changes};
+use detent_system::engines::EnginesLink;
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::command_line::CommandLine;
@@ -16,27 +16,33 @@ use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;
 use ds::style::tokens::control_size::ControlSize;
+use std::sync::Arc;
 
 /// Steps the state on `input` and does what that asks; what each ask ends with is fed back in.
-fn drive(mut state: Signal<EnginesState>, toasts: ToastHub, bus: BusSource, input: EnginesInput) {
+fn drive(
+    mut state: Signal<EnginesState>,
+    toasts: ToastHub,
+    link: Arc<dyn EnginesLink>,
+    input: EnginesInput,
+) {
     let (next, effects) = engines_step(*state.peek(), input);
     state.set(next);
     for effect in effects {
-        let bus = bus.clone();
+        let link = link.clone();
         match effect {
             EnginesEffect::RestartFailed => {
                 toasts.push(copy::engines::restart_failed().to_owned(), None)
             }
             EnginesEffect::Look => {
                 spawn(async move {
-                    let found = look(&bus).await;
-                    drive(state, toasts, bus, EnginesInput::Listed(found));
+                    let found = link.look().await;
+                    drive(state, toasts, link, EnginesInput::Listed(found));
                 });
             }
             EnginesEffect::Restart => {
                 spawn(async move {
-                    let ended = restart(&bus).await;
-                    drive(state, toasts, bus, EnginesInput::Restarted(ended));
+                    let ended = link.restart().await;
+                    drive(state, toasts, link, EnginesInput::Restarted(ended));
                 });
             }
         }
@@ -45,17 +51,22 @@ fn drive(mut state: Signal<EnginesState>, toasts: ToastHub, bus: BusSource, inpu
 
 /// Looks when the note appears and again each time the assistant's name changes hands, never
 /// starting it.
-async fn follow(state: Signal<EnginesState>, toasts: ToastHub, bus: BusSource) {
+async fn follow(
+    state: Signal<EnginesState>,
+    toasts: ToastHub,
+    bus: BusSource,
+    link: Arc<dyn EnginesLink>,
+) {
     let Ok(connection) = connect(&bus).await else {
-        return drive(state, toasts, bus, EnginesInput::Listed(LlamaCpp::Unknown));
+        return drive(state, toasts, link, EnginesInput::Listed(LlamaCpp::Unknown));
     };
     // Subscribed before the first look, so a change in between is not lost.
     let Ok(mut owners) = owner_changes(&connection, &Daemon::inferd()).await else {
         return;
     };
     loop {
-        let found = look(&bus).await;
-        drive(state, toasts, bus.clone(), EnginesInput::Listed(found));
+        let found = link.look().await;
+        drive(state, toasts, link.clone(), EnginesInput::Listed(found));
         if next_owner(&mut owners).await.is_none() {
             return;
         }
@@ -83,13 +94,17 @@ pub(crate) fn LocalEnginesNote() -> Element {
         move || install_advice(&std::fs::read_to_string(file).unwrap_or_default())
     });
     use_future({
-        let bus = env.bus.clone();
-        move || follow(state, toasts, bus.clone())
+        let (bus, link) = (env.bus.clone(), env.engine_note.clone());
+        move || follow(state, toasts, bus.clone(), link.clone())
     });
     let Some(note) = setup_note(&state(), &advice) else {
         return rsx! {};
     };
-    let (press, allow, cancel) = (env.bus.clone(), env.bus.clone(), env.bus.clone());
+    let (press, allow, cancel) = (
+        env.engine_note.clone(),
+        env.engine_note.clone(),
+        env.engine_note.clone(),
+    );
     let question = (state().restart == Restart::Asking).then(|| {
         let (title, message) = copy::engines::restart_question();
         rsx! {

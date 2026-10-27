@@ -2,7 +2,7 @@
 
 use crate::controls::{Control, FileOnlyControl};
 use crate::files::{Edit, Files, value_of, written_value};
-use crate::memory::ConsentNote;
+use crate::memory_consent::ConsentNote;
 use detent_model::{KeyEntry, is_memory_setting};
 use dioxus::prelude::*;
 use ds::components::fields::field_help::HelpShown;

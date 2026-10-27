@@ -2,7 +2,7 @@
 
 use crate::env::Env;
 use crate::files::{Edit, Files, store};
-use crate::memory::use_memory_consent;
+use crate::memory_consent::use_memory_consent;
 use crate::page_view::PageView;
 use crate::sharing::use_sharing;
 use crate::sidebar::sidebar_items;

@@ -20,6 +20,7 @@ mod engine_install;
 mod engines;
 mod entry;
 mod extensions;
+mod file_uri;
 mod first_run;
 mod hot_corners;
 mod layout;
@@ -64,8 +65,8 @@ pub use accounts::{
     HoldInput, Holds, LocalFiles, ModuleId, ModuleRow, Place, ReadTurn, Reads, ReauthEnd,
     RemovalQuestion, Secret, SecretStanding, SignInClient, SignOutEnd, SignedIn, Source, Sources,
     SpendBar, SpendLine, StorageQuota, SwitchState, SyncAdd, SyncBook, SyncHold, SyncNowEnd,
-    SyncPause, SyncStatus, SyncWork, accounts_setup_offer, accounts_step, hold_step,
-    is_accounts_setup, signed_in,
+    SyncPause, SyncStatus, SyncWork, accounts_row_is_valued, accounts_setup_offer, accounts_step,
+    hold_step, is_accounts_setup, signed_in,
 };
 pub use advanced::advanced_name;
 pub use arrival::{Arrival, arrival};
@@ -78,9 +79,10 @@ pub use assistants::{
     places_step,
 };
 pub use bluetooth::{
-    BLUETOOTH_SLUG, BatteryLevel, BtAddress, BtAsking, BtDevice, BtEffect, BtInput, BtKind, BtLink,
-    BtPairing, BtPower, BtReady, BtState, BtStatus, PairingAnswer, PairingAsk, PairingCode,
-    PairingQuestion, bluetooth_page, bluetooth_step,
+    BLUETOOTH_SLUG, BatteryLevel, BtAddress, BtAsking, BtDevice, BtDeviceWire, BtEffect, BtHearing,
+    BtInput, BtKind, BtLink, BtPairing, BtPower, BtReady, BtState, BtStatus, PairingAnswer,
+    PairingAsk, PairingCode, PairingQuestion, bluetooth_page, bluetooth_step, bt_change_matters,
+    bt_device_of, is_under_adapter,
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use coding_agents::{
@@ -123,6 +125,7 @@ pub use extensions::{
     ExtensionRow, ExtensionStanding, ExtensionTrouble, InstalledExtensions, Offer, Offers,
     extensions_page, stray_word,
 };
+pub use file_uri::path_of_file_uri;
 pub use first_run::{
     FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
 };
@@ -153,7 +156,8 @@ pub use picker::{
     Applying, AutoPool, AwaitingAccount, Busy, Choice, ChoiceGap, ChoiceReadiness, ChoiceSection,
     Clearing, Described, Gate, KindRows, Loading, LocalAsk, LocalEngine, LocalModel, LocalView,
     MenuLine, ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup, PoolHeading,
-    PoolMembership, PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_of, step,
+    PoolMembership, PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_of,
+    picker_row_is_choice, step,
 };
 pub use picture_add::AddOutcome;
 pub use privacy::{
@@ -169,8 +173,8 @@ pub use running::{
     running_step,
 };
 pub use screen_sharing::{
-    APP_ID_MAX, GRANTS_MAX, ScreenGrant, ScreenSharingEffect, ScreenSharingInput,
-    ScreenSharingReady, ScreenSharingState, ShareLength, screen_sharing_step,
+    APP_ID_MAX, GRANTS_MAX, ScreenGrant, ScreenGrantRow, ScreenSharingEffect, ScreenSharingInput,
+    ScreenSharingReady, ScreenSharingState, ShareLength, screen_grants_of, screen_sharing_step,
 };
 pub use search::{Found, Hit, Rank, Search, search};
 pub use sharing::{Existing, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way, sharing_step};
@@ -197,10 +201,13 @@ pub use wallpaper::{
 };
 pub use warning::{StaleReason, Warning};
 pub use wifi::{
-    AccessPoint, AskKind, AskStanding, HiddenForm, HiddenLogin, HiddenNetwork, HiddenSecurity,
-    JoinFailure, NetworkLink, NetworkLock, Passphrase, PasswordAsk, Remembered, SignalBars,
-    SignalStrength, Ssid, WIFI_SLUG, WifiAsking, WifiEffect, WifiInput, WifiLogin, WifiNetwork,
-    WifiRadio, WifiReady, WifiState, WifiStatus, WifiWire, wifi_page, wifi_step,
+    AccessPoint, AskKind, AskStanding, DeviceProgress, HiddenForm, HiddenLogin, HiddenNetwork,
+    HiddenSecurity, JoinFailure, JoinSecret, JoinVerdict, NetworkLink, NetworkLock, Passphrase,
+    PasswordAsk, Remembered, SignalBars, SignalStrength, Ssid, WIFI_SLUG, WifiAsking,
+    WifiConnection, WifiEffect, WifiInput, WifiLogin, WifiNetwork, WifiRadio, WifiReady,
+    WifiSecurity, WifiSetting, WifiSettingGroup, WifiState, WifiStatus, WifiVisibility, WifiWire,
+    connection_for, join_verdict, wifi_link_of, wifi_lock_of, wifi_page, wifi_security_of,
+    wifi_step,
 };
 pub use words::{humanize, word_label};
 pub use work::Work;

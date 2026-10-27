@@ -2,9 +2,9 @@
 //! hearing pairing questions while the page is shown, and asking BlueZ. The steps are
 //! `detent-model`'s `bluetooth_step`.
 
-use super::link::{BluetoothLink, BtSession, PairingReply, PairingRequest};
 use crate::env::Env;
 use detent_model::{BtEffect, BtInput, BtState, PairingAnswer, bluetooth_step};
+use detent_system::bluetooth::{BluetoothLink, BtSession, PairingReply, PairingRequest};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;

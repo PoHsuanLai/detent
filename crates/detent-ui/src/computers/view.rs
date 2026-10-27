@@ -1,15 +1,15 @@
 //! The "Your computers" group (its rows are the assistant's places, drawn by the Assistants block),
 //! the Add list, and the group of computers asking to use this one's models.
 
-use super::io::{Change, Watch, candidates, change, models, read};
 use super::server_sheet::ServerSheetView;
 use crate::assistants::{PlaceEntry, PlaceRow};
-use crate::copy::{Subject, absence as absence_words, guest_standing};
+use crate::copy::{self, Subject, absence as absence_words, guest_standing};
 use crate::env::Env;
-use crate::live::{BusSource, Daemon, next_owner, owner_changes};
 use detent_model::{
     AddList, ComputersEffect, ComputersInput, ComputersReady, ComputersState, computers_step,
 };
+use detent_system::bus::{BusSource, Daemon, next_owner, owner_changes};
+use detent_system::computers::{Change, ChangeFailure, ComputersLink};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_help::HelpShown;
@@ -19,6 +19,7 @@ use ds::root::common::Common;
 use ds::stack::toast_hub::ToastHub;
 use ds::style::tokens::control_size::ControlSize;
 use porter_core::lending::{Approval, ComputerCandidate, GuestAnswer, GuestRow, RowState};
+use std::sync::Arc;
 
 /// The group's title.
 const TITLE: &str = "Your computers";
@@ -54,48 +55,56 @@ fn change_of(effect: ComputersEffect) -> Option<Change> {
     }
 }
 
+/// The sentence for a change that was not made: the form's own, or the service's.
+fn sentence_of_failure(failure: ChangeFailure) -> String {
+    match failure {
+        ChangeFailure::Fault(fault) => copy::server_fault(fault).to_owned(),
+        ChangeFailure::Told(words) => words,
+    }
+}
+
 /// Steps the state on `input` and does what that asks; what each ask ends with is fed back in.
 fn drive(
     mut state: Signal<ComputersState>,
     toasts: ToastHub,
-    bus: BusSource,
+    link: Arc<dyn ComputersLink>,
     input: ComputersInput,
 ) {
     let (next, effects) = computers_step(state.peek().clone(), input);
     state.set(next);
     for effect in effects {
-        let bus = bus.clone();
+        let link = link.clone();
         match effect {
             ComputersEffect::Tell(text) => toasts.push(text, None),
             ComputersEffect::Reload => {
                 spawn(async move {
-                    let found = read(&bus).await;
-                    drive(state, toasts, bus, ComputersInput::Found(found));
+                    let found = link.read().await;
+                    drive(state, toasts, link, ComputersInput::Found(found));
                 });
             }
             ComputersEffect::LoadCandidates => {
                 spawn(async move {
-                    let found = candidates(&bus).await;
-                    drive(state, toasts, bus, ComputersInput::Candidates(found));
+                    let found = link.candidates().await;
+                    drive(state, toasts, link, ComputersInput::Candidates(found));
                 });
             }
             ComputersEffect::LoadServerModels => {
                 spawn(async move {
-                    let found = models(&bus).await;
-                    drive(state, toasts, bus, ComputersInput::ServerModels(found));
+                    let found = link.models().await;
+                    drive(state, toasts, link, ComputersInput::ServerModels(found));
                 });
             }
             other => {
                 if let Some(asked) = change_of(other) {
                     let server = matches!(asked, Change::Server(_));
                     spawn(async move {
-                        let ended = change(&bus, asked).await;
+                        let ended = link.change(asked).await.map_err(sentence_of_failure);
                         let input = if server {
                             ComputersInput::ServerAdded(ended)
                         } else {
                             ComputersInput::Changed(ended)
                         };
-                        drive(state, toasts, bus, input);
+                        drive(state, toasts, link, input);
                     });
                 }
             }
@@ -104,21 +113,26 @@ fn drive(
 }
 
 /// Reads the lists, then reads them again each time inferd says they changed or comes back.
-async fn follow_lists(state: Signal<ComputersState>, toasts: ToastHub, bus: BusSource) {
-    let connection = match crate::live::connect(&bus).await {
+async fn follow_lists(
+    state: Signal<ComputersState>,
+    toasts: ToastHub,
+    bus: BusSource,
+    link: Arc<dyn ComputersLink>,
+) {
+    let connection = match detent_system::bus::connect(&bus).await {
         Ok(connection) => connection,
-        Err(absence) => return drive(state, toasts, bus, ComputersInput::Found(Err(absence))),
+        Err(absence) => return drive(state, toasts, link, ComputersInput::Found(Err(absence))),
     };
     let Ok(mut owners) = owner_changes(&connection, &Daemon::inferd()).await else {
         return;
     };
     loop {
         // Subscribed before the first read, so a change in between is not lost.
-        let watch = Watch::start(&bus).await;
-        reread(state, toasts, &bus).await;
+        let watch = link.changes().await;
+        reread(state, toasts, &link).await;
         if let Ok(mut watch) = watch {
-            while watch.changed().await.is_some() {
-                reread(state, toasts, &bus).await;
+            while watch.recv().await.is_some() {
+                reread(state, toasts, &link).await;
             }
         }
         if next_owner(&mut owners).await.is_none() {
@@ -128,9 +142,9 @@ async fn follow_lists(state: Signal<ComputersState>, toasts: ToastHub, bus: BusS
 }
 
 /// Reads the lists and steps the state on what was found.
-async fn reread(state: Signal<ComputersState>, toasts: ToastHub, bus: &BusSource) {
-    let found = read(bus).await;
-    drive(state, toasts, bus.clone(), ComputersInput::Found(found));
+async fn reread(state: Signal<ComputersState>, toasts: ToastHub, link: &Arc<dyn ComputersLink>) {
+    let found = link.read().await;
+    drive(state, toasts, link.clone(), ComputersInput::Found(found));
 }
 
 /// Follows the computers and hands back their state and the way to feed it an input.
@@ -139,12 +153,12 @@ pub(crate) fn use_computers() -> (Signal<ComputersState>, EventHandler<Computers
     let toasts = use_toasts();
     let state = use_signal(ComputersState::default);
     use_future({
-        let bus = env.bus.clone();
-        move || follow_lists(state, toasts, bus.clone())
+        let (bus, link) = (env.bus.clone(), env.computers.clone());
+        move || follow_lists(state, toasts, bus.clone(), link.clone())
     });
-    let bus = env.bus.clone();
+    let link = env.computers.clone();
     let feed = EventHandler::new(move |input: ComputersInput| {
-        drive(state, toasts, bus.clone(), input);
+        drive(state, toasts, link.clone(), input);
     });
     (state, feed)
 }

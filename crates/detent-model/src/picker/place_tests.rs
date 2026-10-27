@@ -59,6 +59,7 @@ fn models() -> Vec<(&'static str, Option<ChoicePlace>, Option<&'static str>)> {
 fn spec(key: &str, kind: KeyKind, note: Option<&str>) -> KeySpec {
     let all = models();
     KeySpec {
+        ends: None,
         control: None,
         path: KeyPath(key.to_owned()),
         kind,

@@ -1,11 +1,11 @@
 //! Following the engines and carrying out what the offer asks. Every page that draws the picker
 //! calls [`use_board`] through `use_picker`, so its Local row and the sheet agree.
 
-use super::desk::Desk;
 use crate::env::Env;
 use detent_model::{
     EngineOfferEffect, EngineOfferInput, EngineOfferState, EngineStanding, engine_offer_step,
 };
+use detent_system::engine_install::Desk;
 use dioxus::prelude::*;
 use std::collections::VecDeque;
 use std::sync::Arc;

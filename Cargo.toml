@@ -6,6 +6,7 @@ members = [
   "crates/detent-files",
   "crates/detent-intents",
   "crates/detent-model",
+  "crates/detent-system",
   "crates/detent-testkit",
   "crates/detent-ui",
 ]
@@ -24,6 +25,7 @@ detent-callers = { path = "crates/detent-callers" }
 detent-files   = { path = "crates/detent-files" }
 detent-intents = { path = "crates/detent-intents" }
 detent-model   = { path = "crates/detent-model" }
+detent-system  = { path = "crates/detent-system" }
 detent-testkit = { path = "crates/detent-testkit" }
 detent-ui      = { path = "crates/detent-ui" }
 # Sibling repos, checked out next to this one (the worktree holds symlinks to their masters).
@@ -114,7 +116,7 @@ toml_edit = "0.25"
 
 # The portable Blitz repairs (own repo, public). Local checkouts redirect it to a sibling path through
 # each workspace root's [patch] (quire/CONSUMING.md section 1); git consumers get this rev.
-blitz-kit = { git = "https://github.com/PoHsuanLai/blitz-kit", rev = "80938e37915db0ca9ba6ac19216a4efa6bd76f73" }
+blitz-kit = { git = "https://github.com/PoHsuanLai/blitz-kit", rev = "47b6ceac2b7ab843e44e8991186bf5575dff6013" }
 
 # Blitz: git main, pinned by rev (crates.io dioxus-native 0.8 alpha does not build with
 # blitz 0.3.0-beta.2). The in-tree dioxus-native-dom targets dioxus 0.7.x.

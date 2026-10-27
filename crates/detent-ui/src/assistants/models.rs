@@ -1,9 +1,10 @@
 //! The models inferd lists, read where a place offers them to choose from.
 
 use crate::env::Env;
-use crate::inference::is_choice;
-use crate::live::{Daemon, Followed, follow};
+use crate::live::{Followed, follow};
 use detent_model::Ready;
+use detent_model::picker_row_is_choice as is_choice;
+use detent_system::bus::Daemon;
 use dioxus::prelude::*;
 
 /// inferd's picker rows, none while inferd is not there.

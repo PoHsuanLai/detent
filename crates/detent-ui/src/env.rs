@@ -2,22 +2,33 @@
 //! open. Provided as a context by whoever launches the app (`ds_blitz::AppConfig::with_context`),
 //! so a test starts it on scratch directories.
 
-use crate::bluetooth::{BluetoothLink, OnSystem as BluetoothOnSystem};
-use crate::displays::{DisplaysLink, OnCompositor};
-use crate::engine_install::{Desk, System};
-use crate::hot_corners::{CornerDesk, OnSystem as CornersOnSystem};
-use crate::inference::ReasonFeed;
-use crate::lender::Lender;
-use crate::live::BusSource;
 use crate::marks::ProviderMarks;
-use crate::pictures::{OnDisk, Pictures, Thumbnails};
-use crate::updates::{Departure, OnBus, PowerMenu, UpdatesLink};
-use crate::wifi::{OnSystem as WifiOnSystem, WifiLink};
+use crate::picker::ReasonFeed;
 use detent_files::{
     CacheHome, ConfigHome, DataHome, ExtensionHome, FirstRunMark, KeymapFiles, PictureDirs,
     StateHome,
 };
 use detent_model::{Catalogue, Inbox, OriginRule, PageSlug, Warning, discover};
+use detent_system::accounts::{AccountsLink, OnBus as AccountsOnBus};
+use detent_system::bluetooth::{BluetoothLink, OnBluetooth};
+use detent_system::bus::BusSource;
+use detent_system::chooser::{ChooserLink, OnPortal};
+use detent_system::computers::{ComputersLink, OnBus as ComputersOnBus};
+use detent_system::displays::{DisplaysLink, OnCompositor};
+use detent_system::engine_install::{Desk, OnEngines};
+use detent_system::engines::{EnginesLink, OnBus as EnginesOnBus};
+use detent_system::hot_corners::{CornerDesk, OnCorners};
+use detent_system::lending::Lender;
+use detent_system::memory_consent::{MemoryLink, OnBus as MemoryOnBus};
+use detent_system::picker::{OnClient as PickerOnClient, PickerLink};
+use detent_system::privacy::{OnClient as PrivacyOnClient, PrivacyLink};
+use detent_system::running::{OnBus as RunningOnBus, RunningLink};
+use detent_system::screen_sharing::{OnBus as ScreenSharingOnBus, ScreenSharingLink};
+use detent_system::spaces::{OnBus as SpacesOnBus, SpacesLink};
+use detent_system::sync::{OnBus as SyncOnBus, SyncLink};
+use detent_system::updates::{Departure, OnBus, PowerMenu, UpdatesLink};
+use detent_system::wallpaper::{OnDisk, Pictures, Thumbnails};
+use detent_system::wifi::{OnWifi, WifiLink};
 use ds_helpers::Environment;
 use ds_settings::SystemPrefsSource;
 use std::path::PathBuf;
@@ -53,6 +64,28 @@ pub struct Env {
     pub inbox: Inbox,
     /// Where inferd is looked for.
     pub bus: BusSource,
+    /// The desktop's file chooser, which a folder, a file or a picture is asked of.
+    pub chooser: Arc<dyn ChooserLink>,
+    /// The account and key services behind the Accounts pane.
+    pub accounts: Arc<dyn AccountsLink>,
+    /// The sync service behind the Accounts pane.
+    pub sync: Arc<dyn SyncLink>,
+    /// inferd's module, as the model picker sets its rows.
+    pub picker: Arc<dyn PickerLink>,
+    /// The compositor's module, as the Privacy page sets its rows.
+    pub privacy: Arc<dyn PrivacyLink>,
+    /// The screen-sharing portal behind the Privacy page.
+    pub screen_sharing: Arc<dyn ScreenSharingLink>,
+    /// accountd's registry and memory's controls behind the Spaces page.
+    pub spaces: Arc<dyn SpacesLink>,
+    /// The memory service's consent and confinement.
+    pub memory: Arc<dyn MemoryLink>,
+    /// The models inferd runs itself.
+    pub running: Arc<dyn RunningLink>,
+    /// The computers over inferd.
+    pub computers: Arc<dyn ComputersLink>,
+    /// The llama.cpp note's look at the assistant, and its restart.
+    pub engine_note: Arc<dyn EnginesLink>,
     /// Where the model picker's reason footer reads inferd's `Why` and `Declined` from.
     pub reasons: ReasonFeed,
     /// The marks of the providers the Accounts page shows.
@@ -136,16 +169,21 @@ impl Env {
         } = homes;
         let found = discover(schema_dirs);
         let keymap = KeymapFiles::under(&config_home);
+        let chooser: Arc<dyn ChooserLink> = Arc::new(OnPortal(bus.clone()));
         let updates = Arc::new(OnBus(bus.clone()));
-        let engines = Arc::new(System::new(bus.clone(), &data_home.0));
-        let pictures = Arc::new(OnDisk::new(
+        let engines = Arc::new(OnEngines::new(
             bus.clone(),
+            Arc::clone(&chooser),
+            &data_home.0,
+        ));
+        let pictures = Arc::new(OnDisk::new(
+            Arc::clone(&chooser),
             PictureDirs::standard(&data_home),
             Thumbnails::under(&cache_home),
         ));
-        let corners = Arc::new(CornersOnSystem::new(bus.clone(), Vec::new()));
-        let wifi = Arc::new(WifiOnSystem(bus.clone()));
-        let bluetooth = Arc::new(BluetoothOnSystem::new(bus.clone()));
+        let corners = Arc::new(OnCorners::new(Arc::clone(&chooser), Vec::new()));
+        let wifi = Arc::new(OnWifi(bus.clone()));
+        let bluetooth = Arc::new(OnBluetooth::new(bus.clone()));
         let displays = Arc::new(OnCompositor(bus.clone()));
         let extensions = ExtensionHome::under(&config_home, &data_home, &[]);
         Env {
@@ -157,6 +195,17 @@ impl Env {
             system,
             opening,
             inbox: Inbox::default(),
+            chooser,
+            accounts: Arc::new(AccountsOnBus(bus.clone())),
+            sync: Arc::new(SyncOnBus(bus.clone())),
+            picker: Arc::new(PickerOnClient),
+            privacy: Arc::new(PrivacyOnClient),
+            screen_sharing: Arc::new(ScreenSharingOnBus(bus.clone())),
+            spaces: Arc::new(SpacesOnBus(bus.clone())),
+            memory: Arc::new(MemoryOnBus(bus.clone())),
+            running: Arc::new(RunningOnBus(bus.clone())),
+            computers: Arc::new(ComputersOnBus(bus.clone())),
+            engine_note: Arc::new(EnginesOnBus(bus.clone())),
             bus,
             reasons: ReasonFeed::default(),
             marks: ProviderMarks::shipped(),
@@ -274,13 +323,64 @@ impl Env {
     /// This environment listing the apps' actions from the manifests in `intent_dirs`, in the order
     /// of trust.
     pub fn with_intent_dirs(self, intent_dirs: Vec<PathBuf>) -> Env {
-        let corners = Arc::new(CornersOnSystem::new(self.bus.clone(), intent_dirs));
+        let corners = Arc::new(OnCorners::new(Arc::clone(&self.chooser), intent_dirs));
         Env { corners, ..self }
     }
 
     /// This environment with the Hot Corners sheet working through `corners`.
     pub fn with_corners(self, corners: Arc<dyn CornerDesk>) -> Env {
         Env { corners, ..self }
+    }
+
+    /// This environment asking `chooser` for folders, files and pictures.
+    pub fn with_chooser(self, chooser: Arc<dyn ChooserLink>) -> Env {
+        Env { chooser, ..self }
+    }
+
+    /// This environment with the Accounts pane over `accounts`.
+    pub fn with_accounts(self, accounts: Arc<dyn AccountsLink>) -> Env {
+        Env { accounts, ..self }
+    }
+
+    /// This environment with the Accounts pane asking the sync service through `sync`.
+    pub fn with_sync(self, sync: Arc<dyn SyncLink>) -> Env {
+        Env { sync, ..self }
+    }
+
+    /// This environment with the Spaces page over `spaces`.
+    pub fn with_spaces(self, spaces: Arc<dyn SpacesLink>) -> Env {
+        Env { spaces, ..self }
+    }
+
+    /// This environment with the Privacy page's portal list over `screen_sharing`.
+    pub fn with_screen_sharing(self, screen_sharing: Arc<dyn ScreenSharingLink>) -> Env {
+        Env {
+            screen_sharing,
+            ..self
+        }
+    }
+
+    /// This environment with the memory consent over `memory`.
+    pub fn with_memory(self, memory: Arc<dyn MemoryLink>) -> Env {
+        Env { memory, ..self }
+    }
+
+    /// This environment with the running-models list over `running`.
+    pub fn with_running(self, running: Arc<dyn RunningLink>) -> Env {
+        Env { running, ..self }
+    }
+
+    /// This environment with Your computers over `computers`.
+    pub fn with_computers(self, computers: Arc<dyn ComputersLink>) -> Env {
+        Env { computers, ..self }
+    }
+
+    /// This environment with the llama.cpp note over `engine_note`.
+    pub fn with_engine_note(self, engine_note: Arc<dyn EnginesLink>) -> Env {
+        Env {
+            engine_note,
+            ..self
+        }
     }
 
     /// This environment with the picker's reason footer reading `reasons`.

@@ -10,9 +10,8 @@ use crate::env::Env;
 use crate::extensions::ExtensionsPane;
 use crate::files::{Edit, Files};
 use crate::hot_corners::HotCorners;
-use crate::inference::{LocalRuntimes, ModelPicker, show_reason};
-use crate::live::start;
-use crate::memory::MemoryConsent;
+use crate::memory_consent::MemoryConsent;
+use crate::picker::{LocalRuntimes, ModelPicker, show_reason};
 use crate::privacy::PrivacyPane;
 use crate::screen_sharing::ScreenSharingPane;
 use crate::section_view::SectionView;
@@ -24,6 +23,7 @@ use crate::wifi::WifiPane;
 use detent_model::{
     Block, Offers, PageModel, PageSlug, advanced_sections, blocks, holds_memory_settings,
 };
+use detent_system::bus::start;
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
 

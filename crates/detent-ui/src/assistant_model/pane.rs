@@ -1,7 +1,7 @@
 //! The Assistant Model page: the one row that chooses the model.
 
 use super::picker::AssistantPicker;
-use crate::inference::{Picker, use_picker};
+use crate::picker::{Picker, use_picker};
 use detent_model::Clearing;
 use dioxus::prelude::*;
 

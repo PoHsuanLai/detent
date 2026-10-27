@@ -1,20 +1,20 @@
 //! The list's state, read from the portal when the page is shown and driven by Remove.
 
-use super::io::{list, revoke};
 use super::view::Listed;
 use crate::copy::{Subject, absence as absence_words};
 use crate::env::Env;
-use crate::live::BusSource;
 use crate::privacy::use_program_book;
 use detent_model::{
     ScreenSharingEffect, ScreenSharingInput, ScreenSharingState, screen_sharing_step,
 };
+use detent_system::screen_sharing::ScreenSharingLink;
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;
 use std::collections::VecDeque;
+use std::sync::Arc;
 
 /// The title of the group, and of its row when the portal is not there.
 pub(super) const TITLE: &str = "Screen sharing";
@@ -28,19 +28,19 @@ pub(crate) fn ScreenSharingPane() -> Element {
     let book = use_program_book();
 
     use_future({
-        let bus = env.bus.clone();
+        let link = env.screen_sharing.clone();
         move || {
-            let bus = bus.clone();
+            let link = link.clone();
             async move {
-                let found = list(&bus).await;
-                drive(bus, state, toasts, ScreenSharingInput::Found(found)).await;
+                let found = link.list().await;
+                drive(link, state, toasts, ScreenSharingInput::Found(found)).await;
             }
         }
     });
     let remove = EventHandler::new({
-        let bus = env.bus.clone();
+        let link = env.screen_sharing.clone();
         move |input: ScreenSharingInput| {
-            spawn(drive(bus.clone(), state, toasts, input));
+            spawn(drive(link.clone(), state, toasts, input));
         }
     });
 
@@ -67,7 +67,7 @@ pub(crate) fn ScreenSharingPane() -> Element {
 /// Applies `first`, then every input its effects lead to, until nothing is left to do. The calls
 /// to the portal wait here, so a caller spawns this and returns.
 async fn drive(
-    bus: BusSource,
+    link: Arc<dyn ScreenSharingLink>,
     mut state: Signal<ScreenSharingState>,
     toasts: ToastHub,
     first: ScreenSharingInput,
@@ -80,10 +80,10 @@ async fn drive(
             match effect {
                 ScreenSharingEffect::Tell(text) => toasts.push(text, None),
                 ScreenSharingEffect::Reload => {
-                    queue.push_back(ScreenSharingInput::Found(list(&bus).await));
+                    queue.push_back(ScreenSharingInput::Found(link.list().await));
                 }
                 ScreenSharingEffect::Revoke(app) => {
-                    queue.push_back(ScreenSharingInput::Removed(revoke(&bus, &app).await));
+                    queue.push_back(ScreenSharingInput::Removed(link.revoke(app).await));
                 }
             }
         }

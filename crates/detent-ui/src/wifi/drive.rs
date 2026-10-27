@@ -1,10 +1,10 @@
 //! The Wi-Fi page's state and what it needs to act: following the service and asking it. The
 //! steps are `detent-model`'s `wifi_step`.
 
-use super::link::WifiLink;
 use crate::copy;
 use crate::env::Env;
 use detent_model::{WifiEffect, WifiInput, WifiState, wifi_step};
+use detent_system::wifi::WifiLink;
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;

@@ -7,7 +7,8 @@
 use crate::{HEIGHT, WIDTH, ended, enter_runtime_block, environment};
 use detent_intents::{ServeFault, SettingsProvider, serve_session};
 use detent_model::{Inbox, Notice, Outbox, Receiver, inbox};
-use detent_ui::{App, BusSource, Env, Opening};
+use detent_system::bus::BusSource;
+use detent_ui::{App, Env, Opening};
 use ds_blitz::{
     AppConfig, AppHandle, AppId, Decorations, FileRoots, LastWindowClosed, WindowSize, WindowSpec,
     enter_runtime, launch_idle,

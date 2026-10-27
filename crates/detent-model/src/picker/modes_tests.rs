@@ -64,6 +64,7 @@ fn places(models: &[(&str, &str)]) -> BTreeMap<ChoiceWord, ChoicePlace> {
 
 fn spec(key: &str, label: &str, kind: KeyKind, models: &[(&str, &str)]) -> KeySpec {
     KeySpec {
+        ends: None,
         control: None,
         path: path(key),
         kind,

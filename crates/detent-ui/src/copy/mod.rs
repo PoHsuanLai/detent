@@ -39,7 +39,6 @@ pub(crate) use memory::{CONFIRM, confinement_line, trouble_line, waiting_note};
 pub(crate) use privacy::{SET_BY_ADMINISTRATOR, power_label, program_name, standing_label};
 pub(crate) use screen_sharing::grant_line;
 pub(crate) use spaces::{
-    HISTORY_CHOICES, HISTORY_NOTE, MEMORY_NOT_RUNNING, flip_label, history_label, removal_body,
-    removal_title,
+    HISTORY_CHOICES, HISTORY_NOTE, flip_label, history_label, removal_body, removal_title,
 };
 pub(crate) use style_notes::{STYLE_NOTES_LEAD, STYLE_NOTES_TITLE, note_place, notes_summary};

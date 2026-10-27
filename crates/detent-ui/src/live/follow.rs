@@ -1,14 +1,12 @@
 //! Following a daemon: look for it when its pane appears and again each time its bus name
-//! changes hands, never starting it (`activate::start` does that, once per page visit).
+//! changes hands, never starting it (`detent_system::bus::start` does that, once per page visit).
 
-use super::bus::BusSource;
-use super::daemon::Daemon;
-use super::io::{absence_of, connect, next_change, next_owner, open, owner_changes};
-use super::read::read;
 use detent_model::{Absence, Described};
+use detent_system::bus::{
+    BusSource, Daemon, attach_listening, connect, next_change, next_owner, owner_changes,
+};
 use ds_settings::live::{Changes, LiveClient};
 use ds_settings::schema::{KeyKind, KeyPath};
-use zbus::Connection;
 use zbus::fdo::NameOwnerChangedStream;
 
 /// What the window learns about the daemon, in the order it happens.
@@ -19,62 +17,6 @@ pub(crate) enum Followed {
     Gone(Absence),
     /// The daemon put a row's value in force.
     Changed(KeyPath, toml::Value),
-}
-
-async fn attach(
-    bus: &BusSource,
-    connection: &Connection,
-    daemon: &Daemon,
-    valued: fn(&KeyKind) -> bool,
-) -> Result<(LiveClient, Described), Absence> {
-    let client = open(bus, connection, daemon).await?;
-    let described = read(&client, valued).await?;
-    Ok((client, described))
-}
-
-/// Like [`attach`], listening for changes first, so none falls between the reading and the
-/// listening: what changes during the reading is heard after it.
-async fn attach_listening(
-    bus: &BusSource,
-    connection: &Connection,
-    daemon: &Daemon,
-    valued: fn(&KeyKind) -> bool,
-) -> Result<(LiveClient, Described, Changes), Absence> {
-    let client = open(bus, connection, daemon).await?;
-    let changes = client.changes().await.map_err(absence_of)?;
-    let described = read(&client, valued).await?;
-    Ok((client, described, changes))
-}
-
-/// `daemon`'s module and its rows once, when the daemon is already on the bus: for a caller that
-/// asks a question, maybe sets a row, and follows nothing.
-pub(crate) async fn open_once(
-    bus: &BusSource,
-    daemon: &Daemon,
-    valued: fn(&KeyKind) -> bool,
-) -> Result<(LiveClient, Described), Absence> {
-    let connection = connect(bus).await?;
-    attach(bus, &connection, daemon, valued).await
-}
-
-/// The rows of `daemon`'s module once, when the daemon is already on the bus: for a caller that
-/// asks one question and follows nothing.
-pub(crate) async fn read_once(
-    bus: &BusSource,
-    daemon: &Daemon,
-    valued: fn(&KeyKind) -> bool,
-) -> Result<Described, Absence> {
-    open_once(bus, daemon, valued)
-        .await
-        .map(|(_, described)| described)
-}
-
-/// The rows of `client` as they stand now, a value for each row `valued` picks out.
-pub(crate) async fn reread(
-    client: &LiveClient,
-    valued: fn(&KeyKind) -> bool,
-) -> Result<Described, Absence> {
-    read(client, valued).await
 }
 
 /// Tells `tell` what `daemon` is doing until the bus goes away; `valued` picks the rows whose
