@@ -10,7 +10,7 @@ const TMP: &str = env!("CARGO_TARGET_TMPDIR");
 const MAGNIFICATION: &str = "dock.magnification";
 
 /// The fields docket's `ShippedEntries::parse` takes in a row; it refuses any other.
-const ROW_FIELDS: [&str; 5] = ["kind", "key", "title", "subtitle", "keywords"];
+const ROW_FIELDS: [&str; 4] = ["kind", "key", "title", "subtitle"];
 
 fn generated(test: &str) -> (Catalogue, toml::Table) {
     let scratch = Scratch::under(TMP, test);
