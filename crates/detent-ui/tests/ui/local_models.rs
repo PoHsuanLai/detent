@@ -1,4 +1,5 @@
-//! The "Local models" group over a fake inferd on a private bus: each model the assistant runs
+//! The "Local models" group over a fake inferd (its running models on a private bus, its
+//! picker module in memory): each model the assistant runs
 //! itself with what it is doing, the memory it takes while ready and a Start or Stop; a Start that
 //! waits shows progress until the assistant says the engine changed; a refusal shows its own
 //! words under the row. And the rows that name an engine's program, set through the fake module.
@@ -65,9 +66,10 @@ fn world(name: &str, rows: Vec<RunningModel>) -> World {
         .expect("a runtime for the fake daemon");
     let bus = PrivateBus::start(name);
     let module = Inferd::new(Policy::Allow).on_slots().with_programs();
-    let fake = rt.block_on(serve(&bus, rows, Some(&module)));
+    let fake = rt.block_on(serve(&bus, rows));
     let harness = Sandbox::new(name)
         .on_bus(&bus.address)
+        .with_modules(module.hosted())
         .harness(intelligence());
     World {
         fake,

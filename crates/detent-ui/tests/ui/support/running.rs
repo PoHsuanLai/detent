@@ -3,7 +3,6 @@
 //! finish, a call can be refused with inferd's own sentence, and every call is written down.
 
 use super::bus::PrivateBus;
-use super::inferd::Inferd;
 use porter_dbus::names::{INFERENCE_BUS, INFERENCE_PATH};
 use porter_dbus::{Details, RunState, RunningModel, running_to_dbus};
 use std::sync::{Arc, Mutex};
@@ -144,17 +143,14 @@ impl Fake {
     }
 }
 
-/// Serves inferd running `rows`, with the model picker's module (`module`) on the same
-/// connection when there is one.
-pub async fn serve(bus: &PrivateBus, rows: Vec<RunningModel>, module: Option<&Inferd>) -> Fake {
+/// Serves inferd running `rows`. The model picker's module is not on the bus: a world hosts it in
+/// memory beside this.
+pub async fn serve(bus: &PrivateBus, rows: Vec<RunningModel>) -> Fake {
     let state = Arc::new(State {
         rows: Mutex::new(rows),
         ..State::default()
     });
     let connection = bus.connect().await;
-    if let Some(module) = module {
-        module.serve_module(&connection).await;
-    }
     connection
         .object_server()
         .at(INFERENCE_PATH, Inference(state.clone()))

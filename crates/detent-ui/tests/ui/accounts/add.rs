@@ -44,12 +44,9 @@ fn the_sign_in_step_lists_what_is_signed_in_and_offers_add_account_and_skip() {
         ("accounts-setup-signed-in", identities(), false),
     ];
     for (name, rows, waits) in cases {
-        let rt = runtime();
-        let bus = PrivateBus::start(name);
         let fake = Accountd::new(Policy::Allow, rows.clone());
-        let _daemon = rt.block_on(fake.serve_on(&bus));
         let mut harness = Sandbox::new(name)
-            .on_bus(&bus.address)
+            .with_modules(fake.hosted())
             .harness(setup_opening());
         settle(&mut harness, "the step's rows", |h| {
             h.count(".accounts-setup .account-row-body") == rows.len()
@@ -88,6 +85,5 @@ fn the_sign_in_step_lists_what_is_signed_in_and_offers_add_account_and_skip() {
         for word in ["accountd", "OAuth", "daemon", "MCP", "ACP"] {
             assert!(!text.contains(word), "{name}: {word} is in: {text}");
         }
-        drop(rt);
     }
 }

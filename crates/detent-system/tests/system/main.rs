@@ -3,6 +3,8 @@
 
 mod absent_bus;
 mod handover;
+mod modules_bus;
+mod modules_fake;
 mod private_bus;
 mod spaces_bus;
 mod spaces_fakes;

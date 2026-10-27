@@ -1,18 +1,20 @@
-//! A fake inferd: `org.quire.SettingsModule1` at inferd's path on a private bus, with the rows
+//! A fake inferd: the live settings module at inferd's path, hosted in memory (or served on a
+//! private bus beside other interfaces of inferd's), with the rows
 //! the real module describes (`ai.model.<kind>.<tier>`, each a Menu of "", `auto` and models, and
 //! on slots the text slot's `ai.auto.pool.text`, the list of models Automatic chooses among).
 
 mod data;
 mod module;
 
-use super::bus::PrivateBus;
 use data::{POOL_KEY, PROGRAMS, WORDS, places_of, tier_word};
+use detent_system::bus::Daemon;
+use detent_system::modules::FakeModules;
 use ds_settings::live::{Access, Caller, LiveError, LiveModule, LiveSchema, Verdict, serve};
 use ds_settings::schema::{
     AgentSetting, ChoiceGroup, ChoicePlace, ChoiceWord, CompanyName, EngineName, Exposure, Help,
     KeyKind, KeyPath, KeySpec, Label, Note, Page, Section, UnavailableReason, WordLabels,
 };
-use porter_dbus::names::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
+use porter_dbus::names::INFERENCE_SETTINGS_PATH;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
@@ -101,15 +103,16 @@ impl Inferd {
         self
     }
 
-    /// Serves the module on `bus`, owning inferd's bus name; the connection must be kept alive.
-    pub async fn serve_on(&self, bus: &PrivateBus) -> zbus::Connection {
-        let connection = bus.connect().await;
-        // The module first, the name after: a client told the name is taken finds the module.
-        serve(&connection, INFERENCE_SETTINGS_PATH, self.clone())
-            .await
-            .expect("serves");
-        connection.request_name(INFERENCE_BUS).await.expect("name");
-        connection
+    /// The module hosted in memory as inferd's: what a world's `with_modules` takes.
+    pub fn hosted(&self) -> FakeModules {
+        let modules = FakeModules::new();
+        self.host_on(&modules);
+        modules
+    }
+
+    /// The module hosted as inferd's by `modules`, which may hold other daemons' modules too.
+    pub fn host_on(&self, modules: &FakeModules) {
+        modules.host(&Daemon::inferd(), self.clone());
     }
 
     /// Serves the module on `connection` without taking inferd's bus name, for a test whose other

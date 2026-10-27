@@ -30,6 +30,7 @@ use detent_client::{
 };
 use detent_files::{CacheHome, ConfigHome, DataHome, StateHome};
 use detent_model::{Absence, OriginRule, Outbox, inbox};
+use detent_system::modules::FakeModules;
 use detent_system::spaces::SpacesLink;
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{App, Env, FirstRunApp, Homes, Opening};
@@ -70,6 +71,7 @@ pub struct Sandbox {
     displays: Displays,
     agents_program: Option<std::path::PathBuf>,
     spaces: Option<Arc<dyn SpacesLink>>,
+    modules: Option<FakeModules>,
 }
 
 impl Sandbox {
@@ -101,6 +103,9 @@ impl Sandbox {
             agents_program: None,
             // The Spaces registry is looked for on the bus, which is absent unless a test names one.
             spaces: None,
+            // The daemons' live settings modules are looked for on the bus, which is absent
+            // unless a test names one or hosts the modules in memory.
+            modules: None,
         }
     }
 
@@ -143,6 +148,14 @@ impl Sandbox {
     pub fn with_spaces(self, spaces: Arc<dyn SpacesLink>) -> Sandbox {
         Sandbox {
             spaces: Some(spaces),
+            ..self
+        }
+    }
+
+    /// This world with the daemons' live settings modules hosted in memory by `modules`.
+    pub fn with_modules(self, modules: FakeModules) -> Sandbox {
+        Sandbox {
+            modules: Some(modules),
             ..self
         }
     }
@@ -257,6 +270,10 @@ impl Sandbox {
         .with_agents_program(self.agents_program.clone());
         let client = match &self.spaces {
             Some(spaces) => client.with_spaces(Arc::clone(spaces)),
+            None => client,
+        };
+        let client = match &self.modules {
+            Some(modules) => client.with_modules(Arc::new(modules.clone())),
             None => client,
         }
         .build();

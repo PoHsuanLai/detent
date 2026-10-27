@@ -7,7 +7,8 @@ use crate::follow::{Followed, follow_with};
 use crate::live::Live;
 use crate::pane::{Pane, Pending};
 use detent_model::{Absence, AccountsPane, Described, ModuleId, Sources, accounts_row_is_valued};
-use detent_system::bus::{BusSource, Daemon};
+use detent_system::bus::Daemon;
+use detent_system::modules::ModulesLink;
 use std::sync::{Arc, Mutex, PoisonError};
 
 /// How many times a failed read is tried again.
@@ -38,16 +39,16 @@ impl Listed {
 /// The accounts the modules list, kept current.
 #[derive(Debug, Clone)]
 pub struct Listing {
-    bus: BusSource,
+    modules: Arc<dyn ModulesLink>,
     feeds: Feeds,
     sources: Arc<Mutex<Sources>>,
     live: Live<Listed>,
 }
 
 impl Listing {
-    pub(crate) fn over(bus: BusSource) -> Listing {
+    pub(crate) fn over(modules: Arc<dyn ModulesLink>) -> Listing {
         Listing {
-            bus,
+            modules,
             feeds: Feeds::default(),
             sources: Arc::default(),
             live: Live::default(),
@@ -74,7 +75,7 @@ impl Listing {
     async fn follow(&self, module: ModuleId) {
         let feed = self.feeds.of(module);
         follow_with(
-            &self.bus,
+            &*self.modules,
             &Daemon::of(module),
             accounts_row_is_valued,
             async |followed| match followed {

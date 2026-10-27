@@ -1,10 +1,9 @@
 //! Choosing an engine that is not there in the Local row: the sheet asks to download it, "Not Now"
 //! leaves everything as it was, "Download" starts one and follows it, a Strata the person has is
-//! pointed at with the chooser, and an engine that is there asks nothing. Over a fake inferd on a
-//! private bus and a desk that writes down what the sheet asks of the computer.
+//! pointed at with the chooser, and an engine that is there asks nothing. Over a fake inferd
+//! module in memory and a desk that writes down what the sheet asks of the computer.
 
 use crate::support::Sandbox;
-use crate::support::bus::PrivateBus;
 use crate::support::desk::{Fake, nothing_installed};
 use crate::support::drive::{click, scroll_into_view};
 use crate::support::inferd::{Inferd, Policy};
@@ -32,14 +31,6 @@ fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
     panic!("{what} never happened:\n{}", harness.html());
 }
 
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fake daemon")
-}
-
 /// Clicks the menu item `nth` (from 1), the way a person points at it first.
 fn pick(harness: &mut Harness, nth: usize) {
     let label = format!(".ds-menu-item:nth-child({nth}) .ds-menu-label");
@@ -51,31 +42,19 @@ fn pick(harness: &mut Harness, nth: usize) {
 struct World {
     desk: Fake,
     harness: Harness,
-    _rt: tokio::runtime::Runtime,
-    _bus: PrivateBus,
-    _daemon: zbus::Connection,
 }
 
 /// The assistant's page with Local chosen, over a computer whose engines `desk` lists.
 fn world(name: &str, desk: Fake) -> World {
-    let rt = runtime();
-    let bus = PrivateBus::start(name);
     let fake = Inferd::new(Policy::Allow).on_slots();
-    let daemon = rt.block_on(fake.serve_on(&bus));
     let harness = Sandbox::new(name)
-        .on_bus(&bus.address)
+        .with_modules(fake.hosted())
         .with_engines(desk.desk())
         .harness(Opening {
             page: Some(PageSlug(ASSISTANT_MODEL_SLUG.to_owned())),
             query: String::new(),
         });
-    let mut world = World {
-        desk,
-        harness,
-        _rt: rt,
-        _bus: bus,
-        _daemon: daemon,
-    };
+    let mut world = World { desk, harness };
     settle(&mut world.harness, "the picker", |h| {
         h.attr(".picker", "data-picker").as_deref() == Some("ready")
     });

@@ -23,10 +23,10 @@ ds-settings = { workspace = true, features = ["dioxus", "live", "tokio"] }
 tokio = { workspace = true }
 
 [dev-dependencies]
-# Fixtures: the in-memory links and the test kit, and quire's harness. The tests that still stand a
-# service up on a private bus, because the pane follows a daemon's live settings module (Accounts,
-# Intelligence, Privacy, the model picker) and no client fake stands in for one, need the
-# commented ones below.
+# Fixtures: the in-memory links (the daemons' live settings modules among them: `FakeModules`) and
+# the test kit, and quire's harness. The tests that stand a service that is no live module up on a
+# private bus (the portal, running models, the engines, computers, memory, the sync service, and
+# the owner checks) need the commented ones below.
 detent-system = { workspace = true, features = ["testing"] }
 detent-testkit = { workspace = true }
 ds-settings = { workspace = true, features = ["testing"] }
@@ -35,7 +35,7 @@ ds-harness = { workspace = true }
 image = { workspace = true }
 toml = { workspace = true }
 # A stand-in service on a private bus is vouched for by `AnyOwner`, or by the role check over peers
-# a test introduces owners to (the squatter test).
+# a test introduces owners to (the squatter tests).
 detent-callers = { workspace = true, features = ["testing"] }
 # Reads and writes the settings files and desktop entries the tests seed and check.
 detent-files = { workspace = true }

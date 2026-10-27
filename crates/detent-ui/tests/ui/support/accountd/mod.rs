@@ -1,12 +1,13 @@
-//! A fake accounts module: `org.quire.SettingsModule1` at accountd's, inferd's or syncd's path on a
-//! private bus, with the rows the real modules describe (`accounts.<id>.service.<kind>`, `.grant.<grant>`, `.sync.<leaf>`, `.reauth`,
+//! A fake accounts module: the live settings module at accountd's, inferd's or syncd's path, hosted
+//! in memory (or served on a private bus, for the tests of who owns a name), with the rows the real modules describe (`accounts.<id>.service.<kind>`, `.grant.<grant>`, `.sync.<leaf>`, `.reauth`,
 //! `.remove`, `accounts.clients.<issuer>`). A removed account and a revoked grant leave the rows.
 
 mod module;
 mod rows;
 
 use super::bus::PrivateBus;
-use super::syncd::Syncd;
+use detent_system::bus::Daemon;
+use detent_system::modules::FakeModules;
 use ds_settings::live::{
     Access, Caller, LiveError, LiveModule, LiveSchema, Served, Verdict, serve,
 };
@@ -16,7 +17,6 @@ use ds_settings::schema::{
 };
 use porter_dbus::names::{
     ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH, SYNC_BUS,
-    SYNC_PATH,
 };
 use std::sync::{Arc, Mutex};
 
@@ -34,6 +34,15 @@ impl Module {
             Module::Accountd => ACCOUNTS_BUS,
             Module::Inferd => INFERENCE_BUS,
             Module::Syncd => SYNC_BUS,
+        }
+    }
+
+    /// The daemon the module is looked for as.
+    pub fn daemon(self) -> Daemon {
+        match self {
+            Module::Accountd => Daemon::accountd(),
+            Module::Inferd => Daemon::inferd(),
+            Module::Syncd => Daemon::syncd_settings(),
         }
     }
 
@@ -195,9 +204,6 @@ pub struct Accountd {
     module: Module,
     /// Whether the module has syncd's `accounts.sync.add` row.
     continue_as: bool,
-    /// The sync service's own object, served on this module's connection, when the module is
-    /// syncd's.
-    sync1: Option<Syncd>,
 }
 
 impl Accountd {
@@ -210,7 +216,6 @@ impl Accountd {
         Accountd {
             module,
             continue_as: false,
-            sync1: None,
             accounts: Arc::new(Mutex::new(accounts)),
             client: Arc::default(),
             secret: Arc::new(Mutex::new(SECRET.to_owned())),
@@ -226,10 +231,16 @@ impl Accountd {
         self
     }
 
-    /// Serves `Sync1` beside the module, so `Status` answers what `sync1` stands for.
-    pub fn with_status(mut self, sync1: Syncd) -> Accountd {
-        self.sync1 = Some(sync1);
-        self
+    /// The module hosted in memory as its daemon's: what a world's `with_modules` takes.
+    pub fn hosted(&self) -> FakeModules {
+        let modules = FakeModules::new();
+        self.host_on(&modules);
+        modules
+    }
+
+    /// The module hosted as its daemon's by `modules`, which may hold other daemons' modules too.
+    pub fn host_on(&self, modules: &FakeModules) {
+        modules.host(&self.module.daemon(), self.clone());
     }
 
     /// Serves the module on `bus`, owning its daemon's bus name; the connection must be kept alive.
@@ -243,13 +254,6 @@ impl Accountd {
         let served = serve(&connection, self.module.path(), self.clone())
             .await
             .expect("serves");
-        if let Some(sync1) = &self.sync1 {
-            connection
-                .object_server()
-                .at(SYNC_PATH, sync1.clone())
-                .await
-                .expect("serves Sync1");
-        }
         connection
             .request_name(self.module.bus())
             .await

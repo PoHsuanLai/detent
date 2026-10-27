@@ -2,8 +2,8 @@
 
 use super::PickerLink;
 use crate::fake_kit::Kit;
+use crate::modules::Module;
 use detent_model::Work;
-use ds_settings::live::LiveClient;
 use ds_settings::schema::KeyPath;
 use std::sync::Arc;
 
@@ -40,7 +40,7 @@ impl FakePicker {
 impl PickerLink for FakePicker {
     fn set<'a>(
         &'a self,
-        _client: &'a LiveClient,
+        _client: &'a Module,
         path: &'a KeyPath,
         word: &'a str,
     ) -> Work<'a, Result<(), String>> {
@@ -51,7 +51,7 @@ impl PickerLink for FakePicker {
 
     fn set_pool<'a>(
         &'a self,
-        _client: &'a LiveClient,
+        _client: &'a Module,
         path: &'a KeyPath,
         words: &'a [String],
     ) -> Work<'a, Result<(), String>> {

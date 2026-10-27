@@ -10,7 +10,7 @@ publish.workspace = true
 
 [features]
 # The in-memory fakes of the links, for tests of the layers above.
-testing = []
+testing = ["zbus/p2p"]
 
 [dependencies]
 airwaves-bluez = { workspace = true }
@@ -35,7 +35,7 @@ porter-engines = { workspace = true }
 porter-engines-install = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["net"] }
 toml = { workspace = true }
 zbus = { workspace = true, features = ["tokio"] }
 

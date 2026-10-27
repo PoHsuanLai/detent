@@ -3,7 +3,6 @@
 
 use crate::support::Sandbox;
 use crate::support::accountd::{Accountd, Held, Policy};
-use crate::support::bus::PrivateBus;
 use crate::support::drive::page_of;
 use detent_model::{AccountSegment, AccountTarget, Notice, PageSlug};
 use detent_ui::Opening;
@@ -29,12 +28,6 @@ fn detail(segment: &str) -> Notice {
 
 /// The window on another page, over a fake accountd holding two accounts.
 fn world(name: &str) -> (Harness, detent_model::Outbox, impl Sized) {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fake daemon");
-    let bus = PrivateBus::start(name);
     let fake = Accountd::new(
         Policy::Allow,
         vec![
@@ -42,15 +35,14 @@ fn world(name: &str) -> (Harness, detent_model::Outbox, impl Sized) {
             Held::new("work.example", "Work mail", "ok", &["mail"]),
         ],
     );
-    let (daemon, served) = rt.block_on(fake.serve_announcing(&bus));
     let opening = Opening {
         page: Some(PageSlug("dock".to_owned())),
         query: String::new(),
     };
     let (harness, outbox) = Sandbox::new(name)
-        .on_bus(&bus.address)
+        .with_modules(fake.hosted())
         .harness_told(opening);
-    (harness, outbox, (rt, bus, daemon, served, fake))
+    (harness, outbox, fake)
 }
 
 #[test]

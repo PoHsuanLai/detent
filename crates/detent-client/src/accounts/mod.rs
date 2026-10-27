@@ -22,6 +22,7 @@ use detent_model::{
 };
 use detent_system::accounts::AccountsLink;
 use detent_system::bus::{BusSource, Daemon, plain};
+use detent_system::modules::ModulesLink;
 use detent_system::sync::SyncLink;
 use ds_settings::live::LiveError;
 use feeds::Feeds;
@@ -30,7 +31,7 @@ use std::sync::Arc;
 /// The Accounts pane's handle: cheap to clone, one live value behind it.
 #[derive(Debug, Clone)]
 pub struct Accounts {
-    bus: BusSource,
+    modules: Arc<dyn ModulesLink>,
     link: Arc<dyn AccountsLink>,
     feeds: Feeds,
     live: Live<AccountsState>,
@@ -43,13 +44,14 @@ pane!(Accounts, AccountsState, follow_all);
 impl Accounts {
     pub(crate) fn over(
         bus: BusSource,
+        modules: Arc<dyn ModulesLink>,
         link: Arc<dyn AccountsLink>,
         sync: Arc<dyn SyncLink>,
     ) -> Accounts {
         Accounts {
-            holds: HeldDeletions::over(bus.clone(), Arc::clone(&sync)),
+            holds: HeldDeletions::over(bus, Arc::clone(&sync)),
             datasets: Datasets::over(sync),
-            bus,
+            modules,
             link,
             feeds: Feeds::default(),
             live: Live::default(),
@@ -90,7 +92,7 @@ impl Accounts {
     async fn follow(&self, module: ModuleId) {
         let feed = self.feeds.of(module);
         follow_with(
-            &self.bus,
+            &*self.modules,
             &Daemon::of(module),
             accounts_row_is_valued,
             async |followed| match followed {

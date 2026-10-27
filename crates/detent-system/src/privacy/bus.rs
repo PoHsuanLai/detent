@@ -2,8 +2,8 @@
 
 use super::PrivacyLink;
 use super::set::{forget, set};
+use crate::modules::Module;
 use detent_model::{PrivacySwitch, Work};
-use ds_settings::live::LiveClient;
 use ds_settings::schema::KeyPath;
 
 /// The compositor's module, reached through the client the pane follows it with.
@@ -13,18 +13,14 @@ pub struct OnClient;
 impl PrivacyLink for OnClient {
     fn set<'a>(
         &'a self,
-        client: &'a LiveClient,
+        client: &'a Module,
         path: &'a KeyPath,
         to: PrivacySwitch,
     ) -> Work<'a, Result<(), String>> {
         Box::pin(set(client, path, to))
     }
 
-    fn forget<'a>(
-        &'a self,
-        client: &'a LiveClient,
-        path: &'a KeyPath,
-    ) -> Work<'a, Result<(), String>> {
+    fn forget<'a>(&'a self, client: &'a Module, path: &'a KeyPath) -> Work<'a, Result<(), String>> {
         Box::pin(forget(client, path))
     }
 }

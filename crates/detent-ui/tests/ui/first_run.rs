@@ -1,9 +1,8 @@
-//! The first-run window over a fake inferd on a private bus: AI stays on this computer by default,
+//! The first-run window over a fake inferd module in memory: AI stays on this computer by default,
 //! the assistant's model is the picker's row with nothing chosen, Done writes through the
 //! Intelligence page's own settings path and records that the first run happened.
 
 use crate::support::Sandbox;
-use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
 use crate::support::inferd::{Inferd, Policy as InferPolicy};
 use detent_files::{FirstRunMark, FirstRunStanding};
@@ -29,14 +28,6 @@ fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
     panic!("{what} never happened:\n{}", harness.html());
 }
 
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fake daemons")
-}
-
 fn stage(harness: &Harness) -> Option<String> {
     harness.attr(".first-run", "data-first-run")
 }
@@ -45,14 +36,11 @@ fn mark(sandbox: &Sandbox) -> FirstRunStanding {
     FirstRunMark::under(&sandbox.state_home()).standing()
 }
 
-/// Everything a first run meets: inferd on a private bus, serving the text slot.
+/// Everything a first run meets: inferd's module in memory, serving the text slot.
 struct World {
     sandbox: Sandbox,
     inferd: Inferd,
     harness: Harness,
-    _rt: tokio::runtime::Runtime,
-    _bus: PrivateBus,
-    _daemon: zbus::Connection,
 }
 
 fn world(name: &str) -> World {
@@ -64,10 +52,7 @@ fn world_in(name: &str, scheme: Scheme) -> World {
 }
 
 fn world_with(name: &str, scheme: Scheme, inferd: Inferd) -> World {
-    let rt = runtime();
-    let bus = PrivateBus::start(name);
-    let daemon = rt.block_on(inferd.serve_on(&bus));
-    let sandbox = Sandbox::new(name).on_bus(&bus.address);
+    let sandbox = Sandbox::new(name).with_modules(inferd.hosted());
     let mut harness = sandbox.first_run_harness_in(scheme);
     // The model row arrives after the first frame and moves Done down; a click aimed before it
     // lands misses. Wait for the whole window.
@@ -78,9 +63,6 @@ fn world_with(name: &str, scheme: Scheme, inferd: Inferd) -> World {
         sandbox,
         inferd,
         harness,
-        _rt: rt,
-        _bus: bus,
-        _daemon: daemon,
     }
 }
 

@@ -1,9 +1,8 @@
 //! The banner at the head of an account that needs the person: its sign-in ended, or the provider
-//! is about to end it. Over a fake accountd on a private bus.
+//! is about to end it. Over a fake accountd module in memory.
 
 use crate::support::Sandbox;
 use crate::support::accountd::{Accountd, Held, Policy};
-use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
 use detent_model::PageSlug;
 use detent_ui::{Opening, STYLE};
@@ -44,27 +43,17 @@ fn google(id: &str, label: &str, state: &str, words: Option<&str>) -> Held {
 struct World {
     harness: Harness,
     fake: Accountd,
-    _rt: tokio::runtime::Runtime,
-    _bus: PrivateBus,
-    _served: (zbus::Connection, ds_settings::live::Served),
 }
 
 fn world(name: &str, rows: Vec<Held>, chosen: &str) -> World {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fake daemon");
-    let bus = PrivateBus::start(name);
     let count = rows.len();
     let fake = Accountd::new(Policy::Allow, rows);
-    let served = rt.block_on(fake.serve_announcing(&bus));
     let opening = Opening {
         page: Some(PageSlug("accounts".to_owned())),
         query: String::new(),
     };
     let mut harness = Sandbox::new(name)
-        .on_bus(&bus.address)
+        .with_modules(fake.hosted())
         .harness_in(opening, ds::prelude::Scheme::Light);
     settle(&mut harness, "the list", |h| {
         h.count(".account-row-body") >= count
@@ -76,13 +65,7 @@ fn world(name: &str, rows: Vec<Held>, chosen: &str) -> World {
     settle(&mut harness, "the account", |h| {
         h.attr(".accounts-detail", "data-account").as_deref() == Some(chosen)
     });
-    World {
-        harness,
-        fake,
-        _rt: rt,
-        _bus: bus,
-        _served: served,
-    }
+    World { harness, fake }
 }
 
 #[test]

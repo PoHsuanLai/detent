@@ -2,8 +2,8 @@
 
 use super::PickerLink;
 use super::set::{set, set_pool};
+use crate::modules::Module;
 use detent_model::Work;
-use ds_settings::live::LiveClient;
 use ds_settings::schema::KeyPath;
 
 /// inferd's module, reached through the client the pane follows it with.
@@ -13,7 +13,7 @@ pub struct OnClient;
 impl PickerLink for OnClient {
     fn set<'a>(
         &'a self,
-        client: &'a LiveClient,
+        client: &'a Module,
         path: &'a KeyPath,
         word: &'a str,
     ) -> Work<'a, Result<(), String>> {
@@ -22,7 +22,7 @@ impl PickerLink for OnClient {
 
     fn set_pool<'a>(
         &'a self,
-        client: &'a LiveClient,
+        client: &'a Module,
         path: &'a KeyPath,
         words: &'a [String],
     ) -> Work<'a, Result<(), String>> {

@@ -13,6 +13,8 @@ use crate::support::updates::NOW;
 use detent_callers::{RoleCheck, introduce_service, private_peers, roles};
 use detent_client::Vouch;
 use detent_model::PageSlug;
+use detent_system::bus::Daemon;
+use detent_system::modules::FakeModules;
 use detent_ui::Opening;
 use ds_harness::Harness;
 use ds_settings::live::AnyOwner;
@@ -99,7 +101,6 @@ struct World {
     harness: Harness,
     rt: tokio::runtime::Runtime,
     bus: PrivateBus,
-    _compositor: (zbus::Connection, ds_settings::live::Served),
 }
 
 /// The Privacy page over a compositor listing one program, and the portal as `presence` says.
@@ -113,8 +114,12 @@ fn world(name: &str, presence: Presence, trust: Trust) -> World {
         Presence::OnDemand(_) => PrivateBus::start_with_lingering_services(name, &[NAME]),
         Presence::Unstartable | Presence::Running(_) => PrivateBus::start(name),
     };
-    let compositor = Compositor::holding(vec![Row::person("screen", "aaa", "/usr/bin/grim", "on")]);
-    let served = rt.block_on(compositor.serve_on(&bus));
+    // The compositor's module is in memory: the portal is the bus's, and no live module.
+    let modules = FakeModules::new();
+    modules.host(
+        &Daemon::compositor(),
+        Compositor::holding(vec![Row::person("screen", "aaa", "/usr/bin/grim", "on")]),
+    );
     let portal = match &presence {
         Presence::Unstartable => None,
         Presence::Running(apps) => Some(rt.block_on(serve(&bus, apps))),
@@ -132,7 +137,9 @@ fn world(name: &str, presence: Presence, trust: Trust) -> World {
             Vouch::of(RoleCheck::new(private_peers(&rt.block_on(bus.connect()))))
         }
     };
-    let sandbox = Sandbox::new(name).on_bus_vouched(&bus.address, vouch);
+    let sandbox = Sandbox::new(name)
+        .on_bus_vouched(&bus.address, vouch)
+        .with_modules(modules);
     sandbox.write_application(
         MEET,
         "[Desktop Entry]\nType=Application\nName=Video Meet\nExec=flatpak run org.example.Meet\nX-Flatpak=org.example.Meet\n",
@@ -143,7 +150,6 @@ fn world(name: &str, presence: Presence, trust: Trust) -> World {
         harness,
         rt,
         bus,
-        _compositor: served,
     }
 }
 

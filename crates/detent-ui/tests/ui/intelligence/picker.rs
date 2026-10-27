@@ -5,15 +5,12 @@ use super::*;
 #[test]
 fn the_picker_lists_a_group_per_kind_and_a_row_per_tier_in_design_words() {
     let sandbox = Sandbox::new("intelligence-picker");
-    let rt = runtime();
-    let bus = PrivateBus::start("picker");
     let fake = Inferd::new(Policy::Allow);
     fake.values
         .lock()
         .expect("values")
         .insert("ai.model.llm.balanced".to_owned(), "local/qwen".to_owned());
-    let _daemon = rt.block_on(fake.serve_on(&bus));
-    let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
+    let mut harness = sandbox.with_modules(fake.hosted()).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 2);
 
     assert_eq!(
@@ -43,12 +40,9 @@ fn the_picker_lists_a_group_per_kind_and_a_row_per_tier_in_design_words() {
 #[test]
 fn choosing_a_model_shows_loading_it_until_inferd_answers_then_sets_it() {
     let sandbox = Sandbox::new("intelligence-choose");
-    let rt = runtime();
-    let bus = PrivateBus::start("choose");
     let fake = Inferd::new(Policy::Allow);
     *fake.held.lock().expect("held") = true;
-    let _daemon = rt.block_on(fake.serve_on(&bus));
-    let mut harness = sandbox.on_bus(&bus.address).harness(intelligence());
+    let mut harness = sandbox.with_modules(fake.hosted()).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 2);
 
     let fast = ".picker-kind .ds-field-row:nth-child(1)";
@@ -103,7 +97,6 @@ fn choosing_a_model_shows_loading_it_until_inferd_answers_then_sets_it() {
 
 #[test]
 fn the_footer_says_why_when_it_is_on_and_is_gone_when_it_is_off() {
-    let rt = runtime();
     for (name, setting, shown) in [("on", None, true), ("off", Some("off"), false)] {
         let sandbox = Sandbox::new(&format!("intelligence-reason-{name}"));
         if let Some(word) = setting {
@@ -112,13 +105,11 @@ fn the_footer_says_why_when_it_is_on_and_is_gone_when_it_is_off() {
                 &format!("[ai.auto]\nshow_reason = \"{word}\"\n"),
             );
         }
-        let bus = PrivateBus::start(&format!("reason-{name}"));
         let fake = Inferd::new(Policy::Allow);
-        let _daemon = rt.block_on(fake.serve_on(&bus));
         let (events, feed) = ReasonFeed::channel();
         let mut harness = sandbox
             .with_reasons(feed)
-            .on_bus(&bus.address)
+            .with_modules(fake.hosted())
             .harness(intelligence());
         settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 2);
         assert_eq!(

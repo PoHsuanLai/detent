@@ -6,7 +6,8 @@ use crate::follow::{Followed, Slot, follow_with};
 use crate::live::Live;
 use crate::pane::{Machine, Pending, pane};
 use detent_model::{ProgramsEffect, ProgramsInput, ProgramsPane, program_rows, programs_step};
-use detent_system::bus::{BusSource, Daemon};
+use detent_system::bus::Daemon;
+use detent_system::modules::ModulesLink;
 use detent_system::picker::PickerLink;
 use ds_settings::schema::KeyKind;
 use std::sync::Arc;
@@ -19,7 +20,7 @@ fn is_text(kind: &KeyKind) -> bool {
 /// The programs' handle: cheap to clone, one live value behind it.
 #[derive(Debug, Clone)]
 pub struct EnginePrograms {
-    bus: BusSource,
+    modules: Arc<dyn ModulesLink>,
     picker: Arc<dyn PickerLink>,
     module: Slot,
     live: Live<ProgramsPane>,
@@ -28,9 +29,12 @@ pub struct EnginePrograms {
 pane!(EnginePrograms, ProgramsPane, follow);
 
 impl EnginePrograms {
-    pub(crate) fn over(bus: BusSource, picker: Arc<dyn PickerLink>) -> EnginePrograms {
+    pub(crate) fn over(
+        modules: Arc<dyn ModulesLink>,
+        picker: Arc<dyn PickerLink>,
+    ) -> EnginePrograms {
         EnginePrograms {
-            bus,
+            modules,
             picker,
             module: Slot::default(),
             live: Live::default(),
@@ -45,7 +49,7 @@ impl EnginePrograms {
     /// Follows inferd's module: its text rows with their values, and each value it puts in force.
     async fn follow(&self) {
         follow_with(
-            &self.bus,
+            &*self.modules,
             &Daemon::inferd(),
             is_text,
             async |followed| match followed {

@@ -4,8 +4,7 @@
 
 use crate::follow::Slot;
 use detent_model::{Absence, Described, ModuleId, ReadTurn, Reads, accounts_row_is_valued};
-use detent_system::bus::reread;
-use ds_settings::live::LiveClient;
+use detent_system::modules::{Module, reread};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
 
@@ -31,7 +30,7 @@ impl Feed {
 
     /// The module read again, or `None` when another read is running: that one reads once more
     /// after it ends and answers for both. A result that something asked past is dropped for it.
-    pub(crate) async fn reload(&self, opened: &LiveClient) -> Option<Result<Described, Absence>> {
+    pub(crate) async fn reload(&self, opened: &Module) -> Option<Result<Described, Absence>> {
         if self.turn(Reads::ask) == ReadTurn::Rest {
             return None;
         }
@@ -44,10 +43,7 @@ impl Feed {
     }
 
     /// [`Feed::reload`] after a wait.
-    pub(crate) async fn reload_later(
-        &self,
-        opened: &LiveClient,
-    ) -> Option<Result<Described, Absence>> {
+    pub(crate) async fn reload_later(&self, opened: &Module) -> Option<Result<Described, Absence>> {
         tokio::time::sleep(RETRY_AFTER).await;
         self.reload(opened).await
     }

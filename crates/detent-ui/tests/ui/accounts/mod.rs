@@ -1,4 +1,4 @@
-//! The Accounts page over three fake modules on a private bus (identities, AI keys, sync): the
+//! The Accounts page over three fake modules in memory (identities, AI keys, sync): the
 //! list, one account's switches and actions, the question before a removal, and the page when
 //! a module or all of them are missing.
 
@@ -9,11 +9,12 @@ use crate::support::drive::click;
 use crate::support::syncd::{Standing, Syncd};
 use detent_callers::{RoleCheck, RoleName, introduce_service, private_peers, roles};
 use detent_client::Vouch;
-use detent_model::PageSlug;
+use detent_model::{Absence, PageSlug};
+use detent_system::modules::FakeModules;
 use detent_ui::Opening;
 use ds::prelude::Scheme;
 use ds_harness::{Backdrop, Harness, Input};
-use ds_settings::live::{LiveClient, LiveError, Served};
+use ds_settings::live::{LiveClient, LiveError};
 use ds_settings::schema::KeyPath;
 use porter_dbus::names::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
 use std::time::Duration;
@@ -123,7 +124,10 @@ struct World {
     harness: Harness,
     rt: tokio::runtime::Runtime,
     _bus: PrivateBus,
-    daemons: Vec<(Module, zbus::Connection, Served)>,
+    /// The modules, hosted in memory.
+    modules: FakeModules,
+    /// The sync service's own object on the bus, while it is there: it is no live module.
+    sync_bus: Option<zbus::Connection>,
 }
 
 fn world(name: &str) -> World {
@@ -166,20 +170,22 @@ fn start_syncing(
         + held(Module::Syncd, mirrored.len());
     let accountd = Accountd::new(Policy::Allow, rows);
     let inferd = Accountd::on(Module::Inferd, Policy::Allow, keys());
-    let syncd = Accountd::on(Module::Syncd, Policy::Allow, mirrored)
-        .continuing_as()
-        .with_status(sync1.clone());
-    let mut daemons = Vec::new();
+    let syncd = Accountd::on(Module::Syncd, Policy::Allow, mirrored).continuing_as();
+    let modules = FakeModules::new();
     for module in served {
         let fake = match module {
             Module::Accountd => &accountd,
             Module::Inferd => &inferd,
             Module::Syncd => &syncd,
         };
-        let (connection, announcer) = rt.block_on(fake.serve_announcing(&bus));
-        daemons.push((*module, connection, announcer));
+        fake.host_on(&modules);
     }
-    let sandbox = Sandbox::new(name).on_bus(&bus.address);
+    let sync_bus = served
+        .contains(&Module::Syncd)
+        .then(|| rt.block_on(sync1.serve_on(&bus)));
+    let sandbox = Sandbox::new(name)
+        .on_bus(&bus.address)
+        .with_modules(modules.clone());
     let mut harness = sandbox.harness_in(accounts(), scheme);
     settle(&mut harness, "the list", |h| {
         h.count(".accounts-list") == 1 || h.count(".accounts-empty") == 1
@@ -196,37 +202,29 @@ fn start_syncing(
         harness,
         rt,
         _bus: bus,
-        daemons,
+        modules,
+        sync_bus,
     }
 }
 
 impl World {
     /// Announces, as `module`, that the row at `path` changed to `word`.
     fn announce(&self, module: Module, path: &str, word: &str) {
-        let (_, _, served) = self
-            .daemons
-            .iter()
-            .find(|(served, ..)| *served == module)
-            .expect("the module runs");
-        self.rt
-            .block_on(served.changed(
-                &KeyPath(path.to_owned()),
-                &toml::Value::String(word.to_owned()),
-            ))
-            .expect("announced");
+        self.modules.announce(
+            &module.daemon(),
+            &KeyPath(path.to_owned()),
+            toml::Value::String(word.to_owned()),
+        );
     }
 
-    /// The module goes off the bus, as when its service stops.
+    /// The module goes away, as when its service stops (and syncd's own object leaves the bus).
     fn stop(&mut self, module: Module) {
-        let at = self
-            .daemons
-            .iter()
-            .position(|(served, ..)| *served == module)
-            .expect("the module runs");
-        let (_, connection, _) = self.daemons.remove(at);
-        self.rt
-            .block_on(connection.release_name(module.bus()))
-            .expect("the name is released");
+        self.modules.away(&module.daemon(), Absence::NotRunning);
+        if let (Module::Syncd, Some(connection)) = (module, self.sync_bus.take()) {
+            self.rt
+                .block_on(connection.release_name(module.bus()))
+                .expect("the name is released");
+        }
     }
 }
 

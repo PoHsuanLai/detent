@@ -1,20 +1,14 @@
-//! A fake compositor: `org.quire.SettingsModule1` at `/org/quire/Compositor1/privacy` on
-//! `org.quire.Compositor1` on a private bus, listing the Privacy rows the way the real one does
+//! A fake compositor: the live settings module at `/org/quire/Compositor1/privacy`, hosted in
+//! memory by `FakeModules`, listing the Privacy rows the way the real one does
 //! (`privacy.<power>.<id>` with `.forget` beside a person's answer, a read-out for an
 //! administrator's, a line for a power nobody asked in) and writing down what it was asked.
 
-use super::bus::PrivateBus;
-use ds_settings::live::{
-    Access, Caller, LiveError, LiveModule, LiveSchema, Served, Verdict, serve,
-};
+use ds_settings::live::{Access, Caller, LiveError, LiveModule, LiveSchema, Verdict};
 use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Note, Page, Section,
 };
 use std::sync::{Arc, Mutex};
-
-pub const BUS: &str = "org.quire.Compositor1";
-pub const PATH: &str = "/org/quire/Compositor1/privacy";
 
 /// The powers the compositor names in a row's path.
 const POWERS: [&str; 7] = [
@@ -132,16 +126,6 @@ impl Compositor {
 
     pub fn log(&self) -> Vec<String> {
         self.log.lock().expect("log").clone()
-    }
-
-    /// Serves the module on `bus`, owning the compositor's name; keep both alive.
-    pub async fn serve_on(&self, bus: &PrivateBus) -> (zbus::Connection, Served) {
-        let connection = bus.connect().await;
-        let served = serve(&connection, PATH, self.clone())
-            .await
-            .expect("serves");
-        connection.request_name(BUS).await.expect("name");
-        (connection, served)
     }
 
     fn keys(&self) -> Vec<KeySpec> {

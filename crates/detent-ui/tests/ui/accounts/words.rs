@@ -33,24 +33,19 @@ fn an_expiry_without_a_date_stays_a_read_only_line_in_the_modules_words() {
 fn the_pane_says_no_developer_words_with_the_modules_up_or_gone() {
     let sandbox = Sandbox::new("accounts-plain-no-bus");
     assert_no_developer_words(&sandbox.harness(accounts()));
-    let rt = runtime();
-    let bus = PrivateBus::start("accounts-plain-none");
     let mut harness = Sandbox::new("accounts-plain-none")
-        .on_bus(&bus.address)
+        .with_modules(FakeModules::new())
         .harness(accounts());
     settle(&mut harness, "the pane giving up", |h| {
         h.html().contains("The accounts service is not running")
     });
     assert_no_developer_words(&harness);
-    drop(rt);
     let w = world("accounts-plain-up");
     assert_no_developer_words(&w.harness);
 }
 
 #[test]
 fn the_account_type_is_drawn_with_the_providers_mark() {
-    let rt = runtime();
-    let bus = PrivateBus::start("accounts-mark");
     let fake = Accountd::new(
         Policy::Allow,
         vec![
@@ -58,9 +53,8 @@ fn the_account_type_is_drawn_with_the_providers_mark() {
             Held::new("mail", "Fastmail", "ok", &["mail"]).of_provider("fastmail", "Fastmail"),
         ],
     );
-    let _daemon = rt.block_on(fake.serve_on(&bus));
     let mut harness = Sandbox::new("accounts-mark")
-        .on_bus(&bus.address)
+        .with_modules(fake.hosted())
         .harness(accounts());
     settle(&mut harness, "the list", |h| h.count(".accounts-list") == 1);
     // The list draws each account's mark, and says the kind of account under its name.
@@ -97,7 +91,6 @@ fn the_account_type_is_drawn_with_the_providers_mark() {
         1,
         "one without a face keeps its named mark"
     );
-    drop(rt);
 }
 
 #[test]

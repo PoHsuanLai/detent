@@ -15,6 +15,7 @@ use detent_system::engines::{EnginesLink, OnBus as EnginesOnBus};
 use detent_system::hot_corners::{CornerDesk, OnCorners};
 use detent_system::lending::Lender;
 use detent_system::memory_consent::{MemoryLink, OnBus as MemoryOnBus};
+use detent_system::modules::{ModulesLink, OnBus as ModulesOnBus};
 use detent_system::picker::{OnClient as PickerOnClient, PickerLink};
 use detent_system::privacy::{OnClient as PrivacyOnClient, PrivacyLink};
 use detent_system::running::{OnBus as RunningOnBus, RunningLink};
@@ -61,6 +62,7 @@ impl ClientBuilder {
         let corners = Arc::new(OnCorners::new(Arc::clone(&chooser), Vec::new()));
         ClientBuilder(Client {
             chooser,
+            modules: Arc::new(ModulesOnBus(bus.clone())),
             accounts: Arc::new(AccountsOnBus(bus.clone())),
             sync: Arc::new(SyncOnBus(bus.clone())),
             picker: Arc::new(PickerOnClient),
@@ -189,6 +191,12 @@ impl ClientBuilder {
     #[must_use]
     pub fn with_chooser(self, chooser: Arc<dyn ChooserLink>) -> ClientBuilder {
         ClientBuilder(Client { chooser, ..self.0 })
+    }
+
+    /// With the panes that follow a daemon's live settings module looking for it in `modules`.
+    #[must_use]
+    pub fn with_modules(self, modules: Arc<dyn ModulesLink>) -> ClientBuilder {
+        ClientBuilder(Client { modules, ..self.0 })
     }
 
     /// With the Accounts pane over `accounts`.

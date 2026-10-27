@@ -1,8 +1,7 @@
-//! The assistant's model: its page in the sidebar and its first-run step, over a fake inferd on a
-//! private bus. Nothing is chosen until the person chooses, and an unset model shows as such.
+//! The assistant's model: its page in the sidebar and its first-run step, over a fake inferd
+//! module in memory. Nothing is chosen until the person chooses, and an unset model shows as such.
 
 use crate::support::Sandbox;
-use crate::support::bus::PrivateBus;
 use crate::support::drive::{click, scroll_into_view, sidebar_page};
 use crate::support::inferd::{Inferd, Policy};
 use detent_model::{ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Notice, PageSlug};
@@ -40,14 +39,6 @@ fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
     panic!("{what} never happened:\n{}", harness.html());
 }
 
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fake daemon")
-}
-
 /// The row's button text, once the picker is there.
 fn shown(harness: &Harness, button: &str) -> Option<String> {
     harness
@@ -75,29 +66,17 @@ fn pick(harness: &mut Harness, nth: usize) {
     click(harness, &label);
 }
 
-/// Inferd serving slots on a private bus, the sandbox looking at it, and the page's harness.
+/// Inferd's module serving slots in memory, the sandbox looking at it, and the page's harness.
 struct World {
     fake: Inferd,
     harness: Harness,
-    _rt: tokio::runtime::Runtime,
-    _bus: PrivateBus,
-    _daemon: zbus::Connection,
 }
 
 fn world(name: &str, slug: &str, fake: Inferd) -> World {
-    let rt = runtime();
-    let bus = PrivateBus::start(name);
-    let daemon = rt.block_on(fake.serve_on(&bus));
     let harness = Sandbox::new(name)
-        .on_bus(&bus.address)
+        .with_modules(fake.hosted())
         .harness(opening(slug));
-    World {
-        fake,
-        harness,
-        _rt: rt,
-        _bus: bus,
-        _daemon: daemon,
-    }
+    World { fake, harness }
 }
 
 fn ready(world: &mut World) {

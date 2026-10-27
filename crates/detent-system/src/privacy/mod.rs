@@ -10,8 +10,8 @@ pub use bus::OnClient;
 #[cfg(feature = "testing")]
 pub use fake::{FakePrivacy, PrivacyAsked};
 
+use crate::modules::Module;
 use detent_model::{PrivacySwitch, Work};
-use ds_settings::live::LiveClient;
 use ds_settings::schema::KeyPath;
 use std::fmt::Debug;
 
@@ -21,14 +21,10 @@ pub trait PrivacyLink: Debug + Send + Sync {
     /// Allows or denies at `path`; the module's own words when it refuses.
     fn set<'a>(
         &'a self,
-        client: &'a LiveClient,
+        client: &'a Module,
         path: &'a KeyPath,
         to: PrivacySwitch,
     ) -> Work<'a, Result<(), String>>;
     /// Asks again at `path`; the module's own words when it refuses.
-    fn forget<'a>(
-        &'a self,
-        client: &'a LiveClient,
-        path: &'a KeyPath,
-    ) -> Work<'a, Result<(), String>>;
+    fn forget<'a>(&'a self, client: &'a Module, path: &'a KeyPath) -> Work<'a, Result<(), String>>;
 }

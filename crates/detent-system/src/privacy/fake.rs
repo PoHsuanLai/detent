@@ -2,8 +2,8 @@
 
 use super::PrivacyLink;
 use crate::fake_kit::Kit;
+use crate::modules::Module;
 use detent_model::{PrivacySwitch, Work};
-use ds_settings::live::LiveClient;
 use ds_settings::schema::KeyPath;
 use std::sync::Arc;
 
@@ -40,7 +40,7 @@ impl FakePrivacy {
 impl PrivacyLink for FakePrivacy {
     fn set<'a>(
         &'a self,
-        _client: &'a LiveClient,
+        _client: &'a Module,
         path: &'a KeyPath,
         to: PrivacySwitch,
     ) -> Work<'a, Result<(), String>> {
@@ -50,7 +50,7 @@ impl PrivacyLink for FakePrivacy {
 
     fn forget<'a>(
         &'a self,
-        _client: &'a LiveClient,
+        _client: &'a Module,
         path: &'a KeyPath,
     ) -> Work<'a, Result<(), String>> {
         self.0.record(PrivacyAsked::Forget(path.clone()));

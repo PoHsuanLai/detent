@@ -4,26 +4,28 @@ use crate::follow::{Followed, follow_with};
 use crate::live::Live;
 use crate::pane::{Pane, Pending};
 use detent_model::{Ready, picker_row_is_choice as is_choice};
-use detent_system::bus::{BusSource, Daemon};
+use detent_system::bus::Daemon;
+use detent_system::modules::ModulesLink;
+use std::sync::Arc;
 
 /// inferd's picker rows, none while inferd is not there.
 #[derive(Debug, Clone)]
 pub struct Models {
-    bus: BusSource,
+    modules: Arc<dyn ModulesLink>,
     live: Live<Option<Ready>>,
 }
 
 impl Models {
-    pub(crate) fn over(bus: BusSource) -> Models {
+    pub(crate) fn over(modules: Arc<dyn ModulesLink>) -> Models {
         Models {
-            bus,
+            modules,
             live: Live::default(),
         }
     }
 
     async fn follow(&self) {
         follow_with(
-            &self.bus,
+            &*self.modules,
             &Daemon::inferd(),
             is_choice,
             async |followed| match followed {

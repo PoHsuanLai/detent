@@ -20,7 +20,8 @@ use detent_model::{
     picker_row_is_choice as is_choice, step, with_agents,
 };
 use detent_system::accounts::AccountsLink;
-use detent_system::bus::{BusSource, Daemon, reread, words_of};
+use detent_system::bus::{Daemon, words_of};
+use detent_system::modules::{ModulesLink, reread};
 use detent_system::picker::PickerLink;
 use std::sync::Arc;
 
@@ -35,7 +36,7 @@ pub(crate) struct AgentSearch {
 /// The picker's handle: cheap to clone, one live value behind it.
 #[derive(Debug, Clone)]
 pub struct Picker {
-    bus: BusSource,
+    modules: Arc<dyn ModulesLink>,
     link: Arc<dyn PickerLink>,
     accounts: Arc<dyn AccountsLink>,
     search: AgentSearch,
@@ -47,13 +48,13 @@ pane!(Picker, PickerState, follow);
 
 impl Picker {
     pub(crate) fn over(
-        bus: BusSource,
+        modules: Arc<dyn ModulesLink>,
         link: Arc<dyn PickerLink>,
         accounts: Arc<dyn AccountsLink>,
         search: AgentSearch,
     ) -> Picker {
         Picker {
-            bus,
+            modules,
             link,
             accounts,
             search,
@@ -80,7 +81,7 @@ impl Picker {
     /// Looks for inferd's picker and follows it; never starts inferd.
     async fn follow(&self) {
         follow_with(
-            &self.bus,
+            &*self.modules,
             &Daemon::inferd(),
             is_choice,
             async |followed| match followed {

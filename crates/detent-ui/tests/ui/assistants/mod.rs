@@ -44,13 +44,10 @@ fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
     panic!("{what} never happened:\n{}", harness.html());
 }
 
-/// The page over a fake accountd holding `held`, in a world whose docket file holds `file`.
+/// The page over a fake accountd module in memory holding `held`, in a world whose docket file holds `file`.
 struct World {
     sandbox: Sandbox,
     harness: Harness,
-    _rt: tokio::runtime::Runtime,
-    _bus: PrivateBus,
-    _daemon: zbus::Connection,
 }
 
 fn world(name: &str, held: Vec<Held>, file: Option<&str>) -> World {
@@ -59,15 +56,8 @@ fn world(name: &str, held: Vec<Held>, file: Option<&str>) -> World {
 
 /// The same, with docket's list of agents too.
 fn world_with(name: &str, held: Vec<Held>, file: Option<&str>, agents: Option<&str>) -> World {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fake daemon");
-    let bus = PrivateBus::start(name);
     let fake = Accountd::new(Policy::Allow, held);
-    let daemon = rt.block_on(fake.serve_on(&bus));
-    let sandbox = Sandbox::new(name).on_bus(&bus.address);
+    let sandbox = Sandbox::new(name).with_modules(fake.hosted());
     if let Some(text) = file {
         sandbox.write(SETTINGS, text);
     }
@@ -78,13 +68,7 @@ fn world_with(name: &str, held: Vec<Held>, file: Option<&str>, agents: Option<&s
     settle(&mut harness, "the places", |h| {
         h.count("[data-assistants=\"places\"]") == 1
     });
-    World {
-        sandbox,
-        harness,
-        _rt: rt,
-        _bus: bus,
-        _daemon: daemon,
-    }
+    World { sandbox, harness }
 }
 
 fn acme() -> Held {

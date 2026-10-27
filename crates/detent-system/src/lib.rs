@@ -22,6 +22,7 @@ pub mod lending;
 #[cfg(feature = "testing")]
 mod lock;
 pub mod memory_consent;
+pub mod modules;
 pub mod picker;
 pub mod privacy;
 pub mod running;

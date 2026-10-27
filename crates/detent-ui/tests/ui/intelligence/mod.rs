@@ -1,8 +1,7 @@
 //! The Intelligence page: its sections in design/22's order, inferd's model picker over a fake
-//! `org.quire.SettingsModule1` on a private bus, and the page without inferd.
+//! settings module in memory, and the page without inferd.
 
 use crate::support::Sandbox;
-use crate::support::bus::PrivateBus;
 use crate::support::drive::{click, scroll_into_view};
 use crate::support::inferd::{Inferd, Policy};
 use detent_client::ReasonFeed;
@@ -47,14 +46,6 @@ fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
         std::thread::sleep(Duration::from_millis(20));
     }
     panic!("{what} never happened:\n{}", harness.html());
-}
-
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fake daemon")
 }
 
 /// Positions of each of `texts` in `html`, each searched for after the one before.

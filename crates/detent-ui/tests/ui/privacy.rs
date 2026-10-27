@@ -1,12 +1,13 @@
-//! The Privacy & Security page over a fake compositor on a private bus: the programs it lists are
+//! The Privacy & Security page over a fake compositor module in memory: the programs it lists are
 //! named from desktop entries, each power shows where it stands, a choice is sent as the one
 //! change the compositor takes, and an administrator's answer is locked.
 
 use crate::support::Sandbox;
-use crate::support::bus::PrivateBus;
 use crate::support::compositor::{Compositor, Row};
 use crate::support::drive::{click, scroll_into_view, sidebar_page};
 use detent_model::PageSlug;
+use detent_system::bus::Daemon;
+use detent_system::modules::FakeModules;
 use detent_ui::Opening;
 use ds_harness::{Harness, Input};
 use std::time::Duration;
@@ -36,22 +37,16 @@ fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
 struct World {
     fake: Compositor,
     harness: Harness,
-    _rt: tokio::runtime::Runtime,
-    _bus: PrivateBus,
-    _daemon: Option<(zbus::Connection, ds_settings::live::Served)>,
 }
 
-/// The page, with the compositor listing `rows` on a private bus; none when `rows` is `None`.
+/// The page, with the compositor listing `rows` in memory; none when `rows` is `None`.
 fn world(name: &str, rows: Option<Vec<Row>>) -> World {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fake daemon");
-    let bus = PrivateBus::start(name);
     let fake = Compositor::holding(rows.clone().unwrap_or_default());
-    let daemon = rows.map(|_| rt.block_on(fake.serve_on(&bus)));
-    let sandbox = Sandbox::new(name).on_bus(&bus.address);
+    let modules = FakeModules::new();
+    if rows.is_some() {
+        modules.host(&Daemon::compositor(), fake.clone());
+    }
+    let sandbox = Sandbox::new(name).with_modules(modules);
     sandbox.write_application(
         "grim",
         "[Desktop Entry]\nType=Application\nName=Grim\nExec=/usr/bin/grim %f\n",
@@ -64,13 +59,7 @@ fn world(name: &str, rows: Option<Vec<Row>>) -> World {
         page: Some(PageSlug("privacy".to_owned())),
         query: String::new(),
     });
-    World {
-        fake,
-        harness,
-        _rt: rt,
-        _bus: bus,
-        _daemon: daemon,
-    }
+    World { fake, harness }
 }
 
 fn listed(world: &mut World) {

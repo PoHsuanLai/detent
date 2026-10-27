@@ -1,4 +1,5 @@
-//! The page without its modules, a module that refuses, and a program that is not the module.
+//! The page without its modules, a module that refuses, and a program that is not the module (the
+//! last two over a private bus: whose name it is, is the bus's to say).
 
 use super::*;
 
@@ -15,25 +16,19 @@ fn no_bus_says_so_and_blocks_nothing_else_on_the_window() {
 
 #[test]
 fn a_bus_with_none_of_the_three_says_the_service_is_not_running() {
-    let rt = runtime();
-    let bus = PrivateBus::start("accounts-none");
     let mut harness = Sandbox::new("accounts-none")
-        .on_bus(&bus.address)
+        .with_modules(FakeModules::new())
         .harness(accounts());
     settle(&mut harness, "the pane giving up", |h| {
         h.html().contains("The accounts service is not running")
     });
-    drop(rt);
 }
 
 #[test]
 fn accountd_refusing_settings_is_said_in_its_own_words() {
-    let rt = runtime();
-    let bus = PrivateBus::start("accounts-refused");
     let fake = Accountd::new(Policy::Refuse, identities());
-    let _daemon = rt.block_on(fake.serve_on(&bus));
     let mut harness = Sandbox::new("accounts-refused")
-        .on_bus(&bus.address)
+        .with_modules(fake.hosted())
         .harness(accounts());
     settle(&mut harness, "the refusal", |h| {
         h.html().contains("opened from the desktop")

@@ -58,11 +58,3 @@ pub async fn read_once(
         .await
         .map(|(_, described)| described)
 }
-
-/// The rows of `client` as they stand now, a value for each row `valued` picks out.
-pub async fn reread(
-    client: &LiveClient,
-    valued: fn(&KeyKind) -> bool,
-) -> Result<Described, Absence> {
-    read(client, valued).await
-}

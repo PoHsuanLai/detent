@@ -1,11 +1,12 @@
-//! "On this computer" on the Intelligence page, over a fake accountd on a private bus: the local
+//! "On this computer" on the Intelligence page, over a fake accountd module in memory: the local
 //! runtimes it lists, a stopped one greyed, each linking to its account in the Accounts pane.
 
 use crate::support::Sandbox;
 use crate::support::accountd::{Accountd, Held, Policy};
-use crate::support::bus::PrivateBus;
 use crate::support::drive::{click, page_of, scroll_into_view};
 use detent_model::PageSlug;
+use detent_system::bus::Daemon;
+use detent_system::modules::FakeModules;
 use detent_ui::Opening;
 use ds::prelude::Scheme;
 use ds_harness::Harness;
@@ -35,14 +36,6 @@ fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
     panic!("{what} never happened:\n{}", harness.html());
 }
 
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fake daemon")
-}
-
 /// Two runtimes on this computer (one stopped) and two accounts that are not.
 fn held() -> Vec<Held> {
     vec![
@@ -56,19 +49,14 @@ fn held() -> Vec<Held> {
 struct World {
     fake: Accountd,
     harness: Harness,
-    daemon: zbus::Connection,
-    served: ds_settings::live::Served,
-    _rt: tokio::runtime::Runtime,
-    _bus: PrivateBus,
+    modules: FakeModules,
 }
 
 fn world_in(name: &str, scheme: Scheme, accounts: Vec<Held>) -> World {
-    let rt = runtime();
-    let bus = PrivateBus::start(name);
     let fake = Accountd::new(Policy::Allow, accounts);
-    let (daemon, served) = rt.block_on(fake.serve_announcing(&bus));
+    let modules = fake.hosted();
     let mut harness = Sandbox::new(name)
-        .on_bus(&bus.address)
+        .with_modules(modules.clone())
         .harness_in(intelligence(), scheme);
     settle(&mut harness, "the runtimes", |h| {
         h.attr(".runtimes", "data-runtimes").as_deref() == Some("list")
@@ -76,10 +64,7 @@ fn world_in(name: &str, scheme: Scheme, accounts: Vec<Held>) -> World {
     World {
         fake,
         harness,
-        daemon,
-        served,
-        _rt: rt,
-        _bus: bus,
+        modules,
     }
 }
 
@@ -145,16 +130,14 @@ fn a_stopped_runtime_is_greyed_with_its_state_and_still_opens() {
 fn a_runtime_that_goes_offline_is_greyed_when_accountd_says_a_row_changed() {
     let mut w = world("runtimes-going-offline");
     w.fake.stop("ollama", "offline");
-    w._rt
-        .block_on(w.served.changed(
-            &ds_settings::schema::KeyPath("accounts.ollama.state".to_owned()),
-            &toml::Value::String("offline".to_owned()),
-        ))
-        .expect("announced");
+    w.modules.announce(
+        &Daemon::accountd(),
+        &ds_settings::schema::KeyPath("accounts.ollama.state".to_owned()),
+        toml::Value::String("offline".to_owned()),
+    );
     settle(&mut w.harness, "the row greying", |h| {
         states(h) == [Some("offline".to_owned()), Some("offline".to_owned())]
     });
-    let _keep = &w.daemon;
 }
 
 #[test]
@@ -174,15 +157,12 @@ fn managing_a_runtime_opens_its_account_in_the_accounts_pane() {
 #[test]
 fn an_accountd_that_names_no_place_lists_no_runtime() {
     let name = "runtimes-none";
-    let rt = runtime();
-    let bus = PrivateBus::start(name);
     let fake = Accountd::new(
         Policy::Allow,
         vec![Held::new("ollama", "Ollama", "ok", &["llm"])],
     );
-    let _daemon = rt.block_on(fake.serve_on(&bus));
     let mut harness = Sandbox::new(name)
-        .on_bus(&bus.address)
+        .with_modules(fake.hosted())
         .harness(intelligence());
     settle(&mut harness, "the empty list", |h| {
         h.attr(".runtimes", "data-runtimes").as_deref() == Some("empty")
@@ -200,13 +180,10 @@ fn without_accountd_the_list_says_so_and_the_page_still_works() {
     );
     assert!(harness.html().contains("Keep AI on this computer"));
 
-    let rt = runtime();
-    let bus = PrivateBus::start("runtimes-no-accountd");
     let mut harness = Sandbox::new("runtimes-no-accountd")
-        .on_bus(&bus.address)
+        .with_modules(FakeModules::new())
         .harness(intelligence());
     settle(&mut harness, "accountd given up on", |h| {
         h.html().contains("The accounts service is not running")
     });
-    drop(rt);
 }

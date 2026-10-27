@@ -34,6 +34,7 @@ use detent_system::engines::EnginesLink;
 use detent_system::hot_corners::CornerDesk;
 use detent_system::lending::Lender;
 use detent_system::memory_consent::MemoryLink;
+use detent_system::modules::ModulesLink;
 use detent_system::picker::PickerLink;
 use detent_system::privacy::PrivacyLink;
 use detent_system::running::RunningLink;
@@ -51,6 +52,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct Client {
     pub(crate) bus: BusSource,
+    pub(crate) modules: Arc<dyn ModulesLink>,
     pub(crate) chooser: Arc<dyn ChooserLink>,
     pub(crate) accounts: Arc<dyn AccountsLink>,
     pub(crate) sync: Arc<dyn SyncLink>,
@@ -142,6 +144,7 @@ impl Client {
     pub fn accounts(&self) -> Accounts {
         Accounts::over(
             self.bus.clone(),
+            Arc::clone(&self.modules),
             Arc::clone(&self.accounts),
             Arc::clone(&self.sync),
         )
@@ -149,13 +152,13 @@ impl Client {
 
     /// The accounts the modules list, for a page outside the Accounts pane.
     pub fn listing(&self) -> Listing {
-        Listing::over(self.bus.clone())
+        Listing::over(Arc::clone(&self.modules))
     }
 
     /// The model picker.
     pub fn picker(&self) -> Picker {
         Picker::over(
-            self.bus.clone(),
+            Arc::clone(&self.modules),
             Arc::clone(&self.picker),
             Arc::clone(&self.accounts),
             self.search.clone(),
@@ -164,7 +167,7 @@ impl Client {
 
     /// The models inferd lists, where a place offers them to choose from.
     pub fn models(&self) -> Models {
-        Models::over(self.bus.clone())
+        Models::over(Arc::clone(&self.modules))
     }
 
     /// The reasons the picker's footer says; handed over once, to the first caller.
@@ -184,7 +187,7 @@ impl Client {
 
     /// The rows that name the program of an engine.
     pub fn engine_programs(&self) -> EnginePrograms {
-        EnginePrograms::over(self.bus.clone(), Arc::clone(&self.picker))
+        EnginePrograms::over(Arc::clone(&self.modules), Arc::clone(&self.picker))
     }
 
     /// The models inferd runs itself.
@@ -199,7 +202,7 @@ impl Client {
 
     /// The Privacy pane.
     pub fn privacy(&self) -> Privacy {
-        Privacy::over(self.bus.clone(), Arc::clone(&self.privacy))
+        Privacy::over(Arc::clone(&self.modules), Arc::clone(&self.privacy))
     }
 
     /// The apps that may share the screen without asking again.

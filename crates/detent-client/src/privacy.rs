@@ -6,7 +6,8 @@ use crate::live::Live;
 use crate::notice::Notice;
 use crate::pane::{Machine, Pending, pane};
 use detent_model::{PrivacyEffect, PrivacyInput, PrivacyState, privacy_step};
-use detent_system::bus::{BusSource, Daemon, reread};
+use detent_system::bus::Daemon;
+use detent_system::modules::{ModulesLink, reread};
 use detent_system::privacy::PrivacyLink;
 use ds_settings::schema::KeyKind;
 use std::sync::Arc;
@@ -22,7 +23,7 @@ fn is_valued(kind: &KeyKind) -> bool {
 /// The Privacy pane's handle: cheap to clone, one live value behind it.
 #[derive(Debug, Clone)]
 pub struct Privacy {
-    bus: BusSource,
+    modules: Arc<dyn ModulesLink>,
     link: Arc<dyn PrivacyLink>,
     module: Slot,
     live: Live<PrivacyState>,
@@ -31,9 +32,9 @@ pub struct Privacy {
 pane!(Privacy, PrivacyState, follow);
 
 impl Privacy {
-    pub(crate) fn over(bus: BusSource, link: Arc<dyn PrivacyLink>) -> Privacy {
+    pub(crate) fn over(modules: Arc<dyn ModulesLink>, link: Arc<dyn PrivacyLink>) -> Privacy {
         Privacy {
-            bus,
+            modules,
             link,
             module: Slot::default(),
             live: Live::default(),
@@ -48,7 +49,7 @@ impl Privacy {
     /// Follows the compositor's module until the bus goes away.
     async fn follow(&self) {
         follow_with(
-            &self.bus,
+            &*self.modules,
             &Daemon::compositor(),
             is_valued,
             async |followed| match followed {
