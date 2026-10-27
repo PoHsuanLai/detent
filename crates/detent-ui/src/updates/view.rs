@@ -3,10 +3,12 @@
 
 use crate::copy;
 use crate::copy::absence::Subject;
+use crate::icons::tile_of;
 use crate::live::use_live;
+use crate::system::Absent;
 use detent_client::Client;
 use detent_model::{
-    CheckActivity, ReleaseNotes, UpdateAction, UpdateMeter, UpdatesInput, UpdatesPage,
+    CheckActivity, PageKind, ReleaseNotes, UpdateAction, UpdateMeter, UpdatesInput, UpdatesPage,
     UpdatesShown, updates_shown,
 };
 use dioxus::prelude::*;
@@ -26,13 +28,10 @@ pub(crate) fn SoftwareUpdatePane() -> Element {
         UpdatesShown::Looking => rsx! { div { class: "updates", "data-updates": "looking" } },
         UpdatesShown::Unavailable(absence) => rsx! {
             div { class: "updates", "data-updates": "unavailable",
-                FieldGroup {
-                    FieldRow {
-                        label: TextLine::from(crate::copy::updates::SOFTWARE_UPDATE),
-                        help: Some(TextLine::from(copy::absence::absence(Subject::Updates, absence))),
-                        availability: Availability::Disabled,
-                        Label { text: "Unavailable", role: LabelRole::Secondary }
-                    }
+                Absent {
+                    face: Some(tile_of(PageKind::SoftwareUpdate)),
+                    title: crate::copy::updates::SOFTWARE_UPDATE,
+                    words: copy::absence::absence(Subject::Updates, absence),
                 }
             }
         },

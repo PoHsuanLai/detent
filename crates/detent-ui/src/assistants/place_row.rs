@@ -7,7 +7,6 @@ use detent_model::external::ModelChoice;
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::disclosure::Disclosure;
-use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::components::menus::pop_up_button::PopUpButton;
 use ds::prelude::*;
@@ -105,7 +104,6 @@ pub(crate) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
         FieldRow {
             label: TextLine::from(view.name.clone()),
             help: view.detail.clone().map(TextLine::from),
-            help_shown: HelpShown::OnRequest,
             common: Common { id: Some(row_id("place", &view.name)), ..Common::default() },
             match view.switch {
                 Switch::Always => rsx! {
@@ -154,7 +152,6 @@ pub(crate) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
                     FieldRow {
                         label: TextLine::from(crate::copy::assistants::ASK_ME_EACH_TIME),
                         help: Some(TextLine::from(crate::copy::assistants::ASKS_BEFORE_USING_ACCOUNT)),
-                        help_shown: HelpShown::OnRequest,
                         common: Common { id: Some(row_id("ask", &view.name)), ..Common::default() },
                         Toggle {
                             label: crate::copy::assistants::ASK_ME_EACH_TIME,

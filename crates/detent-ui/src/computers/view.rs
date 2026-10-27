@@ -6,11 +6,11 @@ use crate::assistants::{PlaceEntry, PlaceRow};
 use crate::copy::absence::{Subject, absence as absence_words};
 use crate::copy::computers::guest_standing;
 use crate::live::use_live;
+use crate::system::Absent;
 use detent_model::external::{Approval, ComputerCandidate, GuestAnswer, GuestRow, RowState};
 use detent_model::{AddList, ComputersInput, ComputersReady, ComputersState};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
-use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 use ds::root::common::Common;
@@ -38,13 +38,9 @@ pub(crate) fn Computers(
         ComputersState::Looking => rsx! {},
         ComputersState::Unavailable(absence) => rsx! {
             div { class: "computers", "data-computers": "unavailable",
-                FieldGroup { title: Some(crate::copy::computers::YOUR_COMPUTERS.to_owned()),
-                    FieldRow {
-                        label: TextLine::from(crate::copy::computers::YOUR_COMPUTERS),
-                        help: Some(TextLine::from(absence_words(Subject::Computers, absence))),
-                        availability: Availability::Disabled,
-                        Label { text: "Unavailable", role: LabelRole::Secondary }
-                    }
+                Absent {
+                    title: crate::copy::computers::YOUR_COMPUTERS,
+                    words: absence_words(Subject::Computers, absence),
                 }
             }
         },
@@ -75,7 +71,6 @@ fn Listed(
                 }
                 FieldRow { label: TextLine::from(crate::copy::computers::ADD_A_SERVER),
                     help: Some(TextLine::from(crate::copy::computers::ADD_SERVER_HELP)),
-                    help_shown: HelpShown::OnRequest,
                     Button {
                         common: Common { aria_label: Some(crate::copy::computers::ADD_A_SERVER.to_owned()), id: Some("add-server".to_owned()), ..Common::default() },
                         label: crate::copy::computers::ADD_A_SERVER_ELLIPSIS,
@@ -151,7 +146,7 @@ fn CandidateLine(candidate: ComputerCandidate, feed: EventHandler<ComputersInput
     };
     let node = candidate.node.clone();
     rsx! {
-        FieldRow { label: TextLine::from(candidate.name.clone()), help: Some(TextLine::from(help)), help_shown: HelpShown::OnRequest,
+        FieldRow { label: TextLine::from(candidate.name.clone()), help: Some(TextLine::from(help)),
             Button {
                 common: Common { aria_label: Some(crate::copy::computers::add(&candidate.name)), ..Common::default() },
                 label: crate::copy::common::ADD,

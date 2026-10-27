@@ -2,4 +2,4 @@
 
 mod unavailable;
 
-pub(crate) use unavailable::Unavailable;
+pub(crate) use unavailable::{Absent, Unavailable};

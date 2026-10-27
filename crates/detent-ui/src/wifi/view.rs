@@ -6,12 +6,13 @@ use super::network_sheets::{ForgetSheet, OtherSheet};
 use super::sheets::{DetailsSheet, PasswordSheet};
 use crate::copy;
 use crate::copy::absence::Subject;
+use crate::icons::tile_of;
 use crate::live::use_live;
 use crate::system::Unavailable;
 use detent_client::Client;
 use detent_model::{
-    NetworkLock, Remembered, SignalBars, Ssid, WifiAsking, WifiInput, WifiNetwork, WifiRadio,
-    WifiReady, WifiState,
+    NetworkLock, PageKind, Remembered, SignalBars, Ssid, WifiAsking, WifiInput, WifiNetwork,
+    WifiRadio, WifiReady, WifiState,
 };
 use dioxus::prelude::*;
 use ds::components::controls::button_model::Bezel;
@@ -27,7 +28,7 @@ pub(crate) fn WifiPane() -> Element {
     match state {
         WifiState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
         WifiState::Unavailable(absence) => rsx! {
-            Unavailable { title: crate::copy::wifi::WI_FI, subject: Subject::Wifi, absence }
+            Unavailable { face: tile_of(PageKind::Wifi), title: crate::copy::wifi::WI_FI, subject: Subject::Wifi, absence }
         },
         WifiState::Ready(page) => {
             let press = EventHandler::new(move |input: WifiInput| {
@@ -54,7 +55,11 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
     } else {
         Availability::Enabled
     };
-    let help = copy::wifi::radio_help(radio).map(TextLine::from);
+    let joined = page.status.joined().map(|network| network.ssid.0.clone());
+    let help = Some(TextLine::from(copy::wifi::status_line(
+        radio,
+        joined.as_deref(),
+    )));
     let others = |wanted: Remembered| -> Vec<WifiNetwork> {
         page.status
             .others()
@@ -67,7 +72,11 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
     rsx! {
         div { class: "system-page", "data-system": "wifi",
             FieldGroup {
-                FieldRow { label: TextLine::from(crate::copy::wifi::WI_FI), help, availability,
+                FieldRow {
+                    label: TextLine::from(crate::copy::wifi::WI_FI),
+                    help,
+                    leading: Some(tile_of(PageKind::Wifi)),
+                    availability,
                     Toggle {
                         label: crate::copy::wifi::WI_FI,
                         value: if radio == WifiRadio::On { Check::On } else { Check::Off },

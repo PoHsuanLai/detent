@@ -2,11 +2,14 @@
 
 use super::sheet_view::{RemovalSheetView, SheetHandlers};
 use crate::copy::absence::{Subject, absence as absence_words};
+use crate::icons::tile_of;
 use crate::live::use_live;
+use crate::system::Absent;
 use detent_client::Client;
-use detent_model::{RemovalStage, SpaceKey, SpaceRow, SpacesInput, SpacesReady, SpacesState};
+use detent_model::{
+    PageKind, RemovalStage, SpaceKey, SpaceRow, SpacesInput, SpacesReady, SpacesState,
+};
 use dioxus::prelude::*;
-use ds::components::content::label::LabelRole;
 use ds::components::controls::button_model::ButtonRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::components::overlays::empty_state::EmptyState;
@@ -27,13 +30,10 @@ pub(crate) fn SpacesPane() -> Element {
         SpacesState::Looking => rsx! {},
         SpacesState::Unavailable(absence) => rsx! {
             div { class: "spaces", "data-spaces": "unavailable",
-                FieldGroup { title: Some(crate::copy::spaces::SPACES.to_owned()),
-                    FieldRow {
-                        label: TextLine::from(crate::copy::spaces::SPACES),
-                        help: Some(TextLine::from(absence_words(Subject::Spaces, absence))),
-                        availability: Availability::Disabled,
-                        Label { text: "Unavailable", role: LabelRole::Secondary }
-                    }
+                Absent {
+                    face: Some(tile_of(PageKind::Spaces)),
+                    title: crate::copy::spaces::SPACES,
+                    words: absence_words(Subject::Spaces, absence),
                 }
             }
         },

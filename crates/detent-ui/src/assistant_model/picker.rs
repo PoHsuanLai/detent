@@ -2,12 +2,12 @@
 //! draws for the text slot's balanced tier.
 
 use crate::engine_install::EngineSheetView;
+use crate::icons::tile_of;
 use crate::picker::{TierRow, TurnOnAlert, Unavailable};
-use detent_model::{Clearing, ModelRow, PickerInput, PickerState, assistant_of};
+use crate::system::Absent;
+use detent_model::{Clearing, ModelRow, PageKind, PickerInput, PickerState, assistant_of};
 use dioxus::prelude::*;
-use ds::components::content::label::LabelRole;
-use ds::components::fields::field_row::{FieldGroup, FieldRow};
-use ds::prelude::*;
+use ds::components::fields::field_row::FieldGroup;
 
 /// The row, or why it is not there. `state` is the picker's.
 #[component]
@@ -47,13 +47,10 @@ pub(crate) fn AssistantPicker(
 fn Missing() -> Element {
     rsx! {
         div { class: "picker", "data-picker": "missing",
-            FieldGroup {
-                FieldRow {
-                    label: TextLine::from(crate::copy::common::MODEL),
-                    help: Some(TextLine::from(crate::copy::assistant_model::THE_MODEL_SERVICE_OFFERS_NO_MODEL)),
-                    availability: Availability::Disabled,
-                    Label { text: "Unavailable", role: LabelRole::Secondary }
-                }
+            Absent {
+                face: Some(tile_of(PageKind::AssistantModel)),
+                title: crate::copy::common::MODEL,
+                words: crate::copy::assistant_model::THE_MODEL_SERVICE_OFFERS_NO_MODEL,
             }
         }
     }

@@ -1,11 +1,13 @@
-//! One section: a titled card of its rows.
+//! One section: a titled card of its rows, and the grey footnote under it when the schema has one.
 
 use crate::files::{Edit, Files};
 use crate::key_row::{KeyBlock, KeyRow, Match};
 use crate::memory_consent::ConfinementNote;
 use detent_model::{Control as Kind, KeyEntry, SectionModel, tells_confinement};
 use dioxus::prelude::*;
+use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::FieldGroup;
+use ds::prelude::Label;
 use ds_settings::schema::KeyPath;
 
 /// Whether a search found `entry`.
@@ -39,8 +41,10 @@ pub fn SectionView(
 ) -> Element {
     let title = (!section.title.is_empty()).then(|| section.title.clone());
     let confinement = tells_confinement(&section);
+    let footnote = section.footnote.clone();
     let (blocks, rows): (Vec<KeyEntry>, Vec<KeyEntry>) =
         section.keys.iter().cloned().partition(is_block);
+    let footnote = footnote.filter(|_| !rows.is_empty());
     rsx! {
         div { class: "section",
             if !rows.is_empty() {
@@ -48,6 +52,11 @@ pub fn SectionView(
                     for entry in rows {
                         KeyRow { key: "{entry.spec.path.0}", found: match_of(&entry, &hits), entry, files, onedit }
                     }
+                }
+            }
+            if let Some(words) = footnote {
+                div { class: "section-footnote",
+                    Label { text: words, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                 }
             }
             for entry in blocks {

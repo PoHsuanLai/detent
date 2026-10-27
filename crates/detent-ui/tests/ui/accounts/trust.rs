@@ -11,7 +11,7 @@ fn no_bus_says_so_and_blocks_nothing_else_on_the_window() {
         harness.attr(".accounts", "data-accounts").as_deref(),
         Some("unavailable")
     );
-    assert!(harness.html().contains("Unavailable"));
+    assert!(harness.html().contains("no accounts to show"));
 }
 
 #[test]

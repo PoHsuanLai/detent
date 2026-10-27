@@ -8,6 +8,7 @@ use crate::copy;
 use crate::copy::absence::Subject;
 use crate::engines::{EnginePrograms, LocalEnginesNote};
 use crate::running::RunningModels;
+use crate::system::Absent;
 use detent_model::{Absence, Runtime};
 use dioxus::prelude::*;
 use ds::base::vocab::Muting;
@@ -49,24 +50,17 @@ pub fn LocalRuntimes() -> Element {
         Found::Looking => rsx! {},
         Found::Absent(absence) => rsx! {
             div { class: "runtimes", "data-runtimes": "unavailable",
-                FieldGroup { title: Some(crate::copy::picker::MODELS_ON_THIS_COMPUTER.to_owned()),
-                    FieldRow {
-                        label: TextLine::from(crate::copy::common::LOCAL_MODELS),
-                        help: Some(TextLine::from(copy::absence::absence(Subject::Runtimes, absence))),
-                        availability: Availability::Disabled,
-                        Label { text: "Unavailable", role: LabelRole::Secondary }
-                    }
+                Absent {
+                    title: crate::copy::common::LOCAL_MODELS,
+                    words: copy::absence::absence(Subject::Runtimes, absence),
                 }
             }
         },
         Found::Runtimes(runtimes) if runtimes.is_empty() => rsx! {
             div { class: "runtimes", "data-runtimes": "empty",
-                FieldGroup { title: Some(crate::copy::picker::MODELS_ON_THIS_COMPUTER.to_owned()),
-                    FieldRow {
-                        label: TextLine::from(crate::copy::common::LOCAL_MODELS),
-                        help: Some(TextLine::from(crate::copy::picker::NOTHING_RUNNING_HERE)),
-                        Label { text: "None", role: LabelRole::Tertiary }
-                    }
+                Absent {
+                    title: crate::copy::common::LOCAL_MODELS,
+                    words: crate::copy::picker::NOTHING_RUNNING_HERE,
                 }
             }
         },

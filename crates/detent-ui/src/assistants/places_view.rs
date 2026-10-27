@@ -8,18 +8,19 @@ use super::place_row::{PlaceEntry, PlaceHandlers, PlaceRow, PlaceView, Switch};
 use crate::accounts::{Listed, use_listed};
 use crate::computers::{Computers, use_computers};
 use crate::env::Env;
+use crate::icons::tile_on;
+use crate::system::Absent;
 use detent_client::{load_places, save_places};
 use detent_model::external::{
     CloudAccount, CloudAllowed, ComputerName, ModelChoice, OwnComputer, PlaceKind, PlaceName,
     Toggle, kind_label,
 };
 use detent_model::{
-    AccountsPane, ComputerRow, ComputersInput, ComputersState, Confirm, PlaceRef, PlacesEffect,
-    PlacesInput, PlacesState, Ready, Standing, known_of, offers_for, places_step,
+    AccountsPane, ComputerRow, ComputersInput, ComputersState, Confirm, Ground, PlaceRef,
+    PlacesEffect, PlacesInput, PlacesState, Ready, Standing, known_of, offers_for, places_step,
 };
 use dioxus::prelude::*;
-use ds::components::content::label::{LabelRole, LabelStyle};
-use ds::components::fields::field_row::{FieldGroup, FieldRow};
+use ds::components::fields::field_row::FieldGroup;
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
 
@@ -180,10 +181,14 @@ pub(crate) fn Assistants() -> Element {
                 }
             }
             Computers { state: computers(), feed, rows: own_rows }
-            FieldGroup { title: Some(kind_label(PlaceKind::Cloud).to_owned()),
-                if current.places.cloud.is_empty() {
-                    EmptyRow { text: crate::copy::assistants::SIGNED_IN_ACCOUNTS_THAT_OFFER_AI }
+            if current.places.cloud.is_empty() {
+                Absent {
+                    face: Some(tile_on(Icon::Globe, Ground::Indigo)),
+                    title: kind_label(PlaceKind::Cloud),
+                    words: crate::copy::assistants::SIGNED_IN_ACCOUNTS_THAT_OFFER_AI,
                 }
+            } else {
+            FieldGroup { title: Some(kind_label(PlaceKind::Cloud).to_owned()),
                 for cloud in current.places.cloud.iter().cloned() {
                     PlaceRow {
                         key: "{cloud.name.0}",
@@ -211,6 +216,7 @@ pub(crate) fn Assistants() -> Element {
                         },
                     }
                 }
+            }
             }
             OutsideAssistants { pane: pane.clone() }
             if let Some((title, message)) = question {
@@ -270,15 +276,5 @@ fn own_handlers(
         removed: Some(EventHandler::new(move |()| {
             feed.call(ComputersInput::Remove(computer.clone()));
         })),
-    }
-}
-
-/// A line in a group that has no place yet.
-#[component]
-fn EmptyRow(text: String) -> Element {
-    rsx! {
-        FieldRow { label: TextLine::from(text), availability: Availability::Disabled,
-            Label { text: "None", role: LabelRole::Tertiary, style: LabelStyle::Footnote }
-        }
     }
 }

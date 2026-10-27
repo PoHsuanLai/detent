@@ -4,12 +4,10 @@ use super::view::Listed;
 use crate::copy::absence::{Subject, absence as absence_words};
 use crate::live::{use_client, use_live};
 use crate::privacy::use_program_book;
+use crate::system::Absent;
 use detent_client::Client;
 use detent_model::{ScreenSharingInput, ScreenSharingState};
 use dioxus::prelude::*;
-use ds::components::content::label::LabelRole;
-use ds::components::fields::field_row::{FieldGroup, FieldRow};
-use ds::prelude::*;
 
 /// The apps the portal lets share the screen without asking again, with a Remove on each.
 #[component]
@@ -26,13 +24,9 @@ pub(crate) fn ScreenSharingPane() -> Element {
         ScreenSharingState::Looking => rsx! {},
         ScreenSharingState::Unavailable(absence) => rsx! {
             div { class: "screen-sharing", "data-screen-sharing": "unavailable",
-                FieldGroup { title: Some(crate::copy::screen_sharing::SCREEN_SHARING.to_owned()),
-                    FieldRow {
-                        label: TextLine::from(crate::copy::screen_sharing::SCREEN_SHARING),
-                        help: Some(TextLine::from(absence_words(Subject::ScreenSharing, absence))),
-                        availability: Availability::Disabled,
-                        Label { text: "Unavailable", role: LabelRole::Secondary }
-                    }
+                Absent {
+                    title: crate::copy::screen_sharing::SCREEN_SHARING,
+                    words: absence_words(Subject::ScreenSharing, absence),
                 }
             }
         },

@@ -101,6 +101,7 @@ fn foreign_tables_reach_the_file_spec_as_a_union_over_programs_sharing_it() {
         file: ConfigFile::parse(&FilePath(file.to_owned())).expect("a config file"),
         keys: Vec::new(),
         foreign,
+        footnotes: Vec::new(),
     };
     // Schemas that discovery admits each name a file in their own directory, so two programs
     // sharing a file is built by hand here: the grouping is what is under test.

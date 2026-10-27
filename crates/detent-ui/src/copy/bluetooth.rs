@@ -1,6 +1,6 @@
 //! The Bluetooth page's words: what the questions ask and how a device's standing and battery read.
 
-use detent_model::{BatteryLevel, BtLink, PairingAsk, PairingCode, PairingQuestion};
+use detent_model::{BatteryLevel, BtLink, BtPower, PairingAsk, PairingCode, PairingQuestion};
 
 /// The title of the question that asks before a device is forgotten.
 pub(crate) fn forget_title(name: &str) -> String {
@@ -100,6 +100,16 @@ pub(crate) fn connect(name: impl std::fmt::Display) -> String {
 /// The words "Forget {name}".
 pub(crate) fn forget(name: impl std::fmt::Display) -> String {
     format!("Forget {name}")
+}
+
+/// The line under the Bluetooth switch: whether it is on, and how many devices are connected.
+pub(crate) fn status_line(power: BtPower, connected: usize) -> String {
+    match (power, connected) {
+        (BtPower::Off, _) => "Off".to_owned(),
+        (BtPower::On, 0) => "On".to_owned(),
+        (BtPower::On, 1) => "1 device connected".to_owned(),
+        (BtPower::On, many) => format!("{many} devices connected"),
+    }
 }
 
 #[cfg(test)]

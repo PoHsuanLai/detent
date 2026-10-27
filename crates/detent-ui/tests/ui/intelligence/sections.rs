@@ -22,10 +22,10 @@ fn the_sections_follow_design_order_whatever_order_the_programs_were_read_in() {
         &[
             "Assistant",
             "Models",
-            "Model choice",
+            "Models",
             "Memory",
             "Computer use",
-            "Limits\u{2026}",
+            "Limits",
         ],
     );
 }
@@ -46,7 +46,7 @@ fn the_page_shows_inferds_and_dockets_file_rows_with_no_inferd_running() {
         Some("unavailable"),
         "no bus: the picker is unavailable, the page is not"
     );
-    assert!(html.contains("Unavailable"));
+    assert!(html.contains("Settings is not connected to the desktop."));
     assert_eq!(harness.count(".picker-kind"), 0);
 }
 

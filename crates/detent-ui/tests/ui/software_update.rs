@@ -102,7 +102,9 @@ fn the_page_opens_from_its_slug_and_says_plainly_when_nothing_serves_updates() {
     );
     assert_eq!(page_of(&harness).as_deref(), Some("software-update"));
     assert_eq!(title_of(&harness).as_deref(), Some("Software Update"));
-    let row = row_text(&harness);
+    let row = harness
+        .text_of("[data-updates=\"unavailable\"]")
+        .unwrap_or_default();
     assert!(
         row.contains("Software updates are not available on this computer."),
         "{row}"

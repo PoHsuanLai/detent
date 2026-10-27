@@ -166,6 +166,17 @@ pub(crate) fn forget(a: impl std::fmt::Display) -> String {
     format!("Forget {a}")
 }
 
+/// The line under the Wi-Fi switch: why the computer has it off, else where this computer is
+/// joined (`joined`, the name of the network).
+pub(crate) fn status_line(radio: WifiRadio, joined: Option<&str>) -> String {
+    match (radio, joined) {
+        (WifiRadio::Blocked, _) => radio_help(radio).unwrap_or_default().to_owned(),
+        (WifiRadio::Off, _) => "Off".to_owned(),
+        (WifiRadio::On, Some(name)) => format!("Connected to {name}"),
+        (WifiRadio::On, None) => "Not connected".to_owned(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

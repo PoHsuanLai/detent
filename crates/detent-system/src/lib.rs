@@ -23,6 +23,7 @@ pub mod lending;
 mod lock;
 pub mod memory_consent;
 pub mod modules;
+pub mod person;
 pub mod picker;
 pub mod privacy;
 pub mod running;

@@ -4,12 +4,10 @@ use super::book::use_program_book;
 use super::program_view::Listed;
 use crate::copy::absence::{Subject, absence as absence_words};
 use crate::live::use_live;
+use crate::system::Absent;
 use detent_client::Client;
 use detent_model::{PrivacyInput, PrivacyState};
 use dioxus::prelude::*;
-use ds::components::content::label::LabelRole;
-use ds::components::fields::field_row::{FieldGroup, FieldRow};
-use ds::prelude::*;
 
 /// The programs that have been answered, with a choice for each power.
 #[component]
@@ -25,13 +23,8 @@ pub(crate) fn PrivacyPane() -> Element {
         PrivacyState::Looking => rsx! {},
         PrivacyState::Unavailable(absence) => rsx! {
             div { class: "privacy", "data-privacy": "unavailable",
-                FieldGroup { title: Some(crate::copy::privacy::PRIVACY_SECURITY.to_owned()),
-                    FieldRow {
-                        label: TextLine::from(crate::copy::privacy::PRIVACY_SECURITY),
-                        help: Some(TextLine::from(absence_words(Subject::Privacy, absence))),
-                        availability: Availability::Disabled,
-                        Label { text: "Unavailable", role: LabelRole::Secondary }
-                    }
+                Absent {
+                    words: absence_words(Subject::Privacy, absence),
                 }
             }
         },

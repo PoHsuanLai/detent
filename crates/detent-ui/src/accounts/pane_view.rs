@@ -9,6 +9,7 @@ use crate::copy::absence::{Subject, absence as absence_words};
 use crate::env::Env;
 use crate::live::{use_events, use_live};
 use crate::marks::ProviderMarks;
+use crate::system::Absent;
 use detent_client::{Client, Pane};
 use detent_model::{
     Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds, ModuleRow,
@@ -17,8 +18,6 @@ use detent_model::{
 use dioxus::prelude::*;
 use ds::components::chrome::split_view::model::{Collapsing, PaneSize, PaneSpec, SplitPane};
 use ds::components::chrome::split_view::view::SplitView;
-use ds::components::content::label::LabelRole;
-use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::components::overlays::empty_state::EmptyState;
 use ds::prelude::*;
 
@@ -192,13 +191,8 @@ fn Ready(
 fn Unavailable(absence: Absence) -> Element {
     rsx! {
         div { class: "accounts", "data-accounts": "unavailable",
-            FieldGroup { title: Some(crate::copy::common::ACCOUNTS.to_owned()),
-                FieldRow {
-                    label: TextLine::from(crate::copy::common::ACCOUNTS),
-                    help: Some(TextLine::from(absence_words(Subject::Accounts, absence))),
-                    availability: Availability::Disabled,
-                    Label { text: "Unavailable", role: LabelRole::Secondary }
-                }
+            Absent {
+                words: absence_words(Subject::Accounts, absence),
             }
         }
     }

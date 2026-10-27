@@ -4,10 +4,11 @@ use crate::env::Env;
 use crate::files::{Edit, Files, store};
 use crate::memory_consent::use_memory_consent;
 use crate::page_view::PageView;
+use crate::person_card::PersonCard;
 use crate::sharing::use_sharing;
 use crate::sidebar::sidebar_items;
 use crate::view::{Searching, View};
-use detent_model::{PageSlug, search};
+use detent_model::{PageKind, PageSlug, search};
 use dioxus::prelude::*;
 use ds::components::chrome::sidebar::Sidebar;
 use ds::components::chrome::sidebar_model::SidebarSection;
@@ -55,6 +56,20 @@ pub fn Window(
         query.set(next);
     };
 
+    let accounts = env
+        .catalogue
+        .pages
+        .iter()
+        .find(|model| model.kind == PageKind::Accounts)
+        .map(|model| model.slug.clone());
+    let open_accounts = move || {
+        if let Some(slug) = accounts.clone() {
+            let (mut page, mut query) = (page, query);
+            query.set(String::new());
+            page.set(slug);
+        }
+    };
+
     let side = rsx! {
         Sidebar::<String> {
             label: crate::copy::window::SETTINGS,
@@ -63,13 +78,16 @@ pub fn Window(
             sections: vec![SidebarSection::List(sidebar_items(&env.catalogue, &view.listed, view.current.as_ref(), page))],
             onselect: move |slug: String| page.set(PageSlug(slug)),
             header: rsx! {
-                TextField {
-                    label: crate::copy::common::SEARCH,
-                    value: query(),
-                    kind: FieldKind::Search,
-                    placeholder: crate::copy::common::SEARCH,
-                    size: ControlSize::Regular,
-                    oninput: find,
+                div { class: "sidebar-head",
+                    TextField {
+                        label: crate::copy::common::SEARCH,
+                        value: query(),
+                        kind: FieldKind::Search,
+                        placeholder: crate::copy::common::SEARCH,
+                        size: ControlSize::Regular,
+                        oninput: find,
+                    }
+                    PersonCard { onopen: move |()| open_accounts() }
                 }
             },
         }

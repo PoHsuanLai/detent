@@ -11,13 +11,17 @@ use crate::page::{PageSlug, sidebar_place};
 use crate::page_kind::PageKind;
 use crate::updates::software_update_page;
 use crate::wifi::wifi_page;
-use ds_settings::schema::{Exposure, ForeignTables, KeyKind, KeyPath, KeySpec, Page, PageTable};
+use ds_settings::schema::{
+    Exposure, Footnote, ForeignTables, KeyKind, KeyPath, KeySpec, Page, PageTable,
+};
 
 /// The keys of one section that share an exposure, in schema order.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SectionModel {
     /// The section's title; empty for keys the schema gave none.
     pub title: String,
+    /// The grey paragraph under the section, when a schema gave one.
+    pub footnote: Option<String>,
     /// Its keys.
     pub keys: Vec<KeyEntry>,
 }
@@ -60,6 +64,7 @@ impl PageModel {
                 .iter()
                 .map(|section| SectionModel {
                     title: section.title.clone(),
+                    footnote: section.footnote.clone(),
                     keys: section
                         .keys
                         .iter()
@@ -109,8 +114,9 @@ impl Catalogue {
                     .map(|k| KeyEntry::new(k.clone(), p.file.clone()))
             })
             .collect();
+        let footnotes: Vec<&Footnote> = programs.iter().flat_map(|p| &p.footnotes).collect();
         Catalogue {
-            pages: group_pages(&entries),
+            pages: group_pages(&entries, &footnotes),
             files: group_files(programs),
         }
     }
@@ -175,7 +181,22 @@ fn title_of(table: &PageTable, page: &Page) -> String {
     }
 }
 
-fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
+/// `pages` with each of `footnotes` under the basic section it names.
+fn with_footnotes(mut pages: Vec<PageModel>, footnotes: &[&Footnote]) -> Vec<PageModel> {
+    for note in footnotes {
+        let section = pages
+            .iter_mut()
+            .filter(|page| page.page == note.page)
+            .flat_map(|page| page.sections.iter_mut())
+            .find(|section| section.title == note.section.0);
+        if let Some(section) = section {
+            section.footnote = Some(note.text.0.clone());
+        }
+    }
+    pages
+}
+
+fn group_pages(entries: &[KeyEntry], footnotes: &[&Footnote]) -> Vec<PageModel> {
     let table = PageTable::built_in();
     let mut pages: Vec<PageModel> = entries.iter().fold(Vec::new(), |mut pages, entry| {
         let slug = PageSlug::of(&entry.spec.page);
@@ -231,7 +252,10 @@ fn group_pages(entries: &[KeyEntry]) -> Vec<PageModel> {
         .filter_map(|model| sidebar_place(&table, &model.page).map(|place| (place, model)))
         .collect();
     placed.sort_by(|a, b| a.0.cmp(&b.0));
-    placed.into_iter().map(|(_, model)| model).collect()
+    with_footnotes(
+        placed.into_iter().map(|(_, model)| model).collect(),
+        footnotes,
+    )
 }
 
 fn place_in_section(sections: &mut Vec<SectionModel>, entry: &KeyEntry) {
@@ -240,6 +264,7 @@ fn place_in_section(sections: &mut Vec<SectionModel>, entry: &KeyEntry) {
         Some(section) => section.keys.push(entry.clone()),
         None => sections.push(SectionModel {
             title: title.clone(),
+            footnote: None,
             keys: vec![entry.clone()],
         }),
     }

@@ -19,6 +19,7 @@ pub(crate) mod engine_install;
 pub(crate) mod engines;
 pub(crate) mod extensions;
 pub(crate) mod first_run;
+pub(crate) mod heroes;
 pub(crate) mod hot_corners;
 pub(crate) mod memory;
 pub(crate) mod notice;

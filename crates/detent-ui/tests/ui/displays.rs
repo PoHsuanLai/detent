@@ -124,7 +124,9 @@ fn the_page_sits_after_desktop_and_dock_and_says_plainly_when_there_is_no_compos
         harness.text_of(&sidebar_page("displays")).as_deref(),
         Some("Displays")
     );
-    let row = harness.text_of(".ds-field-row").unwrap_or_default();
+    let row = harness
+        .text_of("[data-system=\"unavailable\"]")
+        .unwrap_or_default();
     assert!(
         row.contains("Displays aren\u{2019}t available right now."),
         "{row}"
@@ -140,7 +142,9 @@ fn a_computer_with_no_display_connected_says_so() {
         "the unavailable row",
         "[data-system=\"unavailable\"]",
     );
-    let row = harness.text_of(".ds-field-row").unwrap_or_default();
+    let row = harness
+        .text_of("[data-system=\"unavailable\"]")
+        .unwrap_or_default();
     assert!(row.contains("No display is connected."), "{row}");
 }
 

@@ -22,6 +22,10 @@
   padding: var(--s-14) var(--s-22) var(--s-22);
 }
 
+.section-footnote {
+  padding: 0 var(--s-14);
+}
+
 .key-hit {
   background: var(--accent-soft);
 }
@@ -99,8 +103,11 @@
   gap: var(--s-6);
 }
 
+
 .advanced {
-  padding: 0 var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
 }
 
 .advanced-sheet {
@@ -113,6 +120,52 @@
 .advanced-sheet-buttons {
   display: flex;
   align-self: flex-end;
+}
+
+.advanced-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-14);
+}
+
+.sidebar-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+}
+
+.sidebar-gap {
+  height: var(--s-10);
+}
+
+.person-picture {
+  display: block;
+  width: var(--row-avatar);
+  height: var(--row-avatar);
+  object-fit: cover;
+  border-radius: var(--r-pill);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-6);
+  padding: var(--s-14) var(--s-14) var(--s-8);
+  text-align: center;
+}
+
+.hero-tile,
+.absent-tile {
+  --row-icon-tile: var(--s-48);
+}
+
+/* The empty state pads itself; the tile sits right above its padding. */
+.absent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--s-22) var(--s-14) 0;
 }
 
 .picker {
@@ -436,11 +489,6 @@
   display: flex;
   justify-content: space-between;
   gap: var(--s-10);
-}
-
-.hot-corners-button {
-  display: flex;
-  justify-content: flex-end;
 }
 
 .hot-corners-sheet {

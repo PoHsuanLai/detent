@@ -16,6 +16,7 @@ use detent_system::hot_corners::{CornerDesk, OnCorners};
 use detent_system::lending::Lender;
 use detent_system::memory_consent::{MemoryLink, OnBus as MemoryOnBus};
 use detent_system::modules::{ModulesLink, OnBus as ModulesOnBus};
+use detent_system::person::{NoPerson, OnAccounts, PersonLink};
 use detent_system::picker::{OnClient as PickerOnClient, PickerLink};
 use detent_system::privacy::{OnClient as PrivacyOnClient, PrivacyLink};
 use detent_system::running::{OnBus as RunningOnBus, RunningLink};
@@ -40,6 +41,23 @@ pub struct ClientHomes {
     pub cache: CacheHome,
 }
 
+/// Where the person's name and picture come from when the services are looked for on `bus`: on
+/// the person's own session, the system's accounts, else the passwd file and the home folder. On
+/// no bus, or a test's private one, nobody is known, so nothing of this computer's own reaches a
+/// window that was told to look somewhere else.
+fn person_on(bus: &BusSource) -> Arc<dyn PersonLink> {
+    match bus {
+        BusSource::Session => Arc::new(OnAccounts::new(
+            bus.clone(),
+            PathBuf::from("/etc/passwd"),
+            std::env::var_os("HOME")
+                .map(PathBuf::from)
+                .unwrap_or_default(),
+        )),
+        BusSource::Absent | BusSource::Address(..) => Arc::new(NoPerson),
+    }
+}
+
 /// A client being built: every service is the person's own until a setter says otherwise.
 #[derive(Debug, Clone)]
 pub struct ClientBuilder(Client);
@@ -60,6 +78,7 @@ impl ClientBuilder {
             Thumbnails::under(&cache),
         ));
         let corners = Arc::new(OnCorners::new(Arc::clone(&chooser), Vec::new()));
+        let person = person_on(&bus);
         ClientBuilder(Client {
             chooser,
             modules: Arc::new(ModulesOnBus(bus.clone())),
@@ -82,6 +101,7 @@ impl ClientBuilder {
             displays: Arc::new(OnCompositor(bus.clone())),
             desk,
             pictures,
+            person,
             corners,
             search: AgentSearch {
                 config_home: config,
@@ -172,6 +192,12 @@ impl ClientBuilder {
     #[must_use]
     pub fn with_pictures(self, pictures: Arc<dyn Pictures>) -> ClientBuilder {
         ClientBuilder(Client { pictures, ..self.0 })
+    }
+
+    /// With the sidebar's card showing the person `person` names.
+    #[must_use]
+    pub fn with_person(self, person: Arc<dyn PersonLink>) -> ClientBuilder {
+        ClientBuilder(Client { person, ..self.0 })
     }
 
     /// Listing the apps' actions from the manifests in `intent_dirs`, in the order of trust.

@@ -10,10 +10,11 @@ use crate::engine_install::EngineSheetView;
 use crate::env::Env;
 use crate::files::{Files, value_of};
 use crate::live::use_client;
+use crate::system::Absent;
 use detent_model::{Absence, Adding, Clearing, KindRows, PickerInput, PickerState, Reason};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
-use ds::components::fields::field_row::{FieldGroup, FieldRow};
+use ds::components::fields::field_row::FieldGroup;
 use ds::prelude::*;
 
 /// The row that turns the footer on.
@@ -85,13 +86,9 @@ pub fn ModelPicker(reasons: Shown) -> Element {
 pub(crate) fn Unavailable(absence: Absence) -> Element {
     rsx! {
         div { class: "picker", "data-picker": "unavailable",
-            FieldGroup { title: Some(crate::copy::picker::MODEL_CHOICE.to_owned()),
-                FieldRow {
-                    label: TextLine::from(crate::copy::picker::MODELS),
-                    help: Some(TextLine::from(copy::absence::absence(Subject::Models, absence))),
-                    availability: Availability::Disabled,
-                    Label { text: "Unavailable", role: LabelRole::Secondary }
-                }
+            Absent {
+                title: crate::copy::picker::MODELS,
+                words: copy::absence::absence(Subject::Models, absence),
             }
         }
     }

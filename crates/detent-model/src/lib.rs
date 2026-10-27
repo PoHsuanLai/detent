@@ -23,6 +23,7 @@ mod extensions;
 pub mod external;
 mod file_uri;
 mod first_run;
+mod head;
 mod hot_corners;
 mod layout;
 mod live;
@@ -35,6 +36,7 @@ mod origin;
 mod outside;
 mod page;
 mod page_kind;
+mod person;
 mod picker;
 mod picture_add;
 mod privacy;
@@ -46,6 +48,7 @@ mod screen_sharing;
 mod search;
 mod sharing;
 mod shortcuts;
+mod sidebar_group;
 mod spaces;
 mod style_notes;
 mod text_form;
@@ -131,6 +134,7 @@ pub use file_uri::path_of_file_uri;
 pub use first_run::{
     FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, Runtime, Stage, first_run_step,
 };
+pub use head::{Head, Hero};
 pub use hot_corners::{
     Corner, CornerAsk, CornerChoice, CornerMenuLine, HOT_CORNERS_CONTROL, HotActionChoice,
     HotActionGroup, HotAddFault, HotApp, HotBinding, HotDesk, HotDo, HotItem, HotKeys, HotKnown,
@@ -154,6 +158,7 @@ pub use outside::{
 };
 pub use page::PageSlug;
 pub use page_kind::PageKind;
+pub use person::{Person, passwd_name};
 pub use picker::{
     Applying, AutoPool, AwaitingAccount, Busy, Choice, ChoiceGap, ChoiceReadiness, ChoiceSection,
     Clearing, Described, Gate, KindRows, Loading, LocalAsk, LocalEngine, LocalModel, LocalView,
@@ -185,6 +190,7 @@ pub use shortcuts::{
     ShortcutProblem, ShortcutRow, ShortcutSection, ShortcutsEffect, ShortcutsInput, ShortcutsState,
     desktop_keymap, replace_question, shortcuts_step,
 };
+pub use sidebar_group::{Ground, SidebarGroup, sidebar_groups};
 pub use spaces::{
     RemovalAsk, RemovalInput, RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput,
     SpacesReady, SpacesState, WithoutMemory, spaces_step,

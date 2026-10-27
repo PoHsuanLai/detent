@@ -119,7 +119,7 @@ fn the_viewer_page_draws_anyviews_keys_under_its_sections() {
     for words in [
         "Keep history",
         "Hide controls after",
-        "Zoom\u{2026}",
+        "Zoom",
         "History",
         "Controls",
     ] {
@@ -132,7 +132,7 @@ fn the_viewer_page_draws_anyviews_keys_under_its_sections() {
         "on, its default"
     );
     assert_eq!(
-        harness.count(".advanced .ds-field-row"),
+        harness.count(".advanced [data-advanced-row]"),
         1,
         "the advanced zoom step is behind one sheet row"
     );
@@ -143,10 +143,10 @@ fn the_viewer_sits_after_the_fixed_pages_and_edits_anyviews_own_file() {
     let sandbox = Sandbox::new("viewer-writes");
     sandbox.install_schema(&anyview());
     let mut harness = sandbox.harness(opening("viewer"));
-    let rows = harness.count(".ds-sidebar .ds-row");
-    assert_eq!(
-        harness.text_of(&format!(".ds-list-item:nth-child({rows}) .ds-row")),
-        Some("Viewer".to_owned()),
+    let html = harness.html();
+    let last = html.rfind("data-page-row=\"").expect("a page row");
+    assert!(
+        html[last..].starts_with("data-page-row=\"viewer\""),
         "a page quire does not declare comes after every declared one, as a Mac lists other makers' panes last"
     );
 

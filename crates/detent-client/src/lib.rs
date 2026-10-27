@@ -39,6 +39,7 @@ mod spaces;
 mod updates;
 mod wait;
 mod wallpaper;
+mod whoami;
 mod wifi;
 
 pub use accounts::{Accounts, Datasets, HeldDeletions, Listed, Listing};
@@ -70,6 +71,7 @@ pub use spaces::Spaces;
 pub use updates::Updates;
 pub use wait::{Deadline, Gone, Ticker, Ticks, answered, peer};
 pub use wallpaper::Wallpaper;
+pub use whoami::Whoami;
 pub use wifi::Wifi;
 
 // The services the tests and the binary hand to a builder, and the types their signatures name.
@@ -79,6 +81,7 @@ pub use detent_system::displays::DisplaysLink;
 pub use detent_system::engine_install::{Desk, Quiet};
 pub use detent_system::hot_corners::{CornerDesk, NoCorners};
 pub use detent_system::lending::Lender;
+pub use detent_system::person::{NoPerson, PersonLink};
 pub use detent_system::updates::{Departure, InstallRefusal, UpdateTicks, UpdatesLink};
 pub use detent_system::wallpaper::{NoPictures, Pictures, ThumbFault, Thumbnails};
 pub use detent_system::wifi::WifiLink;

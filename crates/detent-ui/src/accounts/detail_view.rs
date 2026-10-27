@@ -17,7 +17,6 @@ use detent_model::{
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
-use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 use ds::root::common::Common;
@@ -80,7 +79,6 @@ pub(super) fn AccountDetail(
                     FieldRow {
                         label: TextLine::from(name.clone()),
                         help: Some(TextLine::from(reauth_help(account.sign_in))),
-                        help_shown: HelpShown::OnRequest,
                         ActionButton {
                             label: name,
                             subject: account.label.clone(),
@@ -274,7 +272,6 @@ fn SyncRow(
         FieldRow {
             label: TextLine::from(sync.label.clone()),
             help: (!sync.help.is_empty()).then(|| TextLine::from(sync.help.clone())),
-            help_shown: HelpShown::OnRequest,
             availability,
             Toggle {
                 label: sync.label.clone(),
@@ -301,7 +298,6 @@ fn ShowInFilesRow(
         FieldRow {
             label: TextLine::from(files.label.clone()),
             help: (!files.help.is_empty()).then(|| TextLine::from(files.help.clone())),
-            help_shown: HelpShown::Inline,
             availability,
             Toggle {
                 label: files.label.clone(),
@@ -324,16 +320,12 @@ fn SyncNowRow(
 ) -> Element {
     let dataset = DatasetName::of_switch(&account, &sync.path);
     // The sync service's words ("Synced 5 minutes ago. 2.1 GB of 15 GB") stand under the row when
-    // it has them; the switch's name waits behind the info button otherwise.
-    let (help, shown) = match line {
-        Some(words) => (words, HelpShown::Inline),
-        None => (sync.label.clone(), HelpShown::OnRequest),
-    };
+    // it has them.
+    let help = line.map(TextLine::from);
     rsx! {
         FieldRow {
             label: TextLine::from(crate::copy::account_views::SYNC_NOW),
-            help: Some(TextLine::from(help)),
-            help_shown: shown,
+            help,
             availability,
             ActionButton {
                 label: crate::copy::account_views::SYNC_NOW.to_owned(),

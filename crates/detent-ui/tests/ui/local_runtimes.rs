@@ -99,7 +99,7 @@ fn the_runtimes_are_listed_between_the_models_switch_and_the_picker_running_or_n
     assert!(!html.contains("Anthropic") && !html.contains("Home cloud"));
     let at = |text: &str| html.find(text).unwrap_or_else(|| panic!("{text}"));
     assert!(at("Keep AI on this computer") < at("Models on this computer"));
-    assert!(at(">Models on this computer<") < at("Model choice"));
+    assert!(at(">Models on this computer<") < at("data-picker="));
 }
 
 #[test]

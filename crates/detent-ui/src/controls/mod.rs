@@ -36,6 +36,11 @@ pub fn Control(
 ) -> Element {
     let label = entry.spec.label.0.clone();
     let labels = entry.spec.labels.clone();
+    let ends = entry
+        .spec
+        .ends
+        .as_ref()
+        .map(|ends| (ends.low.0.clone(), ends.high.0.clone()));
     match entry.control {
         Kind::Toggle(pair) => rsx! { ToggleControl { label, pair, value, onchange } },
         Kind::Segmented(words) | Kind::Menu(words) if swatch_words(&words) => {
@@ -45,7 +50,7 @@ pub fn Control(
         Kind::Menu(words) | Kind::Provided(words) => {
             rsx! { MenuControl { words, labels, value, onchange } }
         }
-        Kind::Slider(range) => rsx! { SliderControl { label, range, value, onchange } },
+        Kind::Slider(range) => rsx! { SliderControl { label, range, ends, value, onchange } },
         Kind::Text => rsx! { TextControl { label, value, onchange } },
         Kind::Colour => rsx! { SwatchControl { label, value, onchange } },
         Kind::Picture => rsx! { PictureControl { label, value, onchange } },

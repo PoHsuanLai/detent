@@ -5,7 +5,6 @@ use crate::files::{Edit, Files, value_of, written_value};
 use crate::memory_consent::ConsentNote;
 use detent_model::{KeyEntry, is_memory_setting};
 use dioxus::prelude::*;
-use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::FieldRow;
 use ds::prelude::*;
 use ds::root::common::Common;
@@ -59,13 +58,17 @@ pub fn KeyRow(
     onedit: EventHandler<Edit>,
 ) -> Element {
     let value = value_of(&files(), &entry);
-    let help = (!entry.spec.help.0.is_empty()).then(|| TextLine::from(entry.spec.help.0.clone()));
+    // `help` is for search and the assistant; only a `note` is drawn, as a grey line under the label.
+    let help = entry
+        .spec
+        .note
+        .as_ref()
+        .map(|note| TextLine::from(note.0.clone()));
     let sent = entry.clone();
     rsx! {
         FieldRow {
             label: TextLine::from(entry.spec.label.0.clone()),
             help,
-            help_shown: HelpShown::OnRequest,
             common: common_for(found, &entry),
             if let Some(written) = written_value(&files(), &entry) {
                 FileOnlyControl { value: written }

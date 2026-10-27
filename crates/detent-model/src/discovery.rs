@@ -3,7 +3,7 @@
 use crate::config_file::ConfigFile;
 use crate::origin::{OriginRule, SchemaOrigin};
 use crate::warning::{StaleReason, Warning};
-use ds_settings::schema::{AgentSetting, AppId, ForeignTables, KeySpec, Schema};
+use ds_settings::schema::{AgentSetting, AppId, Footnote, ForeignTables, KeySpec, Schema};
 use std::path::PathBuf;
 
 /// The schema `version` this app reads.
@@ -22,6 +22,8 @@ pub struct ProgramSchema {
     pub keys: Vec<KeySpec>,
     /// The file's tables that are the program's own data, not settings.
     pub foreign: ForeignTables,
+    /// The grey paragraphs under sections, each naming its page and its section.
+    pub footnotes: Vec<Footnote>,
 }
 
 /// What a scan found: the usable schemas and the ones left out.
@@ -96,6 +98,7 @@ fn admit(mut found: Discovery, schema: Schema, origin: SchemaOrigin) -> Discover
                 .map(|key| honoured(origin, key))
                 .collect(),
             foreign: schema.foreign,
+            footnotes: schema.footnotes,
         }),
         Err(reason) => found.warnings.push(stale(reason)),
     }

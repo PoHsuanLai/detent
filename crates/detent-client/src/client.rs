@@ -20,6 +20,7 @@ use crate::screen_sharing::ScreenSharing;
 use crate::spaces::Spaces;
 use crate::updates::Updates;
 use crate::wallpaper::Wallpaper;
+use crate::whoami::Whoami;
 use crate::wifi::Wifi;
 use detent_files::{ConfigHome, DataHome};
 use detent_model::{Absence, AccountsPane, AddEnd, ModuleId, UnixSeconds, Work};
@@ -35,6 +36,7 @@ use detent_system::hot_corners::CornerDesk;
 use detent_system::lending::Lender;
 use detent_system::memory_consent::MemoryLink;
 use detent_system::modules::ModulesLink;
+use detent_system::person::PersonLink;
 use detent_system::picker::PickerLink;
 use detent_system::privacy::PrivacyLink;
 use detent_system::running::RunningLink;
@@ -73,6 +75,7 @@ pub struct Client {
     pub(crate) displays: Arc<dyn DisplaysLink>,
     pub(crate) desk: Arc<dyn Desk>,
     pub(crate) pictures: Arc<dyn Pictures>,
+    pub(crate) person: Arc<dyn PersonLink>,
     pub(crate) corners: Arc<dyn CornerDesk>,
     pub(crate) search: AgentSearch,
     pub(crate) agents_program: Option<PathBuf>,
@@ -228,6 +231,11 @@ impl Client {
     /// The pictures behind the Wallpaper page.
     pub fn wallpaper(&self) -> Wallpaper {
         Wallpaper::over(Arc::clone(&self.pictures))
+    }
+
+    /// The person at the top of the sidebar.
+    pub fn whoami(&self) -> Whoami {
+        Whoami::over(Arc::clone(&self.person))
     }
 
     /// The Hot Corners sheet's desk.

@@ -87,6 +87,7 @@ fn without_corner_rows(sections: &[SectionModel]) -> Vec<SectionModel> {
             let emptied = keys.is_empty() && !section.keys.is_empty();
             (!emptied).then(|| SectionModel {
                 title: section.title.clone(),
+                footnote: section.footnote.clone(),
                 keys,
             })
         })
@@ -209,6 +210,7 @@ mod tests {
                 .iter()
                 .map(|title| SectionModel {
                     title: (*title).to_owned(),
+                    footnote: None,
                     keys: Vec::new(),
                 })
                 .collect(),

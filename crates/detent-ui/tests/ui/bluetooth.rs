@@ -94,7 +94,9 @@ fn the_page_is_second_in_the_sidebar_and_says_plainly_when_nothing_serves_blueto
         harness.text_of(&sidebar_page("bluetooth")).as_deref(),
         Some("Bluetooth")
     );
-    let row = harness.text_of(".ds-field-row").unwrap_or_default();
+    let row = harness
+        .text_of("[data-system=\"unavailable\"]")
+        .unwrap_or_default();
     assert!(
         row.contains("Bluetooth isn\u{2019}t available right now."),
         "{row}"
@@ -110,7 +112,9 @@ fn a_computer_without_bluetooth_says_so() {
         "the unavailable row",
         "[data-system=\"unavailable\"]",
     );
-    let row = harness.text_of(".ds-field-row").unwrap_or_default();
+    let row = harness
+        .text_of("[data-system=\"unavailable\"]")
+        .unwrap_or_default();
     assert!(row.contains("This computer has no Bluetooth."), "{row}");
 }
 
@@ -352,4 +356,19 @@ fn devices_are_looked_for_only_while_the_page_is_open() {
 
     click(&mut harness, &sidebar_page("bluetooth"));
     settle(&mut harness, "looking again", |_| service.looking() == 1);
+}
+
+#[test]
+fn the_switch_row_leads_with_the_tile_and_counts_the_connected_devices() {
+    let service = Bluetooth::answering(status(BtPower::On));
+    let (_sandbox, mut harness) = world("bluetooth-head", &service);
+    showing(&mut harness, "the page", "[data-system=\"bluetooth\"]");
+    assert_eq!(
+        harness.count("[data-system=\"bluetooth\"] .ds-field-row-leading"),
+        1
+    );
+    let row = harness
+        .text_of("[data-system=\"bluetooth\"] .ds-field-row")
+        .unwrap_or_default();
+    assert!(row.contains("1 device connected"), "{row}");
 }

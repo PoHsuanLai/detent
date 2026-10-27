@@ -9,8 +9,11 @@ fn a_kind_without_a_component_is_shown_read_only_with_a_note() {
     search_for(&mut harness, "control center modules");
     let row = harness.text_of(".key-hit").expect("a highlighted row");
     assert!(row.contains("Control center"), "the section's row: {row}");
-    click(&mut harness, ".key-hit .ds-button");
-    let sheet = harness.text_of(".ds-sheet").expect("the section's sheet");
+    click(&mut harness, ".key-hit");
+    harness.advance(Duration::from_millis(800));
+    let sheet = harness
+        .text_of(".advanced-page")
+        .expect("the section's page");
     assert!(sheet.contains("Modules"), "{sheet}");
     assert!(
         sheet.contains("wifi, bluetooth"),
@@ -31,7 +34,7 @@ fn a_page_ends_with_one_group_of_sheet_rows_one_per_advanced_section() {
             "{page}: one group"
         );
         assert!(
-            harness.count(".advanced .ds-field-row") > 1,
+            harness.count(".advanced [data-advanced-row]") > 1,
             "{page}: a row for each advanced section"
         );
         assert_eq!(harness.count(".ds-sheet"), 0, "{page}: sheets start closed");
@@ -39,7 +42,6 @@ fn a_page_ends_with_one_group_of_sheet_rows_one_per_advanced_section() {
         let last_section = html.rfind("class=\"section\"").expect("a section");
         let advanced = html.find("class=\"advanced\"").expect("the group");
         assert!(last_section < advanced, "{page}: the group is last");
-        assert!(html.contains('\u{2026}'), "{page}: rows end in an ellipsis");
     }
 }
 

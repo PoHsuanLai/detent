@@ -3,13 +3,14 @@
 
 use crate::copy;
 use crate::copy::absence::Subject;
+use crate::icons::tile_of;
 use crate::live::{use_events, use_live};
 use crate::system::Unavailable;
 use detent_client::Client;
 use detent_model::{
     ArrangeSide, Brightness, BrightnessList, DisplayChange, DisplayEdit, DisplayRotation,
-    DisplaysInput, DisplaysReady, DisplaysState, Monitor, OutputId, PixelSize, RefreshMilliHz,
-    ScaleMilli, default_scale, looks_like, mode_sizes, native_size, side_of,
+    DisplaysInput, DisplaysReady, DisplaysState, Monitor, OutputId, PageKind, PixelSize,
+    RefreshMilliHz, ScaleMilli, default_scale, looks_like, mode_sizes, native_size, side_of,
 };
 use dioxus::prelude::*;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -26,7 +27,7 @@ pub(crate) fn DisplaysPane() -> Element {
     match state {
         DisplaysState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
         DisplaysState::Unavailable(absence) => rsx! {
-            Unavailable { title: crate::copy::displays::DISPLAYS, subject: Subject::Displays, absence }
+            Unavailable { face: tile_of(PageKind::Displays), title: crate::copy::displays::DISPLAYS, subject: Subject::Displays, absence }
         },
         DisplaysState::Ready(page) => {
             let brightness = brightness_now.read().clone();

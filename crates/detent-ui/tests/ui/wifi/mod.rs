@@ -97,7 +97,9 @@ fn the_page_is_first_in_the_sidebar_and_says_plainly_when_nothing_serves_wifi() 
         harness.text_of(&sidebar_page("displays")).as_deref(),
         Some("Displays")
     );
-    let row = harness.text_of(".ds-field-row").unwrap_or_default();
+    let row = harness
+        .text_of("[data-system=\"unavailable\"]")
+        .unwrap_or_default();
     assert!(
         row.contains("Wi-Fi isn\u{2019}t available right now."),
         "{row}"
@@ -113,7 +115,9 @@ fn a_computer_without_wifi_says_so() {
         "the unavailable row",
         "[data-system=\"unavailable\"]",
     );
-    let row = harness.text_of(".ds-field-row").unwrap_or_default();
+    let row = harness
+        .text_of("[data-system=\"unavailable\"]")
+        .unwrap_or_default();
     assert!(row.contains("This computer has no Wi-Fi."), "{row}");
 }
 
@@ -207,4 +211,16 @@ fn the_details_of_the_current_network_open_in_a_sheet_and_done_closes_it() {
     }
     click(&mut harness, &format!("{DETAILS} [aria-label=\"Done\"]"));
     settle(&mut harness, "the sheet closed", |h| h.count(DETAILS) == 0);
+}
+
+#[test]
+fn the_switch_row_leads_with_the_tile_and_says_where_the_computer_is() {
+    let service = Wifi::answering(status(WifiRadio::On));
+    let (_sandbox, mut harness) = world("wifi-head", &service);
+    listed(&mut harness);
+    assert_eq!(harness.count(&format!("{PAGE} .ds-field-row-leading")), 1);
+    let row = harness
+        .text_of(&format!("{PAGE} .ds-field-row"))
+        .unwrap_or_default();
+    assert!(row.contains("Connected to Office"), "{row}");
 }

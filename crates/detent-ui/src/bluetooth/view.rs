@@ -4,10 +4,13 @@
 use super::sheets::{ForgetSheet, PairingSheet};
 use crate::copy;
 use crate::copy::absence::Subject;
+use crate::icons::tile_of;
 use crate::live::use_live;
 use crate::system::Unavailable;
 use detent_client::Client;
-use detent_model::{BtAsking, BtDevice, BtInput, BtKind, BtLink, BtPower, BtReady, BtState};
+use detent_model::{
+    BtAsking, BtDevice, BtInput, BtKind, BtLink, BtPower, BtReady, BtState, PageKind,
+};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::controls::button_model::Bezel;
@@ -23,7 +26,7 @@ pub(crate) fn BluetoothPane() -> Element {
     match state {
         BtState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
         BtState::Unavailable(absence) => rsx! {
-            Unavailable { title: crate::copy::bluetooth::BLUETOOTH, subject: Subject::Bluetooth, absence }
+            Unavailable { face: tile_of(PageKind::Bluetooth), title: crate::copy::bluetooth::BLUETOOTH, subject: Subject::Bluetooth, absence }
         },
         BtState::Ready(page) => {
             let press = EventHandler::new(move |input: BtInput| {
@@ -95,10 +98,19 @@ fn Listed(page: BtReady, press: EventHandler<BtInput>) -> Element {
     };
     let mine = rows(page.status.mine().cloned().collect(), Group::Mine);
     let nearby = rows(page.status.nearby().cloned().collect(), Group::Nearby);
+    let connected = page
+        .status
+        .mine()
+        .filter(|device| device.link == BtLink::Connected)
+        .count();
+    let status = crate::copy::bluetooth::status_line(page.status.power, connected);
     rsx! {
         div { class: "system-page", "data-system": "bluetooth",
             FieldGroup {
-                FieldRow { label: TextLine::from(crate::copy::bluetooth::BLUETOOTH),
+                FieldRow {
+                    label: TextLine::from(crate::copy::bluetooth::BLUETOOTH),
+                    help: Some(TextLine::from(status)),
+                    leading: Some(tile_of(PageKind::Bluetooth)),
                     Toggle {
                         label: crate::copy::bluetooth::BLUETOOTH,
                         value: if on { Check::On } else { Check::Off },

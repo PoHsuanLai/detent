@@ -38,9 +38,6 @@ pub(crate) fn program_name(look: &ProgramLook) -> String {
         .unwrap_or_else(|| UNNAMED_PROGRAM.to_owned())
 }
 
-/// The words "Privacy & Security".
-pub(crate) const PRIVACY_SECURITY: &str = "Privacy & Security";
-
 /// The words "Other programs ask the first time.".
 pub(crate) const NOT_LISTED_HELP: &str = "Other programs ask the first time.";
 

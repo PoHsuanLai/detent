@@ -26,7 +26,7 @@ pub mod wifi;
 use bluetooth::Bluetooth;
 use detent_client::{
     BusSource, ClientBuilder, ClientHomes, CornerDesk, Desk, Lender, NoCorners, NoPictures,
-    Pictures, Quiet, ReasonFeed, Vouch,
+    PersonLink, Pictures, Quiet, ReasonFeed, Vouch,
 };
 use detent_files::{CacheHome, ConfigHome, DataHome, StateHome};
 use detent_model::{Absence, OriginRule, Outbox, inbox};
@@ -72,6 +72,7 @@ pub struct Sandbox {
     agents_program: Option<std::path::PathBuf>,
     spaces: Option<Arc<dyn SpacesLink>>,
     modules: Option<FakeModules>,
+    person: Option<Arc<dyn PersonLink>>,
 }
 
 impl Sandbox {
@@ -106,6 +107,8 @@ impl Sandbox {
             // The daemons' live settings modules are looked for on the bus, which is absent
             // unless a test names one or hosts the modules in memory.
             modules: None,
+            // Nobody is known, whoever uses this computer.
+            person: None,
         }
     }
 
@@ -156,6 +159,14 @@ impl Sandbox {
     pub fn with_modules(self, modules: FakeModules) -> Sandbox {
         Sandbox {
             modules: Some(modules),
+            ..self
+        }
+    }
+
+    /// This world with the sidebar's card showing the person `person` names.
+    pub fn with_person(self, person: Arc<dyn PersonLink>) -> Sandbox {
+        Sandbox {
+            person: Some(person),
             ..self
         }
     }
@@ -270,6 +281,10 @@ impl Sandbox {
         .with_agents_program(self.agents_program.clone());
         let client = match &self.spaces {
             Some(spaces) => client.with_spaces(Arc::clone(spaces)),
+            None => client,
+        };
+        let client = match &self.person {
+            Some(person) => client.with_person(Arc::clone(person)),
             None => client,
         };
         let client = match &self.modules {

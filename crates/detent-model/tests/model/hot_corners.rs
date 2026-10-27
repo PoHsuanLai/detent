@@ -37,6 +37,7 @@ fn catalogue(keys: Vec<KeySpec>) -> Catalogue {
         file,
         keys,
         foreign: Default::default(),
+        footnotes: Vec::new(),
     }])
 }
 

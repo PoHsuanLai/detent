@@ -143,9 +143,6 @@ pub(crate) fn agent_word(word: &AgentWord) -> String {
 /// The words "Runs with".
 pub(crate) const RUNS_WITH: &str = "Runs with";
 
-/// The words "Model choice".
-pub(crate) const MODEL_CHOICE: &str = "Model choice";
-
 /// The words "Models".
 pub(crate) const MODELS: &str = "Models";
 

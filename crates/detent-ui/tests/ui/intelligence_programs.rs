@@ -87,7 +87,7 @@ const BASIC: &[(&str, &[&str])] = &[
     ),
 ];
 
-/// The names of the advanced sheet rows, each "<Name>...": a section's title, except where a basic
+/// The names of the advanced drill-in rows: a section's title, except where a basic
 /// section has the same title, then what its sheet holds ("Assistant Details", "Apply tidying").
 const ADVANCED: &[&str] = &[
     "Apply tidying",
@@ -126,16 +126,23 @@ fn the_advanced_sections_are_sheet_rows_and_their_keys_are_not_among_the_basic_o
         "no disclosure"
     );
     assert_eq!(
-        harness.count(".advanced .ds-field-row"),
+        harness.count(".advanced [data-advanced-row]"),
         ADVANCED.len(),
         "one row per advanced section"
     );
-    assert_eq!(harness.count(".ds-sheet"), 0, "closed until opened");
+    assert_eq!(
+        harness.count(".ds-sheet"),
+        0,
+        "no sheet: a row opens a page"
+    );
     let (basic, advanced) = basic_and_advanced(&harness);
+    assert!(
+        !basic.contains("data-advanced-row"),
+        "no drill-in row among the basic rows"
+    );
     for section in ADVANCED {
-        let row = format!(">{section}\u{2026}<");
-        assert!(advanced.contains(&row), "{row:?} is a sheet row");
-        assert!(!basic.contains(&row), "{row:?} is not among the basic rows");
+        let row = format!(">{section}<");
+        assert!(advanced.contains(&row), "{row:?} is a drill-in row");
     }
 }
 
@@ -220,10 +227,16 @@ fn lending_this_computers_models_is_off_until_the_switch_is_flipped() {
 fn an_advanced_row_writes_its_own_file_too() {
     let sandbox = Sandbox::new("programs-advanced-write");
     let mut harness = sandbox.harness(intelligence());
-    let opener = ".advanced [aria-label=\"Open Run limits\"]";
+    let opener = ".advanced [data-advanced-row=\"Run limits\"]";
     scroll_into_view(&mut harness, opener);
     click(&mut harness, opener);
-    assert_eq!(harness.count(".ds-sheet"), 1, "the section's sheet is up");
+    // The page slides in; the slider is aimed at once it has come to rest.
+    harness.advance(Duration::from_millis(800));
+    assert_eq!(
+        harness.count(".advanced-page"),
+        1,
+        "the section's page is up"
+    );
     let slider = "[aria-label=\"Steps per run\"] .ds-slider";
     scroll_into_view(&mut harness, slider);
     let at = harness.centre(slider).expect("the slider");
@@ -350,27 +363,19 @@ fn rows_that_do_not_fit_are_shown_as_written_and_never_rewritten() {
 }
 
 #[test]
-fn a_rows_help_is_behind_its_info_button_and_escape_closes_it() {
+fn a_rows_help_is_data_and_not_drawn() {
     let sandbox = Sandbox::new("programs-help");
-    let mut harness = sandbox.harness(intelligence());
-    let about = "[aria-label=\"About New conversations start in\"]";
-    let card = ".ds-field-help-card";
-    scroll_into_view(&mut harness, about);
+    let harness = sandbox.harness(intelligence());
     assert_eq!(
-        harness.count(card),
+        harness.count("[aria-label=\"About New conversations start in\"]"),
         0,
-        "the help is not drawn until asked for"
+        "no info button"
     );
-    click(&mut harness, about);
-    assert_eq!(harness.count(card), 1, "pressing the button shows the help");
-    let shown = harness.text_of(card).unwrap_or_default();
+    assert_eq!(harness.count(".ds-field-help-card"), 0, "no help card");
     assert!(
-        shown.contains(
+        !harness.html().contains(
             "You can switch any conversation between Auto and Manual from where you type"
         ),
-        "the card holds that row's help: {shown:?}"
+        "the help stays data, for search and the assistant"
     );
-    harness.send(Input::key(ShortcutKey::Escape));
-    harness.advance(Duration::from_millis(400));
-    assert_eq!(harness.count(card), 0, "Escape closes it");
 }
