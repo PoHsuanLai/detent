@@ -57,7 +57,7 @@ docket-settings = { path = "../docket/crates/docket-settings" }
 docket-agents = { path = "../docket/crates/docket-agents" }
 almanac-core  = { path = "../almanac/crates/almanac-core" }
 porter-core   = { path = "../porter/crates/porter-core" }
-prov          = { path = "../porter/crates/prov" }
+prov          = { path = "../prov/prov" }
 
 # porter: the model picker's vocabulary (tiers, the Why and Declined facts) and inferd's bus names.
 porter-dbus  = { path = "../porter/crates/porter-dbus" }
@@ -286,7 +286,11 @@ porter-core = { path = "../porter/crates/porter-core" }
 porter-dbus = { path = "../porter/crates/porter-dbus" }
 porter-provider = { path = "../porter/crates/porter-provider" }
 porter-infer = { path = "../porter/crates/porter-infer" }
-prov = { path = "../porter/crates/prov" }
+# prov left porter for its own repo; until every sibling pins it there, porter's prov is the same crate.
+prov = { path = "../prov/prov" }
+
+[patch."https://github.com/PoHsuanLai/prov"]
+prov = { path = "../prov/prov" }
 
 # quire's ds-blitz takes blitz-kit by git rev; the sibling checkout is the one copy.
 [patch."https://github.com/PoHsuanLai/blitz-kit"]
