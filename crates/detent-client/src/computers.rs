@@ -4,35 +4,28 @@
 use crate::live::Live;
 use crate::notice::Notice;
 use crate::pane::{Machine, Pending, pane};
-use detent_model::{ComputersEffect, ComputersInput, ComputersState, ServerFault, computers_step};
+use detent_model::{
+    ComputersEffect, ComputersInput, ComputersState, ServerRefusal, computers_step,
+};
 use detent_system::bus::{BusSource, Daemon, connect, next_owner, owner_changes};
 use detent_system::computers::{Change, ChangeFailure, ComputersLink};
 use std::sync::Arc;
-
-/// The words of a server form's fault, which only the window knows how to say.
-pub type FaultWords = fn(ServerFault) -> &'static str;
 
 /// The computers' handle: cheap to clone, one live value behind it.
 #[derive(Debug, Clone)]
 pub struct Computers {
     bus: BusSource,
     link: Arc<dyn ComputersLink>,
-    words: FaultWords,
     live: Live<ComputersState>,
 }
 
 pane!(Computers, ComputersState, follow);
 
 impl Computers {
-    pub(crate) fn over(
-        bus: BusSource,
-        link: Arc<dyn ComputersLink>,
-        words: FaultWords,
-    ) -> Computers {
+    pub(crate) fn over(bus: BusSource, link: Arc<dyn ComputersLink>) -> Computers {
         Computers {
             bus,
             link,
-            words,
             live: Live::default(),
         }
     }
@@ -71,21 +64,17 @@ impl Computers {
             .await;
     }
 
-    /// The sentence for a change that was not made: the form's own, or the service's.
-    fn sentence_of(&self, failure: ChangeFailure) -> String {
-        match failure {
-            ChangeFailure::Fault(fault) => (self.words)(fault).to_owned(),
-            ChangeFailure::Told(words) => words,
-        }
-    }
-
     async fn changed(&self, change: Change) -> ComputersInput {
-        let ended = self
-            .link
-            .change(change)
-            .await
-            .map_err(|failure| self.sentence_of(failure));
+        let ended = self.link.change(change).await.map_err(refusal_of);
         ComputersInput::Changed(ended)
+    }
+}
+
+/// Why a change was not made: the form's own fault, or the service's words.
+fn refusal_of(failure: ChangeFailure) -> ServerRefusal {
+    match failure {
+        ChangeFailure::Fault(fault) => ServerRefusal::Form(fault),
+        ChangeFailure::Told(words) => ServerRefusal::Service(words),
     }
 }
 
@@ -106,6 +95,10 @@ impl Machine for Computers {
                 self.live.notice(Notice::Words(text));
                 return Vec::new();
             }
+            ComputersEffect::Refused(refusal) => {
+                self.live.notice(Notice::ComputerRefused(refusal));
+                return Vec::new();
+            }
             ComputersEffect::Reload => ComputersInput::Found(self.link.read().await),
             ComputersEffect::LoadCandidates => {
                 ComputersInput::Candidates(self.link.candidates().await)
@@ -124,7 +117,7 @@ impl Machine for Computers {
                     .link
                     .change(Change::Server(draft))
                     .await
-                    .map_err(|failure| self.sentence_of(failure));
+                    .map_err(refusal_of);
                 ComputersInput::ServerAdded(ended)
             }
         };

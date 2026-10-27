@@ -1,7 +1,8 @@
 //! The Displays page: a card for each display with its resolution, the pixel size of its mode, its
 //! refresh rate and rotation, and where it sits beside the others.
 
-use crate::copy::{self, Subject};
+use crate::copy;
+use crate::copy::absence::Subject;
 use crate::live::{use_events, use_live};
 use crate::system::Unavailable;
 use detent_client::Client;
@@ -25,7 +26,7 @@ pub(crate) fn DisplaysPane() -> Element {
     match state {
         DisplaysState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
         DisplaysState::Unavailable(absence) => rsx! {
-            Unavailable { title: "Displays", subject: Subject::Displays, absence }
+            Unavailable { title: crate::copy::displays::DISPLAYS, subject: Subject::Displays, absence }
         },
         DisplaysState::Ready(page) => {
             let brightness = brightness_now.read().clone();
@@ -113,11 +114,11 @@ fn DisplayCard(
 #[component]
 fn BrightnessRow(level: Brightness, dim: EventHandler<Brightness>) -> Element {
     rsx! {
-        FieldRow { label: TextLine::from("Brightness"), availability: Availability::Enabled,
+        FieldRow { label: TextLine::from(crate::copy::displays::BRIGHTNESS), availability: Availability::Enabled,
             div { class: "key-slider",
                 div { class: "key-slider-track",
                     Slider {
-                        label: "Brightness".to_owned(),
+                        label: crate::copy::displays::BRIGHTNESS.to_owned(),
                         value: Fraction(level.fraction()),
                         step: Fraction(10),
                         size: ControlSize::Small,
@@ -147,7 +148,7 @@ fn ResolutionRow(
         .map(|look| {
             let size = copy::displays::size(look.size);
             let label = if look.scale == default {
-                format!("Default for display ({size})")
+                crate::copy::displays::default_for_display(&size)
             } else {
                 size
             };
@@ -157,9 +158,9 @@ fn ResolutionRow(
     let now = looks
         .iter()
         .find(|look| look.scale == display.scale)
-        .map(|look| format!("Looks like {}", copy::displays::size(look.size)));
+        .map(|look| crate::copy::displays::looks_like(copy::displays::size(look.size)));
     rsx! {
-        FieldRow { label: TextLine::from("Resolution"), help: now.map(TextLine::from), availability,
+        FieldRow { label: TextLine::from(crate::copy::displays::RESOLUTION), help: now.map(TextLine::from), availability,
             PopUpButton::<ScaleMilli> {
                 items,
                 value: Some(display.scale),
@@ -182,7 +183,7 @@ fn ModeRow(display: Monitor, availability: Availability, pick: EventHandler<Pixe
         .map(|size| {
             let words = copy::displays::size(*size);
             let label = if native == Some(*size) {
-                format!("{words} (Native)")
+                crate::copy::displays::native(&words)
             } else {
                 words
             };
@@ -196,8 +197,8 @@ fn ModeRow(display: Monitor, availability: Availability, pick: EventHandler<Pixe
     };
     rsx! {
         FieldRow {
-            label: TextLine::from("Display Mode"),
-            help: Some(TextLine::from("The pixels the display draws")),
+            label: TextLine::from(crate::copy::displays::DISPLAY_MODE),
+            help: Some(TextLine::from(crate::copy::displays::THE_PIXELS_THE_DISPLAY_DRAWS)),
             availability,
             PopUpButton::<PixelSize> {
                 items,
@@ -240,7 +241,7 @@ fn RefreshRow(
         .collect();
     rsx! {
         FieldRow {
-            label: TextLine::from("Refresh Rate"),
+            label: TextLine::from(crate::copy::displays::REFRESH_RATE),
             availability: if alone { Availability::Disabled } else { availability },
             PopUpButton::<RefreshMilliHz> {
                 items,
@@ -264,7 +265,7 @@ fn RotationRow(
         .map(|turn| MenuItem::new(*turn, copy::displays::rotation(*turn)))
         .collect();
     rsx! {
-        FieldRow { label: TextLine::from("Rotation"), availability,
+        FieldRow { label: TextLine::from(crate::copy::displays::ROTATION), availability,
             PopUpButton::<DisplayRotation> {
                 items,
                 value: Some(display.rotation),
@@ -300,7 +301,7 @@ fn PlaceRow(
         .find_map(|other| side_of(&display, other).map(|side| (other.id.clone(), side)));
     let id = display.id.clone();
     rsx! {
-        FieldRow { label: TextLine::from("Position"), availability,
+        FieldRow { label: TextLine::from(crate::copy::displays::POSITION), availability,
             PopUpButton::<(OutputId, ArrangeSide)> {
                 items,
                 value: now,

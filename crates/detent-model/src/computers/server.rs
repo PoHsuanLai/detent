@@ -274,10 +274,10 @@ impl NewServer {
         self
     }
 
-    /// The sheet, back to editing with `sentence` under the fields.
-    pub fn refused(mut self, sentence: String) -> NewServer {
+    /// The sheet, back to editing with `refusal` under the fields.
+    pub fn refused(mut self, refusal: ServerRefusal) -> NewServer {
         self.phase = ServerPhase::Editing;
-        self.fault = Some(ServerRefusal::Service(sentence));
+        self.fault = Some(refusal);
         self
     }
 }

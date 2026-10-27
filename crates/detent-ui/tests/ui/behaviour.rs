@@ -2,7 +2,7 @@
 //! directories. Every write is read back from the scratch config home.
 
 use crate::support::Sandbox;
-use crate::support::drive::{click, page_of, search_for, sidebar_row, title_of};
+use crate::support::drive::{click, page_of, search_for, sidebar_page, title_of};
 use detent_files::load;
 use detent_model::PageSlug;
 use detent_ui::Opening;
@@ -25,16 +25,20 @@ fn clicking_a_page_shows_it() {
     assert_eq!(page_of(&harness).as_deref(), Some("appearance"));
     assert_eq!(title_of(&harness).as_deref(), Some("Appearance"));
 
-    click(&mut harness, &sidebar_row(9));
+    click(&mut harness, &sidebar_page("dock"));
     assert_eq!(page_of(&harness).as_deref(), Some("dock"));
     assert_eq!(title_of(&harness).as_deref(), Some("Desktop & Dock"));
     assert_eq!(
-        harness.attr(&sidebar_row(9), "aria-selected").as_deref(),
+        harness
+            .attr(&sidebar_page("dock"), "aria-selected")
+            .as_deref(),
         Some("true"),
         "the clicked row is the selected one"
     );
     assert_eq!(
-        harness.attr(&sidebar_row(4), "aria-selected").as_deref(),
+        harness
+            .attr(&sidebar_page("appearance"), "aria-selected")
+            .as_deref(),
         Some("false")
     );
 }

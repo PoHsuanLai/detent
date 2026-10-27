@@ -2,7 +2,8 @@
 //! nearby, with the buttons that connect, disconnect and forget them.
 
 use super::sheets::{ForgetSheet, PairingSheet};
-use crate::copy::{self, Subject};
+use crate::copy;
+use crate::copy::absence::Subject;
 use crate::live::use_live;
 use crate::system::Unavailable;
 use detent_client::Client;
@@ -22,7 +23,7 @@ pub(crate) fn BluetoothPane() -> Element {
     match state {
         BtState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
         BtState::Unavailable(absence) => rsx! {
-            Unavailable { title: "Bluetooth", subject: Subject::Bluetooth, absence }
+            Unavailable { title: crate::copy::bluetooth::BLUETOOTH, subject: Subject::Bluetooth, absence }
         },
         BtState::Ready(page) => {
             let press = EventHandler::new(move |input: BtInput| {
@@ -97,9 +98,9 @@ fn Listed(page: BtReady, press: EventHandler<BtInput>) -> Element {
     rsx! {
         div { class: "system-page", "data-system": "bluetooth",
             FieldGroup {
-                FieldRow { label: TextLine::from("Bluetooth"),
+                FieldRow { label: TextLine::from(crate::copy::bluetooth::BLUETOOTH),
                     Toggle {
-                        label: "Bluetooth",
+                        label: crate::copy::bluetooth::BLUETOOTH,
                         value: if on { Check::On } else { Check::Off },
                         onchange: move |next| press.call(BtInput::Switch(power_of(next))),
                     }
@@ -107,9 +108,9 @@ fn Listed(page: BtReady, press: EventHandler<BtInput>) -> Element {
             }
             if on {
                 if !mine.is_empty() {
-                    Devices { title: "My Devices", rows: mine, press }
+                    Devices { title: crate::copy::bluetooth::MY_DEVICES, rows: mine, press }
                 }
-                Devices { title: "Nearby Devices", rows: nearby, press }
+                Devices { title: crate::copy::bluetooth::NEARBY_DEVICES, rows: nearby, press }
             }
             match page.asking.clone() {
                 BtAsking::Nothing => rsx! {},
@@ -138,7 +139,7 @@ fn Devices(
         FieldGroup { title: Some(title),
             if rows.is_empty() {
                 FieldRow {
-                    label: TextLine::from("No devices found yet"),
+                    label: TextLine::from(crate::copy::bluetooth::NO_DEVICES_FOUND_YET),
                     availability: Availability::Disabled,
                     Label { text: "Looking\u{2026}", role: LabelRole::Secondary }
                 }
@@ -160,7 +161,7 @@ fn DeviceRow(
     let help = match group {
         Group::Mine if work == RowWork::Working => copy::bluetooth::link(BtLink::Connecting),
         Group::Mine => copy::bluetooth::link(device.link),
-        Group::Nearby => "Not Paired",
+        Group::Nearby => crate::copy::bluetooth::NOT_PAIRED,
     };
     let availability = match work {
         RowWork::Free => Availability::Enabled,
@@ -183,9 +184,9 @@ fn DeviceRow(
             match (group, device.link) {
                 (Group::Mine, BtLink::Connected) => rsx! {
                     Button {
-                        label: "Disconnect",
+                        label: crate::copy::bluetooth::DISCONNECT,
                         bezel: Bezel::Inline,
-                        common: Common { aria_label: Some(format!("Disconnect {name}")), ..Common::default() },
+                        common: Common { aria_label: Some(crate::copy::bluetooth::disconnect(&name)), ..Common::default() },
                         onclick: {
                             let address = address.clone();
                             move |_| press.call(BtInput::Disconnect(address.clone()))
@@ -194,10 +195,10 @@ fn DeviceRow(
                 },
                 (Group::Mine, _) => rsx! {
                     Button {
-                        label: "Connect",
+                        label: crate::copy::bluetooth::CONNECT,
                         bezel: Bezel::Inline,
                         availability,
-                        common: Common { aria_label: Some(format!("Connect {name}")), ..Common::default() },
+                        common: Common { aria_label: Some(crate::copy::bluetooth::connect(&name)), ..Common::default() },
                         onclick: {
                             let address = address.clone();
                             move |_| press.call(BtInput::Connect(address.clone()))
@@ -206,10 +207,10 @@ fn DeviceRow(
                 },
                 (Group::Nearby, _) => rsx! {
                     Button {
-                        label: "Connect",
+                        label: crate::copy::bluetooth::CONNECT,
                         bezel: Bezel::Inline,
                         availability,
-                        common: Common { aria_label: Some(format!("Connect {name}")), ..Common::default() },
+                        common: Common { aria_label: Some(crate::copy::bluetooth::connect(&name)), ..Common::default() },
                         onclick: {
                             let address = address.clone();
                             move |_| press.call(BtInput::Pair(address.clone()))
@@ -219,9 +220,9 @@ fn DeviceRow(
             }
             if group == Group::Mine {
                 Button {
-                    label: "Forget\u{2026}",
+                    label: crate::copy::common::FORGET_ELLIPSIS,
                     bezel: Bezel::Inline,
-                    common: Common { aria_label: Some(format!("Forget {name}")), ..Common::default() },
+                    common: Common { aria_label: Some(crate::copy::bluetooth::forget(&name)), ..Common::default() },
                     onclick: move |_| press.call(BtInput::AskForget(address.clone())),
                 }
             }

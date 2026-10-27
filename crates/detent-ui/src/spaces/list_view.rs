@@ -1,7 +1,7 @@
 //! The Spaces list: one row per Space with Remove, or why the list is not there.
 
 use super::sheet_view::{RemovalSheetView, SheetHandlers};
-use crate::copy::{Subject, absence as absence_words};
+use crate::copy::absence::{Subject, absence as absence_words};
 use crate::live::use_live;
 use detent_client::Client;
 use detent_model::{RemovalStage, SpaceKey, SpaceRow, SpacesInput, SpacesReady, SpacesState};
@@ -27,9 +27,9 @@ pub(crate) fn SpacesPane() -> Element {
         SpacesState::Looking => rsx! {},
         SpacesState::Unavailable(absence) => rsx! {
             div { class: "spaces", "data-spaces": "unavailable",
-                FieldGroup { title: Some("Spaces".to_owned()),
+                FieldGroup { title: Some(crate::copy::spaces::SPACES.to_owned()),
                     FieldRow {
-                        label: TextLine::from("Spaces"),
+                        label: TextLine::from(crate::copy::spaces::SPACES),
                         help: Some(TextLine::from(absence_words(Subject::Spaces, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
@@ -52,11 +52,11 @@ fn Listed(ready: SpacesReady, drive: EventHandler<SpacesInput>) -> Element {
         div { class: "spaces", "data-spaces": "list",
             if ready.rows.is_empty() {
                 EmptyState {
-                    title: "No Spaces",
-                    description: "A Space you make in an app appears here.",
+                    title: crate::copy::spaces::NO_SPACES,
+                    description: crate::copy::spaces::A_SPACE_YOU_MAKE_IN_AN,
                 }
             } else {
-                FieldGroup { title: Some("Spaces".to_owned()),
+                FieldGroup { title: Some(crate::copy::spaces::SPACES.to_owned()),
                     for row in ready.rows.iter().cloned() {
                         SpaceLine { key: "{row.id.0}", row, availability: busy, drive }
                     }
@@ -87,10 +87,10 @@ fn SpaceLine(
         FieldRow { label: TextLine::from(row.name.clone()),
             Button {
                 common: Common {
-                    aria_label: Some(format!("Remove {}", row.name)),
+                    aria_label: Some(crate::copy::spaces::remove(&row.name)),
                     ..Common::default()
                 },
-                label: "Remove",
+                label: crate::copy::common::REMOVE,
                 role: ButtonRole::Destructive,
                 size: ControlSize::Small,
                 availability,

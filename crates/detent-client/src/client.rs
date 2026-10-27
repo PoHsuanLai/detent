@@ -6,14 +6,14 @@
 use crate::accounts::{Accounts, Listing};
 use crate::bluetooth::Bluetooth;
 use crate::chooser::Chooser;
-use crate::computers::{Computers, FaultWords};
+use crate::computers::Computers;
 use crate::displays::Displays;
 use crate::engine_install::EngineInstall;
 use crate::engines::{EnginePrograms, Engines};
 use crate::hot_corners::Corners;
 use crate::lending::Lending;
 use crate::memory_consent::MemoryConsent;
-use crate::picker::{AgentSearch, AgentWords, Models, Picker, ReasonFeed, Reasons};
+use crate::picker::{AgentSearch, Models, Picker, ReasonFeed, Reasons};
 use crate::privacy::Privacy;
 use crate::running::Running;
 use crate::screen_sharing::ScreenSharing;
@@ -152,14 +152,13 @@ impl Client {
         Listing::over(self.bus.clone())
     }
 
-    /// The model picker; `words` says the coding agents' rows in the window's own language.
-    pub fn picker(&self, words: AgentWords) -> Picker {
+    /// The model picker.
+    pub fn picker(&self) -> Picker {
         Picker::over(
             self.bus.clone(),
             Arc::clone(&self.picker),
             Arc::clone(&self.accounts),
             self.search.clone(),
-            words,
         )
     }
 
@@ -193,9 +192,9 @@ impl Client {
         Running::over(self.bus.clone(), Arc::clone(&self.running))
     }
 
-    /// Your computers; `words` says a model server's form faults in the window's own language.
-    pub fn computers(&self, words: FaultWords) -> Computers {
-        Computers::over(self.bus.clone(), Arc::clone(&self.computers), words)
+    /// Your computers.
+    pub fn computers(&self) -> Computers {
+        Computers::over(self.bus.clone(), Arc::clone(&self.computers))
     }
 
     /// The Privacy pane.

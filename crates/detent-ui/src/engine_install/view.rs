@@ -139,7 +139,7 @@ fn Meter(brief: EngineBrief) -> Element {
             ProgressIndicator {
                 style: ProgressStyle::Bar,
                 progress: Progress::Known(Fraction(u16::try_from(permille.min(1000)).unwrap_or(1000))),
-                common: Common { aria_label: Some("Download progress".to_owned()), ..Common::default() },
+                common: Common { aria_label: Some(crate::copy::common::DOWNLOAD_PROGRESS.to_owned()), ..Common::default() },
             }
         },
         (None, Waiting::Yes) => rsx! { Pending {} },
@@ -154,7 +154,7 @@ fn Pending() -> Element {
         ProgressIndicator {
             style: ProgressStyle::Bar,
             progress: Progress::Unknown(Operation::Running(token)),
-            common: Common { aria_label: Some("Checking".to_owned()), ..Common::default() },
+            common: Common { aria_label: Some(crate::copy::engine_install::CHECKING.to_owned()), ..Common::default() },
         }
     }
 }

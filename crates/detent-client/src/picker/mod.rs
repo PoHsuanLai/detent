@@ -24,9 +24,6 @@ use detent_system::bus::{BusSource, Daemon, reread, words_of};
 use detent_system::picker::PickerLink;
 use std::sync::Arc;
 
-/// The words `with_agents` lays over the rows of the text slot, which only the window knows.
-pub type AgentWords = fn(AgentWord<'_>) -> String;
-
 /// Where the coding agents are looked for: docket's files and the programs on `PATH`.
 #[derive(Debug, Clone)]
 pub(crate) struct AgentSearch {
@@ -42,7 +39,6 @@ pub struct Picker {
     link: Arc<dyn PickerLink>,
     accounts: Arc<dyn AccountsLink>,
     search: AgentSearch,
-    words: AgentWords,
     module: Slot,
     live: Live<PickerState>,
 }
@@ -55,14 +51,12 @@ impl Picker {
         link: Arc<dyn PickerLink>,
         accounts: Arc<dyn AccountsLink>,
         search: AgentSearch,
-        words: AgentWords,
     ) -> Picker {
         Picker {
             bus,
             link,
             accounts,
             search,
-            words,
             module: Slot::default(),
             live: Live::default(),
         }
@@ -80,7 +74,7 @@ impl Picker {
         let agents = load_agents(&self.search.config_home, &self.search.data_home);
         let found = programs_on(&self.search.programs_path);
         let offers = agent_offers(&agents, &found, agents_switch(&self.search.config_home));
-        with_agents(described, &offers, &self.words)
+        with_agents(described, &offers)
     }
 
     /// Looks for inferd's picker and follows it; never starts inferd.
@@ -125,7 +119,10 @@ impl Machine for Picker {
     async fn run(&self, effect: PickerEffect) -> Vec<PickerInput> {
         match effect {
             PickerEffect::Tell(text) => {
-                self.live.notice(Notice::Words(text));
+                self.live.notice(match AgentWord::of_key(&text) {
+                    Some(word) => Notice::AgentBlocked(word),
+                    None => Notice::Words(text),
+                });
                 Vec::new()
             }
             PickerEffect::AccountNotAdded(end) => {

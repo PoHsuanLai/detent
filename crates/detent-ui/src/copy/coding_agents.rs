@@ -1,8 +1,8 @@
 //! The coding assistants' Add sheet and the question before one is removed: every sentence for
 //! what the sheet says and for each refusal.
 
+use detent_model::external::{AddFault, ChoiceFault};
 use detent_model::{AddRefusal, Presence, RemoveQuestion};
-use docket_settings::{AddFault, ChoiceFault};
 
 /// Said on the Add sheet before Add: what the assistant reaches.
 pub(crate) const INTERNET_LINE: &str = "It signs in to its own service and uses the internet.";

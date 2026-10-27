@@ -47,7 +47,7 @@ pub fn FirstRunApp() -> Element {
             appearance: now.settings.appearance.appearance(),
             system: now.system,
             material: Material::Window,
-            window: WindowFrame::titlebar("Welcome".to_owned(), TrafficLights::Shown),
+            window: WindowFrame::titlebar(crate::copy::first_run::WELCOME.to_owned(), TrafficLights::Shown),
             style { {crate::STYLE} }
             FirstRunWindow {}
         }
@@ -134,11 +134,11 @@ fn Welcome(
             FieldGroup {
                 common: Common { extra_class: ExtraClass::parse("first-run-card").ok(), ..Common::default() },
                 FieldRow {
-                    label: TextLine::from("Keep AI on this computer"),
+                    label: TextLine::from(crate::copy::first_run::KEEP_AI_ON_THIS_COMPUTER),
                     help: None,
                     availability: busy,
                     Toggle {
-                        label: "Keep AI on this computer",
+                        label: crate::copy::first_run::KEEP_AI_ON_THIS_COMPUTER,
                         value: on,
                         onchange: move |next| {
                             onchange.call(FirstRunInput::Kept(match next {
@@ -151,7 +151,7 @@ fn Welcome(
             }
             AssistantPicker { state: picker, clearing: Clearing::Withheld, onask }
             Button {
-                label: "Done",
+                label: crate::copy::common::DONE,
                 answers: Answers::Return,
                 size: ControlSize::Large,
                 availability: busy,

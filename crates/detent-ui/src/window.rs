@@ -57,17 +57,17 @@ pub fn Window(
 
     let side = rsx! {
         Sidebar::<String> {
-            label: "Settings",
+            label: crate::copy::window::SETTINGS,
             size: SidebarSize::Medium,
             cursor: view.current.as_ref().map(|slug| slug.0.clone()),
             sections: vec![SidebarSection::List(sidebar_items(&env.catalogue, &view.listed, view.current.as_ref(), page))],
             onselect: move |slug: String| page.set(PageSlug(slug)),
             header: rsx! {
                 TextField {
-                    label: "Search",
+                    label: crate::copy::common::SEARCH,
                     value: query(),
                     kind: FieldKind::Search,
-                    placeholder: "Search",
+                    placeholder: crate::copy::common::SEARCH,
                     size: ControlSize::Regular,
                     oninput: find,
                 }
@@ -79,7 +79,7 @@ pub fn Window(
     rsx! {
         div { class: "window",
             SplitView {
-                label: "Settings",
+                label: crate::copy::window::SETTINGS,
                 panes: vec![SplitPane::new(PaneSpec::SIDEBAR, side).shown(sidebar())],
                 on_shown: move |(_, shown)| sidebar.set(shown),
                 div { class: "content",
@@ -90,14 +90,14 @@ pub fn Window(
                         (None, Searching::Yes) => rsx! {
                             EmptyState {
                                 form: EmptyForm::NoResults,
-                                title: "No Results",
-                                description: "Nothing in Settings matches that search.",
+                                title: crate::copy::window::NO_RESULTS,
+                                description: crate::copy::window::NOTHING_IN_SETTINGS_MATCHES_THAT_SEARCH,
                             }
                         },
                         (None, Searching::No) => rsx! {
                             EmptyState {
-                                title: "No Settings",
-                                description: "No installed program ships a settings schema.",
+                                title: crate::copy::window::NO_SETTINGS,
+                                description: crate::copy::window::NO_INSTALLED_PROGRAM_SHIPS_A_SETTINGS,
                             }
                         },
                     }

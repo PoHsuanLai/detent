@@ -227,7 +227,7 @@ fn the_pool_offers_the_pickers_models_without_nothing_and_automatic() {
                 .collect();
             let name = match &group.heading {
                 PoolHeading::Named(name) => Some(name.as_str()),
-                PoolHeading::Unnamed | PoolHeading::NoLongerOffered => None,
+                PoolHeading::Unnamed | PoolHeading::Agents | PoolHeading::NoLongerOffered => None,
             };
             (name, entries)
         })

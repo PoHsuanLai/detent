@@ -1,6 +1,7 @@
 //! A two-word enum: a switch.
 
 use detent_model::TogglePair;
+use detent_model::external::toml;
 use dioxus::prelude::*;
 use ds::prelude::*;
 

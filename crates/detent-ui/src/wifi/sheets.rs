@@ -48,7 +48,7 @@ pub(super) fn PasswordSheet(ask: PasswordAsk, press: EventHandler<WifiInput>) ->
                 Label { text: password_help(ask.standing, kind), role: LabelRole::Secondary }
                 if kind == AskKind::Account {
                     TextField {
-                        label: "Username",
+                        label: crate::copy::wifi::USERNAME,
                         value: username(),
                         kind: FieldKind::Plain,
                         size: ControlSize::Small,
@@ -58,7 +58,7 @@ pub(super) fn PasswordSheet(ask: PasswordAsk, press: EventHandler<WifiInput>) ->
                     }
                 }
                 TextField {
-                    label: "Password",
+                    label: crate::copy::wifi::PASSWORD,
                     value: String::new(),
                     kind: FieldKind::Secure,
                     size: ControlSize::Small,
@@ -68,14 +68,14 @@ pub(super) fn PasswordSheet(ask: PasswordAsk, press: EventHandler<WifiInput>) ->
                 }
                 div { class: "system-sheet-buttons",
                     Button {
-                        label: "Cancel",
-                        common: Common { aria_label: Some("Cancel".to_owned()), ..Common::default() },
+                        label: crate::copy::common::CANCEL,
+                        common: Common { aria_label: Some(crate::copy::common::CANCEL.to_owned()), ..Common::default() },
                         answers: Answers::Escape,
                         onclick: move |_| close.call(()),
                     }
                     Button {
-                        label: "Join",
-                        common: Common { aria_label: Some("Join".to_owned()), ..Common::default() },
+                        label: crate::copy::wifi::JOIN,
+                        common: Common { aria_label: Some(crate::copy::wifi::JOIN.to_owned()), ..Common::default() },
                         answers: Answers::Return,
                         availability: if ready { Availability::Enabled } else { Availability::Disabled },
                         onclick: move |_| join.call(()),
@@ -107,8 +107,8 @@ pub(super) fn DetailsSheet(network: WifiNetwork, press: EventHandler<WifiInput>)
                 }
                 div { class: "system-sheet-buttons",
                     Button {
-                        label: "Done",
-                        common: Common { aria_label: Some("Done".to_owned()), ..Common::default() },
+                        label: crate::copy::common::DONE,
+                        common: Common { aria_label: Some(crate::copy::common::DONE.to_owned()), ..Common::default() },
                         answers: Answers::Return,
                         onclick: move |_| close.call(()),
                     }

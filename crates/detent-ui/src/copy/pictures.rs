@@ -20,6 +20,18 @@ pub(crate) fn add_failure(outcome: &AddOutcome) -> Option<String> {
     }
 }
 
+/// The words "No picture chosen".
+pub(crate) const NO_PICTURE_CHOSEN: &str = "No picture chosen";
+
+/// The words "Add Picture…".
+pub(crate) const ADD_PICTURE_ELLIPSIS: &str = "Add Picture\u{2026}";
+
+/// The words "Your Pictures".
+pub(crate) const YOUR_PICTURES: &str = "Your Pictures";
+
+/// The words "Desktop Pictures".
+pub(crate) const DESKTOP_PICTURES: &str = "Desktop Pictures";
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -162,9 +162,9 @@ fn CornerRow(
             }
             if !keys.is_empty() {
                 Button {
-                    label: "Remove",
+                    label: crate::copy::common::REMOVE,
                     size: ControlSize::Small,
-                    common: Common { aria_label: Some(format!("Remove the row for {names}")), ..Common::default() },
+                    common: Common { aria_label: Some(crate::copy::hot_corners::remove_the_row_for(&names)), ..Common::default() },
                     onclick: move |_| remove.call(()),
                 }
             }
@@ -188,7 +188,7 @@ fn AddWithKeys(corner: Corner, bindings: Vec<HotBinding>, state: SheetState) -> 
         return rsx! {
             div { class: "hot-corners-row",
                 Button {
-                    label: "Add with Keys\u{2026}",
+                    label: crate::copy::hot_corners::ADD_WITH_KEYS_ELLIPSIS,
                     size: ControlSize::Small,
                     common: Common { id: Some(row_id("hot-corner-add", corner.path())), ..Common::default() },
                     onclick: move |_| {
@@ -230,12 +230,12 @@ fn AddWithKeys(corner: Corner, bindings: Vec<HotBinding>, state: SheetState) -> 
         }
         div { class: "hot-corners-row",
             Button {
-                label: "Cancel",
+                label: crate::copy::common::CANCEL,
                 size: ControlSize::Small,
                 onclick: move |_| adding.set(None),
             }
             Button {
-                label: "Add",
+                label: crate::copy::common::ADD,
                 size: ControlSize::Small,
                 common: Common { id: Some(row_id("hot-corner-add-keys", corner.path())), ..Common::default() },
                 onclick: move |_| add.call(()),

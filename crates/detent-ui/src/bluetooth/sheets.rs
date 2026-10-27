@@ -26,14 +26,14 @@ pub(super) fn ForgetSheet(name: String, press: EventHandler<BtInput>) -> Element
                 Label { text: forget_body(), role: LabelRole::Secondary }
                 div { class: "system-sheet-buttons",
                     Button {
-                        label: "Cancel",
-                        common: Common { aria_label: Some("Cancel".to_owned()), ..Common::default() },
+                        label: crate::copy::common::CANCEL,
+                        common: Common { aria_label: Some(crate::copy::common::CANCEL.to_owned()), ..Common::default() },
                         answers: Answers::Escape,
                         onclick: move |_| close.call(()),
                     }
                     Button {
-                        label: "Forget Device",
-                        common: Common { aria_label: Some("Forget Device".to_owned()), ..Common::default() },
+                        label: crate::copy::bluetooth::FORGET_DEVICE,
+                        common: Common { aria_label: Some(crate::copy::bluetooth::FORGET_DEVICE.to_owned()), ..Common::default() },
                         role: ButtonRole::Destructive,
                         onclick: move |_| press.call(BtInput::ConfirmForget),
                     }
@@ -69,7 +69,7 @@ pub(super) fn PairingSheet(question: PairingQuestion, press: EventHandler<BtInpu
                 Label { text: pairing_body(&question), role: LabelRole::Secondary }
                 if ask.takes_text() {
                     TextField {
-                        label: "Code",
+                        label: crate::copy::bluetooth::CODE,
                         value: typed(),
                         kind: FieldKind::Plain,
                         size: ControlSize::Small,
@@ -79,15 +79,15 @@ pub(super) fn PairingSheet(question: PairingQuestion, press: EventHandler<BtInpu
                 }
                 div { class: "system-sheet-buttons",
                     Button {
-                        label: "Cancel",
-                        common: Common { aria_label: Some("Cancel".to_owned()), ..Common::default() },
+                        label: crate::copy::common::CANCEL,
+                        common: Common { aria_label: Some(crate::copy::common::CANCEL.to_owned()), ..Common::default() },
                         answers: Answers::Escape,
                         onclick: move |_| close.call(()),
                     }
                     if question.wants_answer() {
                         Button {
-                            label: "Connect",
-                            common: Common { aria_label: Some("Connect".to_owned()), ..Common::default() },
+                            label: crate::copy::bluetooth::CONNECT,
+                            common: Common { aria_label: Some(crate::copy::bluetooth::CONNECT.to_owned()), ..Common::default() },
                             answers: Answers::Return,
                             availability: if ready { Availability::Enabled } else { Availability::Disabled },
                             onclick: move |_| answer.call(()),

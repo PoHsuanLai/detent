@@ -43,9 +43,7 @@ pub use model::{
 pub use module::{ModuleId, ModuleRow, Source, Sources};
 pub use reads::{ReadTurn, Reads};
 pub use reauth_end::ReauthEnd;
-pub use setup::{
-    ACCOUNTS_SETUP_SLUG, SignedIn, accounts_setup_offer, is_accounts_setup, signed_in,
-};
+pub use setup::{ACCOUNTS_SETUP_SLUG, SignedIn, accounts_setup_offer, signed_in};
 pub use sign_in_client::{
     ClientEntry, ClientText, ClientValue, Secret, SecretStanding, SignInClient,
 };

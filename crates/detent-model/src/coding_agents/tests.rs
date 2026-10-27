@@ -123,23 +123,11 @@ fn spec<'a>(described: &'a Described, key: &str) -> &'a KeySpec {
         .expect("the key")
 }
 
-/// The group's name in these tests.
-pub(super) const GROUP: &str = "group";
+/// The group's key in these tests.
+pub(super) const GROUP: &str = super::GROUP_KEY;
 
 /// The reason of a word of Automatic's list in these tests.
-pub(super) const CHOOSE_DIRECTLY: &str = "choose-directly";
-
-/// The words these tests give `with_agents`: a plain mark of each fact, not the window's wording.
-pub(super) fn says(word: AgentWord<'_>) -> String {
-    match word {
-        AgentWord::Group => GROUP.to_owned(),
-        AgentWord::ChooseDirectly => CHOOSE_DIRECTLY.to_owned(),
-        AgentWord::Reason(AgentReason::NotInstalled) => "not-installed".to_owned(),
-        AgentWord::Reason(AgentReason::NeedsSignIn { label }) => format!("sign-in:{label}"),
-        AgentWord::Reason(AgentReason::NotSetUp) => "not-set-up".to_owned(),
-        AgentWord::Reason(AgentReason::TurnedOff) => "turned-off".to_owned(),
-    }
-}
+pub(super) const CHOOSE_DIRECTLY: &str = super::CHOOSE_DIRECTLY_KEY;
 
 fn reasons(spec: &KeySpec) -> Vec<(&str, &str)> {
     spec.unavailable
@@ -229,7 +217,7 @@ fn a_known_program_no_entry_runs_is_listed_as_not_set_up_once_per_agent() {
 #[test]
 fn the_group_lands_on_the_text_rows_and_the_pool_and_on_nothing_else() {
     let offered = offers(&agents(), &[], AcpAgents::On);
-    let laid = with_agents(described(), &offered, &says);
+    let laid = with_agents(described(), &offered);
 
     let row = spec(&laid, "ai.model.text.balanced");
     let KeyKind::Menu { variants } = &row.kind else {
@@ -252,8 +240,8 @@ fn the_group_lands_on_the_text_rows_and_the_pool_and_on_nothing_else() {
     assert_eq!(
         reasons(row),
         [
-            ("agent/codex", "sign-in:Codex"),
-            ("agent/gemini", "not-installed")
+            ("agent/codex", "agents:sign-in:Codex"),
+            ("agent/gemini", "agents:not-installed")
         ],
         "a ready agent carries no reason"
     );

@@ -1,11 +1,11 @@
 //! The accounts pane's words: how an account stands, how it signs in, what needs the person, what
 //! an app is allowed, and the question before an account is removed.
 
+use detent_model::external::SignInWay;
 use detent_model::{
     Account, AccountPermission, AccountService, AccountStatus, Ask, Attention, CalendarDay,
     GrantDecision, GrantScope, LocalFiles, RemovalQuestion, SecretStanding, humanize,
 };
-use porter_core::SignInWay;
 
 /// What a person reads for how an account stands.
 pub(crate) fn status_label(status: &AccountStatus) -> String {
@@ -155,11 +155,11 @@ pub(crate) fn removal(question: &RemovalQuestion, remove_name: &str) -> RemovalW
 #[cfg(test)]
 mod tests {
     use super::*;
+    use detent_model::external::ProviderGroup;
     use detent_model::{
         AccountKey, AccountProvider, AccountSpend, ModuleId, ModuleRow, Place, SwitchState,
     };
     use ds_settings::schema::KeyPath;
-    use porter_core::sheet::ProviderGroup;
 
     fn account(status: AccountStatus, provider: Option<&str>) -> Account {
         Account {

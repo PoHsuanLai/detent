@@ -4,7 +4,7 @@
 
 use crate::support::Sandbox;
 use crate::support::displays::Displays;
-use crate::support::drive::{click, page_of, settle, showing, sidebar_row, title_of};
+use crate::support::drive::{click, page_of, settle, showing, sidebar_page, title_of};
 use detent_model::{
     Absence, DisplayChange, DisplayEdit, DisplayMode, DisplayPosition, DisplayRotation,
     DisplaysStatus, Millimetres, ModePreference, Monitor, OutputId, PixelSize, RefreshMilliHz,
@@ -117,11 +117,11 @@ fn the_page_sits_after_desktop_and_dock_and_says_plainly_when_there_is_no_compos
     assert_eq!(page_of(&harness).as_deref(), Some("displays"));
     assert_eq!(title_of(&harness).as_deref(), Some("Displays"));
     assert_eq!(
-        harness.text_of(&sidebar_row(9)).as_deref(),
+        harness.text_of(&sidebar_page("dock")).as_deref(),
         Some("Desktop & Dock")
     );
     assert_eq!(
-        harness.text_of(&sidebar_row(10)).as_deref(),
+        harness.text_of(&sidebar_page("displays")).as_deref(),
         Some("Displays")
     );
     let row = harness.text_of(".ds-field-row").unwrap_or_default();

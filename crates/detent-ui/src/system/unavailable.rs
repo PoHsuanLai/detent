@@ -1,6 +1,7 @@
 //! The row a system page shows when there is nothing to show.
 
-use crate::copy::{self, Subject};
+use crate::copy;
+use crate::copy::absence::Subject;
 use detent_model::Absence;
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
@@ -11,7 +12,7 @@ use ds::prelude::*;
 /// the copy has for `subject`.
 #[component]
 pub(crate) fn Unavailable(title: String, subject: Subject, absence: Absence) -> Element {
-    let words = copy::absence(subject, absence);
+    let words = copy::absence::absence(subject, absence);
     rsx! {
         div { class: "system-page", "data-system": "unavailable",
             FieldGroup {

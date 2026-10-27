@@ -160,13 +160,14 @@ fn a_change_that_worked_reads_the_lists_and_the_candidates_again() {
     );
 }
 
+fn refusal() -> super::ServerRefusal {
+    super::ServerRefusal::Service("Nope.".to_owned())
+}
+
 #[test]
 fn a_refused_change_is_told_and_the_lists_are_read_again() {
-    let (_, effects) = computers_step(ready(), Input::Changed(Err("Nope.".to_owned())));
-    assert_eq!(
-        effects,
-        vec![Effect::Tell("Nope.".to_owned()), Effect::Reload]
-    );
+    let (_, effects) = computers_step(ready(), Input::Changed(Err(refusal())));
+    assert_eq!(effects, vec![Effect::Refused(refusal()), Effect::Reload]);
 }
 
 #[test]

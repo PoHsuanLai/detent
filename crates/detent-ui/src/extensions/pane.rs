@@ -3,7 +3,7 @@
 //! where the line would be, and no switch.
 
 use super::link::ExtensionLink;
-use crate::copy::{
+use crate::copy::extensions::{
     EXTENSIONS_EMPTY_HELP, EXTENSIONS_EMPTY_TITLE, NOT_AVAILABLE, extension_line, group_title,
 };
 use crate::env::Env;

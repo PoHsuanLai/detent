@@ -1,9 +1,9 @@
 //! The sheet before a Space is removed.
 
-use crate::copy::{
+use crate::copy::spaces::{
     HISTORY_CHOICES, HISTORY_NOTE, flip_label, history_label, removal_body, removal_title,
 };
-use almanac_core::HistoryFate;
+use detent_model::external::HistoryFate;
 use detent_model::{RemovalAsk, RemovalInput};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -54,7 +54,7 @@ pub(super) fn RemovalSheetView(ask: RemovalAsk, on: SheetHandlers) -> Element {
                     onclick: move |_| on.changed.call(RemovalInput::FlipMemories),
                 }
                 RadioGroup::<HistoryFate> {
-                    label: "History",
+                    label: crate::copy::spaces::HISTORY,
                     choices,
                     value: ask.history,
                     onchange: move |fate| on.changed.call(RemovalInput::History(fate)),
@@ -62,12 +62,12 @@ pub(super) fn RemovalSheetView(ask: RemovalAsk, on: SheetHandlers) -> Element {
                 Label { text: HISTORY_NOTE, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                 div { class: "space-sheet-buttons",
                     Button {
-                        label: "Cancel",
+                        label: crate::copy::common::CANCEL,
                         answers: Answers::Escape,
                         onclick: move |_| on.cancel.call(()),
                     }
                     Button {
-                        label: "Remove",
+                        label: crate::copy::common::REMOVE,
                         role,
                         answers: Answers::Return,
                         onclick: move |_| on.confirm.call(()),

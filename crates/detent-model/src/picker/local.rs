@@ -10,9 +10,6 @@ use ds_settings::schema::ChoicePlace;
 /// slash), so it is never written to the module.
 pub(crate) const LOCAL_ITEM: &str = "on-this-computer";
 
-/// What the menu calls the Local choice.
-pub(super) const LOCAL_LABEL: &str = "Local";
-
 /// Whether the person is answering what Local asks, before a model of it is chosen.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum LocalAsk {

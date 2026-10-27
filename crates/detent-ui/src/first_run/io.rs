@@ -4,6 +4,7 @@
 use crate::env::Env;
 use crate::files::{Edit, Files, apply};
 use detent_model::LocalOnly;
+use detent_model::external::toml;
 
 /// inferd's row that keeps AI on this computer.
 const LOCAL_ONLY: &str = "ai.local_only";
@@ -17,7 +18,7 @@ pub(super) fn save(env: &Env, local_only: LocalOnly) -> Result<(), String> {
         .map(|(_, entry)| entry)
         .find(|entry| entry.spec.path.0 == LOCAL_ONLY)
         .cloned()
-        .ok_or_else(|| "The model settings are not installed.".to_owned())?;
+        .ok_or_else(|| crate::copy::first_run::THE_MODEL_SETTINGS_ARE_NOT_INSTALLED.to_owned())?;
     let edit = Edit {
         entry,
         value: toml::Value::String(local_only.word().to_owned()),
@@ -25,5 +26,5 @@ pub(super) fn save(env: &Env, local_only: LocalOnly) -> Result<(), String> {
     apply(env, &Files::new(), &edit).map_err(|error| error.to_string())?;
     env.first_run
         .record()
-        .map_err(|error| format!("Could not remember this: {error}"))
+        .map_err(|error| crate::copy::first_run::could_not_remember_this(&error))
 }

@@ -3,8 +3,10 @@
 
 use super::server_sheet::ServerSheetView;
 use crate::assistants::{PlaceEntry, PlaceRow};
-use crate::copy::{self, Subject, absence as absence_words, guest_standing};
+use crate::copy::absence::{Subject, absence as absence_words};
+use crate::copy::computers::guest_standing;
 use crate::live::use_live;
+use detent_model::external::{Approval, ComputerCandidate, GuestAnswer, GuestRow, RowState};
 use detent_model::{AddList, ComputersInput, ComputersReady, ComputersState};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -13,31 +15,28 @@ use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
-use porter_core::lending::{Approval, ComputerCandidate, GuestAnswer, GuestRow, RowState};
 
 /// The group's title.
-const TITLE: &str = "Your computers";
+const TITLE: &str = crate::copy::computers::YOUR_COMPUTERS;
 
 /// The title of the group of computers that asked to borrow this computer's models.
-const GUESTS_TITLE: &str = "Computers asking to use this computer's models";
+const GUESTS_TITLE: &str = crate::copy::computers::COMPUTERS_ASKING_TO_USE_THIS_COMPUTER;
 
 /// What the list says before a computer is added.
-const NONE_YET: &str = "Computers you add appear here. Each starts off.";
+const NONE_YET: &str = crate::copy::computers::COMPUTERS_YOU_ADD_APPEAR_HERE_EACH;
 
 /// What the Add a server row says it is for.
-const ADD_SERVER_HELP: &str =
-    "A model server you already run on this computer, such as one started by hand.";
+const ADD_SERVER_HELP: &str = crate::copy::computers::A_MODEL_SERVER_YOU_ALREADY_RUN;
 
 /// What the Add list says when Tailscale knows no computer of the person's that lends.
-const NOBODY_LENDING: &str = "None of your other computers is lending its models. On the other \
-    computer, turn on \u{201c}Let my other computers use this computer\u{2019}s models\u{201d}.";
+const NOBODY_LENDING: &str = crate::copy::computers::NONE_OF_YOUR_OTHER_COMPUTERS_IS;
 
 /// What the Add list says while Tailscale is asked.
-const LOOKING: &str = "Looking for your computers on Tailscale\u{2026}";
+const LOOKING: &str = crate::copy::computers::LOOKING_FOR_YOUR_COMPUTERS_ON_TAILSCALE;
 
 /// Follows the computers and hands back their state and the way to feed it an input.
 pub(crate) fn use_computers() -> (Signal<ComputersState>, EventHandler<ComputersInput>) {
-    let computers = use_live(|client| client.computers(copy::server_fault));
+    let computers = use_live(|client| client.computers());
     let pane = computers.pane.clone();
     let feed = EventHandler::new(move |input: ComputersInput| {
         spawn(pane.send(input));
@@ -92,20 +91,20 @@ fn Listed(
                 for row in rows {
                     PlaceRow { key: "{row.view.name}", view: row.view, on: row.on }
                 }
-                FieldRow { label: TextLine::from("Add a server"),
+                FieldRow { label: TextLine::from(crate::copy::computers::ADD_A_SERVER),
                     help: Some(TextLine::from(ADD_SERVER_HELP)),
                     help_shown: HelpShown::OnRequest,
                     Button {
-                        common: Common { aria_label: Some("Add a server".to_owned()), id: Some("add-server".to_owned()), ..Common::default() },
-                        label: "Add a server\u{2026}",
+                        common: Common { aria_label: Some(crate::copy::computers::ADD_A_SERVER.to_owned()), id: Some("add-server".to_owned()), ..Common::default() },
+                        label: crate::copy::computers::ADD_A_SERVER_ELLIPSIS,
                         size: ControlSize::Small,
                         onclick: move |_| feed.call(ComputersInput::OpenServer),
                     }
                 }
-                FieldRow { label: TextLine::from("Add a computer"),
+                FieldRow { label: TextLine::from(crate::copy::computers::ADD_A_COMPUTER),
                     Button {
-                        common: Common { aria_label: Some("Add a computer".to_owned()), ..Common::default() },
-                        label: "Add\u{2026}",
+                        common: Common { aria_label: Some(crate::copy::computers::ADD_A_COMPUTER.to_owned()), ..Common::default() },
+                        label: crate::copy::common::ADD_ELLIPSIS,
                         size: ControlSize::Small,
                         availability: add_list,
                         onclick: move |_| feed.call(ComputersInput::OpenAdd),
@@ -118,7 +117,7 @@ fn Listed(
             match ready.adding.clone() {
                 AddList::Closed => rsx! {},
                 AddList::Looking => rsx! {
-                    FieldGroup { title: Some("Add a computer".to_owned()),
+                    FieldGroup { title: Some(crate::copy::computers::ADD_A_COMPUTER.to_owned()),
                         FieldRow { label: TextLine::from(LOOKING), availability: Availability::Disabled }
                     }
                 },
@@ -138,16 +137,16 @@ fn Listed(
 #[component]
 fn Candidates(found: Vec<ComputerCandidate>, feed: EventHandler<ComputersInput>) -> Element {
     rsx! {
-        FieldGroup { title: Some("Add a computer".to_owned()),
+        FieldGroup { title: Some(crate::copy::computers::ADD_A_COMPUTER.to_owned()),
             if found.is_empty() {
                 FieldRow { label: TextLine::from(NOBODY_LENDING), availability: Availability::Disabled }
             }
             for candidate in found {
                 CandidateLine { key: "{candidate.node}", candidate, feed }
             }
-            FieldRow { label: TextLine::from("Done"),
+            FieldRow { label: TextLine::from(crate::copy::common::DONE),
                 Button {
-                    label: "Done",
+                    label: crate::copy::common::DONE,
                     size: ControlSize::Small,
                     onclick: move |_| feed.call(ComputersInput::CloseAdd),
                 }
@@ -166,14 +165,16 @@ fn CandidateLine(candidate: ComputerCandidate, feed: EventHandler<ComputersInput
         .join(", ");
     let help = match candidate.approval {
         Approval::Given => models,
-        Approval::Needed => format!("{models}. Say yes on {} when it asks.", candidate.name),
+        Approval::Needed => {
+            crate::copy::computers::say_yes_on_when_it_asks(&models, &candidate.name)
+        }
     };
     let node = candidate.node.clone();
     rsx! {
         FieldRow { label: TextLine::from(candidate.name.clone()), help: Some(TextLine::from(help)), help_shown: HelpShown::OnRequest,
             Button {
-                common: Common { aria_label: Some(format!("Add {}", candidate.name)), ..Common::default() },
-                label: "Add",
+                common: Common { aria_label: Some(crate::copy::computers::add(&candidate.name)), ..Common::default() },
+                label: crate::copy::common::ADD,
                 size: ControlSize::Small,
                 onclick: move |_| feed.call(ComputersInput::Add(node.clone())),
             }
@@ -189,14 +190,14 @@ fn GuestLine(guest: GuestRow, feed: EventHandler<ComputersInput>) -> Element {
     rsx! {
         FieldRow { label: TextLine::from(guest.name.clone()), help: Some(TextLine::from(guest_standing(guest.state))),
             if allow {
-                GuestButton { label: "Allow", subject: guest.name.clone(),
+                GuestButton { label: crate::copy::computers::ALLOW, subject: guest.name.clone(),
                     onpress: move |()| feed.call(ComputersInput::Answer(a.clone(), GuestAnswer::Allow)) }
             }
             if deny {
-                GuestButton { label: "Don\u{2019}t Allow", subject: guest.name.clone(),
+                GuestButton { label: crate::copy::computers::DONT_ALLOW, subject: guest.name.clone(),
                     onpress: move |()| feed.call(ComputersInput::Answer(b.clone(), GuestAnswer::Deny)) }
             }
-            GuestButton { label: "Forget", subject: guest.name.clone(),
+            GuestButton { label: crate::copy::common::FORGET, subject: guest.name.clone(),
                 onpress: move |()| feed.call(ComputersInput::Forget(c.clone())) }
         }
     }

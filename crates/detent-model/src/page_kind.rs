@@ -1,11 +1,12 @@
 //! Every page the app knows, resolved once from the schemas' `Page` where the catalogue builds a
 //! `PageModel`. Nothing else asks "is this the Wi-Fi page": it matches on the kind.
 
-use crate::accounts::ModuleId;
-use crate::assistant_model::{ASSISTANT_MODEL_NAME, ASSISTANT_MODEL_SLUG};
+use crate::accounts::{ACCOUNTS_SETUP_SLUG, ModuleId};
+use crate::assistant_model::{ASSISTANT_MODEL_NAME, ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG};
 use crate::bluetooth::BLUETOOTH_SLUG;
 use crate::displays::DISPLAYS_SLUG;
 use crate::extensions::EXTENSIONS_SLUG;
+use crate::page::PageSlug;
 use crate::updates::{SOFTWARE_UPDATE_NAME, SOFTWARE_UPDATE_SLUG};
 use crate::wallpaper::WALLPAPER_SLUG;
 use crate::wifi::WIFI_SLUG;
@@ -75,6 +76,17 @@ impl PageKind {
             EXTENSIONS_SLUG => PageKind::Extensions,
             _ => PageKind::Program,
         }
+    }
+
+    /// Whether `slug` names the first-run step "Choose an assistant model": a page of its own that
+    /// is reached by its slug and never listed.
+    pub fn is_assistant_setup(slug: &PageSlug) -> bool {
+        slug.0 == ASSISTANT_SETUP_SLUG
+    }
+
+    /// Whether `slug` names the first-run step "Sign in to your accounts".
+    pub fn is_accounts_setup(slug: &PageSlug) -> bool {
+        slug.0 == ACCOUNTS_SETUP_SLUG
     }
 
     /// The page's stable name, or none for a program's page, which is named by its id.

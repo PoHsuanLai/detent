@@ -3,7 +3,7 @@
 
 use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
-use crate::support::drive::{click, scroll_into_view, sidebar_row};
+use crate::support::drive::{click, scroll_into_view, sidebar_page};
 use crate::support::inferd::{Inferd, Policy};
 use detent_model::{ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Notice, PageSlug};
 use detent_ui::Opening;
@@ -112,18 +112,24 @@ fn the_page_follows_intelligence_in_the_sidebar_and_draws_only_the_assistants_ro
     ready(&mut world);
     // The fixtures' pages: Intelligence is the sixth, the page follows it.
     assert_eq!(
-        world.harness.text_of(&sidebar_row(6)).as_deref(),
+        world
+            .harness
+            .text_of(&sidebar_page("intelligence"))
+            .as_deref(),
         Some("Intelligence")
     );
     assert_eq!(
-        world.harness.text_of(&sidebar_row(7)).as_deref(),
+        world
+            .harness
+            .text_of(&sidebar_page("assistant-model"))
+            .as_deref(),
         Some("Assistant Model"),
         "the sidebar lists the page after Intelligence"
     );
     assert_eq!(
         world
             .harness
-            .attr(&sidebar_row(7), "aria-selected")
+            .attr(&sidebar_page("assistant-model"), "aria-selected")
             .as_deref(),
         Some("true")
     );

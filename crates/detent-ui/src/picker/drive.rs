@@ -2,7 +2,6 @@
 //! that draws a part of the picker uses this hook, so they agree; the picker itself, with its
 //! follow loop and its calls, is `detent-client`'s.
 
-use crate::copy::picker::agent_word;
 use crate::engine_install::use_board;
 use crate::live::use_live;
 use detent_model::{PickerInput, PickerState};
@@ -25,7 +24,7 @@ pub(crate) fn use_picker() -> Picker {
     // finds them by context.
     let board = use_board();
     use_context_provider(|| board);
-    let picker = use_live(|client| client.picker(agent_word));
+    let picker = use_live(|client| client.picker());
     let state = picker.state;
     let ask = EventHandler::new(move |input: PickerInput| {
         spawn(picker.pane.send(input));

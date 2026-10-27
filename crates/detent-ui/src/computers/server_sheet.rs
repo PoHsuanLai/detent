@@ -2,9 +2,10 @@
 //! models. It asks for a name, the model, where the server answers on this computer and, if it
 //! wants one, a key.
 
-use crate::copy::server_refusal;
+use crate::copy::computers::server_refusal;
 use crate::live::use_client;
 use detent_client::Client;
+use detent_model::external::{ModelId, SecretText};
 use detent_model::{
     ComputersInput, HotOpenKind, KeyField, NewServer, ServerEdit, ServerModels, ServerPhase,
 };
@@ -16,23 +17,22 @@ use ds::components::overlays::sheet_width::SheetWidth;
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
-use porter_core::{ModelId, SecretText};
 use std::path::PathBuf;
 
 /// The sheet's title.
-const TITLE: &str = "Add a server";
+const TITLE: &str = crate::copy::computers::ADD_A_SERVER;
 
 /// What the sheet says it is for.
-const ABOUT: &str = "Add a model server you already run, so the assistant can use its models.";
+const ABOUT: &str = crate::copy::computers::ADD_A_MODEL_SERVER_YOU_ALREADY;
 
 /// Under the place the server answers.
-const ON_THIS_COMPUTER: &str = "The server must answer on this computer.";
+const ON_THIS_COMPUTER: &str = crate::copy::computers::THE_SERVER_MUST_ANSWER_ON_THIS;
 
 /// While the models are looked up.
-const LOOKING: &str = "Looking for models\u{2026}";
+const LOOKING: &str = crate::copy::computers::LOOKING_FOR_MODELS_ELLIPSIS;
 
 /// When there is no model to pick.
-const NO_MODELS: &str = "There are no models to choose from yet.";
+const NO_MODELS: &str = crate::copy::computers::THERE_ARE_NO_MODELS_TO_CHOOSE;
 
 /// Which file was chosen.
 fn file_line(path: &std::path::Path) -> String {
@@ -83,7 +83,7 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
                 Label { text: TITLE, role: LabelRole::Primary, style: LabelStyle::Headline }
                 Label { text: ABOUT, role: LabelRole::Secondary }
                 TextField {
-                    label: "Name",
+                    label: crate::copy::common::NAME,
                     value: form.name.clone(),
                     kind: FieldKind::Plain,
                     size: ControlSize::Small,
@@ -115,9 +115,9 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
                     },
                 }
                 TextField {
-                    label: "Where it answers",
+                    label: crate::copy::computers::WHERE_IT_ANSWERS,
                     value: form.port.clone(),
-                    placeholder: "A number, such as 8080",
+                    placeholder: crate::copy::computers::A_NUMBER_SUCH_AS_8080,
                     kind: FieldKind::Plain,
                     size: ControlSize::Small,
                     common: Common { id: Some("server-port".to_owned()), ..Common::default() },
@@ -128,20 +128,20 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
                     if let Some(path) = form.socket.clone() {
                         Label { text: file_line(&path), role: LabelRole::Secondary }
                         Button {
-                            label: "Don\u{2019}t use it",
-                            common: button("Don\u{2019}t use", "the connection file", "server-socket-clear"),
+                            label: crate::copy::computers::DONT_USE_IT,
+                            common: button(crate::copy::computers::DONT_USE, crate::copy::computers::THE_CONNECTION_FILE, "server-socket-clear"),
                             onclick: move |_| edit(ServerEdit::Socket(None)),
                         }
                     }
                     Button {
-                        label: "Choose a file\u{2026}",
-                        common: button("Choose a file for", "where it answers", "server-socket"),
+                        label: crate::copy::computers::CHOOSE_A_FILE_ELLIPSIS,
+                        common: button(crate::copy::computers::CHOOSE_A_FILE_FOR, crate::copy::computers::WHERE_IT_ANSWERS_SUBJECT, "server-socket"),
                         onclick: move |_| choose_file(&socket_client, |path| ComputersInput::ServerEdit(ServerEdit::Socket(Some(path))), feed),
                     }
                 }
                 Label { text: ON_THIS_COMPUTER, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                 TextField {
-                    label: "Key (optional)",
+                    label: crate::copy::computers::KEY_OPTIONAL,
                     value: String::new(),
                     kind: FieldKind::Secure,
                     size: ControlSize::Small,
@@ -153,14 +153,14 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
                     if let KeyField::File(path) = form.key.clone() {
                         Label { text: file_line(&path), role: LabelRole::Secondary }
                         Button {
-                            label: "Don\u{2019}t use it",
-                            common: button("Don\u{2019}t use", "the key file", "server-key-clear"),
+                            label: crate::copy::computers::DONT_USE_IT,
+                            common: button(crate::copy::computers::DONT_USE, crate::copy::computers::THE_KEY_FILE, "server-key-clear"),
                             onclick: move |_| edit(ServerEdit::KeyFile(None)),
                         }
                     }
                     Button {
-                        label: "Use a key file\u{2026}",
-                        common: button("Use a key file for", "the server", "server-key-file"),
+                        label: crate::copy::computers::USE_A_KEY_FILE_ELLIPSIS,
+                        common: button(crate::copy::computers::USE_A_KEY_FILE_FOR, crate::copy::computers::THE_SERVER, "server-key-file"),
                         onclick: move |_| choose_file(&key_client, |path| ComputersInput::ServerEdit(ServerEdit::KeyFile(Some(path))), feed),
                     }
                 }
@@ -171,15 +171,15 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
                 }
                 div { class: "system-sheet-buttons",
                     Button {
-                        label: "Cancel",
-                        common: Common { aria_label: Some("Cancel".to_owned()), id: Some("server-cancel".to_owned()), ..Common::default() },
+                        label: crate::copy::common::CANCEL,
+                        common: Common { aria_label: Some(crate::copy::common::CANCEL.to_owned()), id: Some("server-cancel".to_owned()), ..Common::default() },
                         answers: Answers::Escape,
                         availability: if editing { Availability::Enabled } else { Availability::Disabled },
                         onclick: move |_| close.call(()),
                     }
                     Button {
-                        label: if editing { "Add" } else { "Adding\u{2026}" },
-                        common: Common { aria_label: Some("Add".to_owned()), id: Some("server-add".to_owned()), ..Common::default() },
+                        label: if editing { crate::copy::common::ADD } else { crate::copy::computers::ADDING_ELLIPSIS },
+                        common: Common { aria_label: Some(crate::copy::common::ADD.to_owned()), id: Some("server-add".to_owned()), ..Common::default() },
                         answers: Answers::Return,
                         availability: if editing { Availability::Enabled } else { Availability::Disabled },
                         onclick: move |_| add.call(()),

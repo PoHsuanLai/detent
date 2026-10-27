@@ -20,7 +20,7 @@ use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::KeyPath;
 
 /// What the row that opens the sheet is called, and the sheet.
-const TITLE: &str = "Programs for local models";
+const TITLE: &str = crate::copy::engines::PROGRAMS_FOR_LOCAL_MODELS;
 
 /// The row that opens the programs, when inferd lists any; nothing otherwise.
 #[component]
@@ -44,8 +44,8 @@ pub(crate) fn EnginePrograms() -> Element {
                 FieldRow {
                     label: TextLine::from(format!("{TITLE}\u{2026}")),
                     Button {
-                        label: "Open",
-                        common: Common { aria_label: Some(format!("Open {TITLE}")), ..Common::default() },
+                        label: crate::copy::common::OPEN,
+                        common: Common { aria_label: Some(crate::copy::engines::open(TITLE)), ..Common::default() },
                         onclick: move |_| opened.set(Shown::Visible),
                     }
                 }
@@ -70,7 +70,7 @@ pub(crate) fn EnginePrograms() -> Element {
                     }
                     div { class: "advanced-sheet-buttons",
                         Button {
-                            label: "Done",
+                            label: crate::copy::common::DONE,
                             answers: Answers::Return,
                             onclick: move |_| close.call(()),
                         }
@@ -109,11 +109,11 @@ fn ProgramField(
         }
         div { class: "system-sheet-buttons",
             Button {
-                label: "Choose\u{2026}",
+                label: crate::copy::common::CHOOSE_ELLIPSIS,
                 size: ControlSize::Small,
                 common: Common {
                     id: Some(row_id("program-choose", &row.path.0)),
-                    aria_label: Some(format!("Choose a file for {}", row.label)),
+                    aria_label: Some(crate::copy::engines::choose_a_file_for(&row.label)),
                     ..Common::default()
                 },
                 onclick: move |_| {

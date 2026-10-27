@@ -77,7 +77,7 @@ fn Halo(centre: Element, label: String) -> Element {
             progress: Progress::Unknown(Operation::Running(token)),
             size: ControlSize::Large,
             centre: Some(centre),
-            common: Common { aria_label: Some(format!("Syncing {label}")), ..Common::default() },
+            common: Common { aria_label: Some(crate::copy::account_views::syncing(&label)), ..Common::default() },
         }
     }
 }

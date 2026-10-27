@@ -3,19 +3,18 @@
 
 use crate::copy::shortcuts::{chord_reserved, file_left_alone};
 use crate::env::Env;
-use detent_files::FilesError;
+use detent_client::FilesError;
 use detent_model::{ShortcutsEffect, ShortcutsInput, ShortcutsState, shortcuts_step};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;
 
 /// What the person reads when the file could not be written.
-const COULD_NOT_SAVE: &str = "Your shortcuts could not be saved. Try again in a moment.";
+const COULD_NOT_SAVE: &str = crate::copy::shortcuts::YOUR_SHORTCUTS_COULD_NOT_BE_SAVED;
 
 /// What the person reads when another program wrote the file between the list reading it and
 /// this save: the list shows what the file says now.
-const CHANGED_ELSEWHERE: &str =
-    "Your shortcuts were changed by another program just now, so nothing was saved. Try again.";
+const CHANGED_ELSEWHERE: &str = crate::copy::shortcuts::YOUR_SHORTCUTS_WERE_CHANGED_BY_ANOTHER;
 
 /// The list of one window.
 #[derive(Clone)]

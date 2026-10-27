@@ -4,7 +4,8 @@
 
 use super::network_sheets::{ForgetSheet, OtherSheet};
 use super::sheets::{DetailsSheet, PasswordSheet};
-use crate::copy::{self, Subject};
+use crate::copy;
+use crate::copy::absence::Subject;
 use crate::live::use_live;
 use crate::system::Unavailable;
 use detent_client::Client;
@@ -26,7 +27,7 @@ pub(crate) fn WifiPane() -> Element {
     match state {
         WifiState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
         WifiState::Unavailable(absence) => rsx! {
-            Unavailable { title: "Wi-Fi", subject: Subject::Wifi, absence }
+            Unavailable { title: crate::copy::wifi::WI_FI, subject: Subject::Wifi, absence }
         },
         WifiState::Ready(page) => {
             let press = EventHandler::new(move |input: WifiInput| {
@@ -66,9 +67,9 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
     rsx! {
         div { class: "system-page", "data-system": "wifi",
             FieldGroup {
-                FieldRow { label: TextLine::from("Wi-Fi"), help, availability,
+                FieldRow { label: TextLine::from(crate::copy::wifi::WI_FI), help, availability,
                     Toggle {
-                        label: "Wi-Fi",
+                        label: crate::copy::wifi::WI_FI,
                         value: if radio == WifiRadio::On { Check::On } else { Check::Off },
                         availability,
                         onchange: move |next| press.call(WifiInput::Switch(radio_of(next))),
@@ -80,9 +81,9 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
                     JoinedNetwork { network: joined, press }
                 }
                 if !known.is_empty() {
-                    Networks { title: "Known Networks", networks: known, busy: busy.clone(), closing: Closing::Plain, press }
+                    Networks { title: crate::copy::wifi::KNOWN_NETWORKS, networks: known, busy: busy.clone(), closing: Closing::Plain, press }
                 }
-                Networks { title: "Other Networks", networks: new, busy: busy.clone(), closing: Closing::OtherRow, press }
+                Networks { title: crate::copy::wifi::OTHER_NETWORKS, networks: new, busy: busy.clone(), closing: Closing::OtherRow, press }
             }
             match page.asking.clone() {
                 WifiAsking::Nothing => rsx! {},
@@ -128,13 +129,13 @@ fn JoinedNetwork(network: WifiNetwork, press: EventHandler<WifiInput>) -> Elemen
         FieldGroup {
             FieldRow {
                 label: TextLine::from(network.ssid.0.clone()),
-                help: Some(TextLine::from("Connected")),
+                help: Some(TextLine::from(crate::copy::wifi::CONNECTED)),
                 common: Common { id: Some("wifi-joined".to_owned()), ..Common::default() },
                 Glyphs { network: network.clone() }
                 Button {
-                    label: "Details\u{2026}",
+                    label: crate::copy::wifi::DETAILS_ELLIPSIS,
                     bezel: Bezel::Push,
-                    common: Common { aria_label: Some("Details\u{2026}".to_owned()), ..Common::default() },
+                    common: Common { aria_label: Some(crate::copy::wifi::DETAILS_ELLIPSIS.to_owned()), ..Common::default() },
                     onclick: move |_| press.call(WifiInput::OpenDetails),
                 }
             }
@@ -197,12 +198,12 @@ fn Networks(
 fn OtherRow(press: EventHandler<WifiInput>) -> Element {
     rsx! {
         FieldRow {
-            label: TextLine::from("Other\u{2026}"),
-            help: Some(TextLine::from("Join a network by its name")),
+            label: TextLine::from(crate::copy::wifi::OTHER_ELLIPSIS),
+            help: Some(TextLine::from(crate::copy::wifi::JOIN_A_NETWORK_BY_ITS_NAME)),
             Button {
-                label: "Connect\u{2026}",
+                label: crate::copy::wifi::CONNECT_ELLIPSIS,
                 bezel: Bezel::Inline,
-                common: Common { aria_label: Some("Join another network".to_owned()), ..Common::default() },
+                common: Common { aria_label: Some(crate::copy::wifi::JOIN_ANOTHER_NETWORK.to_owned()), ..Common::default() },
                 onclick: move |_| press.call(WifiInput::OpenOther),
             }
         }
@@ -216,7 +217,7 @@ fn NetworkRow(network: WifiNetwork, work: RowWork, press: EventHandler<WifiInput
         RowWork::Free => (Availability::Enabled, None),
         RowWork::Joining => (
             Availability::Busy,
-            Some(TextLine::from("Connecting\u{2026}")),
+            Some(TextLine::from(crate::copy::wifi::CONNECTING_ELLIPSIS)),
         ),
         RowWork::Held => (Availability::Disabled, None),
     };
@@ -224,10 +225,10 @@ fn NetworkRow(network: WifiNetwork, work: RowWork, press: EventHandler<WifiInput
         FieldRow { label: TextLine::from(network.ssid.0.clone()), help,
             Glyphs { network: network.clone() }
             Button {
-                label: "Join",
+                label: crate::copy::wifi::JOIN,
                 bezel: Bezel::Inline,
                 availability,
-                common: Common { aria_label: Some(format!("Join {}", ssid.0)), ..Common::default() },
+                common: Common { aria_label: Some(crate::copy::wifi::join(&ssid.0)), ..Common::default() },
                 onclick: {
                     let ssid = ssid.clone();
                     move |_| press.call(WifiInput::Pick(ssid.clone()))
@@ -235,9 +236,9 @@ fn NetworkRow(network: WifiNetwork, work: RowWork, press: EventHandler<WifiInput
             }
             if network.remembered == Remembered::Yes {
                 Button {
-                    label: "Forget\u{2026}",
+                    label: crate::copy::common::FORGET_ELLIPSIS,
                     bezel: Bezel::Inline,
-                    common: Common { aria_label: Some(format!("Forget {}", ssid.0)), ..Common::default() },
+                    common: Common { aria_label: Some(crate::copy::wifi::forget(&ssid.0)), ..Common::default() },
                     onclick: move |_| press.call(WifiInput::AskForget(ssid.clone())),
                 }
             }

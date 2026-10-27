@@ -9,37 +9,42 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
-almanac-core = { workspace = true }
-chordkit = { workspace = true }
+# The compiler is the fence: the window names only the client (its one door to the computer), the
+# model (its facts, and the other crates' types they are made of) and quire. Never detent-files,
+# detent-system, porter-*, almanac-*, docket-* or zbus.
 detent-client = { workspace = true }
-detent-files = { workspace = true }
 detent-model = { workspace = true }
-docket-settings = { workspace = true }
 dioxus = { workspace = true }
 ds = { workspace = true }
 ds-blitz = { workspace = true }
 ds-helpers = { workspace = true }
 ds-lint = { workspace = true }
 ds-settings = { workspace = true, features = ["dioxus", "live", "tokio"] }
-porter-client = { workspace = true, features = ["infer", "lending"] }
-porter-core = { workspace = true }
-porter-infer = { workspace = true }
-porter-provider = { workspace = true }
 tokio = { workspace = true }
-toml = { workspace = true }
 
 [dev-dependencies]
+# Test fixtures only: the in-memory links, the test kit, and quire's harness. The tests that still
+# stand a service up on a private bus (stage 4 follow-up) also need the last four lines.
 # A stand-in service on a test's private bus is vouched for by `AnyOwner`, or by the role check over
 # peers that a test introduces owners to (the squatter test).
 detent-callers = { workspace = true, features = ["testing"] }
 detent-system = { workspace = true, features = ["testing"] }
 detent-testkit = { workspace = true }
+detent-files = { workspace = true }
+porter-core = { workspace = true }
 porter-dbus = { workspace = true }
+porter-infer = { workspace = true }
 zbus = { workspace = true, features = ["tokio"] }
 ds-settings = { workspace = true, features = ["testing"] }
 dioxus-ssr = { workspace = true }
 ds-harness = { workspace = true }
 image = { workspace = true }
+toml = { workspace = true }
+almanac-core = { workspace = true }
+chordkit = { workspace = true }
+docket-settings = { workspace = true }
+porter-client = { workspace = true, features = ["infer", "lending"] }
+porter-provider = { workspace = true }
 
 [lints]
 workspace = true

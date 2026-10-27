@@ -90,6 +90,9 @@ pub(crate) fn size_words(bytes: u64) -> String {
     }
 }
 
+/// The words "Checking".
+pub(crate) const CHECKING: &str = "Checking";
+
 #[cfg(test)]
 mod tests {
     use super::*;

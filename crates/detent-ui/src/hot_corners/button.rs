@@ -19,7 +19,7 @@ pub(crate) fn HotCorners(
     rsx! {
         div { class: "hot-corners-button",
             Button {
-                label: "Hot Corners\u{2026}",
+                label: crate::copy::hot_corners::HOT_CORNERS_ELLIPSIS,
                 common: Common { id: Some("hot-corners-open".to_owned()), ..Common::default() },
                 onclick: move |_| opened.set(Shown::Visible),
             }

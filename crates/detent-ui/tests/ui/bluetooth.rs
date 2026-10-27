@@ -4,7 +4,7 @@
 
 use crate::support::Sandbox;
 use crate::support::bluetooth::{Asked, Bluetooth};
-use crate::support::drive::{click, page_of, settle, showing, sidebar_row, title_of, type_into};
+use crate::support::drive::{click, page_of, settle, showing, sidebar_page, title_of, type_into};
 use detent_model::{
     Absence, BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus,
     PairingAnswer, PairingAsk, PairingCode, PairingQuestion,
@@ -91,7 +91,7 @@ fn the_page_is_second_in_the_sidebar_and_says_plainly_when_nothing_serves_blueto
     assert_eq!(page_of(&harness).as_deref(), Some("bluetooth"));
     assert_eq!(title_of(&harness).as_deref(), Some("Bluetooth"));
     assert_eq!(
-        harness.text_of(&sidebar_row(2)).as_deref(),
+        harness.text_of(&sidebar_page("bluetooth")).as_deref(),
         Some("Bluetooth")
     );
     let row = harness.text_of(".ds-field-row").unwrap_or_default();
@@ -344,12 +344,12 @@ fn devices_are_looked_for_only_while_the_page_is_open() {
     showing(&mut harness, "the page", PAGE);
     settle(&mut harness, "looking", |_| service.looking() == 1);
 
-    click(&mut harness, &sidebar_row(4));
+    click(&mut harness, &sidebar_page("appearance"));
     settle(&mut harness, "another page", |h| {
         page_of(h).as_deref() == Some("appearance")
     });
     settle(&mut harness, "not looking", |_| service.looking() == 0);
 
-    click(&mut harness, &sidebar_row(2));
+    click(&mut harness, &sidebar_page("bluetooth"));
     settle(&mut harness, "looking again", |_| service.looking() == 1);
 }

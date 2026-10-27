@@ -130,6 +130,15 @@ pub(crate) fn elapsed_words(seconds: i64) -> String {
     }
 }
 
+/// The words "Software Update".
+pub(crate) const SOFTWARE_UPDATE: &str = "Software Update";
+
+/// The words "Automatic updates".
+pub(crate) const AUTOMATIC_UPDATES: &str = "Automatic updates";
+
+/// The words "Installing".
+pub(crate) const INSTALLING: &str = "Installing";
+
 #[cfg(test)]
 mod tests {
     use super::*;

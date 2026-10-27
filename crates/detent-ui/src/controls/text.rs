@@ -1,5 +1,6 @@
 //! Free text: a text field that stores when the caret leaves or Enter is pressed.
 
+use detent_model::external::toml;
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::style::tokens::control_size::ControlSize;

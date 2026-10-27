@@ -12,7 +12,7 @@ use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles, find_agents_prog
 use detent_intents::{
     ServeFault, SettingsProvider, hand_over_session, search_entries, serve_session,
 };
-use detent_model::{Catalogue, PageSlug, discover, inbox, is_assistant_setup};
+use detent_model::{Catalogue, PageKind, PageSlug, discover, inbox};
 use detent_ui::{App, Env, FirstRunApp, Homes, Opening};
 use ds_blitz::{
     AppConfig, AppId, Decorations, FileRoots, LaunchError, WindowSize, enter_runtime, launch,
@@ -33,7 +33,7 @@ const FIRST_RUN_HEIGHT: u32 = 520;
 /// The window of the assistant's first-run step: short, like the welcome window.
 fn window_size(wanted: Option<&PageSlug>) -> WindowSize {
     match wanted {
-        Some(slug) if is_assistant_setup(slug) => {
+        Some(slug) if PageKind::is_assistant_setup(slug) => {
             WindowSize::new(FIRST_RUN_WIDTH, FIRST_RUN_HEIGHT)
         }
         Some(_) | None => WindowSize::new(WIDTH, HEIGHT),

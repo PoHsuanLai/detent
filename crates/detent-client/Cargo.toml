@@ -14,6 +14,7 @@ detent-model = { workspace = true }
 detent-system = { workspace = true }
 ds-settings = { workspace = true, features = ["live", "tokio"] }
 porter-infer = { workspace = true }
+porter-provider = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
 zbus = { workspace = true, features = ["tokio"] }

@@ -181,8 +181,8 @@ pub(super) fn AddAccountButton(
     };
     rsx! {
         Button {
-            label: "Add Account\u{2026}",
-            title: Some("Add Account".to_owned()),
+            label: crate::copy::common::ADD_ACCOUNT_ELLIPSIS,
+            title: Some(crate::copy::account_views::ADD_ACCOUNT.to_owned()),
             icon: Some(Icon::Plus),
             image: ImagePosition::Only,
             size: ControlSize::Small,
@@ -206,8 +206,8 @@ pub(super) fn AddKeyButton(
     };
     rsx! {
         Button {
-            common: spoken("Add AI Key\u{2026}", ""),
-            label: "Add AI Key\u{2026}",
+            common: spoken(crate::copy::account_views::ADD_AI_KEY_ELLIPSIS, ""),
+            label: crate::copy::account_views::ADD_AI_KEY_ELLIPSIS,
             size: ControlSize::Small,
             availability,
             onclick: move |_| onpress.call(()),
@@ -223,8 +223,8 @@ pub(super) fn RemoveAccountButton(
 ) -> Element {
     rsx! {
         Button {
-            label: "Remove Account",
-            title: Some("Remove Account".to_owned()),
+            label: crate::copy::account_views::REMOVE_ACCOUNT,
+            title: Some(crate::copy::account_views::REMOVE_ACCOUNT.to_owned()),
             icon: Some(Icon::Minus),
             image: ImagePosition::Only,
             size: ControlSize::Small,
@@ -249,18 +249,18 @@ pub(super) fn HoldBanner(
             text: TextLine::from(hold_banner(&hold)),
             detail: Some(TextLine::from(KEEP_HELP)),
             common: Common {
-                aria_label: Some(format!("{held} files removed on the server")),
+                aria_label: Some(crate::copy::account_views::files_removed_on_the_server(held)),
                 ..Common::default()
             },
             actions: rsx! {
                 Button {
-                    label: "Keep",
+                    label: crate::copy::account_views::KEEP,
                     size: ControlSize::Small,
                     answers: Answers::Return,
                     onclick: move |_| onkeep.call(()),
                 }
                 Button {
-                    label: "Remove",
+                    label: crate::copy::common::REMOVE,
                     role: ButtonRole::Destructive,
                     size: ControlSize::Small,
                     onclick: move |_| onremove.call(()),

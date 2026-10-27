@@ -11,7 +11,7 @@ use ds::prelude::*;
 use ds::style::icon::render::{IconPx, IconSize};
 
 /// What the row says when no picture is stored.
-const NO_PICTURE: &str = "No picture chosen";
+const NO_PICTURE: &str = crate::copy::pictures::NO_PICTURE_CHOSEN;
 
 /// The side of the glyph shown while the current picture's small picture is not made.
 const GLYPH: u8 = 32;
@@ -50,7 +50,7 @@ pub(super) fn picture_header(
                 Label { text: name, role: LabelRole::Primary }
             }
             Button {
-                label: "Add Picture\u{2026}",
+                label: crate::copy::pictures::ADD_PICTURE_ELLIPSIS,
                 onclick: move |_| onadd.call(()),
             }
         }

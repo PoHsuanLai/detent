@@ -1535,6 +1535,7 @@ dependencies = [
  "detent-system",
  "ds-settings 0.1.0",
  "porter-infer",
+ "porter-provider",
  "tokio",
  "toml",
  "zbus",

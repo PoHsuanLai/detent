@@ -10,6 +10,21 @@ pub(crate) fn runtime_state(runtime: &Runtime) -> String {
     }
 }
 
+/// The words "The model settings are not installed.".
+pub(crate) const THE_MODEL_SETTINGS_ARE_NOT_INSTALLED: &str =
+    "The model settings are not installed.";
+
+/// The words "Could not remember this: {error}".
+pub(crate) fn could_not_remember_this(error: impl std::fmt::Display) -> String {
+    format!("Could not remember this: {error}")
+}
+
+/// The words "Welcome".
+pub(crate) const WELCOME: &str = "Welcome";
+
+/// The words "Keep AI on this computer".
+pub(crate) const KEEP_AI_ON_THIS_COMPUTER: &str = "Keep AI on this computer";
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -27,10 +27,10 @@ pub(super) fn ShortcutLine(row: ShortcutRow, drive: EventHandler<ShortcutsInput>
             if row.origin == Origin::You {
                 Button {
                     common: Common {
-                        aria_label: Some(format!("Reset {name}")),
+                        aria_label: Some(crate::copy::shortcuts::reset(&name)),
                         ..Common::default()
                     },
-                    label: "Reset",
+                    label: crate::copy::shortcuts::RESET,
                     bezel: Bezel::Inline,
                     size: ControlSize::Small,
                     onclick: move |_| drive.call(ShortcutsInput::Reset(action)),

@@ -2,9 +2,9 @@
 //! it a face (a letter on a colour). Quire draws the face first, then the named mark, then the
 //! neutral `@`.
 
+use detent_client::shipped_marks;
 use ds::components::content::mark_face::MarkFace;
 use ds::components::content::provider_mark::MarkProvider;
-use porter_provider::shipped_specs;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -37,18 +37,18 @@ fn named(word: &str) -> MarkProvider {
 impl ProviderMarks {
     /// The marks of the provider files porter ships.
     pub fn shipped() -> ProviderMarks {
-        let marks = shipped_specs()
+        let marks = shipped_marks()
             .into_iter()
-            .map(|spec| {
-                let face = spec
-                    .mark_face
+            .map(|facts| {
+                let face = facts
+                    .face
                     .as_ref()
                     .map(|face| MarkFace::new(face.letter.as_str(), face.colour.as_str()));
                 let source = MarkSource {
-                    provider: named(&spec.mark),
+                    provider: named(&facts.mark),
                     face,
                 };
-                (spec.id.as_str().to_owned(), source)
+                (facts.id, source)
             })
             .collect();
         ProviderMarks(Arc::new(marks))

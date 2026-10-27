@@ -9,6 +9,7 @@ mod header;
 use crate::copy::pictures::add_failure;
 use crate::live::use_client;
 use detent_client::Wallpaper;
+use detent_model::external::toml;
 use detent_model::{AddOutcome, Picture, PictureSections, picture_sections};
 use dioxus::prelude::*;
 use grid::pictures_grid;
@@ -20,10 +21,10 @@ use std::path::PathBuf;
 pub(super) type Smalls = HashMap<PathBuf, PathBuf>;
 
 /// What the person calls the pictures they added.
-const YOURS: &str = "Your Pictures";
+const YOURS: &str = crate::copy::pictures::YOUR_PICTURES;
 
 /// What the person calls the pictures the system ships.
-const SYSTEMS: &str = "Desktop Pictures";
+const SYSTEMS: &str = crate::copy::pictures::DESKTOP_PICTURES;
 
 /// Makes the small picture of each of `previews` not in `smalls` yet, one after the other so the
 /// first tiles fill in first, and puts each in `smalls` as it is made.

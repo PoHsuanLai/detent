@@ -44,6 +44,45 @@ pub(crate) fn side(side: ArrangeSide) -> &'static str {
     }
 }
 
+/// The words "Displays".
+pub(crate) const DISPLAYS: &str = "Displays";
+
+/// The words "Brightness".
+pub(crate) const BRIGHTNESS: &str = "Brightness";
+
+/// The words "Default for display ({size})".
+pub(crate) fn default_for_display(size: impl std::fmt::Display) -> String {
+    format!("Default for display ({size})")
+}
+
+/// The words "Looks like {}".
+pub(crate) fn looks_like(a: impl std::fmt::Display) -> String {
+    format!("Looks like {a}")
+}
+
+/// The words "Resolution".
+pub(crate) const RESOLUTION: &str = "Resolution";
+
+/// The words "{words} (Native)".
+pub(crate) fn native(words: impl std::fmt::Display) -> String {
+    format!("{words} (Native)")
+}
+
+/// The words "Display Mode".
+pub(crate) const DISPLAY_MODE: &str = "Display Mode";
+
+/// The words "The pixels the display draws".
+pub(crate) const THE_PIXELS_THE_DISPLAY_DRAWS: &str = "The pixels the display draws";
+
+/// The words "Refresh Rate".
+pub(crate) const REFRESH_RATE: &str = "Refresh Rate";
+
+/// The words "Rotation".
+pub(crate) const ROTATION: &str = "Rotation";
+
+/// The words "Position".
+pub(crate) const POSITION: &str = "Position";
+
 #[cfg(test)]
 mod tests {
     use super::*;

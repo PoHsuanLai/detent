@@ -13,6 +13,22 @@ pub(crate) fn grant_line(grant: &ScreenGrant, now: UnixSeconds) -> String {
     }
 }
 
+/// The words "Screen sharing".
+pub(crate) const SCREEN_SHARING: &str = "Screen sharing";
+
+/// The words "No apps can share your screen without asking".
+pub(crate) const NO_APPS_CAN_SHARE_YOUR_SCREEN: &str =
+    "No apps can share your screen without asking";
+
+/// The words "When you let an app share your screen without asking again, it appears here.".
+pub(crate) const WHEN_YOU_LET_AN_APP_SHARE: &str =
+    "When you let an app share your screen without asking again, it appears here.";
+
+/// The words "Remove {name}".
+pub(crate) fn remove(name: impl std::fmt::Display) -> String {
+    format!("Remove {name}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

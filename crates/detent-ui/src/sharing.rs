@@ -46,7 +46,7 @@ pub(crate) fn use_sharing(files: Signal<Files>) -> SharingSwitch {
                             }
                         }
                         Heard::Notice(other) => {
-                            if let Some(words) = copy::notice(&other) {
+                            if let Some(words) = copy::notice::notice(&other) {
                                 toasts.push(words, None);
                             }
                         }

@@ -1,6 +1,6 @@
 //! The Spaces page's words: the question before a Space is removed.
 
-use almanac_core::{HistoryFate, MemoryFate};
+use detent_model::external::{HistoryFate, MemoryFate};
 
 /// The line under the history choices.
 pub(crate) const HISTORY_NOTE: &str =
@@ -37,6 +37,23 @@ pub(crate) fn flip_label(memories: MemoryFate) -> &'static str {
         MemoryFate::Delete => "Move its memories instead",
     }
 }
+
+/// The words "Spaces".
+pub(crate) const SPACES: &str = "Spaces";
+
+/// The words "No Spaces".
+pub(crate) const NO_SPACES: &str = "No Spaces";
+
+/// The words "A Space you make in an app appears here.".
+pub(crate) const A_SPACE_YOU_MAKE_IN_AN: &str = "A Space you make in an app appears here.";
+
+/// The words "Remove {}".
+pub(crate) fn remove(a: impl std::fmt::Display) -> String {
+    format!("Remove {a}")
+}
+
+/// The words "History".
+pub(crate) const HISTORY: &str = "History";
 
 #[cfg(test)]
 mod tests {

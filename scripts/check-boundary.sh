@@ -51,6 +51,30 @@ for rule in "${RULES[@]}"; do
   fi
 done
 
+# DIRECT: what a crate may not NAME in its own [dependencies], though it reaches them through the
+# crate under it. The window reaches the computer only through detent-client, so the compiler
+# refuses a use of the files, the services, porter, almanac, docket or the bus in a view
+# (ARCHITECTURE.md "The fence"). The EDGES row below is the exact list of what it may name.
+DIRECT=(
+  "detent-ui: detent-files detent-system porter-client porter-core porter-dbus porter-infer porter-provider almanac-core docket-core docket-settings docket-dbus docket-client docket-agents zbus"
+)
+for rule in "${DIRECT[@]}"; do
+  crate="${rule%%:*}"
+  read -r -a forbidden <<<"${rule#*:}"
+  named=$(cargo tree -p "$crate" --depth 1 -e normal,build --prefix none --all-features 2>/dev/null | awk '{print $1}')
+  leaked=0
+  for dep in "${forbidden[@]}"; do
+    if printf '%s\n' "$named" | grep -qx "$dep"; then
+      echo "LEAK: $crate names $dep in its own dependencies"
+      leaked=1
+      fail=1
+    fi
+  done
+  if [ "$leaked" -eq 0 ]; then
+    echo "fence holds: $crate names none of ${forbidden[*]}"
+  fi
+done
+
 # The allowed edges between our own crates and quire (ARCHITECTURE.md section 1): each crate's
 # DIRECT normal and build dependencies that are path dependencies, and nothing else. A
 # dependency on a crate not listed is a leak; so is one the crate no longer has, so the table
@@ -60,10 +84,10 @@ EDGES=(
   "detent-callers: ds-settings"
   "detent-model: almanac-core docket-core docket-settings ds-helpers ds-settings porter-core porter-infer"
   "detent-files: detent-model docket-agents docket-settings ds-extensions ds-helpers ds-settings"
-  "detent-client: detent-files detent-model detent-system ds-settings porter-infer"
+  "detent-client: detent-files detent-model detent-system ds-settings porter-infer porter-provider"
   "detent-intents: detent-callers detent-client detent-files detent-model docket-client docket-core docket-dbus ds-peer ds-settings porter-core prov"
   "detent-system: almanac-core anyview-core anyview-fs anyview-image anyview-platform desktop-client detent-callers detent-files detent-model ds-peer ds-settings porter-client porter-core porter-daemon porter-dbus porter-engines porter-engines-install"
-  "detent-ui: almanac-core detent-client detent-files detent-model docket-settings ds ds-blitz ds-helpers ds-lint ds-settings porter-client porter-core porter-infer porter-provider"
+  "detent-ui: detent-client detent-model ds ds-blitz ds-helpers ds-lint ds-settings"
   "detent: detent-callers detent-client detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
 )
 for edge in "${EDGES[@]}"; do

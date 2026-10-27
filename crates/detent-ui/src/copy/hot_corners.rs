@@ -139,6 +139,80 @@ pub(crate) fn corner_label(does: &HotDo, known: &HotKnown) -> String {
     }
 }
 
+/// The words "Choose".
+pub(crate) const CHOOSE: &str = "Choose";
+
+/// The words "Command".
+pub(crate) const COMMAND: &str = "Command";
+
+/// The words "Run a command when the pointer rests in the corner.".
+pub(crate) const RUN_A_COMMAND_WHEN_THE_POINTER: &str =
+    "Run a command when the pointer rests in the corner.";
+
+/// The words "Command to run".
+pub(crate) const COMMAND_TO_RUN: &str = "Command to run";
+
+/// The words "No installed app offers an action that needs nothing more.".
+pub(crate) const NO_INSTALLED_APP_OFFERS_AN_ACTION: &str =
+    "No installed app offers an action that needs nothing more.";
+
+/// The words "Nothing matches.".
+pub(crate) const NOTHING_MATCHES: &str = "Nothing matches.";
+
+/// The words "App Action".
+pub(crate) const APP_ACTION: &str = "App Action";
+
+/// The words "Run an action of an app when the pointer rests in the corner.".
+pub(crate) const RUN_AN_ACTION_OF_AN_APP: &str =
+    "Run an action of an app when the pointer rests in the corner.";
+
+/// The words "Search actions".
+pub(crate) const SEARCH_ACTIONS: &str = "Search actions";
+
+/// The words "Actions".
+pub(crate) const ACTIONS: &str = "Actions";
+
+/// The words "Search apps".
+pub(crate) const SEARCH_APPS: &str = "Search apps";
+
+/// The words "Apps".
+pub(crate) const APPS: &str = "Apps";
+
+/// The words "Nothing chosen yet.".
+pub(crate) const NOTHING_CHOSEN_YET: &str = "Nothing chosen yet.";
+
+/// The words "Choose {}…".
+pub(crate) fn choose_u(a: impl std::fmt::Display) -> String {
+    format!("Choose {a}\u{2026}")
+}
+
+/// The words "Web Address".
+pub(crate) const WEB_ADDRESS: &str = "Web Address";
+
+/// The words "Open an app, a file, a folder or a web address when the pointer rests in the corner.".
+pub(crate) const OPEN_AN_APP_A_FILE_A: &str =
+    "Open an app, a file, a folder or a web address when the pointer rests in the corner.";
+
+/// The words "What to open".
+pub(crate) const WHAT_TO_OPEN: &str = "What to open";
+
+/// The words "Hot Corners…".
+pub(crate) const HOT_CORNERS_ELLIPSIS: &str = "Hot Corners\u{2026}";
+
+/// The words "Remove the row for {names}".
+pub(crate) fn remove_the_row_for(names: impl std::fmt::Display) -> String {
+    format!("Remove the row for {names}")
+}
+
+/// The words "Add with Keys…".
+pub(crate) const ADD_WITH_KEYS_ELLIPSIS: &str = "Add with Keys\u{2026}";
+
+/// The words "Move the pointer into a corner of the screen to start the action. Hold keys to start a different one.".
+pub(crate) const MOVE_THE_POINTER_INTO_A_CORNER: &str = "Move the pointer into a corner of the screen to start the action. Hold keys to start a different one.";
+
+/// The words "Hot Corners".
+pub(crate) const HOT_CORNERS: &str = "Hot Corners";
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,6 +1,7 @@
 //! A list of tables: a line per row with a cell per column, a Remove button on each, and a line
 //! to add one. An edit that does not fit its column is not stored.
 
+use detent_model::external::toml;
 use detent_model::{Columns, humanize};
 use dioxus::prelude::*;
 use ds::components::controls::button_model::{Bezel, ButtonRole};
@@ -135,7 +136,7 @@ pub fn RowsControl(
                         }
                     }
                     Button {
-                        label: "Remove",
+                        label: crate::copy::common::REMOVE,
                         bezel: Bezel::Inline,
                         role: ButtonRole::Destructive,
                         size: ControlSize::Small,
@@ -164,7 +165,7 @@ pub fn RowsControl(
                     }
                 }
                 Button {
-                    label: "Add",
+                    label: crate::copy::common::ADD,
                     size: ControlSize::Small,
                     availability: if addable { Availability::Enabled } else { Availability::Disabled },
                     onclick: {

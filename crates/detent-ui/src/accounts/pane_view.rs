@@ -5,7 +5,7 @@ use super::detail_view::{AccountDetail, Handlers};
 use super::link::AccountLink;
 use super::list_view::{AccountList, ClientIds, FootHandlers};
 use super::sync_read::use_sync_reading;
-use crate::copy::{Subject, absence as absence_words};
+use crate::copy::absence::{Subject, absence as absence_words};
 use crate::env::Env;
 use crate::live::{use_events, use_live};
 use crate::marks::ProviderMarks;
@@ -156,15 +156,15 @@ fn Ready(
         div { class: "accounts", "data-accounts": "ready",
             div { class: "accounts-split",
                 SplitView {
-                    label: "Accounts",
+                    label: crate::copy::common::ACCOUNTS,
                     panes: vec![SplitPane::new(SOURCES, list)],
                     div { class: "accounts-rest",
                         if let Some(account) = ready.open().cloned() {
                             AccountDetail { account, availability, holds, marks, book, on }
                         } else if !ready.pane.accounts.is_empty() {
                             EmptyState {
-                                title: "No account chosen",
-                                description: "Choose an account to see its services and the apps that use it.",
+                                title: crate::copy::account_views::NO_ACCOUNT_CHOSEN,
+                                description: crate::copy::account_views::CHOOSE_AN_ACCOUNT_TO_SEE_ITS,
                             }
                         }
                     }
@@ -192,9 +192,9 @@ fn Ready(
 fn Unavailable(absence: Absence) -> Element {
     rsx! {
         div { class: "accounts", "data-accounts": "unavailable",
-            FieldGroup { title: Some("Accounts".to_owned()),
+            FieldGroup { title: Some(crate::copy::common::ACCOUNTS.to_owned()),
                 FieldRow {
-                    label: TextLine::from("Accounts"),
+                    label: TextLine::from(crate::copy::common::ACCOUNTS),
                     help: Some(TextLine::from(absence_words(Subject::Accounts, absence))),
                     availability: Availability::Disabled,
                     Label { text: "Unavailable", role: LabelRole::Secondary }

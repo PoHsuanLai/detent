@@ -16,16 +16,16 @@ use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::KeyPath;
 
 /// What the first question is called.
-const ENGINE_LABEL: &str = "Runs with";
+const ENGINE_LABEL: &str = crate::copy::picker::RUNS_WITH;
 
 /// What the second question is called.
-const MODEL_LABEL: &str = "Model";
+const MODEL_LABEL: &str = crate::copy::common::MODEL;
 
 /// What the row is called when nothing on this computer can run a model.
-const NO_ENGINE_LABEL: &str = "Local";
+const NO_ENGINE_LABEL: &str = crate::copy::picker::LOCAL;
 
 /// The button that opens the way to add what would run models here.
-const ADD: &str = "Add Account\u{2026}";
+const ADD: &str = crate::copy::common::ADD_ACCOUNT_ELLIPSIS;
 
 /// The questions under the row at `path`: the engine, then, once there is one, its model.
 #[component]

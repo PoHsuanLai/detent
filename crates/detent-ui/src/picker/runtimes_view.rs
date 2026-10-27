@@ -4,7 +4,8 @@
 //! it has not found llama.cpp, and the row that opens the engines' programs.
 
 use crate::accounts::{AccountLink, Listed, OpenButton, use_listed};
-use crate::copy::{self, Subject};
+use crate::copy;
+use crate::copy::absence::Subject;
 use crate::engines::{EnginePrograms, LocalEnginesNote};
 use crate::running::RunningModels;
 use detent_model::{Absence, Runtime};
@@ -18,11 +19,10 @@ use ds::root::common::Common;
 use ds::root::pass_through::{DataAttr, DataName};
 
 /// The group's title.
-const TITLE: &str = "Models on this computer";
+const TITLE: &str = crate::copy::picker::MODELS_ON_THIS_COMPUTER;
 
 /// What the list says before any runtime is found.
-const NONE_FOUND: &str = "Nothing is running here yet. Ollama, llama.cpp and LM Studio appear \
-    here when they are.";
+const NONE_FOUND: &str = crate::copy::picker::NOTHING_IS_RUNNING_HERE_YET_OLLAMA;
 
 /// Where the list stands.
 #[derive(Debug, Clone, PartialEq)]
@@ -57,8 +57,8 @@ pub fn LocalRuntimes() -> Element {
             div { class: "runtimes", "data-runtimes": "unavailable",
                 FieldGroup { title: Some(TITLE.to_owned()),
                     FieldRow {
-                        label: TextLine::from("Local models"),
-                        help: Some(TextLine::from(copy::absence(Subject::Runtimes, absence))),
+                        label: TextLine::from(crate::copy::common::LOCAL_MODELS),
+                        help: Some(TextLine::from(copy::absence::absence(Subject::Runtimes, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
                     }
@@ -69,7 +69,7 @@ pub fn LocalRuntimes() -> Element {
             div { class: "runtimes", "data-runtimes": "empty",
                 FieldGroup { title: Some(TITLE.to_owned()),
                     FieldRow {
-                        label: TextLine::from("Local models"),
+                        label: TextLine::from(crate::copy::common::LOCAL_MODELS),
                         help: Some(TextLine::from(NONE_FOUND)),
                         Label { text: "None", role: LabelRole::Tertiary }
                     }
@@ -131,7 +131,7 @@ fn RuntimeRow(runtime: Runtime, onopen: EventHandler<()>) -> Element {
                 muting,
             }
             Label { text: copy::first_run::runtime_state(&runtime), role, style: LabelStyle::Footnote }
-            OpenButton { label: "Manage", subject: runtime.label.clone(), onpress: move |()| onopen.call(()) }
+            OpenButton { label: crate::copy::common::MANAGE, subject: runtime.label.clone(), onpress: move |()| onopen.call(()) }
         }
     }
 }

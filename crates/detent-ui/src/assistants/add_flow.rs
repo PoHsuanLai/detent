@@ -4,11 +4,10 @@
 
 use super::outside_view::{Shown, shown};
 use crate::env::Env;
-use detent_files::{AgentsTool, add_agent};
+use detent_client::add_agent;
+use detent_model::external::NewAgent;
 use detent_model::{AddAction, AddForm, Request};
 use dioxus::prelude::*;
-use docket_settings::NewAgent;
-use std::path::Path;
 
 type Adding = Signal<Option<AddForm>>;
 
@@ -21,18 +20,17 @@ fn change(adding: &mut Adding, edit: impl FnOnce(AddForm) -> AddForm) {
 /// offer when there is a program to ask with.
 pub(super) fn open(env: &Env, mut adding: Adding, now: &Shown) {
     let rows = &now.agents.rows;
-    let Some(program) = env.client.agents_program().map(Path::to_path_buf) else {
+    if env.client.agents_program().is_none() {
         adding.set(Some(AddForm::offline(&now.new, rows)));
         return;
-    };
+    }
     adding.set(Some(AddForm::loading(&now.new, rows)));
-    let tool = AgentsTool::new(program, &env.data_home);
+    let (client, data) = (env.client.clone(), env.data_home.clone());
     spawn(async move {
-        let listed = tokio::task::spawn_blocking(move || tool.list()).await;
+        let listed = client.list_agents(&data).await;
         change(&mut adding, |form| match listed {
-            Ok(Ok(offers)) => form.catalogue(offers),
-            Ok(Err(said)) => form.unreachable(&said),
-            Err(_) => form.unreachable(""),
+            Ok(offers) => form.catalogue(offers),
+            Err(said) => form.unreachable(&said),
         });
     });
 }
@@ -90,11 +88,10 @@ fn install(
     want: (String, String),
     then: NewAgent,
 ) {
-    let Some(program) = env.client.agents_program().map(Path::to_path_buf) else {
+    if env.client.agents_program().is_none() {
         change(&mut adding, |form| form.install_failed(""));
         return;
-    };
-    let tool = AgentsTool::new(program, &env.data_home);
+    }
     let (begun, mut told) = tokio::sync::mpsc::unbounded_channel::<()>();
     spawn(async move {
         if told.recv().await.is_some() {
@@ -104,16 +101,15 @@ fn install(
     let env = env.clone();
     spawn(async move {
         let (id, version) = want;
-        let done = tokio::task::spawn_blocking(move || {
-            tool.install(&id, &version, || {
+        let done = env
+            .client
+            .download_agent(&env.data_home, id, version, move || {
                 let _ = begun.send(());
             })
-        })
-        .await;
+            .await;
         match done {
-            Ok(Ok(())) => write(&env, adding, now, &then),
-            Ok(Err(said)) => change(&mut adding, |form| form.install_failed(&said)),
-            Err(_) => change(&mut adding, |form| form.install_failed("")),
+            Ok(()) => write(&env, adding, now, &then),
+            Err(said) => change(&mut adding, |form| form.install_failed(&said)),
         }
     });
 }

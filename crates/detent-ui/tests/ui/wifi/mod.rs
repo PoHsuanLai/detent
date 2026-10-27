@@ -4,7 +4,7 @@
 //! without a service.
 
 use crate::support::Sandbox;
-use crate::support::drive::{click, page_of, settle, showing, sidebar_row, title_of};
+use crate::support::drive::{click, page_of, settle, showing, sidebar_page, title_of};
 use crate::support::wifi::{Asked, Wifi};
 use detent_model::{
     Absence, AccessPoint, NetworkLink, NetworkLock, SignalStrength, Ssid, WifiRadio, WifiStatus,
@@ -85,13 +85,16 @@ fn the_page_is_first_in_the_sidebar_and_says_plainly_when_nothing_serves_wifi() 
     );
     assert_eq!(page_of(&harness).as_deref(), Some("wifi"));
     assert_eq!(title_of(&harness).as_deref(), Some("Wi-Fi"));
-    assert_eq!(harness.text_of(&sidebar_row(1)).as_deref(), Some("Wi-Fi"));
     assert_eq!(
-        harness.text_of(&sidebar_row(2)).as_deref(),
+        harness.text_of(&sidebar_page("wifi")).as_deref(),
+        Some("Wi-Fi")
+    );
+    assert_eq!(
+        harness.text_of(&sidebar_page("bluetooth")).as_deref(),
         Some("Bluetooth")
     );
     assert_eq!(
-        harness.text_of(&sidebar_row(10)).as_deref(),
+        harness.text_of(&sidebar_page("displays")).as_deref(),
         Some("Displays")
     );
     let row = harness.text_of(".ds-field-row").unwrap_or_default();

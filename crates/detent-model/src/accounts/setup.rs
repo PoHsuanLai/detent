@@ -5,16 +5,10 @@
 use super::model::{AccountKey, AccountProvider, AccountStatus, AccountsPane};
 use super::module::ModuleId;
 use crate::assistant_model::{SetupAction, SetupAvailability};
-use crate::page::PageSlug;
 use porter_core::sheet::ProviderGroup;
 
 /// The step's slug: what `--page` and `open-page` take.
 pub const ACCOUNTS_SETUP_SLUG: &str = "accounts-setup";
-
-/// Whether `slug` names the step.
-pub fn is_accounts_setup(slug: &PageSlug) -> bool {
-    slug.0 == ACCOUNTS_SETUP_SLUG
-}
 
 /// An account the step lists as already signed in.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,13 +47,12 @@ pub fn accounts_setup_offer(listed: &[SignedIn], button: SetupAction) -> SetupAv
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        ACCOUNTS_SETUP_SLUG, SignedIn, accounts_setup_offer, is_accounts_setup, signed_in,
-    };
+    use super::{ACCOUNTS_SETUP_SLUG, SignedIn, accounts_setup_offer, signed_in};
     use crate::accounts::tests::described;
     use crate::accounts::{AccountsPane, ModuleId};
     use crate::assistant_model::{SetupAction, SetupAvailability};
     use crate::page::PageSlug;
+    use crate::page_kind::PageKind;
 
     #[test]
     fn the_step_lists_the_internet_accounts_and_continue_waits_for_one() {
@@ -81,7 +74,11 @@ mod tests {
                 "{button:?} {any}"
             );
         }
-        assert!(is_accounts_setup(&PageSlug(ACCOUNTS_SETUP_SLUG.to_owned())));
-        assert!(!is_accounts_setup(&PageSlug("accounts".to_owned())));
+        assert!(PageKind::is_accounts_setup(&PageSlug(
+            ACCOUNTS_SETUP_SLUG.to_owned()
+        )));
+        assert!(!PageKind::is_accounts_setup(&PageSlug(
+            "accounts".to_owned()
+        )));
     }
 }

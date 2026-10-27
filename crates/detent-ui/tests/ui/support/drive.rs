@@ -67,9 +67,9 @@ pub fn title_of(harness: &Harness) -> Option<String> {
     harness.text_of(".ds-titlebar-name")
 }
 
-/// The sidebar row `n` (from 1).
-pub fn sidebar_row(n: usize) -> String {
-    format!(".ds-list-item:nth-child({n}) .ds-row")
+/// The sidebar row of the page `slug`.
+pub fn sidebar_page(slug: &str) -> String {
+    format!(".ds-row[data-page-row=\"{slug}\"]")
 }
 
 /// Scrolls the page with the wheel until the element matching `selector` is inside the window.

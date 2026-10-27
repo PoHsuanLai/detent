@@ -40,6 +40,19 @@ pub(crate) fn found_automatically() -> &'static str {
     "Found automatically"
 }
 
+/// The words "Programs for local models".
+pub(crate) const PROGRAMS_FOR_LOCAL_MODELS: &str = "Programs for local models";
+
+/// The words "Open {TITLE}".
+pub(crate) fn open(title: impl std::fmt::Display) -> String {
+    format!("Open {title}")
+}
+
+/// The words "Choose a file for {}".
+pub(crate) fn choose_a_file_for(a: impl std::fmt::Display) -> String {
+    format!("Choose a file for {a}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -7,10 +7,7 @@ use crate::extensions::ExtensionLink;
 use crate::files::load_all;
 use crate::view::View;
 use crate::window::Window;
-use detent_model::{
-    Arrival, Notice, arrival, assistant_model_page, is_accounts_setup, is_assistant_setup,
-    opening_page,
-};
+use detent_model::{Arrival, Notice, PageKind, arrival, assistant_model_page, opening_page};
 use dioxus::prelude::*;
 use ds::prelude::*;
 use ds_blitz::{TokioSpawner, use_window_handle};
@@ -18,7 +15,7 @@ use ds_settings::{AppName, ConfigRoot, Store, use_environment};
 use std::sync::Arc;
 
 /// The title of the window that asks the person to sign in, a step of the first run.
-const ACCOUNTS_TITLE: &str = "Accounts";
+const ACCOUNTS_TITLE: &str = crate::copy::common::ACCOUNTS;
 
 /// The Settings app. Reads its [`Env`] from the context the launcher provides.
 #[component]
@@ -50,8 +47,8 @@ pub fn App() -> Element {
                 match notice {
                     Notice::OpenPage(slug)
                         if catalogue.page(&slug).is_some()
-                            || is_assistant_setup(&slug)
-                            || is_accounts_setup(&slug) =>
+                            || PageKind::is_assistant_setup(&slug)
+                            || PageKind::is_accounts_setup(&slug) =>
                     {
                         query.set(String::new());
                         page.set(slug);
@@ -88,8 +85,8 @@ pub fn App() -> Element {
     );
     let now = appearance();
     let view = View::of(&catalogue, &query(), &page());
-    let assistant_setup = is_assistant_setup(&page());
-    let accounts_setup = is_accounts_setup(&page());
+    let assistant_setup = PageKind::is_assistant_setup(&page());
+    let accounts_setup = PageKind::is_accounts_setup(&page());
     let title = if assistant_setup {
         assistant_model_page().label().to_owned()
     } else if accounts_setup {
@@ -98,7 +95,7 @@ pub fn App() -> Element {
         view.current
             .as_ref()
             .and_then(|slug| catalogue.page(slug))
-            .map_or("Settings", |page| page.title.as_str())
+            .map_or(crate::copy::window::SETTINGS, |page| page.title.as_str())
             .to_owned()
     };
     rsx! {

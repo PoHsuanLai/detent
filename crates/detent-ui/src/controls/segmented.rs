@@ -1,5 +1,6 @@
 //! Three to five words: a segmented control.
 
+use detent_model::external::toml;
 use detent_model::word_label;
 use dioxus::prelude::*;
 use ds::components::controls::segmented::Tracking;

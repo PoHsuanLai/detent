@@ -8,23 +8,23 @@ use super::place_row::{PlaceEntry, PlaceHandlers, PlaceRow, PlaceView, Switch};
 use crate::accounts::{Listed, use_listed};
 use crate::computers::{Computers, use_computers};
 use crate::env::Env;
-use detent_files::{load_places, save_places};
+use detent_client::{load_places, save_places};
+use detent_model::external::{
+    CloudAccount, CloudAllowed, ComputerName, ModelChoice, OwnComputer, PlaceKind, PlaceName,
+    Toggle, kind_label,
+};
 use detent_model::{
     AccountsPane, ComputerRow, ComputersInput, ComputersState, Confirm, PlaceRef, PlacesEffect,
     PlacesInput, PlacesState, Ready, Standing, known_of, offers_for, places_step,
 };
 use dioxus::prelude::*;
-use docket_settings::{
-    CloudAccount, CloudAllowed, ModelChoice, OwnComputer, PlaceKind, PlaceName, Toggle, kind_label,
-};
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
-use porter_client::ComputerName;
 
 /// What a group says when it has no place.
-const NO_ACCOUNTS: &str = "Signed-in accounts that offer AI appear here. Each starts off.";
+const NO_ACCOUNTS: &str = crate::copy::assistants::SIGNED_IN_ACCOUNTS_THAT_OFFER_AI;
 
 fn toggle_of(check: Check) -> Toggle {
     match check {
@@ -43,7 +43,7 @@ fn check_of(toggle: Toggle) -> Check {
 /// What the line under a computer's name says: the models it lends now.
 fn models_line(computer: &ComputerRow) -> String {
     if computer.models.is_empty() {
-        "No models right now".to_owned()
+        crate::copy::assistants::NO_MODELS_RIGHT_NOW.to_owned()
     } else {
         computer.models.join(", ")
     }
@@ -60,8 +60,8 @@ fn own_view(
         name: own.name.0.clone(),
         detail: Some(models_line(computer)),
         standing: Some(match computer.standing {
-            Standing::Answering => "Ready",
-            Standing::Silent => "Not answering",
+            Standing::Answering => crate::copy::assistants::READY,
+            Standing::Silent => crate::copy::assistants::NOT_ANSWERING,
         }),
         switch: Switch::Is(check_of(own.allowed)),
         model: own.model.clone(),
@@ -134,7 +134,7 @@ pub(crate) fn Assistants() -> Element {
             for PlacesEffect::Write(places) in effects {
                 if let Err(why) = save_places(&env.config_home, &places) {
                     toasts.push(
-                        format!("Could not save where the assistant may run. {why}"),
+                        crate::copy::assistants::could_not_save_where_the_assistant(&why),
                         None,
                     );
                 }
@@ -160,7 +160,7 @@ pub(crate) fn Assistants() -> Element {
         })
         .collect();
     let this_view = PlaceView {
-        name: "This computer".to_owned(),
+        name: crate::copy::assistants::THIS_COMPUTER.to_owned(),
         detail: None,
         switch: Switch::Always,
         model: current.places.this_computer.clone(),
@@ -226,12 +226,12 @@ pub(crate) fn Assistants() -> Element {
                     style: AlertStyle::Warning,
                     buttons: vec![
                         AlertButton::new(
-                            "Turn On",
+                            crate::copy::common::TURN_ON,
                             AlertRole::Normal,
                             EventHandler::new(move |()| apply.call(PlacesInput::Answered(Confirm::Yes))),
                         ),
                         AlertButton::new(
-                            "Cancel",
+                            crate::copy::common::CANCEL,
                             AlertRole::Cancel,
                             EventHandler::new(move |()| apply.call(PlacesInput::Answered(Confirm::No))),
                         ),

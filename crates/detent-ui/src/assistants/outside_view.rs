@@ -8,24 +8,24 @@ use super::add_view::{AddSheet, RemoveAlert};
 use crate::accounts::{AccountLink, OpenButton};
 use crate::copy::{assistants, coding_agents};
 use crate::env::Env;
-use detent_files::{installed_agents, load_agents, remove_agent, save_agent_choice};
+use detent_client::{installed_agents, load_agents, remove_agent, save_agent_choice};
+use detent_model::external::ProviderGroup;
+use detent_model::external::{AgentChoice, AgentRow, Agents};
 use detent_model::{
     AccountsPane, AddForm, Assistant, Entry, FoundAgent, RemoveAnswer, RemoveQuestion,
     assistants_of, model_choice, model_menu, model_word, removal_of, unlisted_found, way_choice,
     way_menu,
 };
 use dioxus::prelude::*;
-use docket_settings::{AgentChoice, AgentRow, Agents};
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::components::menus::pop_up_button::PopUpButton;
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
-use porter_core::sheet::ProviderGroup;
 
 /// The group's title.
-const TITLE: &str = "Coding assistants";
+const TITLE: &str = crate::copy::assistants::CODING_ASSISTANTS;
 
 fn items_of(menu: &[Entry]) -> Vec<MenuItem<String>> {
     menu.iter()
@@ -65,7 +65,10 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
         let env = env.clone();
         move |(program, choice): (String, AgentChoice)| {
             if let Err(why) = save_agent_choice(&env.config_home, &program, &choice) {
-                toasts.push(format!("Could not save that choice. {why}"), None);
+                toasts.push(
+                    crate::copy::assistants::could_not_save_that_choice(&why),
+                    None,
+                );
             }
             now.set(shown(&env));
         }
@@ -109,10 +112,10 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
                     }
                 }
                 if can_add {
-                    FieldRow { label: TextLine::from("Add a coding assistant"),
+                    FieldRow { label: TextLine::from(crate::copy::assistants::ADD_A_CODING_ASSISTANT),
                         Button {
-                            common: Common { aria_label: Some("Add a coding assistant".to_owned()), ..Common::default() },
-                            label: "Add\u{2026}",
+                            common: Common { aria_label: Some(crate::copy::assistants::ADD_A_CODING_ASSISTANT.to_owned()), ..Common::default() },
+                            label: crate::copy::common::ADD_ELLIPSIS,
                             size: ControlSize::Small,
                             onclick: {
                                 let env = env.clone();
@@ -172,7 +175,7 @@ fn OutsideRow(
             if let Some(account) = account.clone() {
                 Label { text: crate::copy::accounts::status_label(&account.status), role: LabelRole::Secondary, style: LabelStyle::Footnote }
                 OpenButton {
-                    label: if account.reauth.is_some() { "Sign in" } else { "Manage" },
+                    label: if account.reauth.is_some() { crate::copy::assistants::SIGN_IN } else { crate::copy::common::MANAGE },
                     subject: account.label.clone(),
                     onpress: {
                         let key = account.key.clone();
@@ -185,8 +188,8 @@ fn OutsideRow(
             }
             if let Some(question) = removal {
                 Button {
-                    common: Common { aria_label: Some(format!("Remove {}", question.label)), ..Common::default() },
-                    label: "Remove",
+                    common: Common { aria_label: Some(crate::copy::assistants::remove(&question.label)), ..Common::default() },
+                    label: crate::copy::common::REMOVE,
                     size: ControlSize::Small,
                     onclick: move |_| remove.call(question.clone()),
                 }
@@ -221,7 +224,7 @@ fn WayRow(row: AgentRow, choose: EventHandler<(String, AgentChoice)>) -> Element
         return rsx! {};
     }
     rsx! {
-        FieldRow { label: TextLine::from("Sign in with"),
+        FieldRow { label: TextLine::from(crate::copy::assistants::SIGN_IN_WITH),
             PopUpButton::<String> {
                 items: items_of(&ways),
                 value: row.way.clone(),

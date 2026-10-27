@@ -13,10 +13,10 @@ use ds::root::common::Common;
 use ds_settings::schema::KeyPath;
 
 /// What the list is called.
-const TITLE: &str = "Choose from";
+const TITLE: &str = crate::copy::picker::CHOOSE_FROM;
 
 /// Said under a model the list holds and the module no longer offers.
-const GONE: &str = "No longer available. Turn off to remove.";
+const GONE: &str = crate::copy::picker::NO_LONGER_AVAILABLE_TURN_OFF_TO;
 
 /// The list, or nothing when the module offers no list for the slot.
 #[component]
@@ -67,7 +67,7 @@ fn PoolRow(
     };
     let help = match &entry.standing {
         PoolStanding::Gone => Some(GONE.to_owned()),
-        PoolStanding::Offered(gate) => copy::gate_note(gate).map(str::to_owned),
+        PoolStanding::Offered(gate) => copy::gate_note(gate),
     };
     let word = entry.word.clone();
     rsx! {

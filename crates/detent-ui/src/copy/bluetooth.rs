@@ -60,6 +60,48 @@ pub(crate) fn battery(level: BatteryLevel) -> String {
     format!("{}%", level.0.min(100))
 }
 
+/// The words "Forget Device".
+pub(crate) const FORGET_DEVICE: &str = "Forget Device";
+
+/// The words "Code".
+pub(crate) const CODE: &str = "Code";
+
+/// The words "Connect".
+pub(crate) const CONNECT: &str = "Connect";
+
+/// The words "Bluetooth".
+pub(crate) const BLUETOOTH: &str = "Bluetooth";
+
+/// The words "My Devices".
+pub(crate) const MY_DEVICES: &str = "My Devices";
+
+/// The words "Nearby Devices".
+pub(crate) const NEARBY_DEVICES: &str = "Nearby Devices";
+
+/// The words "No devices found yet".
+pub(crate) const NO_DEVICES_FOUND_YET: &str = "No devices found yet";
+
+/// The words "Not Paired".
+pub(crate) const NOT_PAIRED: &str = "Not Paired";
+
+/// The words "Disconnect".
+pub(crate) const DISCONNECT: &str = "Disconnect";
+
+/// The words "Disconnect {name}".
+pub(crate) fn disconnect(name: impl std::fmt::Display) -> String {
+    format!("Disconnect {name}")
+}
+
+/// The words "Connect {name}".
+pub(crate) fn connect(name: impl std::fmt::Display) -> String {
+    format!("Connect {name}")
+}
+
+/// The words "Forget {name}".
+pub(crate) fn forget(name: impl std::fmt::Display) -> String {
+    format!("Forget {name}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

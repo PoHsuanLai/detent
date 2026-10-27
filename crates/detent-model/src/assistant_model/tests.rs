@@ -1,6 +1,6 @@
 use super::{
     ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, SetupAction, SetupAvailability,
-    assistant_model_page, assistant_of, is_assistant_setup, setup_availability,
+    assistant_model_page, assistant_of, setup_availability,
 };
 use crate::accounts::AddEnd;
 use crate::catalogue::Catalogue;
@@ -274,10 +274,10 @@ fn the_page_has_its_own_slug_label_and_place_and_the_setup_step_is_never_listed(
     assert_eq!(PageSlug::of(&page).0, ASSISTANT_MODEL_SLUG);
     assert_eq!(page.label(), "Assistant Model");
 
-    assert!(is_assistant_setup(&PageSlug(
+    assert!(PageKind::is_assistant_setup(&PageSlug(
         ASSISTANT_SETUP_SLUG.to_owned()
     )));
-    assert!(!is_assistant_setup(&PageSlug(
+    assert!(!PageKind::is_assistant_setup(&PageSlug(
         ASSISTANT_MODEL_SLUG.to_owned()
     )));
     let catalogue = Catalogue::build(&[]);

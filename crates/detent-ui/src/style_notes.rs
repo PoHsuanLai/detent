@@ -2,9 +2,9 @@
 //! that lists it. The files are read when the Appearance page opens (the page is mounted afresh
 //! for each visit), off the window's thread; a file that cannot be read has no line.
 
-use crate::copy::{STYLE_NOTES_LEAD, STYLE_NOTES_TITLE, note_place, notes_summary};
+use crate::copy::style_notes::{STYLE_NOTES_LEAD, STYLE_NOTES_TITLE, note_place, notes_summary};
 use crate::env::Env;
-use detent_files::{ConfigHome, DataHome, published_classes, read_style_sheets};
+use detent_client::StyleInputs;
 use detent_model::{StyleFile, StyleNote, StyleNotes};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -14,18 +14,17 @@ use ds::components::overlays::sheet_width::SheetWidth;
 use ds::prelude::*;
 use ds::root::common::Common;
 use ds_lint::user_stylesheet_with;
-use std::path::PathBuf;
 
-/// The notes quire's lint has on every style file under `home`, in plain words, a class an
-/// installed app publishes (`apps`) not counting as an internal one. Reads files: call it off the
-/// window's thread.
-fn read_notes(home: &ConfigHome, apps: &[Vec<String>]) -> StyleNotes {
+/// The notes quire's lint has on every style file `read` found, in plain words, a class an
+/// installed app publishes not counting as an internal one.
+fn read_notes(read: StyleInputs) -> StyleNotes {
+    let StyleInputs { sheets, apps } = read;
     let kits = ds::kits();
-    let files = read_style_sheets(home)
+    let files = sheets
         .into_iter()
         .map(|sheet| StyleFile {
             owner: sheet.owner,
-            notes: user_stylesheet_with(&sheet.css, &kits, apps)
+            notes: user_stylesheet_with(&sheet.css, &kits, &apps)
                 .into_iter()
                 .map(|note| StyleNote {
                     line: note.line,
@@ -35,12 +34,6 @@ fn read_notes(home: &ConfigHome, apps: &[Vec<String>]) -> StyleNotes {
         })
         .collect();
     StyleNotes::new(files)
-}
-
-async fn notes_of(home: ConfigHome, data: DataHome, system: Vec<PathBuf>) -> StyleNotes {
-    tokio::task::spawn_blocking(move || read_notes(&home, &published_classes(&data, &system)))
-        .await
-        .unwrap_or_default()
 }
 
 /// "3 notes" with a button that opens the sheet of them, or nothing when the styles have none.
@@ -54,12 +47,15 @@ pub(crate) fn StyleNotesLine() -> Element {
         move || {
             let env = env.clone();
             async move {
-                let (home, data, system) = (
-                    env.config_home.clone(),
-                    env.data_home.clone(),
-                    env.system_data_dirs.clone(),
-                );
-                notes.set(notes_of(home, data, system).await);
+                let read = env
+                    .client
+                    .read_styles(
+                        env.config_home.clone(),
+                        env.data_home.clone(),
+                        env.system_data_dirs.clone(),
+                    )
+                    .await;
+                notes.set(read_notes(read));
             }
         }
     });
@@ -74,9 +70,9 @@ pub(crate) fn StyleNotesLine() -> Element {
             FieldGroup {
                 FieldRow { label: TextLine::from(summary.clone()),
                     Button {
-                        label: "Show",
+                        label: crate::copy::style_notes::SHOW,
                         common: Common {
-                            aria_label: Some(format!("Show {STYLE_NOTES_TITLE}")),
+                            aria_label: Some(crate::copy::style_notes::show(STYLE_NOTES_TITLE)),
                             ..Common::default()
                         },
                         onclick: move |_| opened.set(Shown::Visible),
@@ -101,7 +97,7 @@ pub(crate) fn StyleNotesLine() -> Element {
                         }
                         div { class: "advanced-sheet-buttons",
                             Button {
-                                label: "Done",
+                                label: crate::copy::common::DONE,
                                 answers: Answers::Return,
                                 onclick: move |_| close.call(()),
                             }

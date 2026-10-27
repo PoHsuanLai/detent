@@ -2,7 +2,8 @@
 
 use crate::env::Env;
 use crate::reported::Reported;
-use detent_files::{FileValues, FilesError, load, save};
+use detent_client::{FileValues, FilesError, load, save};
+use detent_model::external::toml;
 use detent_model::{ConfigFile, FileSpec, KeyEntry};
 use dioxus::prelude::{ReadableExt, Signal, WritableExt};
 use ds::stack::toast_hub::ToastHub;

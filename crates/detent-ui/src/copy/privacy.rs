@@ -38,6 +38,24 @@ pub(crate) fn program_name(look: &ProgramLook) -> String {
         .unwrap_or_else(|| UNNAMED_PROGRAM.to_owned())
 }
 
+/// The words "Privacy & Security".
+pub(crate) const PRIVACY_SECURITY: &str = "Privacy & Security";
+
+/// The words "Other programs ask the first time.".
+pub(crate) const OTHER_PROGRAMS_ASK_THE_FIRST_TIME: &str = "Other programs ask the first time.";
+
+/// The words "Nothing has asked yet".
+pub(crate) const NOTHING_HAS_ASKED_YET: &str = "Nothing has asked yet";
+
+/// The words "Programs that ask to see your screen or type for you appear here.".
+pub(crate) const PROGRAMS_THAT_ASK_TO_SEE_YOUR: &str =
+    "Programs that ask to see your screen or type for you appear here.";
+
+/// The words "In {place}".
+pub(crate) fn in_folder(place: impl std::fmt::Display) -> String {
+    format!("In {place}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

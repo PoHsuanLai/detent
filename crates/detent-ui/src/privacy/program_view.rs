@@ -1,7 +1,7 @@
 //! The list: a card for each program with its icon and name, and a row for each power with the
 //! standing it is at. Only the person's own answers can be changed; an administrator's says so.
 
-use crate::copy::{SET_BY_ADMINISTRATOR, power_label, program_name, standing_label};
+use crate::copy::privacy::{SET_BY_ADMINISTRATOR, power_label, program_name, standing_label};
 use crate::key_row::row_id;
 use detent_model::{
     CellKind, PowerCell, PowerStanding, PrivacyInput, PrivacyProgram, PrivacyReady, ProgramBook,
@@ -18,7 +18,7 @@ use ds::style::icon::url::IconUrl;
 use ds::style::tokens::control_size::ControlSize;
 
 /// The line under the list.
-const NOT_LISTED: &str = "Other programs ask the first time.";
+const NOT_LISTED: &str = crate::copy::privacy::OTHER_PROGRAMS_ASK_THE_FIRST_TIME;
 
 /// The programs, or the line that says none has asked.
 #[component]
@@ -37,8 +37,8 @@ pub(super) fn Listed(
         div { class: "privacy", "data-privacy": "list",
             if pane.programs.is_empty() {
                 EmptyState {
-                    title: "Nothing has asked yet",
-                    description: "Programs that ask to see your screen or type for you appear here.",
+                    title: crate::copy::privacy::NOTHING_HAS_ASKED_YET,
+                    description: crate::copy::privacy::PROGRAMS_THAT_ASK_TO_SEE_YOUR,
                 }
             } else {
                 for program in pane.programs.iter().cloned() {
@@ -74,7 +74,7 @@ fn ProgramCard(
                     Label { text: TextLine::from(program_name(&look)), role: LabelRole::Primary, style: LabelStyle::Headline }
                     if let Some(place) = look.place.clone() {
                         Label {
-                            text: TextLine::from(format!("In {place}")),
+                            text: TextLine::from(crate::copy::privacy::in_folder(&place)),
                             role: LabelRole::Tertiary,
                             style: LabelStyle::Footnote,
                         }

@@ -46,7 +46,7 @@ pub(crate) fn use_events<S: Clone + 'static>(live: &Live<S>) -> Signal<S> {
                     match heard {
                         Heard::State(next) => state.set(next),
                         Heard::Notice(notice) => {
-                            if let Some(words) = copy::notice(&notice) {
+                            if let Some(words) = copy::notice::notice(&notice) {
                                 toasts.push(words, None);
                             }
                         }

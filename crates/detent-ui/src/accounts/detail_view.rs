@@ -66,7 +66,7 @@ pub(super) fn AccountDetail(
             Header { account: account.clone(), marks, book: book.clone() }
             FieldGroup {
                 FieldRow {
-                    label: TextLine::from("Status"),
+                    label: TextLine::from(crate::copy::account_views::STATUS),
                     Label { text: status_label(&account.status), role: LabelRole::Secondary }
                 }
                 if let (None, Some(expiry)) = (&attention, account.expires.clone()) {
@@ -110,7 +110,7 @@ pub(super) fn AccountDetail(
                 }
             }
             if !account.services.is_empty() {
-                FieldGroup { title: Some("Services".to_owned()),
+                FieldGroup { title: Some(crate::copy::account_views::SERVICES.to_owned()),
                     for service in account.services.iter().cloned() {
                         ServiceRow {
                             key: "{service.path.0}",
@@ -124,23 +124,23 @@ pub(super) fn AccountDetail(
                         }
                     }
                 }
-                Note { text: "Whether apps may use each service of the account." }
+                Note { text: crate::copy::account_views::WHETHER_APPS_MAY_USE_EACH_SERVICE }
             }
             if let Some(bar) = account.spend.bar() {
-                FieldGroup { title: Some("Spending".to_owned()),
+                FieldGroup { title: Some(crate::copy::account_views::SPENDING.to_owned()),
                     FieldRow {
-                        label: TextLine::from("This month"),
+                        label: TextLine::from(crate::copy::account_views::THIS_MONTH),
                         help: Some(TextLine::from(spend_line(bar.line))),
                         ProgressIndicator {
                             style: ProgressStyle::Bar,
                             progress: Progress::Known(Fraction(bar.permille)),
-                            common: Common { aria_label: Some("Spent this month".to_owned()), ..Common::default() },
+                            common: Common { aria_label: Some(crate::copy::account_views::SPENT_THIS_MONTH.to_owned()), ..Common::default() },
                         }
                     }
                 }
             }
             if !account.sync.is_empty() || account.show_in_files.is_some() || holds.any_of(&account) {
-                FieldGroup { title: Some("Sync".to_owned()),
+                FieldGroup { title: Some(crate::copy::account_views::SYNC.to_owned()),
                     if let Some(files) = account.show_in_files.clone() {
                         ShowInFilesRow { module: account.module, files, availability, on }
                     }
@@ -168,16 +168,16 @@ pub(super) fn AccountDetail(
                 }
             }
             if !account.permissions.is_empty() {
-                SectionHeader { title: "Apps with access".to_owned() }
+                SectionHeader { title: crate::copy::account_views::APPS_WITH_ACCESS.to_owned() }
                 AppsWithAccess {
                     account: account.clone(),
                     availability,
                     onrevoke: move |row| on.ran.call(row),
                 }
-                Note { text: "Revoking asks the app again the next time it needs the account." }
+                Note { text: crate::copy::account_views::REVOKING_ASKS_THE_APP_AGAIN_THE }
             }
             if !account.used_by.is_empty() {
-                FieldGroup { title: Some("Apps using this identity".to_owned()),
+                FieldGroup { title: Some(crate::copy::account_views::APPS_USING_THIS_IDENTITY.to_owned()),
                     for (at, app) in account.used_by.iter().cloned().enumerate() {
                         FieldRow { key: "used-{at}", label: TextLine::from("App"),
                             Label { text: app, role: LabelRole::Secondary }
@@ -331,12 +331,12 @@ fn SyncNowRow(
     };
     rsx! {
         FieldRow {
-            label: TextLine::from("Sync now"),
+            label: TextLine::from(crate::copy::account_views::SYNC_NOW),
             help: Some(TextLine::from(help)),
             help_shown: shown,
             availability,
             ActionButton {
-                label: "Sync now".to_owned(),
+                label: crate::copy::account_views::SYNC_NOW.to_owned(),
                 subject: sync.label.clone(),
                 weight: ActionWeight::Plain,
                 availability,

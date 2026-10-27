@@ -1,8 +1,28 @@
 //! The model picker's words: why a model answered, what a choice still needs, what a row says
 //! while a pick applies, and the line under a word that cannot be picked as it is.
 
-use detent_model::{AgentReason, AgentWord, ChoiceGap, Gate, Loading, PoolHeading, Reason};
-use porter_infer::{Declined, DeclinedBecause, Why};
+use detent_model::external::{Declined, DeclinedBecause, Why};
+use detent_model::{
+    AgentReason, AgentWord, ChoiceGap, Gate, Loading, PickLabel, PoolHeading, Reason,
+};
+
+/// What the menu calls the choice that clears a row.
+pub(crate) const OFF: &str = "Off";
+
+/// What the menu calls the models this computer runs.
+pub(crate) const LOCAL: &str = "Local";
+
+/// What a menu choice is called.
+pub(crate) fn pick_label(label: &PickLabel) -> String {
+    match label {
+        PickLabel::Off => OFF.to_owned(),
+        PickLabel::Local => LOCAL.to_owned(),
+        PickLabel::Named(name) => name.clone(),
+    }
+}
+
+/// The header over the coding agents in a menu.
+pub(crate) const CODING_AGENTS: &str = "Coding Agents";
 
 /// One sentence for the footer under the picker.
 pub(crate) fn reason(reason: &Reason) -> String {
@@ -72,12 +92,20 @@ pub(crate) fn loading(loading: &Loading) -> String {
 }
 
 /// The line shown under a word that cannot be picked as it is; none for one that can.
-pub(crate) fn gate_note(gate: &Gate) -> Option<&str> {
+pub(crate) fn gate_note(gate: &Gate) -> Option<String> {
     match gate {
         Gate::Open => None,
-        Gate::NeedsAccount => Some("Add an account to use"),
-        Gate::Blocked(reason) => Some(reason),
-        Gate::TurnOn => Some("Turned off"),
+        Gate::NeedsAccount => Some("Add an account to use".to_owned()),
+        Gate::Blocked(reason) => Some(blocked_line(reason)),
+        Gate::TurnOn => Some("Turned off".to_owned()),
+    }
+}
+
+/// Why a word is blocked: the module's own sentence, or the words for a coding agent's reason.
+pub(crate) fn blocked_line(reason: &str) -> String {
+    match AgentWord::of_key(reason) {
+        Some(word) => agent_word(&word),
+        None => reason.to_owned(),
     }
 }
 
@@ -86,6 +114,7 @@ pub(crate) fn pool_heading(heading: &PoolHeading) -> Option<&str> {
     match heading {
         PoolHeading::Unnamed => None,
         PoolHeading::Named(name) => Some(name),
+        PoolHeading::Agents => Some(CODING_AGENTS),
         PoolHeading::NoLongerOffered => Some("No longer available"),
     }
 }
@@ -96,9 +125,9 @@ pub(crate) fn pool_refused() -> &'static str {
 }
 
 /// The words `with_agents` lays over the rows of the text slot.
-pub(crate) fn agent_word(word: AgentWord<'_>) -> String {
+pub(crate) fn agent_word(word: &AgentWord) -> String {
     match word {
-        AgentWord::Group => "Coding Agents".to_owned(),
+        AgentWord::Group => CODING_AGENTS.to_owned(),
         AgentWord::ChooseDirectly => "Choose it directly".to_owned(),
         AgentWord::Reason(reason) => match reason {
             AgentReason::NotInstalled => "Not installed".to_owned(),
@@ -111,11 +140,43 @@ pub(crate) fn agent_word(word: AgentWord<'_>) -> String {
     }
 }
 
+/// The words "Runs with".
+pub(crate) const RUNS_WITH: &str = "Runs with";
+
+/// The words "Model choice".
+pub(crate) const MODEL_CHOICE: &str = "Model choice";
+
+/// The words "Models".
+pub(crate) const MODELS: &str = "Models";
+
+/// The words "Choose from".
+pub(crate) const CHOOSE_FROM: &str = "Choose from";
+
+/// The words "No longer available. Turn off to remove.".
+pub(crate) const NO_LONGER_AVAILABLE_TURN_OFF_TO: &str = "No longer available. Turn off to remove.";
+
+/// The words "Models on this computer".
+pub(crate) const MODELS_ON_THIS_COMPUTER: &str = "Models on this computer";
+
+/// The words "Nothing is running here yet. Ollama, llama.cpp and LM Studio appear here when they are.".
+pub(crate) const NOTHING_IS_RUNNING_HERE_YET_OLLAMA: &str = "Nothing is running here yet. Ollama, llama.cpp and LM Studio appear \
+    here when they are.";
+
+/// The words "Coding agents are turned off. Turn them on to let the assistant hand y".
+pub(crate) fn coding_agents_are_turned_off_turn(name: impl std::fmt::Display) -> String {
+    format!(
+        "Coding agents are turned off. Turn them on to let the assistant hand your requests to \
+         {name}. The desktop still checks what {name} does and asks you when it matters."
+    )
+}
+
+/// The words "Turn on coding agents?".
+pub(crate) const TURN_ON_CODING_AGENTS: &str = "Turn on coding agents?";
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use porter_core::{AccountId, ModelId};
-    use porter_infer::{InferRefusal, ModelRef};
+    use detent_model::external::{AccountId, InferRefusal, ModelId, ModelRef};
 
     fn model(name: &str) -> ModelRef {
         ModelRef {
@@ -238,12 +299,16 @@ mod tests {
     fn a_word_that_cannot_be_picked_as_it_is_has_a_line() {
         let cases = [
             (Gate::Open, None),
-            (Gate::NeedsAccount, Some("Add an account to use")),
+            (Gate::NeedsAccount, Some("Add an account to use".to_owned())),
             (
                 Gate::Blocked("Not installed".to_owned()),
-                Some("Not installed"),
+                Some("Not installed".to_owned()),
             ),
-            (Gate::TurnOn, Some("Turned off")),
+            (
+                Gate::Blocked("agents:not-set-up".to_owned()),
+                Some("Not set up yet".to_owned()),
+            ),
+            (Gate::TurnOn, Some("Turned off".to_owned())),
         ];
         for (gate, want) in cases {
             assert_eq!(gate_note(&gate), want, "{gate:?}");
@@ -255,6 +320,7 @@ mod tests {
         let named = PoolHeading::Named("Anthropic".to_owned());
         assert_eq!(pool_heading(&PoolHeading::Unnamed), None);
         assert_eq!(pool_heading(&named), Some("Anthropic"));
+        assert_eq!(pool_heading(&PoolHeading::Agents), Some("Coding Agents"));
         assert_eq!(
             pool_heading(&PoolHeading::NoLongerOffered),
             Some("No longer available")
@@ -267,26 +333,26 @@ mod tests {
             (AgentWord::Group, "Coding Agents".to_owned()),
             (AgentWord::ChooseDirectly, "Choose it directly".to_owned()),
             (
-                AgentWord::Reason(&AgentReason::NotInstalled),
+                AgentWord::Reason(AgentReason::NotInstalled),
                 "Not installed".to_owned(),
             ),
             (
-                AgentWord::Reason(&AgentReason::NeedsSignIn {
+                AgentWord::Reason(AgentReason::NeedsSignIn {
                     label: "Codex".to_owned(),
                 }),
                 "Sign in to Codex first".to_owned(),
             ),
             (
-                AgentWord::Reason(&AgentReason::NotSetUp),
+                AgentWord::Reason(AgentReason::NotSetUp),
                 "Not set up yet".to_owned(),
             ),
             (
-                AgentWord::Reason(&AgentReason::TurnedOff),
+                AgentWord::Reason(AgentReason::TurnedOff),
                 "Turned off".to_owned(),
             ),
         ];
         for (word, want) in cases {
-            assert_eq!(agent_word(word), want);
+            assert_eq!(agent_word(&word), want);
         }
     }
 }

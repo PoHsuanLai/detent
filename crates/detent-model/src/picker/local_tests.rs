@@ -16,7 +16,15 @@ fn the_menu_lists_local_after_automatic_and_none_of_the_models_this_computer_run
         .into_iter()
         .map(|line| match line {
             MenuLine::Header(name) => format!("# {name}"),
-            MenuLine::Pick { word, label, .. } => format!("{word} = {label}"),
+            MenuLine::Agents => "# agents".to_owned(),
+            MenuLine::Pick { word, label, .. } => format!(
+                "{word} = {}",
+                match label {
+                    PickLabel::Off => "Off".to_owned(),
+                    PickLabel::Local => "Local".to_owned(),
+                    PickLabel::Named(name) => name,
+                }
+            ),
         })
         .collect();
     assert_eq!(
@@ -39,7 +47,7 @@ fn a_menu_that_withholds_clearing_has_no_off() {
         .into_iter()
         .filter_map(|line| match line {
             MenuLine::Pick { word, .. } => Some(word),
-            MenuLine::Header(_) => None,
+            MenuLine::Header(_) | MenuLine::Agents => None,
         })
         .collect();
     assert_eq!(words.first().map(String::as_str), Some("auto"));

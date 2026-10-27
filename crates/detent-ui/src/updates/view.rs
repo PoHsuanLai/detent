@@ -1,7 +1,8 @@
 //! The Software Update page: the version row with its buttons, the progress bar, when the last
 //! check was, the daily check, and the release notes in their sheet.
 
-use crate::copy::{self, Subject};
+use crate::copy;
+use crate::copy::absence::Subject;
 use crate::live::use_live;
 use detent_client::Client;
 use detent_model::{
@@ -27,8 +28,8 @@ pub(crate) fn SoftwareUpdatePane() -> Element {
             div { class: "updates", "data-updates": "unavailable",
                 FieldGroup {
                     FieldRow {
-                        label: TextLine::from("Software Update"),
-                        help: Some(TextLine::from(copy::absence(Subject::Updates, absence))),
+                        label: TextLine::from(crate::copy::updates::SOFTWARE_UPDATE),
+                        help: Some(TextLine::from(copy::absence::absence(Subject::Updates, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
                     }
@@ -70,7 +71,7 @@ fn Listed(page: UpdatesPage, press: EventHandler<UpdatesInput>) -> Element {
             }
             FieldGroup {
                 FieldRow {
-                    label: TextLine::from("Automatic updates"),
+                    label: TextLine::from(crate::copy::updates::AUTOMATIC_UPDATES),
                     help: Some(TextLine::from(copy::updates::automatic())),
                     Label { text: "Daily", role: LabelRole::Secondary }
                 }
@@ -111,7 +112,7 @@ fn Meter(meter: UpdateMeter) -> Element {
                 ProgressIndicator {
                     style: ProgressStyle::Bar,
                     progress: Progress::Known(Fraction(u16::try_from(share.0).unwrap_or(1000))),
-                    common: Common { aria_label: Some("Download progress".to_owned()), ..Common::default() },
+                    common: Common { aria_label: Some(crate::copy::common::DOWNLOAD_PROGRESS.to_owned()), ..Common::default() },
                 }
                 if let Some(done) = done {
                     Label { text: copy::updates::downloaded(done), role: LabelRole::Secondary, style: LabelStyle::Footnote }
@@ -131,7 +132,7 @@ fn PendingBar() -> Element {
         ProgressIndicator {
             style: ProgressStyle::Bar,
             progress: Progress::Unknown(Operation::Running(token)),
-            common: Common { aria_label: Some("Installing".to_owned()), ..Common::default() },
+            common: Common { aria_label: Some(crate::copy::updates::INSTALLING.to_owned()), ..Common::default() },
         }
     }
 }
@@ -160,7 +161,7 @@ fn NotesView(notes: ReleaseNotes, press: EventHandler<UpdatesInput>) -> Element 
                 }
                 div { class: "updates-sheet-buttons",
                     Button {
-                        label: "Done",
+                        label: crate::copy::common::DONE,
                         answers: Answers::Return,
                         onclick: move |_| close.call(()),
                     }

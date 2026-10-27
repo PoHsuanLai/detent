@@ -105,8 +105,8 @@ pub enum ComputersInput {
     Answer(NodeId, GuestAnswer),
     /// The person asked to forget a guest.
     Forget(NodeId),
-    /// A change ended: done, or the sentence that says why not.
-    Changed(Result<(), String>),
+    /// A change ended: done, or why not.
+    Changed(Result<(), ServerRefusal>),
     /// The person pressed Add a server.
     OpenServer,
     /// The models a server may run were read.
@@ -117,8 +117,8 @@ pub enum ComputersInput {
     AddServer,
     /// The person pressed Cancel on the sheet.
     CloseServer,
-    /// Adding the server ended: done, or the service's sentence.
-    ServerAdded(Result<(), String>),
+    /// Adding the server ended: done, or why not.
+    ServerAdded(Result<(), ServerRefusal>),
 }
 
 /// What the caller must do.
@@ -140,8 +140,10 @@ pub enum ComputersEffect {
     LoadServerModels,
     /// Add the server.
     AddServer(ServerDraft),
-    /// Tell the person something.
+    /// Tell the person something, in the service's words.
     Tell(String),
+    /// Tell the person why a change was not made.
+    Refused(ServerRefusal),
 }
 
 /// The state after `input`, and what to do about it.
@@ -203,8 +205,8 @@ fn ready_step(
             }
             effects.push(ComputersEffect::Reload);
         }
-        ComputersInput::Changed(Err(sentence)) => {
-            effects.push(ComputersEffect::Tell(sentence));
+        ComputersInput::Changed(Err(refusal)) => {
+            effects.push(ComputersEffect::Refused(refusal));
             effects.push(ComputersEffect::Reload);
         }
         ComputersInput::Found(_) => {}
@@ -250,8 +252,8 @@ fn server_step(
         }
         (ComputersInput::CloseServer, _) => {}
         (ComputersInput::ServerAdded(Ok(())), Some(_)) => effects.push(ComputersEffect::Reload),
-        (ComputersInput::ServerAdded(Err(sentence)), Some(sheet)) => {
-            ready.server = Some(sheet.refused(sentence));
+        (ComputersInput::ServerAdded(Err(refusal)), Some(sheet)) => {
+            ready.server = Some(sheet.refused(refusal));
         }
         (_, sheet) => ready.server = sheet,
     }

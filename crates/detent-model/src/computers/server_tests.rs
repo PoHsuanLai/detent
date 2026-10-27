@@ -220,7 +220,10 @@ fn adding() -> State {
 
 #[test]
 fn a_refusal_stays_on_the_sheet_in_the_services_words() {
-    let (state, effects) = computers_step(adding(), Input::ServerAdded(Err("Taken.".to_owned())));
+    let (state, effects) = computers_step(
+        adding(),
+        Input::ServerAdded(Err(ServerRefusal::Service("Taken.".to_owned()))),
+    );
     assert!(effects.is_empty());
     let sheet = sheet_of(&state).expect("open");
     assert_eq!(
@@ -242,7 +245,10 @@ fn success_closes_the_sheet_and_reads_the_list() {
 fn cancel_closes_an_idle_sheet_and_a_late_answer_is_dropped() {
     let (closed, _) = computers_step(opened(), Input::CloseServer);
     assert_eq!(sheet_of(&closed), None);
-    let (late, effects) = computers_step(closed, Input::ServerAdded(Err("x".to_owned())));
+    let (late, effects) = computers_step(
+        closed,
+        Input::ServerAdded(Err(ServerRefusal::Service("x".to_owned()))),
+    );
     assert_eq!(sheet_of(&late), None);
     assert!(effects.is_empty());
 }

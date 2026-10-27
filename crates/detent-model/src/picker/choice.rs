@@ -5,9 +5,6 @@ use super::model::{AUTO, ModelRow};
 use super::pool::AutoPool;
 use crate::coding_agents::TURNED_OFF;
 
-/// What the menu calls the empty word, whatever the module calls it.
-pub(super) const NONE_LABEL: &str = "Off";
-
 /// The reason the module gives for a hosted model that no account reaches (inferd's own words,
 /// matched and never shown from here). Picking such a model offers the way to add an account
 /// instead of setting it.

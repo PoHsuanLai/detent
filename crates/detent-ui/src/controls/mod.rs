@@ -11,6 +11,7 @@ mod swatches;
 mod text;
 mod toggle;
 
+use detent_model::external::toml;
 use detent_model::{Control as Kind, KeyEntry};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;

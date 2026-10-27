@@ -26,11 +26,10 @@ use ds::style::tokens::control_size::ControlSize;
 use ds_blitz::{AppHandle, use_app_handle};
 
 /// Said once, at the top.
-const HEADING: &str = "Sign in to Your Accounts";
+const HEADING: &str = crate::copy::account_views::SIGN_IN_TO_YOUR_ACCOUNTS;
 
 /// What the step says while nothing is signed in.
-const NOTHING_YET: &str =
-    "Nothing is signed in yet. Add an account and the apps you allow can use it.";
+const NOTHING_YET: &str = crate::copy::account_views::NOTHING_IS_SIGNED_IN_YET_ADD;
 
 /// The line under an account that needs a new sign-in.
 fn standing_line(row: &SignedIn) -> String {
@@ -112,15 +111,15 @@ pub(crate) fn AccountsSetup() -> Element {
                     Label { text: NOTHING_YET, role: LabelRole::Secondary }
                 } else {
                     List::<String> {
-                        label: "Signed in",
+                        label: crate::copy::account_views::SIGNED_IN,
                         items,
                         style: ListStyle::Grouped,
                     }
                 }
             }
             Button {
-                common: Common { aria_label: Some("Add Account\u{2026}".to_owned()), ..Common::default() },
-                label: "Add Account\u{2026}",
+                common: Common { aria_label: Some(crate::copy::common::ADD_ACCOUNT_ELLIPSIS.to_owned()), ..Common::default() },
+                label: crate::copy::common::ADD_ACCOUNT_ELLIPSIS,
                 size: ControlSize::Large,
                 availability: add,
                 onclick: move |_| {
@@ -137,7 +136,7 @@ pub(crate) fn AccountsSetup() -> Element {
             }
             div { class: "accounts-setup-buttons",
                 Button {
-                    label: "Skip",
+                    label: crate::copy::common::SKIP,
                     answers: Answers::Escape,
                     size: ControlSize::Large,
                     availability: skip,
@@ -145,7 +144,7 @@ pub(crate) fn AccountsSetup() -> Element {
                     onclick: move |_| leave(skip_app.as_ref()),
                 }
                 Button {
-                    label: "Continue",
+                    label: crate::copy::common::CONTINUE,
                     answers: Answers::Return,
                     size: ControlSize::Large,
                     availability: next,

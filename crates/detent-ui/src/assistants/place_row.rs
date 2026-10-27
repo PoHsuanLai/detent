@@ -3,8 +3,8 @@
 
 use crate::key_row::row_id;
 use detent_model::ModelOffer;
+use detent_model::external::ModelChoice;
 use dioxus::prelude::*;
-use docket_settings::ModelChoice;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::disclosure::Disclosure;
 use ds::components::fields::field_help::HelpShown;
@@ -68,7 +68,10 @@ pub(crate) struct PlaceEntry {
 }
 
 fn items_of(view: &PlaceView) -> Vec<MenuItem<String>> {
-    let mut items = vec![MenuItem::new(AUTOMATIC.to_owned(), "Automatic")];
+    let mut items = vec![MenuItem::new(
+        AUTOMATIC.to_owned(),
+        crate::copy::assistants::AUTOMATIC,
+    )];
     items.extend(
         view.offers
             .iter()
@@ -121,23 +124,23 @@ pub(crate) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
             }
             if let Some(removed) = on.removed {
                 Button {
-                    common: Common { aria_label: Some(format!("Remove {}", view.name)), ..Common::default() },
-                    label: "Remove",
+                    common: Common { aria_label: Some(crate::copy::assistants::remove(&view.name)), ..Common::default() },
+                    label: crate::copy::common::REMOVE,
                     size: ControlSize::Small,
                     onclick: move |_| removed.call(()),
                 }
             }
         }
         Disclosure {
-            label: Some("Advanced".to_owned()),
+            label: Some(crate::copy::assistants::ADVANCED.to_owned()),
             common: Common {
-                aria_label: Some(format!("Advanced, {}", view.name)),
+                aria_label: Some(crate::copy::assistants::advanced(&view.name)),
                 ..Common::default()
             },
             shown: shown(),
             on_toggle: move |next| shown.set(next),
             FieldGroup {
-                FieldRow { label: TextLine::from("Model"),
+                FieldRow { label: TextLine::from(crate::copy::common::MODEL),
                     PopUpButton::<String> {
                         items,
                         value: Some(current),
@@ -149,12 +152,12 @@ pub(crate) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
                 }
                 if let Some(value) = ask {
                     FieldRow {
-                        label: TextLine::from("Ask me each time"),
-                        help: Some(TextLine::from("The assistant asks before it uses this account.")),
+                        label: TextLine::from(crate::copy::assistants::ASK_ME_EACH_TIME),
+                        help: Some(TextLine::from(crate::copy::assistants::THE_ASSISTANT_ASKS_BEFORE_IT_USES)),
                         help_shown: HelpShown::OnRequest,
                         common: Common { id: Some(row_id("ask", &view.name)), ..Common::default() },
                         Toggle {
-                            label: "Ask me each time",
+                            label: crate::copy::assistants::ASK_ME_EACH_TIME,
                             value,
                             availability: ask_availability,
                             onchange: move |next| on.asked.call(next),

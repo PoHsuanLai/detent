@@ -3,8 +3,9 @@
 //! so a test starts it on scratch directories.
 
 use crate::marks::ProviderMarks;
-use detent_client::Client;
-use detent_files::{ConfigHome, DataHome, ExtensionHome, FirstRunMark, KeymapFiles, StateHome};
+use detent_client::{
+    Client, ConfigHome, DataHome, ExtensionHome, FirstRunMark, KeymapFiles, StateHome,
+};
 use detent_model::{Catalogue, Inbox, OriginRule, PageSlug, Warning, discover};
 use ds_helpers::Environment;
 use ds_settings::SystemPrefsSource;

@@ -114,6 +114,58 @@ pub(crate) fn details_rows(network: &WifiNetwork) -> Vec<(&'static str, String)>
     ]
 }
 
+/// The words "Network Name".
+pub(crate) const NETWORK_NAME: &str = "Network Name";
+
+/// The words "Username".
+pub(crate) const USERNAME: &str = "Username";
+
+/// The words "Password".
+pub(crate) const PASSWORD: &str = "Password";
+
+/// The words "Join".
+pub(crate) const JOIN: &str = "Join";
+
+/// The words "Wi-Fi".
+pub(crate) const WI_FI: &str = "Wi-Fi";
+
+/// The words "Known Networks".
+pub(crate) const KNOWN_NETWORKS: &str = "Known Networks";
+
+/// The words "Other Networks".
+pub(crate) const OTHER_NETWORKS: &str = "Other Networks";
+
+/// The words "Connected".
+pub(crate) const CONNECTED: &str = "Connected";
+
+/// The words "Details…".
+pub(crate) const DETAILS_ELLIPSIS: &str = "Details\u{2026}";
+
+/// The words "Other…".
+pub(crate) const OTHER_ELLIPSIS: &str = "Other\u{2026}";
+
+/// The words "Join a network by its name".
+pub(crate) const JOIN_A_NETWORK_BY_ITS_NAME: &str = "Join a network by its name";
+
+/// The words "Connect…".
+pub(crate) const CONNECT_ELLIPSIS: &str = "Connect\u{2026}";
+
+/// The words "Join another network".
+pub(crate) const JOIN_ANOTHER_NETWORK: &str = "Join another network";
+
+/// The words "Connecting…".
+pub(crate) const CONNECTING_ELLIPSIS: &str = "Connecting\u{2026}";
+
+/// The words "Join {}".
+pub(crate) fn join(a: impl std::fmt::Display) -> String {
+    format!("Join {a}")
+}
+
+/// The words "Forget {}".
+pub(crate) fn forget(a: impl std::fmt::Display) -> String {
+    format!("Forget {a}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

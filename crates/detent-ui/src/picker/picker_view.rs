@@ -4,7 +4,8 @@
 use super::drive::{Picker, use_picker};
 use super::tier_row::TierRow;
 use super::turn_on::TurnOnAlert;
-use crate::copy::{self, Subject, picker};
+use crate::copy::absence::Subject;
+use crate::copy::{self, picker};
 use crate::engine_install::EngineSheetView;
 use crate::env::Env;
 use crate::files::{Files, value_of};
@@ -84,10 +85,10 @@ pub fn ModelPicker(reasons: Shown) -> Element {
 pub(crate) fn Unavailable(absence: Absence) -> Element {
     rsx! {
         div { class: "picker", "data-picker": "unavailable",
-            FieldGroup { title: Some("Model choice".to_owned()),
+            FieldGroup { title: Some(crate::copy::picker::MODEL_CHOICE.to_owned()),
                 FieldRow {
-                    label: TextLine::from("Models"),
-                    help: Some(TextLine::from(copy::absence(Subject::Models, absence))),
+                    label: TextLine::from(crate::copy::picker::MODELS),
+                    help: Some(TextLine::from(copy::absence::absence(Subject::Models, absence))),
                     availability: Availability::Disabled,
                     Label { text: "Unavailable", role: LabelRole::Secondary }
                 }

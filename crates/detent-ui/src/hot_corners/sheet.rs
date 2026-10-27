@@ -79,7 +79,7 @@ fn use_sheet_state() -> SheetState {
 }
 
 /// What the footnote under the screen says.
-const HINT: &str = "Move the pointer into a corner of the screen to start the action. Hold keys to start a different one.";
+const HINT: &str = crate::copy::hot_corners::MOVE_THE_POINTER_INTO_A_CORNER;
 
 /// The corner keys as `(corner, key)`, in the order the corners sit on the screen.
 fn corners_of(entries: &[KeyEntry]) -> Vec<(Corner, Option<KeyEntry>)> {
@@ -146,8 +146,8 @@ pub(super) fn HotCornersSheet(
             Label { text: HINT, role: LabelRole::Secondary, style: LabelStyle::Footnote }
             div { class: "hot-corners-buttons",
                 Button {
-                    label: "Done",
-                    common: Common { aria_label: Some("Done".to_owned()), ..Common::default() },
+                    label: crate::copy::common::DONE,
+                    common: Common { aria_label: Some(crate::copy::common::DONE.to_owned()), ..Common::default() },
                     answers: Answers::Return,
                     onclick: move |_| onclose.call(()),
                 }
@@ -169,7 +169,7 @@ pub(super) fn HotCornersSheet(
     let on_return = matches!(*state.step.read(), Step::Corners).then_some(onclose);
     rsx! {
         Sheet {
-            label: "Hot Corners",
+            label: crate::copy::hot_corners::HOT_CORNERS,
             width: SheetWidth::Regular,
             onclose,
             on_return,

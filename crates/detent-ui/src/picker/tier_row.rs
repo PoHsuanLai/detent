@@ -20,7 +20,7 @@ use ds::root::pass_through::ExtraClass;
 use ds::style::tokens::control_size::ControlSize;
 
 /// What the button says while nothing is chosen.
-pub(super) const NOTHING_CHOSEN: &str = "Choose\u{2026}";
+pub(super) const NOTHING_CHOSEN: &str = crate::copy::common::CHOOSE_ELLIPSIS;
 
 /// One tier's menu; while a set applies the row says "Loading <model>" and takes no input, and
 /// while the add-account sheet is open no row does. A row that has chosen nothing shows no
@@ -90,7 +90,10 @@ fn menu_items(row: &ModelRow, clearing: Clearing) -> Vec<MenuItem<String>> {
         .into_iter()
         .flat_map(|line| match line {
             MenuLine::Header(name) => vec![MenuItem::Header(name)],
-            MenuLine::Pick { word, label, gate } => pick_items(&word, &label, &gate),
+            MenuLine::Agents => vec![MenuItem::Header(copy::CODING_AGENTS.to_owned())],
+            MenuLine::Pick { word, label, gate } => {
+                pick_items(&word, &copy::pick_label(&label), &gate)
+            }
         })
         .collect()
 }
@@ -106,9 +109,12 @@ pub(super) fn pick_items(word: &str, label: &str, gate: &Gate) -> Vec<MenuItem<S
     };
     match gate {
         Gate::Open => vec![item],
-        Gate::NeedsAccount => vec![item, info(copy::gate_note(gate).unwrap_or_default())],
-        Gate::Blocked(reason) => vec![item.with_availability(Availability::Disabled), info(reason)],
+        Gate::NeedsAccount => vec![item, info(&copy::gate_note(gate).unwrap_or_default())],
+        Gate::Blocked(reason) => vec![
+            item.with_availability(Availability::Disabled),
+            info(&copy::blocked_line(reason)),
+        ],
         // A coding agent while they are off: pickable, and picking asks to turn them on.
-        Gate::TurnOn => vec![item, info(copy::gate_note(gate).unwrap_or_default())],
+        Gate::TurnOn => vec![item, info(&copy::gate_note(gate).unwrap_or_default())],
     }
 }

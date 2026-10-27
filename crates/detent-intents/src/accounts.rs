@@ -1,4 +1,7 @@
-//! Where the provider learns which accounts there are: from accountd, through the binary.
+//! Where the provider learns which accounts there are: from accountd, through the binary, and
+//! the words it tells an agent about them. These lines speak to the assistant, not to the window,
+//! so they are this crate's own and do not share the window's `copy/`: an agent is given a plain
+//! status, with no wording meant for a person's eyes.
 
 use detent_client::Client;
 use detent_model::{Absence, Account, AccountStatus, AccountsPane, Work, humanize};
@@ -41,5 +44,16 @@ fn standing(status: &AccountStatus) -> String {
         AccountStatus::Offline => "Offline".to_owned(),
         AccountStatus::Limited => "Limited".to_owned(),
         AccountStatus::Other(word) => humanize(word),
+    }
+}
+
+/// Why the accounts cannot be listed, in the words an agent is told.
+pub(crate) fn absence_line(absence: Absence) -> &'static str {
+    match absence {
+        Absence::NoBus => "Settings is not connected to the desktop",
+        Absence::NotRunning => "the service is not running",
+        Absence::NotPermitted => "Settings was not opened from the desktop",
+        Absence::Unavailable => "the service could not be confirmed",
+        Absence::NoDevice | Absence::Failed => "the service did not answer",
     }
 }

@@ -37,6 +37,11 @@ pub(crate) fn confinement_line(confinement: Confinement) -> Option<&'static str>
     }
 }
 
+/// The words "Confirm {}".
+pub(crate) fn confirm(a: impl std::fmt::Display) -> String {
+    format!("Confirm {a}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

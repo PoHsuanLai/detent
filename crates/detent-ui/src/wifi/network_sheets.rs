@@ -26,14 +26,14 @@ pub(super) fn ForgetSheet(name: String, press: EventHandler<WifiInput>) -> Eleme
                 Label { text: forget_body(), role: LabelRole::Secondary }
                 div { class: "system-sheet-buttons",
                     Button {
-                        label: "Cancel",
-                        common: Common { aria_label: Some("Cancel".to_owned()), ..Common::default() },
+                        label: crate::copy::common::CANCEL,
+                        common: Common { aria_label: Some(crate::copy::common::CANCEL.to_owned()), ..Common::default() },
                         answers: Answers::Escape,
                         onclick: move |_| close.call(()),
                     }
                     Button {
-                        label: "Forget",
-                        common: Common { aria_label: Some("Forget".to_owned()), ..Common::default() },
+                        label: crate::copy::common::FORGET,
+                        common: Common { aria_label: Some(crate::copy::common::FORGET.to_owned()), ..Common::default() },
                         role: ButtonRole::Destructive,
                         onclick: move |_| press.call(WifiInput::ConfirmForget),
                     }
@@ -74,7 +74,7 @@ pub(super) fn OtherSheet(press: EventHandler<WifiInput>) -> Element {
                 Label { text: other_title(), role: LabelRole::Primary, style: LabelStyle::Headline }
                 Label { text: other_help(), role: LabelRole::Secondary }
                 TextField {
-                    label: "Network Name",
+                    label: crate::copy::wifi::NETWORK_NAME,
                     value: shown.name.clone(),
                     kind: FieldKind::Plain,
                     size: ControlSize::Small,
@@ -103,7 +103,7 @@ pub(super) fn OtherSheet(press: EventHandler<WifiInput>) -> Element {
                 }
                 if security.takes_username() {
                     TextField {
-                        label: "Username",
+                        label: crate::copy::wifi::USERNAME,
                         value: shown.username.clone(),
                         kind: FieldKind::Plain,
                         size: ControlSize::Small,
@@ -114,7 +114,7 @@ pub(super) fn OtherSheet(press: EventHandler<WifiInput>) -> Element {
                 }
                 if security.takes_password() {
                     TextField {
-                        label: "Password",
+                        label: crate::copy::wifi::PASSWORD,
                         value: String::new(),
                         kind: FieldKind::Secure,
                         size: ControlSize::Small,
@@ -125,14 +125,14 @@ pub(super) fn OtherSheet(press: EventHandler<WifiInput>) -> Element {
                 }
                 div { class: "system-sheet-buttons",
                     Button {
-                        label: "Cancel",
-                        common: Common { aria_label: Some("Cancel".to_owned()), ..Common::default() },
+                        label: crate::copy::common::CANCEL,
+                        common: Common { aria_label: Some(crate::copy::common::CANCEL.to_owned()), ..Common::default() },
                         answers: Answers::Escape,
                         onclick: move |_| close.call(()),
                     }
                     Button {
-                        label: "Join",
-                        common: Common { aria_label: Some("Join".to_owned()), ..Common::default() },
+                        label: crate::copy::wifi::JOIN,
+                        common: Common { aria_label: Some(crate::copy::wifi::JOIN.to_owned()), ..Common::default() },
                         answers: Answers::Return,
                         availability: if ready { Availability::Enabled } else { Availability::Disabled },
                         onclick: move |_| join.call(()),

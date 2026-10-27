@@ -2,7 +2,7 @@
 
 use super::book::use_program_book;
 use super::program_view::Listed;
-use crate::copy::{Subject, absence as absence_words};
+use crate::copy::absence::{Subject, absence as absence_words};
 use crate::live::use_live;
 use detent_client::Client;
 use detent_model::{PrivacyInput, PrivacyState};
@@ -25,9 +25,9 @@ pub(crate) fn PrivacyPane() -> Element {
         PrivacyState::Looking => rsx! {},
         PrivacyState::Unavailable(absence) => rsx! {
             div { class: "privacy", "data-privacy": "unavailable",
-                FieldGroup { title: Some("Privacy & Security".to_owned()),
+                FieldGroup { title: Some(crate::copy::privacy::PRIVACY_SECURITY.to_owned()),
                     FieldRow {
-                        label: TextLine::from("Privacy & Security"),
+                        label: TextLine::from(crate::copy::privacy::PRIVACY_SECURITY),
                         help: Some(TextLine::from(absence_words(Subject::Privacy, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }

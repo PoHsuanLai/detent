@@ -1,6 +1,7 @@
 //! A bounded number: a slider with its value beside it.
 
 use detent_model::Range;
+use detent_model::external::toml;
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::prelude::*;

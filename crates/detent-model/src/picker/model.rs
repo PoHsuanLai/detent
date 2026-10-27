@@ -1,6 +1,5 @@
 //! What the picker shows: one group per kind, one row per tier.
 
-use super::choice::NONE_LABEL;
 use super::local::LocalAsk;
 use super::pool::{AutoPool, PoolWrite, is_pool};
 use crate::Live;
@@ -198,11 +197,11 @@ impl ModelRow {
         self.unavailable.get(word).map(String::as_str)
     }
 
-    /// What the menu calls `word`. The empty word is always "Off": the module's own name for it
-    /// would claim a model is chosen for the person.
+    /// What the menu calls `word`. The empty word has no name here (the window calls it Off): the
+    /// module's own name for it would claim a model is chosen for the person.
     pub fn label_of(&self, word: &str) -> String {
         if word.is_empty() {
-            return NONE_LABEL.to_owned();
+            return String::new();
         }
         word_label(&self.labels, word)
     }

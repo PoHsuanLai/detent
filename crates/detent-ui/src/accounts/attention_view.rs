@@ -12,7 +12,7 @@ use ds::root::pass_through::{DataAttr, DataName};
 use ds_settings::schema::ActionWeight;
 
 /// What the banner's button says; the account's name stands behind it for a screen reader.
-const SIGN_IN: &str = "Sign In\u{2026}";
+const SIGN_IN: &str = crate::copy::account_views::SIGN_IN_ELLIPSIS;
 
 /// The banner for `attention` on `account`; nothing when the account has no Sign in again row to
 /// run. `onsign_in` is given that row.

@@ -10,7 +10,7 @@ use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 
 /// What the row is called here; the picker's own name for it is the tier.
-const ROW_LABEL: &str = "Model";
+const ROW_LABEL: &str = crate::copy::common::MODEL;
 
 /// The row, or why it is not there. `state` is the picker's.
 #[component]
@@ -53,7 +53,7 @@ fn Missing() -> Element {
             FieldGroup {
                 FieldRow {
                     label: TextLine::from(ROW_LABEL),
-                    help: Some(TextLine::from("The model service offers no model for the assistant to use.")),
+                    help: Some(TextLine::from(crate::copy::assistant_model::THE_MODEL_SERVICE_OFFERS_NO_MODEL)),
                     availability: Availability::Disabled,
                     Label { text: "Unavailable", role: LabelRole::Secondary }
                 }

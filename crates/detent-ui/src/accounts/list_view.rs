@@ -7,6 +7,7 @@ use super::avatar_view::{AccountAvatar, AvatarPlace};
 use crate::copy::accounts::{attention_badge, status_label};
 use crate::key_row::row_id;
 use crate::marks::ProviderMarks;
+use detent_model::external::ProviderGroup;
 use detent_model::{
     Account, AccountKey, AccountStatus, AccountsPane as Pane, Adding, Attention, ClientEntry,
     ClientText, ClientValue, ModuleId, ModuleRow, SecretStanding, SyncBook,
@@ -24,7 +25,6 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::ActionWeight;
-use porter_core::sheet::ProviderGroup;
 
 /// What the list's foot does: add an account, or remove the one the list rests on.
 #[derive(Clone, Copy, PartialEq)]
@@ -57,7 +57,7 @@ fn ListFoot(
 }
 
 /// The heading over the accounts the sync service holds.
-const SYNC_HEADING: &str = "Sync";
+const SYNC_HEADING: &str = crate::copy::account_views::SYNC;
 
 /// The account group's rows as list items: a heading, then a row each; the sync service's
 /// accounts come last under a heading of their own.
@@ -218,8 +218,8 @@ pub(super) fn AccountList(
         return rsx! {
             div { class: "accounts-empty", "data-accounts": "empty",
                 EmptyState {
-                    title: "No accounts",
-                    description: "An app that needs an account asks for it, and it appears here.",
+                    title: crate::copy::account_views::NO_ACCOUNTS,
+                    description: crate::copy::account_views::AN_APP_THAT_NEEDS_AN_ACCOUNT,
                 }
             }
             ListFoot { adding, availability, removal, on }
@@ -230,7 +230,7 @@ pub(super) fn AccountList(
     rsx! {
         div { class: "accounts-list", "data-accounts": "list",
             List::<String> {
-                label: "Accounts",
+                label: crate::copy::common::ACCOUNTS,
                 items,
                 style: ListStyle::Grouped,
                 cursor: selected.as_ref().map(|key| key.0.clone()),
@@ -258,16 +258,16 @@ fn MoreRows(pane: Pane, adding: Adding, availability: Availability, on: FootHand
             FieldGroup {
                 if key_row {
                     FieldRow {
-                        label: TextLine::from("AI keys"),
-                        help: Some(TextLine::from("Add a key, or sign in to an assistant.")),
+                        label: TextLine::from(crate::copy::account_views::AI_KEYS),
+                        help: Some(TextLine::from(crate::copy::account_views::ADD_A_KEY_OR_SIGN_IN)),
                         help_shown: HelpShown::OnRequest,
                         AddKeyButton { adding, availability, onpress: move |()| on.add_key.call(()) }
                     }
                 }
                 if let Some(add) = continue_row {
                     FieldRow {
-                        label: TextLine::from("Sync"),
-                        help: Some(TextLine::from("Choose an account to sync.")),
+                        label: TextLine::from(crate::copy::account_views::SYNC),
+                        help: Some(TextLine::from(crate::copy::account_views::CHOOSE_AN_ACCOUNT_TO_SYNC)),
                         help_shown: HelpShown::OnRequest,
                         ActionButton {
                             label: add.name.clone(),
@@ -302,7 +302,7 @@ pub(super) fn ClientIds(
         div { class: "accounts-clients", "data-accounts": "clients",
             Disclosure {
                 common: Common { id: Some("sign-in-clients".to_owned()), ..Common::default() },
-                label: Some("Sign-in keys".to_owned()),
+                label: Some(crate::copy::account_views::SIGN_IN_KEYS.to_owned()),
                 shown: opened(),
                 on_toggle: move |next| opened.set(next),
                 FieldGroup {
@@ -329,7 +329,7 @@ pub(super) fn ClientIds(
                             }
                             if client.value == ClientValue::Secret(SecretStanding::Set) {
                                 ActionButton {
-                                    label: "Clear".to_owned(),
+                                    label: crate::copy::account_views::CLEAR.to_owned(),
                                     subject: client.label.clone(),
                                     weight: ActionWeight::Plain,
                                     availability: Availability::Enabled,

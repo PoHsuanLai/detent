@@ -21,6 +21,14 @@ pub(crate) fn note_place(row: &NoteRow) -> String {
     format!("{}, line {}", row.file, row.line)
 }
 
+/// The words "Show".
+pub(crate) const SHOW: &str = "Show";
+
+/// The words "Show {STYLE_NOTES_TITLE}".
+pub(crate) fn show(style_notes_title: impl std::fmt::Display) -> String {
+    format!("Show {style_notes_title}")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

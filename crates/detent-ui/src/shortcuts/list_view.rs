@@ -68,10 +68,10 @@ fn Footer(
             }
             Button {
                 common: Common {
-                    aria_label: Some("Reset all shortcuts to standard".to_owned()),
+                    aria_label: Some(crate::copy::shortcuts::RESET_ALL_SHORTCUTS_TO_STANDARD.to_owned()),
                     ..Common::default()
                 },
-                label: "Reset All",
+                label: crate::copy::shortcuts::RESET_ALL,
                 size: ControlSize::Small,
                 availability: reset,
                 onclick: move |_| drive.call(ShortcutsInput::ResetAll),

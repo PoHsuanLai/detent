@@ -2,7 +2,8 @@
 //! says no app is.
 
 use super::pane::TITLE;
-use crate::copy::{grant_line, program_name};
+use crate::copy::privacy::program_name;
+use crate::copy::screen_sharing::grant_line;
 use crate::key_row::row_id;
 use detent_model::{
     ProgramBook, ProgramSubject, ScreenGrant, ScreenSharingInput, ScreenSharingReady, UnixSeconds,
@@ -32,8 +33,8 @@ pub(super) fn Listed(
         div { class: "screen-sharing", "data-screen-sharing": "list",
             if ready.grants.is_empty() {
                 EmptyState {
-                    title: "No apps can share your screen without asking",
-                    description: "When you let an app share your screen without asking again, it appears here.",
+                    title: crate::copy::screen_sharing::NO_APPS_CAN_SHARE_YOUR_SCREEN,
+                    description: crate::copy::screen_sharing::WHEN_YOU_LET_AN_APP_SHARE,
                 }
             } else {
                 FieldGroup { title: Some(TITLE.to_owned()),
@@ -70,10 +71,10 @@ fn AppLine(
             common: Common { id: Some(row_id("screen-sharing", &app.0)), ..Common::default() },
             Button {
                 common: Common {
-                    aria_label: Some(format!("Remove {name}")),
+                    aria_label: Some(crate::copy::screen_sharing::remove(&name)),
                     ..Common::default()
                 },
-                label: "Remove",
+                label: crate::copy::common::REMOVE,
                 role: ButtonRole::Destructive,
                 size: ControlSize::Small,
                 availability,

@@ -166,6 +166,7 @@ fn the_menu_keeps_the_other_places_in_the_modules_groups_and_drops_the_local_gro
         .into_iter()
         .map(|line| match line {
             MenuLine::Header(name) => format!("# {name}"),
+            MenuLine::Agents => "# agents".to_owned(),
             MenuLine::Pick { word, .. } => word,
         })
         .collect();

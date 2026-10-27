@@ -3,7 +3,6 @@
 //! does Software Update. The first-run step is the same page drawn as a short dialogue; it is
 //! reached by its slug and never listed.
 
-use crate::page::PageSlug;
 use ds_settings::schema::Page;
 
 /// The name a person reads for the page.
@@ -18,9 +17,4 @@ pub const ASSISTANT_SETUP_SLUG: &str = "assistant-model-setup";
 /// The Assistant Model page as the catalogue holds it.
 pub fn assistant_model_page() -> Page {
     Page::App(ASSISTANT_MODEL_NAME.to_owned())
-}
-
-/// Whether `slug` names the first-run step.
-pub fn is_assistant_setup(slug: &PageSlug) -> bool {
-    slug.0 == ASSISTANT_SETUP_SLUG
 }

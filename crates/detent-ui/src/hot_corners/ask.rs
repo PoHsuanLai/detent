@@ -57,14 +57,14 @@ fn ChooseButtons(ready: Availability, back: EventHandler<()>, choose: EventHandl
     rsx! {
         div { class: "hot-corners-buttons",
             Button {
-                label: "Cancel",
-                common: Common { aria_label: Some("Cancel".to_owned()), ..Common::default() },
+                label: crate::copy::common::CANCEL,
+                common: Common { aria_label: Some(crate::copy::common::CANCEL.to_owned()), ..Common::default() },
                 answers: Answers::Escape,
                 onclick: move |_| back.call(()),
             }
             Button {
-                label: "Choose",
-                common: Common { id: Some("hot-corner-choose".to_owned()), aria_label: Some("Choose".to_owned()), ..Common::default() },
+                label: crate::copy::hot_corners::CHOOSE,
+                common: Common { id: Some("hot-corner-choose".to_owned()), aria_label: Some(crate::copy::hot_corners::CHOOSE.to_owned()), ..Common::default() },
                 answers: Answers::Return,
                 availability: ready,
                 onclick: move |_| choose.call(()),
@@ -112,11 +112,11 @@ fn CommandAsk(
         })
     };
     rsx! {
-        AskTitle { title: "Command", words: "Run a command when the pointer rests in the corner." }
+        AskTitle { title: crate::copy::hot_corners::COMMAND, words: crate::copy::hot_corners::RUN_A_COMMAND_WHEN_THE_POINTER }
         TextField {
-            label: "Command",
+            label: crate::copy::hot_corners::COMMAND,
             value: typed(),
-            placeholder: "Command to run",
+            placeholder: crate::copy::hot_corners::COMMAND_TO_RUN,
             kind: FieldKind::Plain,
             size: ControlSize::Small,
             common: Common { id: Some("hot-corner-command".to_owned()), ..Common::default() },
@@ -136,7 +136,7 @@ fn SearchBox(label: String, query: Signal<String>) -> Element {
             label,
             value: query(),
             kind: FieldKind::Search,
-            placeholder: "Search",
+            placeholder: crate::copy::common::SEARCH,
             size: ControlSize::Small,
             oninput: move |text: String| query.set(text),
         }
@@ -198,9 +198,9 @@ fn ActionAsk(
         .as_ref()
         .map(|(app, action)| format!("{app}|{action}"));
     let words = if known.actions.is_empty() {
-        "No installed app offers an action that needs nothing more."
+        crate::copy::hot_corners::NO_INSTALLED_APP_OFFERS_AN_ACTION
     } else if groups.is_empty() {
-        "Nothing matches."
+        crate::copy::hot_corners::NOTHING_MATCHES
     } else {
         ""
     };
@@ -210,11 +210,11 @@ fn ActionAsk(
         }
     });
     rsx! {
-        AskTitle { title: "App Action", words: "Run an action of an app when the pointer rests in the corner." }
-        SearchBox { label: "Search actions", query }
+        AskTitle { title: crate::copy::hot_corners::APP_ACTION, words: crate::copy::hot_corners::RUN_AN_ACTION_OF_AN_APP }
+        SearchBox { label: crate::copy::hot_corners::SEARCH_ACTIONS, query }
         div { class: "hot-corners-list",
             List::<String> {
-                label: "Actions",
+                label: crate::copy::hot_corners::ACTIONS,
                 items,
                 style: ListStyle::Grouped,
                 cursor,
@@ -269,16 +269,16 @@ fn OpenAsk(
                 .collect();
             let cursor = (!shown.app.is_empty()).then(|| shown.app.clone());
             rsx! {
-                SearchBox { label: "Search apps", query }
+                SearchBox { label: crate::copy::hot_corners::SEARCH_APPS, query }
                 div { class: "hot-corners-list",
-                    List::<String> { label: "Apps", items, style: ListStyle::Grouped, cursor }
+                    List::<String> { label: crate::copy::hot_corners::APPS, items, style: ListStyle::Grouped, cursor }
                 }
             }
         }
         kind @ (HotOpenKind::File | HotOpenKind::Folder) => {
             let corners = env.client.corners();
             let words = if shown.path.is_empty() {
-                "Nothing chosen yet.".to_owned()
+                crate::copy::hot_corners::NOTHING_CHOSEN_YET.to_owned()
             } else {
                 shown.path.clone()
             };
@@ -286,7 +286,7 @@ fn OpenAsk(
                 div { class: "hot-corners-row",
                     Label { text: words, role: LabelRole::Secondary }
                     Button {
-                        label: format!("Choose {}\u{2026}", open_kind_label(kind)),
+                        label: crate::copy::hot_corners::choose_u(open_kind_label(kind)),
                         common: Common { id: Some("hot-corner-chooser".to_owned()), ..Common::default() },
                         onclick: move |_| {
                             let corners = corners.clone();
@@ -302,7 +302,7 @@ fn OpenAsk(
         }
         HotOpenKind::Web => rsx! {
             TextField {
-                label: "Web Address",
+                label: crate::copy::hot_corners::WEB_ADDRESS,
                 value: shown.web.clone(),
                 placeholder: "example.org",
                 kind: FieldKind::Plain,
@@ -319,9 +319,9 @@ fn OpenAsk(
         }
     });
     rsx! {
-        AskTitle { title: "Open", words: "Open an app, a file, a folder or a web address when the pointer rests in the corner." }
+        AskTitle { title: crate::copy::common::OPEN, words: crate::copy::hot_corners::OPEN_AN_APP_A_FILE_A }
         SegmentedControl::<HotOpenKind> {
-            label: "What to open",
+            label: crate::copy::hot_corners::WHAT_TO_OPEN,
             choices: Choice::pairs(HotOpenKind::ALL.map(|kind| (kind, open_kind_label(kind)))),
             tracking: Tracking::SelectOne(shown.kind),
             size: ControlSize::Small,

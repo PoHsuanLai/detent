@@ -20,6 +20,7 @@ mod engine_install;
 mod engines;
 mod entry;
 mod extensions;
+pub mod external;
 mod file_uri;
 mod first_run;
 mod hot_corners;
@@ -66,13 +67,13 @@ pub use accounts::{
     RemovalQuestion, Secret, SecretStanding, SignInClient, SignOutEnd, SignedIn, Source, Sources,
     SpendBar, SpendLine, StorageQuota, SwitchState, SyncAdd, SyncBook, SyncHold, SyncNowEnd,
     SyncPause, SyncStatus, SyncWork, accounts_row_is_valued, accounts_setup_offer, accounts_step,
-    hold_step, is_accounts_setup, signed_in,
+    hold_step, signed_in,
 };
 pub use advanced::advanced_name;
 pub use arrival::{Arrival, arrival};
 pub use assistant_model::{
     ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, SetupAction, SetupAvailability,
-    assistant_model_page, assistant_of, is_assistant_setup, setup_availability,
+    assistant_model_page, assistant_of, setup_availability,
 };
 pub use assistants::{
     Confirm, ModelOffer, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, offers_for,
@@ -86,9 +87,10 @@ pub use bluetooth::{
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use coding_agents::{
-    AddAction, AddForm, AddRefusal, AgentOffer, AgentReason, AgentStanding, AgentWord, Candidate,
-    FoundAgent, Listing, Presence, RemoveAnswer, RemoveQuestion, Request, Step, WORD_PREFIX,
-    offers as agent_offers, removal_of, unlisted_found, with_agents,
+    AddAction, AddForm, AddRefusal, AgentOffer, AgentReason, AgentStanding, AgentWord,
+    CHOOSE_DIRECTLY_KEY, Candidate, FoundAgent, GROUP_KEY, Listing, Presence, RemoveAnswer,
+    RemoveQuestion, Request, Step, WORD_PREFIX, offers as agent_offers, removal_of, unlisted_found,
+    with_agents,
 };
 pub use computers::{
     AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,
@@ -155,8 +157,8 @@ pub use page_kind::PageKind;
 pub use picker::{
     Applying, AutoPool, AwaitingAccount, Busy, Choice, ChoiceGap, ChoiceReadiness, ChoiceSection,
     Clearing, Described, Gate, KindRows, Loading, LocalAsk, LocalEngine, LocalModel, LocalView,
-    MenuLine, ModelRow, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup, PoolHeading,
-    PoolMembership, PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_of,
+    MenuLine, ModelRow, PickLabel, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup,
+    PoolHeading, PoolMembership, PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_of,
     picker_row_is_choice, step,
 };
 pub use picture_add::AddOutcome;

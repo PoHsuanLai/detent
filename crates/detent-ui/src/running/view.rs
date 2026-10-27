@@ -18,7 +18,7 @@ use ds::root::pass_through::{DataAttr, DataName};
 use ds::style::tokens::control_size::ControlSize;
 
 /// The group's title.
-const TITLE: &str = "Local models";
+const TITLE: &str = crate::copy::common::LOCAL_MODELS;
 
 /// The group of models inferd runs itself; nothing when it lists none or is not there.
 #[component]

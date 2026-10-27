@@ -1,11 +1,11 @@
 //! Where a [`SettingsTarget`] lands in the window: the page, with the search that marks the row,
 //! the Accounts page at an account, or the Extensions page at an Extension. Pure: it only reads the catalogue.
 
-use crate::accounts::{AccountSegment, AccountTarget, is_accounts_setup};
-use crate::assistant_model::is_assistant_setup;
+use crate::accounts::{AccountSegment, AccountTarget};
 use crate::catalogue::Catalogue;
 use crate::extensions::EXTENSIONS_SLUG;
 use crate::page::PageSlug;
+use crate::page_kind::PageKind;
 use ds_settings::schema::PageTable;
 use ds_settings::target::{ExtensionId, SettingsTarget};
 use porter_core::{AccountId, object_segment};
@@ -48,8 +48,12 @@ fn page_slug(catalogue: &Catalogue, text: &str) -> Option<PageSlug> {
         })
         .or_else(|| catalogue.page(&PageSlug(text.to_owned())))
         .map(|model| model.slug.clone())
-        .or_else(|| declared.map(|id| PageSlug(id.0)).filter(is_assistant_setup))
-        .or_else(|| Some(PageSlug(text.to_owned())).filter(is_accounts_setup))
+        .or_else(|| {
+            declared
+                .map(|id| PageSlug(id.0))
+                .filter(PageKind::is_assistant_setup)
+        })
+        .or_else(|| Some(PageSlug(text.to_owned())).filter(PageKind::is_accounts_setup))
 }
 
 /// Where `target` lands, or none when no page of the window is what it names.

@@ -6,10 +6,10 @@ use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
 
 /// The button that says yes.
-const TURN_ON: &str = "Turn On";
+const TURN_ON: &str = crate::copy::common::TURN_ON;
 
 /// The button that says no.
-const CANCEL: &str = "Cancel";
+const CANCEL: &str = crate::copy::common::CANCEL;
 
 /// The question while one stands: nothing when no coding agent waits on it.
 #[component]
@@ -20,13 +20,10 @@ pub(crate) fn TurnOnAlert(ready: Ready, onask: EventHandler<PickerInput>) -> Ele
     let name = ready
         .row(&asked.path)
         .map_or_else(|| asked.word.clone(), |row| row.label_of(&asked.word));
-    let message = format!(
-        "Coding agents are turned off. Turn them on to let the assistant hand your requests to \
-         {name}. The desktop still checks what {name} does and asks you when it matters."
-    );
+    let message = crate::copy::picker::coding_agents_are_turned_off_turn(&name);
     rsx! {
         Alert {
-            title: "Turn on coding agents?",
+            title: crate::copy::picker::TURN_ON_CODING_AGENTS,
             message: Some(TextLine::from(message)),
             style: AlertStyle::Informational,
             buttons: vec![

@@ -1,7 +1,7 @@
 //! The Extensions page and the Look menu, over look Extensions installed in a scratch data home.
 
 use crate::support::Sandbox;
-use crate::support::drive::{click, page_of, scroll_into_view, sidebar_row, title_of};
+use crate::support::drive::{click, page_of, scroll_into_view, sidebar_page, title_of};
 use detent_model::{Notice, PageSlug};
 use detent_testkit::{
     Changes, install_file_icons, install_look, install_torn_look, install_your_changes,
@@ -116,18 +116,18 @@ fn switching_a_look_off_writes_the_file_and_drops_it_from_the_menu_until_it_is_b
     );
 
     // Appearance is the fourth page; the menu is read afresh when the page is shown.
-    click(&mut harness, &sidebar_row(4));
+    click(&mut harness, &sidebar_page("appearance"));
     assert_eq!(page_of(&harness).as_deref(), Some("appearance"));
     assert_eq!(look_menu(&mut harness), ["Standard"]);
 
-    click(&mut harness, &sidebar_row(5));
+    click(&mut harness, &sidebar_page("extensions"));
     assert_eq!(page_of(&harness).as_deref(), Some("extensions"));
     click(&mut harness, &switch);
     let text = sandbox
         .read("quire/extensions.toml")
         .expect("the file was written");
     assert!(!text.contains(PAPER), "{text}");
-    click(&mut harness, &sidebar_row(4));
+    click(&mut harness, &sidebar_page("appearance"));
     assert_eq!(look_menu(&mut harness), ["Standard", "Paper"]);
 }
 

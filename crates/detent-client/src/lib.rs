@@ -18,12 +18,14 @@ mod computers;
 mod displays;
 mod engine_install;
 mod engines;
+mod files;
 mod follow;
 mod hot_corners;
 mod lending;
 mod live;
 #[cfg(test)]
 mod live_tests;
+mod marks;
 mod memory_consent;
 mod notice;
 mod pane;
@@ -44,17 +46,23 @@ pub use bluetooth::Bluetooth;
 pub use builder::{ClientBuilder, ClientHomes};
 pub use chooser::{Asked, Chooser, Want};
 pub use client::Client;
-pub use computers::{Computers, FaultWords};
+pub use computers::Computers;
 pub use displays::Displays;
 pub use engine_install::EngineInstall;
 pub use engines::{EnginePrograms, Engines};
+pub use files::{
+    AgentsTool, ConfigHome, DataHome, ExtensionHome, FileValues, FilesError, FirstRunMark,
+    KeymapFiles, StateHome, StyleInputs, add_agent, installed_agents, load, load_agents,
+    load_places, remove_agent, save, save_agent_choice, save_places,
+};
 pub use hot_corners::Corners;
 pub use lending::Lending;
 pub use live::{Events, Heard, Live};
+pub use marks::{MarkFacts, ProviderMarkFacts, shipped_marks};
 pub use memory_consent::MemoryConsent;
 pub use notice::Notice;
 pub use pane::{Pane, Pending};
-pub use picker::{AgentWords, Models, Picker, ReasonFeed, Reasons};
+pub use picker::{Models, Picker, ReasonFeed, Reasons};
 pub use privacy::Privacy;
 pub use running::Running;
 pub use screen_sharing::ScreenSharing;

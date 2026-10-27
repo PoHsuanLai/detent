@@ -3,6 +3,7 @@
 
 use super::choice::{ChoiceGap, ChoiceReadiness, Gate, gate_of};
 use super::model::{ChoiceSection, Ready, sections_of, slot_of, unavailable_of};
+use crate::coding_agents::GROUP_KEY;
 use crate::words::word_label;
 use ds_settings::schema::{KeyKind, KeyPath, KeySpec, WordLabels};
 use std::collections::BTreeMap;
@@ -83,6 +84,8 @@ pub enum PoolHeading {
     Unnamed,
     /// One of the module's groups, by its name.
     Named(String),
+    /// The coding agents.
+    Agents,
     /// The models the pool holds and the module no longer offers.
     NoLongerOffered,
 }
@@ -162,10 +165,13 @@ impl AutoPool {
     /// The editor's lines: what the module offers, then what the pool holds that it does not.
     pub fn groups(&self) -> Vec<PoolGroup> {
         let offered = self.sections.iter().map(|section| PoolGroup {
-            heading: section
-                .group
-                .clone()
-                .map_or(PoolHeading::Unnamed, PoolHeading::Named),
+            heading: section.group.clone().map_or(PoolHeading::Unnamed, |name| {
+                if name == GROUP_KEY {
+                    PoolHeading::Agents
+                } else {
+                    PoolHeading::Named(name)
+                }
+            }),
             entries: section
                 .words
                 .iter()

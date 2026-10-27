@@ -12,7 +12,7 @@ use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 
 /// The sheet's title.
-const TITLE: &str = "Add a coding assistant";
+const TITLE: &str = crate::copy::assistants::ADD_A_CODING_ASSISTANT;
 
 /// The sheet over the coding assistants: pick one, installed or on offer, name it, and read what
 /// it reaches before Add. `typed` and `picked` hand the form back changed; `submit` asks to add it.
@@ -54,13 +54,13 @@ pub(super) fn AddSheet(
                 }
                 if !choices.is_empty() {
                     RadioGroup::<String> {
-                        label: "Coding assistants",
+                        label: crate::copy::assistants::CODING_ASSISTANTS,
                         choices,
                         value: form.picked_id().to_owned(),
                         onchange: move |id: String| picked.call(id),
                     }
                     TextField {
-                        label: "Name",
+                        label: crate::copy::common::NAME,
                         value: form.label().to_owned(),
                         kind: FieldKind::Plain,
                         size: ControlSize::Small,
@@ -77,15 +77,15 @@ pub(super) fn AddSheet(
                 }
                 div { class: "system-sheet-buttons",
                     Button {
-                        label: "Cancel",
-                        common: Common { aria_label: Some("Cancel".to_owned()), ..Common::default() },
+                        label: crate::copy::common::CANCEL,
+                        common: Common { aria_label: Some(crate::copy::common::CANCEL.to_owned()), ..Common::default() },
                         answers: Answers::Escape,
                         availability: cancel,
                         onclick: move |_| close.call(()),
                     }
                     Button {
-                        label: "Add",
-                        common: Common { aria_label: Some("Add".to_owned()), ..Common::default() },
+                        label: crate::copy::common::ADD,
+                        common: Common { aria_label: Some(crate::copy::common::ADD.to_owned()), ..Common::default() },
                         answers: Answers::Return,
                         role: ButtonRole::Normal,
                         availability: add,
@@ -122,7 +122,7 @@ fn Looking() -> Element {
                 style: ProgressStyle::Spinner,
                 progress: Progress::Unknown(Operation::Running(token)),
                 size: ControlSize::Small,
-                common: Common { aria_label: Some("Looking for coding assistants".to_owned()), ..Common::default() },
+                common: Common { aria_label: Some(crate::copy::assistants::LOOKING_FOR_CODING_ASSISTANTS.to_owned()), ..Common::default() },
             }
             Label { text: copy::LOADING, role: LabelRole::Secondary }
         }
@@ -138,8 +138,8 @@ pub(super) fn RemoveAlert(question: RemoveQuestion, answer: EventHandler<RemoveA
             message: Some(TextLine::from(copy::remove_message())),
             style: AlertStyle::Critical,
             buttons: vec![
-                AlertButton::new("Cancel", AlertRole::Cancel, EventHandler::new(move |()| answer.call(RemoveAnswer::Keep))),
-                AlertButton::new("Remove", AlertRole::Destructive, EventHandler::new(move |()| answer.call(RemoveAnswer::Remove))),
+                AlertButton::new(crate::copy::common::CANCEL, AlertRole::Cancel, EventHandler::new(move |()| answer.call(RemoveAnswer::Keep))),
+                AlertButton::new(crate::copy::common::REMOVE, AlertRole::Destructive, EventHandler::new(move |()| answer.call(RemoveAnswer::Remove))),
             ],
         }
     }

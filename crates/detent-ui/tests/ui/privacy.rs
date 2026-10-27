@@ -5,7 +5,7 @@
 use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use crate::support::compositor::{Compositor, Row};
-use crate::support::drive::{click, scroll_into_view, sidebar_row};
+use crate::support::drive::{click, scroll_into_view, sidebar_page};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::{Harness, Input};
@@ -110,11 +110,13 @@ fn answers() -> Vec<Row> {
 fn the_page_is_in_the_sidebar_right_after_the_assistant_model() {
     let mut w = world("privacy-sidebar", Some(answers()));
     assert_eq!(
-        w.harness.text_of(&sidebar_row(7)).as_deref(),
+        w.harness
+            .text_of(&sidebar_page("assistant-model"))
+            .as_deref(),
         Some("Assistant Model")
     );
     assert_eq!(
-        w.harness.text_of(&sidebar_row(8)).as_deref(),
+        w.harness.text_of(&sidebar_page("privacy")).as_deref(),
         Some("Privacy & Security")
     );
     listed(&mut w);

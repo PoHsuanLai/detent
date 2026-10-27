@@ -1,4 +1,4 @@
-use super::tests::{CHOOSE_DIRECTLY, GROUP, agents, described, path, says};
+use super::tests::{CHOOSE_DIRECTLY, agents, described, path};
 use super::{AgentOffer, offers, with_agents};
 use crate::picker::{
     Clearing, Gate, MenuLine, PickerEffect, PickerInput, PickerState, TurnOnAnswer, step,
@@ -6,7 +6,7 @@ use crate::picker::{
 use docket_settings::AcpAgents;
 
 fn ready_with(offered: &[AgentOffer]) -> PickerState {
-    let laid = with_agents(described(), offered, &says);
+    let laid = with_agents(described(), offered);
     step(PickerState::Looking, PickerInput::Found(Ok(laid))).0
 }
 
@@ -25,21 +25,27 @@ fn the_menu_lists_the_agents_under_their_own_header_and_a_blocked_one_cannot_be_
     let menu = row_of(&state).menu(Clearing::Offered);
     let at = menu
         .iter()
-        .position(|line| *line == MenuLine::Header(GROUP.to_owned()))
+        .position(|line| *line == MenuLine::Agents)
         .expect("the group's header");
     let words: Vec<(&str, Gate)> = menu[at + 1..]
         .iter()
         .filter_map(|line| match line {
             MenuLine::Pick { word, gate, .. } => Some((word.as_str(), gate.clone())),
-            MenuLine::Header(_) => None,
+            MenuLine::Header(_) | MenuLine::Agents => None,
         })
         .collect();
     assert_eq!(
         words,
         [
             ("agent/claude-code", Gate::Open),
-            ("agent/gemini", Gate::Blocked("not-installed".to_owned())),
-            ("agent/codex", Gate::Blocked("sign-in:Codex".to_owned())),
+            (
+                "agent/gemini",
+                Gate::Blocked("agents:not-installed".to_owned())
+            ),
+            (
+                "agent/codex",
+                Gate::Blocked("agents:sign-in:Codex".to_owned())
+            ),
         ]
     );
 
@@ -51,7 +57,10 @@ fn the_menu_lists_the_agents_under_their_own_header_and_a_blocked_one_cannot_be_
             word: "agent/gemini".to_owned(),
         },
     );
-    assert_eq!(effects, [PickerEffect::Tell("not-installed".to_owned())]);
+    assert_eq!(
+        effects,
+        [PickerEffect::Tell("agents:not-installed".to_owned())]
+    );
     assert_eq!(row_of(&state).value, "");
 }
 

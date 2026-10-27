@@ -62,8 +62,8 @@ fn SheetRow(
             label: TextLine::from(label),
             common: Common { extra_class: class, ..Common::default() },
             Button {
-                label: "Open",
-                common: Common { aria_label: Some(format!("Open {title}")), ..Common::default() },
+                label: crate::copy::common::OPEN,
+                common: Common { aria_label: Some(crate::copy::window::open(&title)), ..Common::default() },
                 onclick: move |_| opened.set(Shown::Visible),
             }
         }
@@ -82,7 +82,7 @@ fn SheetRow(
                     }
                     div { class: "advanced-sheet-buttons",
                         Button {
-                            label: "Done",
+                            label: crate::copy::common::DONE,
                             answers: Answers::Return,
                             onclick: move |_| close.call(()),
                         }

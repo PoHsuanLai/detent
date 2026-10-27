@@ -18,7 +18,7 @@ use ds::style::tokens::control_size::ControlSize;
 use ds_blitz::{AppHandle, use_app_handle};
 
 /// Said once, at the top.
-const HEADING: &str = "Choose a Model for Your Assistant";
+const HEADING: &str = crate::copy::assistant_model::CHOOSE_A_MODEL_FOR_YOUR_ASSISTANT;
 
 /// The step, under the frame: the picker's row and the two buttons.
 #[component]
@@ -50,7 +50,7 @@ pub(crate) fn AssistantSetup() -> Element {
             }
             div { class: "assistant-setup-buttons",
                 Button {
-                    label: "Skip",
+                    label: crate::copy::common::SKIP,
                     answers: Answers::Escape,
                     size: ControlSize::Large,
                     availability: skip,
@@ -58,7 +58,7 @@ pub(crate) fn AssistantSetup() -> Element {
                     onclick: move |_| leave(skip_app.as_ref()),
                 }
                 Button {
-                    label: "Continue",
+                    label: crate::copy::common::CONTINUE,
                     answers: Answers::Return,
                     size: ControlSize::Large,
                     availability: next,

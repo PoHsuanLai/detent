@@ -1,7 +1,7 @@
 //! The Shortcuts list's words: action names, group titles, who set a chord, what was wrong in the
 //! files and the question before a chord is taken over.
 
-use chordkit::{Action, StandardAction};
+use detent_model::external::{Action, StandardAction};
 use detent_model::{
     KeymapLayer, Origin, ReplaceQuestion, ShortcutGroup, ShortcutProblem, ShortcutRow,
 };
@@ -153,6 +153,28 @@ pub(crate) fn file_left_alone(trouble: &str) -> String {
 pub(crate) fn chord_reserved(chord: &str, reason: &str) -> String {
     format!("{chord} can't be used: {reason}")
 }
+
+/// The words "Reset all shortcuts to standard".
+pub(crate) const RESET_ALL_SHORTCUTS_TO_STANDARD: &str = "Reset all shortcuts to standard";
+
+/// The words "Reset All".
+pub(crate) const RESET_ALL: &str = "Reset All";
+
+/// The words "Your shortcuts could not be saved. Try again in a moment.".
+pub(crate) const YOUR_SHORTCUTS_COULD_NOT_BE_SAVED: &str =
+    "Your shortcuts could not be saved. Try again in a moment.";
+
+/// The words "Your shortcuts were changed by another program just now, so nothing was saved. Try again.".
+pub(crate) const YOUR_SHORTCUTS_WERE_CHANGED_BY_ANOTHER: &str =
+    "Your shortcuts were changed by another program just now, so nothing was saved. Try again.";
+
+/// The words "Reset {name}".
+pub(crate) fn reset(name: impl std::fmt::Display) -> String {
+    format!("Reset {name}")
+}
+
+/// The words "Reset".
+pub(crate) const RESET: &str = "Reset";
 
 #[cfg(test)]
 mod tests {

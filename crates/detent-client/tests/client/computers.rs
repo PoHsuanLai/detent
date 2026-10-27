@@ -2,13 +2,9 @@
 
 use crate::support::builder;
 use detent_client::Pane;
-use detent_model::{AddList, ComputersFound, ComputersInput, ComputersState, ServerFault};
+use detent_model::{AddList, ComputersFound, ComputersInput, ComputersState};
 use detent_system::computers::FakeComputers;
 use std::sync::Arc;
-
-fn words(_: ServerFault) -> &'static str {
-    "The server's form is wrong."
-}
 
 #[tokio::test]
 async fn pressing_add_looks_for_the_computers_that_can_be_added() {
@@ -18,7 +14,7 @@ async fn pressing_add_looks_for_the_computers_that_can_be_added() {
     };
     let link = FakeComputers::listing(found.clone());
     let client = builder().with_computers(Arc::new(link)).build();
-    let computers = client.computers(words);
+    let computers = client.computers();
 
     computers.send(ComputersInput::Found(Ok(found))).await;
     computers.send(ComputersInput::OpenAdd).await;
