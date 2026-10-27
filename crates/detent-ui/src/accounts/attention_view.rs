@@ -11,9 +11,6 @@ use ds::root::common::Common;
 use ds::root::pass_through::{DataAttr, DataName};
 use ds_settings::schema::ActionWeight;
 
-/// What the banner's button says; the account's name stands behind it for a screen reader.
-const SIGN_IN: &str = crate::copy::account_views::SIGN_IN_ELLIPSIS;
-
 /// The banner for `attention` on `account`; nothing when the account has no Sign in again row to
 /// run. `onsign_in` is given that row.
 #[component]
@@ -44,7 +41,7 @@ pub(super) fn AttentionBanner(
             },
             actions: rsx! {
                 ActionButton {
-                    label: SIGN_IN.to_owned(),
+                    label: crate::copy::account_views::SIGN_IN_ELLIPSIS.to_owned(),
                     subject: account.label.clone(),
                     weight: ActionWeight::Plain,
                     availability,

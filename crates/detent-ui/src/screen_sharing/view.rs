@@ -1,7 +1,6 @@
 //! The list: a row for each app with its name, when it was allowed, and Remove; or the line that
 //! says no app is.
 
-use super::pane::TITLE;
 use crate::copy::privacy::program_name;
 use crate::copy::screen_sharing::grant_line;
 use crate::key_row::row_id;
@@ -34,10 +33,10 @@ pub(super) fn Listed(
             if ready.grants.is_empty() {
                 EmptyState {
                     title: crate::copy::screen_sharing::NO_APPS_CAN_SHARE_YOUR_SCREEN,
-                    description: crate::copy::screen_sharing::WHEN_YOU_LET_AN_APP_SHARE,
+                    description: crate::copy::screen_sharing::NO_REMEMBERED_APPS_HINT,
                 }
             } else {
-                FieldGroup { title: Some(TITLE.to_owned()),
+                FieldGroup { title: Some(crate::copy::screen_sharing::SCREEN_SHARING.to_owned()),
                     for grant in ready.grants.iter().cloned() {
                         AppLine {
                             key: "{grant.app.0}",

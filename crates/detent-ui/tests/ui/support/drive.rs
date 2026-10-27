@@ -1,5 +1,4 @@
 //! Driving the window the way a person does.
-#![allow(dead_code)]
 
 use ds::prelude::{Point, Px, ShortcutKey};
 use ds_harness::{Harness, Input};

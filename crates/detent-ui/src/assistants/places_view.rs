@@ -23,9 +23,6 @@ use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
 
-/// What a group says when it has no place.
-const NO_ACCOUNTS: &str = crate::copy::assistants::SIGNED_IN_ACCOUNTS_THAT_OFFER_AI;
-
 fn toggle_of(check: Check) -> Toggle {
     match check {
         Check::On => Toggle::On,
@@ -133,10 +130,7 @@ pub(crate) fn Assistants() -> Element {
             state.set(next);
             for PlacesEffect::Write(places) in effects {
                 if let Err(why) = save_places(&env.config_home, &places) {
-                    toasts.push(
-                        crate::copy::assistants::could_not_save_where_the_assistant(&why),
-                        None,
-                    );
+                    toasts.push(crate::copy::assistants::could_not_save_places(&why), None);
                 }
             }
         }
@@ -188,7 +182,7 @@ pub(crate) fn Assistants() -> Element {
             Computers { state: computers(), feed, rows: own_rows }
             FieldGroup { title: Some(kind_label(PlaceKind::Cloud).to_owned()),
                 if current.places.cloud.is_empty() {
-                    EmptyRow { text: NO_ACCOUNTS }
+                    EmptyRow { text: crate::copy::assistants::SIGNED_IN_ACCOUNTS_THAT_OFFER_AI }
                 }
                 for cloud in current.places.cloud.iter().cloned() {
                     PlaceRow {

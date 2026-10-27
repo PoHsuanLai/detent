@@ -19,21 +19,6 @@ use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 use std::path::PathBuf;
 
-/// The sheet's title.
-const TITLE: &str = crate::copy::computers::ADD_A_SERVER;
-
-/// What the sheet says it is for.
-const ABOUT: &str = crate::copy::computers::ADD_A_MODEL_SERVER_YOU_ALREADY;
-
-/// Under the place the server answers.
-const ON_THIS_COMPUTER: &str = crate::copy::computers::THE_SERVER_MUST_ANSWER_ON_THIS;
-
-/// While the models are looked up.
-const LOOKING: &str = crate::copy::computers::LOOKING_FOR_MODELS_ELLIPSIS;
-
-/// When there is no model to pick.
-const NO_MODELS: &str = crate::copy::computers::THERE_ARE_NO_MODELS_TO_CHOOSE;
-
 /// Which file was chosen.
 fn file_line(path: &std::path::Path) -> String {
     path.display().to_string()
@@ -75,13 +60,13 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
     let key_client = client;
     rsx! {
         Sheet {
-            label: TITLE.to_owned(),
+            label: crate::copy::computers::ADD_A_SERVER.to_owned(),
             width: SheetWidth::Narrow,
             onclose: close,
             on_return: add,
             div { class: "system-sheet", "data-system": "add-server",
-                Label { text: TITLE, role: LabelRole::Primary, style: LabelStyle::Headline }
-                Label { text: ABOUT, role: LabelRole::Secondary }
+                Label { text: crate::copy::computers::ADD_A_SERVER, role: LabelRole::Primary, style: LabelStyle::Headline }
+                Label { text: crate::copy::computers::SERVER_SHEET_ABOUT, role: LabelRole::Secondary }
                 TextField {
                     label: crate::copy::common::NAME,
                     value: form.name.clone(),
@@ -92,9 +77,9 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
                     onsubmit: move |_: String| add.call(()),
                 }
                 match sheet.models.clone() {
-                    ServerModels::Looking => rsx! { Label { text: LOOKING, role: LabelRole::Tertiary } },
+                    ServerModels::Looking => rsx! { Label { text: crate::copy::computers::LOOKING_FOR_MODELS_ELLIPSIS, role: LabelRole::Tertiary } },
                     ServerModels::Offered(models) if models.is_empty() => rsx! {
-                        Label { text: NO_MODELS, role: LabelRole::Tertiary }
+                        Label { text: crate::copy::computers::NO_MODELS_YET, role: LabelRole::Tertiary }
                     },
                     ServerModels::Offered(models) => rsx! {
                         Label { text: "Model it runs", role: LabelRole::Secondary }
@@ -139,7 +124,7 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
                         onclick: move |_| choose_file(&socket_client, |path| ComputersInput::ServerEdit(ServerEdit::Socket(Some(path))), feed),
                     }
                 }
-                Label { text: ON_THIS_COMPUTER, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
+                Label { text: crate::copy::computers::SERVER_ON_THIS_COMPUTER, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                 TextField {
                     label: crate::copy::computers::KEY_OPTIONAL,
                     value: String::new(),

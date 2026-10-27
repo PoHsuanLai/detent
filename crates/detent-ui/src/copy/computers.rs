@@ -40,17 +40,17 @@ pub(crate) fn server_refusal(refusal: &ServerRefusal) -> String {
 pub(crate) const ADD_A_SERVER: &str = "Add a server";
 
 /// The words "Add a model server you already run, so the assistant can use its models.".
-pub(crate) const ADD_A_MODEL_SERVER_YOU_ALREADY: &str =
+pub(crate) const SERVER_SHEET_ABOUT: &str =
     "Add a model server you already run, so the assistant can use its models.";
 
 /// The words "The server must answer on this computer.".
-pub(crate) const THE_SERVER_MUST_ANSWER_ON_THIS: &str = "The server must answer on this computer.";
+pub(crate) const SERVER_ON_THIS_COMPUTER: &str = "The server must answer on this computer.";
 
 /// The words "Looking for models…".
 pub(crate) const LOOKING_FOR_MODELS_ELLIPSIS: &str = "Looking for models\u{2026}";
 
 /// The words "There are no models to choose from yet.".
-pub(crate) const THERE_ARE_NO_MODELS_TO_CHOOSE: &str = "There are no models to choose from yet.";
+pub(crate) const NO_MODELS_YET: &str = "There are no models to choose from yet.";
 
 /// The words "Where it answers".
 pub(crate) const WHERE_IT_ANSWERS: &str = "Where it answers";
@@ -90,15 +90,14 @@ pub(crate) const COMPUTERS_ASKING_TO_USE_THIS_COMPUTER: &str =
     "Computers asking to use this computer's models";
 
 /// The words "Computers you add appear here. Each starts off.".
-pub(crate) const COMPUTERS_YOU_ADD_APPEAR_HERE_EACH: &str =
-    "Computers you add appear here. Each starts off.";
+pub(crate) const NO_COMPUTERS_YET: &str = "Computers you add appear here. Each starts off.";
 
 /// The words "A model server you already run on this computer, such as one started by hand.".
-pub(crate) const A_MODEL_SERVER_YOU_ALREADY_RUN: &str =
+pub(crate) const ADD_SERVER_HELP: &str =
     "A model server you already run on this computer, such as one started by hand.";
 
 /// The words "None of your other computers is lending its models. On the other computer, turn on \u{201c}Let my other computers use this computer’s models\u{201d}.".
-pub(crate) const NONE_OF_YOUR_OTHER_COMPUTERS_IS: &str = "None of your other computers is lending its models. On the other \
+pub(crate) const NOBODY_LENDING: &str = "None of your other computers is lending its models. On the other \
     computer, turn on \u{201c}Let my other computers use this computer\u{2019}s models\u{201d}.";
 
 /// The words "Looking for your computers on Tailscale…".
@@ -112,10 +111,7 @@ pub(crate) const ADD_A_SERVER_ELLIPSIS: &str = "Add a server\u{2026}";
 pub(crate) const ADD_A_COMPUTER: &str = "Add a computer";
 
 /// The words "{models}. Say yes on {} when it asks.".
-pub(crate) fn say_yes_on_when_it_asks(
-    models: impl std::fmt::Display,
-    a: impl std::fmt::Display,
-) -> String {
+pub(crate) fn say_yes_on_ask(models: impl std::fmt::Display, a: impl std::fmt::Display) -> String {
     format!("{models}. Say yes on {a} when it asks.")
 }
 

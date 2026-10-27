@@ -1,7 +1,6 @@
 //! A fake inferd (`org.quire.Inference1`) that answers `LocalEngines`, and a fake user service
 //! manager (`org.freedesktop.systemd1.Manager`) that writes down each `RestartUnit` and, as a
 //! restart does, lets inferd find llama.cpp from then on. Both are on the test's private bus.
-#![allow(dead_code)]
 
 use super::bus::PrivateBus;
 use porter_dbus::names::{INFERENCE_BUS, INFERENCE_PATH};

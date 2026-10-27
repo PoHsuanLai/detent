@@ -161,11 +161,11 @@ pub(crate) const RESET_ALL_SHORTCUTS_TO_STANDARD: &str = "Reset all shortcuts to
 pub(crate) const RESET_ALL: &str = "Reset All";
 
 /// The words "Your shortcuts could not be saved. Try again in a moment.".
-pub(crate) const YOUR_SHORTCUTS_COULD_NOT_BE_SAVED: &str =
+pub(crate) const SHORTCUTS_NOT_SAVED: &str =
     "Your shortcuts could not be saved. Try again in a moment.";
 
 /// The words "Your shortcuts were changed by another program just now, so nothing was saved. Try again.".
-pub(crate) const YOUR_SHORTCUTS_WERE_CHANGED_BY_ANOTHER: &str =
+pub(crate) const SHORTCUTS_CHANGED_ELSEWHERE: &str =
     "Your shortcuts were changed by another program just now, so nothing was saved. Try again.";
 
 /// The words "Reset {name}".

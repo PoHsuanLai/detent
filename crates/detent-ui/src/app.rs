@@ -14,9 +14,6 @@ use ds_blitz::{TokioSpawner, use_window_handle};
 use ds_settings::{AppName, ConfigRoot, Store, use_environment};
 use std::sync::Arc;
 
-/// The title of the window that asks the person to sign in, a step of the first run.
-const ACCOUNTS_TITLE: &str = crate::copy::common::ACCOUNTS;
-
 /// The Settings app. Reads its [`Env`] from the context the launcher provides.
 #[component]
 pub fn App() -> Element {
@@ -90,7 +87,7 @@ pub fn App() -> Element {
     let title = if assistant_setup {
         assistant_model_page().label().to_owned()
     } else if accounts_setup {
-        ACCOUNTS_TITLE.to_owned()
+        crate::copy::common::ACCOUNTS.to_owned()
     } else {
         view.current
             .as_ref()

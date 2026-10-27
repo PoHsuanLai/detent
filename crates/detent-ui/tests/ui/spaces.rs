@@ -1,14 +1,15 @@
-//! The Spaces page's list over a fake registry and a fake memory on a private bus: Remove asks on
-//! the sheet first, memory is told the choice before the registry is asked, and Cancel sends
-//! nothing.
+//! The Spaces page's list over a registry that answers from memory: Remove asks on the sheet
+//! first, the choice reaches the registry as the person made it, and Cancel sends nothing. The
+//! real link's order (memory is told before the registry is asked, and a delete choice with no
+//! memory running goes no further) is tested over a private bus in detent-system.
 
 use crate::support::Sandbox;
-use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
-use crate::support::spaces::{Fakes, serve};
-use detent_model::PageSlug;
+use detent_model::{PageSlug, SpaceKey, SpaceRow};
+use detent_system::spaces::FakeSpaces;
 use detent_ui::Opening;
 use ds_harness::Harness;
+use std::sync::Arc;
 use std::time::Duration;
 
 const TRIP: &str = "[aria-label=\"Remove Trip\"]";
@@ -17,7 +18,6 @@ const REMOVE: &str = ".space-sheet .ds-button[data-answers=\"return\"]";
 const CANCEL: &str = ".space-sheet .ds-button[data-answers=\"escape\"]";
 const FLIP: &str = ".space-sheet .ds-button[data-variant=\"inline\"]";
 const DELETE_HISTORY: &str = ".space-sheet [role=\"radio\"]:last-child";
-const MEMORY_NOT_RUNNING: &str = "Memory isn\u{2019}t running right now, so this Space can\u{2019}t be deleted. Try again in a moment.";
 
 fn spaces() -> Opening {
     Opening {
@@ -26,51 +26,44 @@ fn spaces() -> Opening {
     }
 }
 
+/// Lets the page hear what the registry said: the follow loop runs on the harness's clock.
 fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
-    // The fake daemons answer on real threads; a loaded machine running every test at once can
-    // take several seconds, so the budget is generous (15 s) and costs nothing when it settles.
-    for _ in 0..750 {
+    for _ in 0..200 {
         if done(harness) {
             return;
         }
         harness.advance(Duration::from_millis(50));
-        std::thread::sleep(Duration::from_millis(20));
     }
     panic!("{what} never happened:\n{}", harness.html());
 }
 
 struct World {
-    fakes: Fakes,
+    fake: FakeSpaces,
     harness: Harness,
-    _rt: tokio::runtime::Runtime,
-    _bus: PrivateBus,
 }
 
-fn world(name: &str, memory: bool) -> World {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(2)
-        .enable_all()
-        .build()
-        .expect("a runtime for the fakes");
-    let bus = PrivateBus::start(name);
-    let fakes = rt.block_on(serve(
-        &bus,
-        &[("space-1", "Trip"), ("space-2", "Work")],
-        memory,
-    ));
-    let sandbox = Sandbox::new(name).on_bus(&bus.address);
-    let mut harness = sandbox.harness(spaces());
-    settle(&mut harness, "the list", |h| h.count(TRIP) == 1);
-    World {
-        fakes,
-        harness,
-        _rt: rt,
-        _bus: bus,
+fn row(id: &str, name: &str) -> SpaceRow {
+    SpaceRow {
+        id: SpaceKey(id.to_owned()),
+        name: name.to_owned(),
     }
 }
 
-fn log(w: &World) -> Vec<String> {
-    w.fakes.log.lock().expect("log").clone()
+fn world(name: &str) -> World {
+    let fake = FakeSpaces::holding(vec![row("space-1", "Trip"), row("space-2", "Work")]);
+    let sandbox = Sandbox::new(name).with_spaces(Arc::new(fake.clone()));
+    let mut harness = sandbox.harness(spaces());
+    settle(&mut harness, "the list", |h| h.count(TRIP) == 1);
+    World { fake, harness }
+}
+
+/// What the registry was asked to remove, as `space <choice>` in order.
+fn asked(w: &World) -> Vec<String> {
+    w.fake
+        .removals()
+        .into_iter()
+        .map(|(space, removal)| format!("{} {removal:?}", space.0))
+        .collect()
 }
 
 fn open_sheet(w: &mut World) {
@@ -80,8 +73,8 @@ fn open_sheet(w: &mut World) {
 
 #[test]
 fn the_sheet_opens_on_the_keeping_choices_and_says_its_words() {
-    let mut w = world("spaces-sheet", true);
-    assert!(log(&w).is_empty());
+    let mut w = world("spaces-sheet");
+    assert!(asked(&w).is_empty());
     open_sheet(&mut w);
     let html = w.harness.html();
     for text in [
@@ -110,33 +103,30 @@ fn the_sheet_opens_on_the_keeping_choices_and_says_its_words() {
 
 #[test]
 fn cancel_sends_nothing_and_the_space_stays() {
-    let mut w = world("spaces-cancel", true);
+    let mut w = world("spaces-cancel");
     open_sheet(&mut w);
     click(&mut w.harness, CANCEL);
     settle(&mut w.harness, "the sheet to go", |h| h.count(SHEET) == 0);
-    assert!(log(&w).is_empty());
+    assert!(asked(&w).is_empty());
     assert_eq!(w.harness.count(TRIP), 1);
 }
 
 #[test]
-fn remove_tells_memory_first_and_then_the_registry_and_the_row_goes() {
-    let mut w = world("spaces-remove", true);
+fn remove_asks_for_the_keeping_choices_and_the_row_goes() {
+    let mut w = world("spaces-remove");
     open_sheet(&mut w);
     click(&mut w.harness, REMOVE);
     settle(&mut w.harness, "the row to go", |h| h.count(TRIP) == 0);
     assert_eq!(
-        log(&w),
-        [
-            r#"memory space-1 {"memories":"move_to_apps","history":"keep"}"#.to_owned(),
-            "registry remove space-1".to_owned(),
-        ]
+        asked(&w),
+        ["space-1 Removal { memories: MoveToApps, history: Keep }".to_owned()]
     );
     assert_eq!(w.harness.count("[aria-label=\"Remove Work\"]"), 1);
 }
 
 #[test]
 fn the_link_flips_the_body_and_its_label_and_makes_remove_destructive() {
-    let mut w = world("spaces-flip", true);
+    let mut w = world("spaces-flip");
     open_sheet(&mut w);
     click(&mut w.harness, FLIP);
     settle(&mut w.harness, "the flipped body", |h| {
@@ -152,14 +142,14 @@ fn the_link_flips_the_body_and_its_label_and_makes_remove_destructive() {
     click(&mut w.harness, REMOVE);
     settle(&mut w.harness, "the row to go", |h| h.count(TRIP) == 0);
     assert_eq!(
-        log(&w)[0],
-        r#"memory space-1 {"memories":"delete","history":"keep"}"#
+        asked(&w),
+        ["space-1 Removal { memories: Delete, history: Keep }".to_owned()]
     );
 }
 
 #[test]
 fn deleting_the_history_alone_makes_remove_destructive_and_is_sent() {
-    let mut w = world("spaces-history", true);
+    let mut w = world("spaces-history");
     open_sheet(&mut w);
     click(&mut w.harness, DELETE_HISTORY);
     settle(&mut w.harness, "the choice", |h| {
@@ -168,42 +158,22 @@ fn deleting_the_history_alone_makes_remove_destructive_and_is_sent() {
     click(&mut w.harness, REMOVE);
     settle(&mut w.harness, "the row to go", |h| h.count(TRIP) == 0);
     assert_eq!(
-        log(&w)[0],
-        r#"memory space-1 {"memories":"move_to_apps","history":"delete"}"#
+        asked(&w),
+        ["space-1 Removal { memories: MoveToApps, history: Delete }".to_owned()]
     );
 }
 
 #[test]
-fn with_no_memory_there_is_nothing_to_settle_and_the_registry_is_still_asked() {
-    let mut w = world("spaces-no-memory", false);
+fn a_refused_removal_says_why_in_a_toast_and_the_space_stays() {
+    let mut w = world("spaces-refused");
+    w.fake.refuses("Nothing could be removed just now.");
     open_sheet(&mut w);
     click(&mut w.harness, REMOVE);
-    settle(&mut w.harness, "the row to go", |h| h.count(TRIP) == 0);
-    assert_eq!(log(&w), ["registry remove space-1".to_owned()]);
-}
-
-#[test]
-fn a_delete_choice_with_no_memory_running_removes_nothing_and_says_why() {
-    // Each delete choice alone: the memories flipped to delete, then the history.
-    for (name, choose) in [
-        ("spaces-no-memory-flip", FLIP),
-        ("spaces-no-memory-history", DELETE_HISTORY),
-    ] {
-        let mut w = world(name, false);
-        open_sheet(&mut w);
-        click(&mut w.harness, choose);
-        settle(&mut w.harness, "the destructive Remove", |h| {
-            h.attr(REMOVE, "data-role").as_deref() == Some("destructive")
-        });
-        click(&mut w.harness, REMOVE);
-        settle(&mut w.harness, "the toast", |h| h.count(".ds-toast") == 1);
-        let toast = w.harness.text_of(".ds-toast").unwrap_or_default();
-        assert!(toast.contains(MEMORY_NOT_RUNNING), "{name}: {toast}");
-        assert!(
-            log(&w).is_empty(),
-            "{name}: the registry was not asked, so nothing is half done: {:?}",
-            log(&w)
-        );
-        assert_eq!(w.harness.count(TRIP), 1, "{name}: the Space stays");
-    }
+    settle(&mut w.harness, "the toast", |h| h.count(".ds-toast") == 1);
+    let toast = w.harness.text_of(".ds-toast").unwrap_or_default();
+    assert!(
+        toast.contains("Nothing could be removed just now."),
+        "{toast}"
+    );
+    assert_eq!(w.harness.count(TRIP), 1, "the Space stays");
 }

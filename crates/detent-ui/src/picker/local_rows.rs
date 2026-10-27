@@ -2,7 +2,7 @@
 //! way. With nothing set up it says so and offers to add an account that would run them.
 
 use super::note::NoteLine;
-use super::tier_row::{NOTHING_CHOSEN, pick_items};
+use super::tier_row::pick_items;
 use crate::engine_install::{Board, GET};
 use crate::key_row::row_id;
 use detent_model::{ChoiceGap, EngineOfferInput, LocalView, PickerInput};
@@ -14,18 +14,6 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::KeyPath;
-
-/// What the first question is called.
-const ENGINE_LABEL: &str = crate::copy::picker::RUNS_WITH;
-
-/// What the second question is called.
-const MODEL_LABEL: &str = crate::copy::common::MODEL;
-
-/// What the row is called when nothing on this computer can run a model.
-const NO_ENGINE_LABEL: &str = crate::copy::picker::LOCAL;
-
-/// The button that opens the way to add what would run models here.
-const ADD: &str = crate::copy::common::ADD_ACCOUNT_ELLIPSIS;
 
 /// The questions under the row at `path`: the engine, then, once there is one, its model.
 #[component]
@@ -72,13 +60,13 @@ pub(super) fn LocalRows(
     let (engine_at, model_at) = (path.clone(), path.clone());
     rsx! {
         FieldRow {
-            label: TextLine::from(ENGINE_LABEL),
+            label: TextLine::from(crate::copy::picker::RUNS_WITH),
             availability,
             common: Common { id: Some(row_id("picker-engine", &path.0)), ..Common::default() },
             PopUpButton::<String> {
                 items: engines,
                 value: view.engine.clone(),
-                title: Some(NOTHING_CHOSEN.to_owned()),
+                title: Some(crate::copy::common::CHOOSE_ELLIPSIS.to_owned()),
                 size: ControlSize::Small,
                 availability,
                 onpick: move |engine: String| match (engine.strip_prefix(GET), board) {
@@ -89,13 +77,13 @@ pub(super) fn LocalRows(
         }
         if view.engine.is_some() {
             FieldRow {
-                label: TextLine::from(MODEL_LABEL),
+                label: TextLine::from(crate::copy::common::MODEL),
                 availability,
                 common: Common { id: Some(row_id("picker-local-model", &path.0)), ..Common::default() },
                 PopUpButton::<String> {
                     items: models,
                     value: view.model.clone(),
-                    title: Some(NOTHING_CHOSEN.to_owned()),
+                    title: Some(crate::copy::common::CHOOSE_ELLIPSIS.to_owned()),
                     size: ControlSize::Small,
                     availability,
                     onpick: move |word| onask.call(PickerInput::Chose { path: model_at.clone(), word }),
@@ -117,12 +105,12 @@ fn NoEngine(
     let set_up = path.clone();
     rsx! {
         FieldRow {
-            label: TextLine::from(NO_ENGINE_LABEL),
+            label: TextLine::from(crate::copy::picker::LOCAL),
             help: note.is_none().then(|| TextLine::from(crate::copy::picker::gap(ChoiceGap::NoLocalEngine))),
             availability,
             common: Common { id: Some(row_id("picker-no-engine", &path.0)), ..Common::default() },
             Button {
-                label: ADD,
+                label: crate::copy::common::ADD_ACCOUNT_ELLIPSIS,
                 size: ControlSize::Small,
                 availability,
                 onclick: move |_| onask.call(PickerInput::SetUpEngine(set_up.clone())),

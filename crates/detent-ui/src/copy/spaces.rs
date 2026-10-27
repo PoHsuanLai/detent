@@ -45,7 +45,7 @@ pub(crate) const SPACES: &str = "Spaces";
 pub(crate) const NO_SPACES: &str = "No Spaces";
 
 /// The words "A Space you make in an app appears here.".
-pub(crate) const A_SPACE_YOU_MAKE_IN_AN: &str = "A Space you make in an app appears here.";
+pub(crate) const NO_SPACES_HINT: &str = "A Space you make in an app appears here.";
 
 /// The words "Remove {}".
 pub(crate) fn remove(a: impl std::fmt::Display) -> String {

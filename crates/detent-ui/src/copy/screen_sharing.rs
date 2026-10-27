@@ -21,7 +21,7 @@ pub(crate) const NO_APPS_CAN_SHARE_YOUR_SCREEN: &str =
     "No apps can share your screen without asking";
 
 /// The words "When you let an app share your screen without asking again, it appears here.".
-pub(crate) const WHEN_YOU_LET_AN_APP_SHARE: &str =
+pub(crate) const NO_REMEMBERED_APPS_HINT: &str =
     "When you let an app share your screen without asking again, it appears here.";
 
 /// The words "Remove {name}".

@@ -16,24 +16,6 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 
-/// The group's title.
-const TITLE: &str = crate::copy::computers::YOUR_COMPUTERS;
-
-/// The title of the group of computers that asked to borrow this computer's models.
-const GUESTS_TITLE: &str = crate::copy::computers::COMPUTERS_ASKING_TO_USE_THIS_COMPUTER;
-
-/// What the list says before a computer is added.
-const NONE_YET: &str = crate::copy::computers::COMPUTERS_YOU_ADD_APPEAR_HERE_EACH;
-
-/// What the Add a server row says it is for.
-const ADD_SERVER_HELP: &str = crate::copy::computers::A_MODEL_SERVER_YOU_ALREADY_RUN;
-
-/// What the Add list says when Tailscale knows no computer of the person's that lends.
-const NOBODY_LENDING: &str = crate::copy::computers::NONE_OF_YOUR_OTHER_COMPUTERS_IS;
-
-/// What the Add list says while Tailscale is asked.
-const LOOKING: &str = crate::copy::computers::LOOKING_FOR_YOUR_COMPUTERS_ON_TAILSCALE;
-
 /// Follows the computers and hands back their state and the way to feed it an input.
 pub(crate) fn use_computers() -> (Signal<ComputersState>, EventHandler<ComputersInput>) {
     let computers = use_live(|client| client.computers());
@@ -56,9 +38,9 @@ pub(crate) fn Computers(
         ComputersState::Looking => rsx! {},
         ComputersState::Unavailable(absence) => rsx! {
             div { class: "computers", "data-computers": "unavailable",
-                FieldGroup { title: Some(TITLE.to_owned()),
+                FieldGroup { title: Some(crate::copy::computers::YOUR_COMPUTERS.to_owned()),
                     FieldRow {
-                        label: TextLine::from(TITLE),
+                        label: TextLine::from(crate::copy::computers::YOUR_COMPUTERS),
                         help: Some(TextLine::from(absence_words(Subject::Computers, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }
@@ -82,9 +64,9 @@ fn Listed(
     };
     rsx! {
         div { class: "computers", "data-computers": "list",
-            FieldGroup { title: Some(TITLE.to_owned()),
+            FieldGroup { title: Some(crate::copy::computers::YOUR_COMPUTERS.to_owned()),
                 if rows.is_empty() {
-                    FieldRow { label: TextLine::from(NONE_YET), availability: Availability::Disabled,
+                    FieldRow { label: TextLine::from(crate::copy::computers::NO_COMPUTERS_YET), availability: Availability::Disabled,
                         Label { text: "None", role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                     }
                 }
@@ -92,7 +74,7 @@ fn Listed(
                     PlaceRow { key: "{row.view.name}", view: row.view, on: row.on }
                 }
                 FieldRow { label: TextLine::from(crate::copy::computers::ADD_A_SERVER),
-                    help: Some(TextLine::from(ADD_SERVER_HELP)),
+                    help: Some(TextLine::from(crate::copy::computers::ADD_SERVER_HELP)),
                     help_shown: HelpShown::OnRequest,
                     Button {
                         common: Common { aria_label: Some(crate::copy::computers::ADD_A_SERVER.to_owned()), id: Some("add-server".to_owned()), ..Common::default() },
@@ -118,13 +100,13 @@ fn Listed(
                 AddList::Closed => rsx! {},
                 AddList::Looking => rsx! {
                     FieldGroup { title: Some(crate::copy::computers::ADD_A_COMPUTER.to_owned()),
-                        FieldRow { label: TextLine::from(LOOKING), availability: Availability::Disabled }
+                        FieldRow { label: TextLine::from(crate::copy::computers::LOOKING_FOR_YOUR_COMPUTERS_ON_TAILSCALE), availability: Availability::Disabled }
                     }
                 },
                 AddList::Choosing(found) => rsx! { Candidates { found, feed } },
             }
             if !ready.guests.is_empty() {
-                FieldGroup { title: Some(GUESTS_TITLE.to_owned()),
+                FieldGroup { title: Some(crate::copy::computers::COMPUTERS_ASKING_TO_USE_THIS_COMPUTER.to_owned()),
                     for guest in ready.guests.iter().cloned() {
                         GuestLine { key: "{guest.node}", guest, feed }
                     }
@@ -139,7 +121,7 @@ fn Candidates(found: Vec<ComputerCandidate>, feed: EventHandler<ComputersInput>)
     rsx! {
         FieldGroup { title: Some(crate::copy::computers::ADD_A_COMPUTER.to_owned()),
             if found.is_empty() {
-                FieldRow { label: TextLine::from(NOBODY_LENDING), availability: Availability::Disabled }
+                FieldRow { label: TextLine::from(crate::copy::computers::NOBODY_LENDING), availability: Availability::Disabled }
             }
             for candidate in found {
                 CandidateLine { key: "{candidate.node}", candidate, feed }
@@ -165,9 +147,7 @@ fn CandidateLine(candidate: ComputerCandidate, feed: EventHandler<ComputersInput
         .join(", ");
     let help = match candidate.approval {
         Approval::Given => models,
-        Approval::Needed => {
-            crate::copy::computers::say_yes_on_when_it_asks(&models, &candidate.name)
-        }
+        Approval::Needed => crate::copy::computers::say_yes_on_ask(&models, &candidate.name),
     };
     let node = candidate.node.clone();
     rsx! {

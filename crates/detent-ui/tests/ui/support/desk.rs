@@ -1,6 +1,5 @@
 //! A desk for the engine sheet that lists the engines it is given and writes down what it was
 //! asked: never a download, never a folder chooser, never the real computer.
-#![allow(dead_code)]
 
 use detent_client::Desk;
 use detent_model::{EngineRow, EngineStanding, EngineWay, InstallScope, Work};
@@ -48,11 +47,6 @@ impl Fake {
     /// Every folder counted.
     pub fn points(&self) -> Vec<(String, String)> {
         self.0.points.lock().expect("points").clone()
-    }
-
-    /// Every stop asked for.
-    pub fn cancels(&self) -> Vec<String> {
-        self.0.cancels.lock().expect("cancels").clone()
     }
 
     /// How many times the assistant was asked to restart.

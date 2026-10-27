@@ -17,9 +17,6 @@ use ds::root::common::Common;
 use ds::style::icon::url::IconUrl;
 use ds::style::tokens::control_size::ControlSize;
 
-/// The line under the list.
-const NOT_LISTED: &str = crate::copy::privacy::OTHER_PROGRAMS_ASK_THE_FIRST_TIME;
-
 /// The programs, or the line that says none has asked.
 #[component]
 pub(super) fn Listed(
@@ -38,7 +35,7 @@ pub(super) fn Listed(
             if pane.programs.is_empty() {
                 EmptyState {
                     title: crate::copy::privacy::NOTHING_HAS_ASKED_YET,
-                    description: crate::copy::privacy::PROGRAMS_THAT_ASK_TO_SEE_YOUR,
+                    description: crate::copy::privacy::NO_PROGRAMS_HINT,
                 }
             } else {
                 for program in pane.programs.iter().cloned() {
@@ -50,7 +47,7 @@ pub(super) fn Listed(
                         pick,
                     }
                 }
-                Label { text: NOT_LISTED, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
+                Label { text: crate::copy::privacy::NOT_LISTED_HELP, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
             }
         }
     }

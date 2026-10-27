@@ -20,12 +20,6 @@ use std::path::PathBuf;
 /// The small pictures made so far, by the file each is made from.
 pub(super) type Smalls = HashMap<PathBuf, PathBuf>;
 
-/// What the person calls the pictures they added.
-const YOURS: &str = crate::copy::pictures::YOUR_PICTURES;
-
-/// What the person calls the pictures the system ships.
-const SYSTEMS: &str = crate::copy::pictures::DESKTOP_PICTURES;
-
 /// Makes the small picture of each of `previews` not in `smalls` yet, one after the other so the
 /// first tiles fill in first, and puts each in `smalls` as it is made.
 async fn make_smalls(pictures: Wallpaper, previews: Vec<PathBuf>, mut smalls: Signal<Smalls>) {
@@ -97,9 +91,9 @@ pub fn PictureControl(
         div { class: "key-pictures", "aria-label": label,
             {picture_header(sections.current.as_ref(), &smalls, told(), EventHandler::new(onadd))}
             if !sections.added.is_empty() {
-                {pictures_grid(YOURS, &sections.added, &smalls, EventHandler::new(pick))}
+                {pictures_grid(crate::copy::pictures::YOUR_PICTURES, &sections.added, &smalls, EventHandler::new(pick))}
             }
-            {pictures_grid(SYSTEMS, &sections.system, &smalls, EventHandler::new(pick))}
+            {pictures_grid(crate::copy::pictures::DESKTOP_PICTURES, &sections.system, &smalls, EventHandler::new(pick))}
         }
     }
 }

@@ -56,9 +56,6 @@ fn ListFoot(
     }
 }
 
-/// The heading over the accounts the sync service holds.
-const SYNC_HEADING: &str = crate::copy::account_views::SYNC;
-
 /// The account group's rows as list items: a heading, then a row each; the sync service's
 /// accounts come last under a heading of their own.
 fn items_of(
@@ -92,7 +89,7 @@ fn items_of(
     let heading = (!synced.is_empty()).then(|| {
         ListItem::heading(
             "group:sync".to_owned(),
-            rsx! { SectionHeader { title: SYNC_HEADING.to_owned() } },
+            rsx! { SectionHeader { title: crate::copy::account_views::SYNC.to_owned() } },
         )
     });
     let sync_rows = synced
@@ -219,7 +216,7 @@ pub(super) fn AccountList(
             div { class: "accounts-empty", "data-accounts": "empty",
                 EmptyState {
                     title: crate::copy::account_views::NO_ACCOUNTS,
-                    description: crate::copy::account_views::AN_APP_THAT_NEEDS_AN_ACCOUNT,
+                    description: crate::copy::account_views::NO_ACCOUNTS_HINT,
                 }
             }
             ListFoot { adding, availability, removal, on }

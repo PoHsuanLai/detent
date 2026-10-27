@@ -9,9 +9,6 @@ use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 
-/// What the row is called here; the picker's own name for it is the tier.
-const ROW_LABEL: &str = crate::copy::common::MODEL;
-
 /// The row, or why it is not there. `state` is the picker's.
 #[component]
 pub(crate) fn AssistantPicker(
@@ -30,7 +27,7 @@ pub(crate) fn AssistantPicker(
         return rsx! { Missing {} };
     };
     let row = ModelRow {
-        label: ROW_LABEL.to_owned(),
+        label: crate::copy::common::MODEL.to_owned(),
         help: String::new(),
         ..row.clone()
     };
@@ -52,7 +49,7 @@ fn Missing() -> Element {
         div { class: "picker", "data-picker": "missing",
             FieldGroup {
                 FieldRow {
-                    label: TextLine::from(ROW_LABEL),
+                    label: TextLine::from(crate::copy::common::MODEL),
                     help: Some(TextLine::from(crate::copy::assistant_model::THE_MODEL_SERVICE_OFFERS_NO_MODEL)),
                     availability: Availability::Disabled,
                     Label { text: "Unavailable", role: LabelRole::Secondary }

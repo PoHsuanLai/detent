@@ -1,7 +1,6 @@
 //! A fake screen-sharing portal: `org.quire.Portal1` at the portal path on the portal's name on a
 //! private bus, holding the apps a test sets. It writes down every call, and can be made to
 //! refuse the next removal.
-#![allow(dead_code)]
 
 use super::bus::PrivateBus;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};

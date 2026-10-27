@@ -32,8 +32,7 @@ pub(crate) const STATUS: &str = "Status";
 pub(crate) const SERVICES: &str = "Services";
 
 /// The words "Whether apps may use each service of the account.".
-pub(crate) const WHETHER_APPS_MAY_USE_EACH_SERVICE: &str =
-    "Whether apps may use each service of the account.";
+pub(crate) const SERVICES_HELP: &str = "Whether apps may use each service of the account.";
 
 /// The words "Spending".
 pub(crate) const SPENDING: &str = "Spending";
@@ -51,7 +50,7 @@ pub(crate) const SYNC: &str = "Sync";
 pub(crate) const APPS_WITH_ACCESS: &str = "Apps with access";
 
 /// The words "Revoking asks the app again the next time it needs the account.".
-pub(crate) const REVOKING_ASKS_THE_APP_AGAIN_THE: &str =
+pub(crate) const REVOKE_HELP: &str =
     "Revoking asks the app again the next time it needs the account.";
 
 /// The words "Apps using this identity".
@@ -69,7 +68,7 @@ pub(crate) fn revoke(a: impl std::fmt::Display) -> String {
 }
 
 /// The words "Uses none of this account's services".
-pub(crate) const USES_NONE_OF_THIS_ACCOUNT_S: &str = "Uses none of this account's services";
+pub(crate) const USES_NO_SERVICE: &str = "Uses none of this account's services";
 
 /// The words "Uses {}".
 pub(crate) fn uses(a: impl std::fmt::Display) -> String {
@@ -80,7 +79,7 @@ pub(crate) fn uses(a: impl std::fmt::Display) -> String {
 pub(crate) const NO_ACCOUNTS: &str = "No accounts";
 
 /// The words "An app that needs an account asks for it, and it appears here.".
-pub(crate) const AN_APP_THAT_NEEDS_AN_ACCOUNT: &str =
+pub(crate) const NO_ACCOUNTS_HINT: &str =
     "An app that needs an account asks for it, and it appears here.";
 
 /// The words "AI keys".
@@ -102,14 +101,14 @@ pub(crate) const CLEAR: &str = "Clear";
 pub(crate) const NO_ACCOUNT_CHOSEN: &str = "No account chosen";
 
 /// The words "Choose an account to see its services and the apps that use it.".
-pub(crate) const CHOOSE_AN_ACCOUNT_TO_SEE_ITS: &str =
+pub(crate) const CHOOSE_ACCOUNT_HINT: &str =
     "Choose an account to see its services and the apps that use it.";
 
 /// The words "Sign in to Your Accounts".
 pub(crate) const SIGN_IN_TO_YOUR_ACCOUNTS: &str = "Sign in to Your Accounts";
 
 /// The words "Nothing is signed in yet. Add an account and the apps you allow can use it.".
-pub(crate) const NOTHING_IS_SIGNED_IN_YET_ADD: &str =
+pub(crate) const NOTHING_SIGNED_IN: &str =
     "Nothing is signed in yet. Add an account and the apps you allow can use it.";
 
 /// The words "Signed in".

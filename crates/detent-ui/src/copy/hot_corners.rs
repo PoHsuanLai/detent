@@ -146,14 +146,13 @@ pub(crate) const CHOOSE: &str = "Choose";
 pub(crate) const COMMAND: &str = "Command";
 
 /// The words "Run a command when the pointer rests in the corner.".
-pub(crate) const RUN_A_COMMAND_WHEN_THE_POINTER: &str =
-    "Run a command when the pointer rests in the corner.";
+pub(crate) const COMMAND_HELP: &str = "Run a command when the pointer rests in the corner.";
 
 /// The words "Command to run".
 pub(crate) const COMMAND_TO_RUN: &str = "Command to run";
 
 /// The words "No installed app offers an action that needs nothing more.".
-pub(crate) const NO_INSTALLED_APP_OFFERS_AN_ACTION: &str =
+pub(crate) const NO_PLAIN_ACTIONS: &str =
     "No installed app offers an action that needs nothing more.";
 
 /// The words "Nothing matches.".
@@ -190,7 +189,7 @@ pub(crate) fn choose_u(a: impl std::fmt::Display) -> String {
 pub(crate) const WEB_ADDRESS: &str = "Web Address";
 
 /// The words "Open an app, a file, a folder or a web address when the pointer rests in the corner.".
-pub(crate) const OPEN_AN_APP_A_FILE_A: &str =
+pub(crate) const OPEN_HELP: &str =
     "Open an app, a file, a folder or a web address when the pointer rests in the corner.";
 
 /// The words "What to open".

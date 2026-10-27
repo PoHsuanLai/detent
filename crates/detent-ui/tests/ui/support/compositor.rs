@@ -2,7 +2,6 @@
 //! `org.quire.Compositor1` on a private bus, listing the Privacy rows the way the real one does
 //! (`privacy.<power>.<id>` with `.forget` beside a person's answer, a read-out for an
 //! administrator's, a line for a power nobody asked in) and writing down what it was asked.
-#![allow(dead_code)]
 
 use super::bus::PrivateBus;
 use ds_settings::live::{

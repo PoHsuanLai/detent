@@ -11,9 +11,6 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 
-/// The sheet's title.
-const TITLE: &str = crate::copy::assistants::ADD_A_CODING_ASSISTANT;
-
 /// The sheet over the coding assistants: pick one, installed or on offer, name it, and read what
 /// it reaches before Add. `typed` and `picked` hand the form back changed; `submit` asks to add it.
 #[component]
@@ -38,11 +35,11 @@ pub(super) fn AddSheet(
     };
     rsx! {
         Sheet {
-            label: TITLE.to_owned(),
+            label: crate::copy::assistants::ADD_A_CODING_ASSISTANT.to_owned(),
             width: SheetWidth::Narrow,
             onclose: close,
             div { class: "system-sheet", "data-system": "add-coding-assistant",
-                Label { text: TITLE, role: LabelRole::Primary, style: LabelStyle::Headline }
+                Label { text: crate::copy::assistants::ADD_A_CODING_ASSISTANT, role: LabelRole::Primary, style: LabelStyle::Headline }
                 if loading {
                     Looking {}
                 }

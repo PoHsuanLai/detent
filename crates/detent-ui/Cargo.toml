@@ -23,28 +23,34 @@ ds-settings = { workspace = true, features = ["dioxus", "live", "tokio"] }
 tokio = { workspace = true }
 
 [dev-dependencies]
-# Test fixtures only: the in-memory links, the test kit, and quire's harness. The tests that still
-# stand a service up on a private bus (stage 4 follow-up) also need the last four lines.
-# A stand-in service on a test's private bus is vouched for by `AnyOwner`, or by the role check over
-# peers that a test introduces owners to (the squatter test).
-detent-callers = { workspace = true, features = ["testing"] }
+# Fixtures: the in-memory links and the test kit, and quire's harness. The tests that still stand a
+# service up on a private bus, because the pane follows a daemon's live settings module (Accounts,
+# Intelligence, Privacy, the model picker) and no client fake stands in for one, need the
+# commented ones below.
 detent-system = { workspace = true, features = ["testing"] }
 detent-testkit = { workspace = true }
-detent-files = { workspace = true }
-porter-core = { workspace = true }
-porter-dbus = { workspace = true }
-porter-infer = { workspace = true }
-zbus = { workspace = true, features = ["tokio"] }
 ds-settings = { workspace = true, features = ["testing"] }
 dioxus-ssr = { workspace = true }
 ds-harness = { workspace = true }
 image = { workspace = true }
 toml = { workspace = true }
-almanac-core = { workspace = true }
-chordkit = { workspace = true }
+# A stand-in service on a private bus is vouched for by `AnyOwner`, or by the role check over peers
+# a test introduces owners to (the squatter test).
+detent-callers = { workspace = true, features = ["testing"] }
+# Reads and writes the settings files and desktop entries the tests seed and check.
+detent-files = { workspace = true }
+# The stand-in daemons' wire: bus names, paths and the zbus interfaces they serve.
+porter-dbus = { workspace = true }
+zbus = { workspace = true, features = ["tokio"] }
+# The Intelligence test's stand-in inferd answers with porter's kinds and inference types.
+porter-core = { workspace = true }
+porter-infer = { workspace = true }
+# The Assistants test reads docket's places file.
 docket-settings = { workspace = true }
+# The lending test's service manager implements porter's `UnitManager`.
 porter-client = { workspace = true, features = ["infer", "lending"] }
-porter-provider = { workspace = true }
+# The Keyboard test names chords.
+chordkit = { workspace = true }
 
 [lints]
 workspace = true

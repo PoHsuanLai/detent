@@ -2,6 +2,11 @@
 //! A separate test target needs a stated reason (CONVENTIONS.md, Tests).
 
 mod absent_bus;
+mod handover;
+mod private_bus;
+mod spaces_bus;
+mod spaces_fakes;
+mod spaces_owner;
 mod wifi_fake;
 
 /// Fails when a topic file in this directory is not declared above, so a new file cannot be

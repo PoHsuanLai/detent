@@ -1,6 +1,5 @@
 //! The lending switch's world: a shipped file in a scratch folder, and a service manager that
 //! writes down what it was asked and never touches the real one.
-#![allow(dead_code)]
 
 use porter_client::{UnitFailure, UnitManager, UnitName};
 use std::sync::atomic::{AtomicBool, Ordering};

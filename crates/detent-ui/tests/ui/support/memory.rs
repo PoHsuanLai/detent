@@ -2,7 +2,6 @@
 //! settings file in the scratch config home, the way the real one reads it, and writes down what
 //! it was asked to confirm, and carries the `Confinement` word it is given. It knows two keys and the shipped value of each; a value is loose when
 //! it is a different word, or a number below the shipped one.
-#![allow(dead_code)]
 
 use super::bus::PrivateBus;
 use std::collections::{BTreeMap, HashMap};

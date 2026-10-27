@@ -1,9 +1,7 @@
-//! A fake Spaces registry (`org.quire.Spaces1` on accountd's name) and a fake memory
-//! (`org.quire.Memory1.Control`) on a private bus, writing what they were asked, in order, into
-//! one log.
-#![allow(dead_code)]
+//! A registry (`org.quire.Spaces1` on accountd's name) and a memory (`org.quire.Memory1.Control`)
+//! on a private bus, writing what they were asked, in order, into one log.
 
-use super::bus::PrivateBus;
+use crate::private_bus::PrivateBus;
 use porter_dbus::names::{SPACE_KEY_CREATED, SPACE_KEY_LOOK, SPACE_KEY_NAME};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -15,7 +13,7 @@ type Details = HashMap<String, OwnedValue>;
 pub type Log = Arc<Mutex<Vec<String>>>;
 
 struct Registry {
-    rows: Arc<Mutex<Vec<(String, String)>>>,
+    rows: Mutex<Vec<(String, String)>>,
     log: Log,
 }
 
@@ -26,10 +24,8 @@ fn owned(value: Value<'_>) -> OwnedValue {
 #[zbus::interface(name = "org.quire.Spaces1")]
 impl Registry {
     async fn list(&self) -> Vec<(String, Details)> {
-        self.rows
-            .lock()
-            .expect("rows")
-            .iter()
+        let rows = self.rows.lock().expect("rows").clone();
+        rows.into_iter()
             .map(|(id, name)| {
                 let details: Details = [
                     (SPACE_KEY_NAME.to_owned(), owned(Value::from(name.as_str()))),
@@ -38,7 +34,7 @@ impl Registry {
                 ]
                 .into_iter()
                 .collect();
-                (id.clone(), details)
+                (id, details)
             })
             .collect()
     }
@@ -71,33 +67,32 @@ impl Control {
     }
 }
 
-/// The fakes, kept alive while the test runs.
+/// The connections that keep the fakes on the bus.
 pub struct Fakes {
     pub log: Log,
     pub registry: zbus::Connection,
     _memory: Option<zbus::Connection>,
 }
 
-/// A registry holding `spaces` on its own connection, writing into `log`; it has no name yet.
+/// A registry holding `spaces` (`(id, name)`) on its own connection, writing into `log`; it has no
+/// name yet.
 async fn registry_holding(
     bus: &PrivateBus,
     spaces: &[(&str, &str)],
     log: &Log,
 ) -> zbus::Connection {
-    let rows = Arc::new(Mutex::new(
-        spaces
-            .iter()
-            .map(|(id, name)| ((*id).to_owned(), (*name).to_owned()))
-            .collect::<Vec<_>>(),
-    ));
+    let rows = spaces
+        .iter()
+        .map(|(id, name)| ((*id).to_owned(), (*name).to_owned()))
+        .collect();
     let registry = bus.connect().await;
     registry
         .object_server()
         .at(
             "/org/quire/Spaces1",
             Registry {
-                rows,
-                log: log.clone(),
+                rows: Mutex::new(rows),
+                log: Arc::clone(log),
             },
         )
         .await
@@ -105,7 +100,7 @@ async fn registry_holding(
     registry
 }
 
-/// Serves the registry holding `spaces` (`(id, name)`), and memory unless `memory` is false.
+/// The registry holding `spaces` as accountd, and memory unless `memory` is false.
 pub async fn serve(bus: &PrivateBus, spaces: &[(&str, &str)], memory: bool) -> Fakes {
     let log: Log = Arc::default();
     let registry = registry_holding(bus, spaces, &log).await;
@@ -117,7 +112,12 @@ pub async fn serve(bus: &PrivateBus, spaces: &[(&str, &str)], memory: bool) -> F
         let connection = bus.connect().await;
         connection
             .object_server()
-            .at("/org/quire/Memory1", Control { log: log.clone() })
+            .at(
+                "/org/quire/Memory1",
+                Control {
+                    log: Arc::clone(&log),
+                },
+            )
             .await
             .expect("memory served");
         connection
@@ -135,8 +135,8 @@ pub async fn serve(bus: &PrivateBus, spaces: &[(&str, &str)], memory: bool) -> F
     }
 }
 
-/// Serves a second registry holding `spaces` that does not own accountd's name: a program a test
-/// hands the name to.
+/// A second registry holding `spaces` that does not own accountd's name: a program a test hands
+/// the name to.
 pub async fn serve_unnamed(bus: &PrivateBus, spaces: &[(&str, &str)]) -> Fakes {
     let log: Log = Arc::default();
     let registry = registry_holding(bus, spaces, &log).await;
@@ -144,5 +144,12 @@ pub async fn serve_unnamed(bus: &PrivateBus, spaces: &[(&str, &str)]) -> Fakes {
         log,
         registry,
         _memory: None,
+    }
+}
+
+impl Fakes {
+    /// What the fakes were asked, in order.
+    pub fn asked(&self) -> Vec<String> {
+        self.log.lock().expect("log").clone()
     }
 }

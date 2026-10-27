@@ -164,7 +164,7 @@ fn Ready(
                         } else if !ready.pane.accounts.is_empty() {
                             EmptyState {
                                 title: crate::copy::account_views::NO_ACCOUNT_CHOSEN,
-                                description: crate::copy::account_views::CHOOSE_AN_ACCOUNT_TO_SEE_ITS,
+                                description: crate::copy::account_views::CHOOSE_ACCOUNT_HINT,
                             }
                         }
                     }

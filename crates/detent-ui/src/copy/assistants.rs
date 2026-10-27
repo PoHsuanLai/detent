@@ -45,7 +45,7 @@ pub(crate) fn advanced(a: impl std::fmt::Display) -> String {
 pub(crate) const ASK_ME_EACH_TIME: &str = "Ask me each time";
 
 /// The words "The assistant asks before it uses this account.".
-pub(crate) const THE_ASSISTANT_ASKS_BEFORE_IT_USES: &str =
+pub(crate) const ASKS_BEFORE_USING_ACCOUNT: &str =
     "The assistant asks before it uses this account.";
 
 /// The words "Signed-in accounts that offer AI appear here. Each starts off.".
@@ -62,7 +62,7 @@ pub(crate) const READY: &str = "Ready";
 pub(crate) const NOT_ANSWERING: &str = "Not answering";
 
 /// The words "Could not save where the assistant may run. {why}".
-pub(crate) fn could_not_save_where_the_assistant(why: impl std::fmt::Display) -> String {
+pub(crate) fn could_not_save_places(why: impl std::fmt::Display) -> String {
     format!("Could not save where the assistant may run. {why}")
 }
 

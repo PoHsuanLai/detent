@@ -1,7 +1,6 @@
 //! A fake syncd: `org.quire.Sync1` at its path on a private bus, holding the deletions a test
 //! sets. `Watch` tells the holds on now; `ConfirmDiscard` clears one and tells the end, or answers
 //! `NothingHeld`; every call is recorded.
-#![allow(dead_code)]
 
 use super::bus::PrivateBus;
 use porter_dbus::Details;

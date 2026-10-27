@@ -9,13 +9,6 @@ use dioxus::prelude::*;
 use ds::prelude::*;
 use ds::stack::toast_hub::ToastHub;
 
-/// What the person reads when the file could not be written.
-const COULD_NOT_SAVE: &str = crate::copy::shortcuts::YOUR_SHORTCUTS_COULD_NOT_BE_SAVED;
-
-/// What the person reads when another program wrote the file between the list reading it and
-/// this save: the list shows what the file says now.
-const CHANGED_ELSEWHERE: &str = crate::copy::shortcuts::YOUR_SHORTCUTS_WERE_CHANGED_BY_ANOTHER;
-
 /// The list of one window.
 #[derive(Clone)]
 pub(super) struct Pane {
@@ -61,8 +54,10 @@ impl Pane {
                         .keymap
                         .save_person(&base, &text)
                         .map_err(|error| match error {
-                            FilesError::Changed { .. } => CHANGED_ELSEWHERE.to_owned(),
-                            _ => COULD_NOT_SAVE.to_owned(),
+                            FilesError::Changed { .. } => {
+                                crate::copy::shortcuts::SHORTCUTS_CHANGED_ELSEWHERE.to_owned()
+                            }
+                            _ => crate::copy::shortcuts::SHORTCUTS_NOT_SAVED.to_owned(),
                         });
                 self.feed(ShortcutsInput::Saved(ended));
             }

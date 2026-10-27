@@ -19,9 +19,6 @@ use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 use ds_settings::schema::KeyPath;
 
-/// What the row that opens the sheet is called, and the sheet.
-const TITLE: &str = crate::copy::engines::PROGRAMS_FOR_LOCAL_MODELS;
-
 /// The row that opens the programs, when inferd lists any; nothing otherwise.
 #[component]
 pub(crate) fn EnginePrograms() -> Element {
@@ -42,10 +39,10 @@ pub(crate) fn EnginePrograms() -> Element {
         div { class: "engine-programs", "data-programs": "list",
             FieldGroup {
                 FieldRow {
-                    label: TextLine::from(format!("{TITLE}\u{2026}")),
+                    label: TextLine::from(format!("{}\u{2026}", crate::copy::engines::PROGRAMS_FOR_LOCAL_MODELS)),
                     Button {
                         label: crate::copy::common::OPEN,
-                        common: Common { aria_label: Some(crate::copy::engines::open(TITLE)), ..Common::default() },
+                        common: Common { aria_label: Some(crate::copy::engines::open(crate::copy::engines::PROGRAMS_FOR_LOCAL_MODELS)), ..Common::default() },
                         onclick: move |_| opened.set(Shown::Visible),
                     }
                 }
@@ -53,11 +50,11 @@ pub(crate) fn EnginePrograms() -> Element {
         }
         if opened() == Shown::Visible {
             Sheet {
-                label: TITLE.to_owned(),
+                label: crate::copy::engines::PROGRAMS_FOR_LOCAL_MODELS.to_owned(),
                 width: SheetWidth::Regular,
                 onclose: close,
                 div { class: "advanced-sheet", "data-programs": "sheet",
-                    Label { text: TITLE, role: LabelRole::Primary, style: LabelStyle::Headline }
+                    Label { text: crate::copy::engines::PROGRAMS_FOR_LOCAL_MODELS, role: LabelRole::Primary, style: LabelStyle::Headline }
                     FieldGroup {
                         for row in programs.rows.iter().cloned() {
                             ProgramField {

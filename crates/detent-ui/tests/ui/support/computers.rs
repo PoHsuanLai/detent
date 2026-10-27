@@ -1,7 +1,6 @@
 //! A fake inferd (`org.quire.Inference1`) for the Your computers group: the places, the Tailscale
 //! candidates and the guests, on a private bus. Every call that changes something is written, in
 //! order, into one log; a change can be made to fail with one of inferd's named refusals.
-#![allow(dead_code)]
 
 use super::bus::PrivateBus;
 use super::inferd::Inferd;
@@ -342,18 +341,9 @@ impl Fake {
     }
 }
 
-/// Serves inferd holding `own` computers, `lenders` on Tailscale and `askers`.
-pub async fn serve(
-    bus: &PrivateBus,
-    own: Vec<Own>,
-    lenders: Vec<Lender>,
-    askers: Vec<Asker>,
-) -> Fake {
-    serve_with(bus, own, lenders, askers, None).await
-}
-
-/// The same, with the model picker's module (`models`) served on the same connection, so the
-/// Add a server sheet finds the models inferd lists.
+/// Serves inferd holding `own` computers, `lenders` on Tailscale and `askers`, with the model
+/// picker's module (`models`) on the same connection, so the Add a server sheet finds the models
+/// inferd lists.
 pub async fn serve_with(
     bus: &PrivateBus,
     own: Vec<Own>,

@@ -1,7 +1,6 @@
 //! The window on scratch directories: real schemas seeded into a scratch `$XDG_DATA_HOME`, an
 //! empty scratch `$XDG_CONFIG_HOME`, fixed desktop preferences. Nothing here reaches the real
 //! config, the session bus or the portal.
-#![allow(dead_code)]
 
 pub mod accountd;
 pub mod bluetooth;
@@ -20,7 +19,6 @@ pub mod memory;
 pub mod pictures;
 pub mod portal;
 pub mod running;
-pub mod spaces;
 pub mod syncd;
 pub mod updates;
 pub mod wifi;
@@ -32,6 +30,7 @@ use detent_client::{
 };
 use detent_files::{CacheHome, ConfigHome, DataHome, StateHome};
 use detent_model::{Absence, OriginRule, Outbox, inbox};
+use detent_system::spaces::SpacesLink;
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{App, Env, FirstRunApp, Homes, Opening};
 use displays::Displays;
@@ -70,6 +69,7 @@ pub struct Sandbox {
     bluetooth: Bluetooth,
     displays: Displays,
     agents_program: Option<std::path::PathBuf>,
+    spaces: Option<Arc<dyn SpacesLink>>,
 }
 
 impl Sandbox {
@@ -99,6 +99,8 @@ impl Sandbox {
             displays: Displays::missing(Absence::NotRunning),
             // No program to list or download coding assistants with, whatever this computer has.
             agents_program: None,
+            // The Spaces registry is looked for on the bus, which is absent unless a test names one.
+            spaces: None,
         }
     }
 
@@ -135,6 +137,14 @@ impl Sandbox {
     /// This world with the Hot Corners sheet working through `corners`.
     pub fn with_corners(self, corners: Arc<dyn CornerDesk>) -> Sandbox {
         Sandbox { corners, ..self }
+    }
+
+    /// This world with the Spaces page working through `spaces`.
+    pub fn with_spaces(self, spaces: Arc<dyn SpacesLink>) -> Sandbox {
+        Sandbox {
+            spaces: Some(spaces),
+            ..self
+        }
     }
 
     /// This world with the update service in this standing.
@@ -244,7 +254,11 @@ impl Sandbox {
         .with_engines(self.engines.clone())
         .with_pictures(self.pictures.clone())
         .with_corners(self.corners.clone())
-        .with_agents_program(self.agents_program.clone())
+        .with_agents_program(self.agents_program.clone());
+        let client = match &self.spaces {
+            Some(spaces) => client.with_spaces(Arc::clone(spaces)),
+            None => client,
+        }
         .build();
         Env::discover(
             &[self.scratch.join("data/quire/settings")],

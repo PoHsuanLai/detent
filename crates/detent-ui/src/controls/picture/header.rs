@@ -10,9 +10,6 @@ use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::prelude::*;
 use ds::style::icon::render::{IconPx, IconSize};
 
-/// What the row says when no picture is stored.
-const NO_PICTURE: &str = crate::copy::pictures::NO_PICTURE_CHOSEN;
-
 /// The side of the glyph shown while the current picture's small picture is not made.
 const GLYPH: u8 = 32;
 
@@ -42,7 +39,10 @@ pub(super) fn picture_header(
     told: Option<String>,
     onadd: EventHandler<()>,
 ) -> Element {
-    let name = current.map_or_else(|| NO_PICTURE.to_owned(), |tile| tile.name.clone());
+    let name = current.map_or_else(
+        || crate::copy::pictures::NO_PICTURE_CHOSEN.to_owned(),
+        |tile| tile.name.clone(),
+    );
     rsx! {
         div { class: "key-pictures-head",
             div { class: "key-pictures-current", {current_preview(current, smalls)} }

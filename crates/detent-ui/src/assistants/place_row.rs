@@ -153,7 +153,7 @@ pub(crate) fn PlaceRow(view: PlaceView, on: PlaceHandlers) -> Element {
                 if let Some(value) = ask {
                     FieldRow {
                         label: TextLine::from(crate::copy::assistants::ASK_ME_EACH_TIME),
-                        help: Some(TextLine::from(crate::copy::assistants::THE_ASSISTANT_ASKS_BEFORE_IT_USES)),
+                        help: Some(TextLine::from(crate::copy::assistants::ASKS_BEFORE_USING_ACCOUNT)),
                         help_shown: HelpShown::OnRequest,
                         common: Common { id: Some(row_id("ask", &view.name)), ..Common::default() },
                         Toggle {

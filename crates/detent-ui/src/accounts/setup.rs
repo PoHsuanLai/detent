@@ -25,12 +25,6 @@ use ds::style::icon::family::PlateFamily;
 use ds::style::tokens::control_size::ControlSize;
 use ds_blitz::{AppHandle, use_app_handle};
 
-/// Said once, at the top.
-const HEADING: &str = crate::copy::account_views::SIGN_IN_TO_YOUR_ACCOUNTS;
-
-/// What the step says while nothing is signed in.
-const NOTHING_YET: &str = crate::copy::account_views::NOTHING_IS_SIGNED_IN_YET_ADD;
-
 /// The line under an account that needs a new sign-in.
 fn standing_line(row: &SignedIn) -> String {
     row.provider.as_ref().map_or_else(
@@ -105,10 +99,10 @@ pub(crate) fn AccountsSetup() -> Element {
                 size: IconSize::Tile48,
                 plate: Some(PlateFamily::Blue),
             }
-            Label { text: HEADING, role: LabelRole::Primary, style: LabelStyle::Title }
+            Label { text: crate::copy::account_views::SIGN_IN_TO_YOUR_ACCOUNTS, role: LabelRole::Primary, style: LabelStyle::Title }
             div { class: "accounts-setup-card",
                 if empty {
-                    Label { text: NOTHING_YET, role: LabelRole::Secondary }
+                    Label { text: crate::copy::account_views::NOTHING_SIGNED_IN, role: LabelRole::Secondary }
                 } else {
                     List::<String> {
                         label: crate::copy::account_views::SIGNED_IN,

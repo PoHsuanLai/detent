@@ -153,17 +153,17 @@ pub(crate) const MODELS: &str = "Models";
 pub(crate) const CHOOSE_FROM: &str = "Choose from";
 
 /// The words "No longer available. Turn off to remove.".
-pub(crate) const NO_LONGER_AVAILABLE_TURN_OFF_TO: &str = "No longer available. Turn off to remove.";
+pub(crate) const GONE_TURN_OFF: &str = "No longer available. Turn off to remove.";
 
 /// The words "Models on this computer".
 pub(crate) const MODELS_ON_THIS_COMPUTER: &str = "Models on this computer";
 
 /// The words "Nothing is running here yet. Ollama, llama.cpp and LM Studio appear here when they are.".
-pub(crate) const NOTHING_IS_RUNNING_HERE_YET_OLLAMA: &str = "Nothing is running here yet. Ollama, llama.cpp and LM Studio appear \
+pub(crate) const NOTHING_RUNNING_HERE: &str = "Nothing is running here yet. Ollama, llama.cpp and LM Studio appear \
     here when they are.";
 
 /// The words "Coding agents are turned off. Turn them on to let the assistant hand y".
-pub(crate) fn coding_agents_are_turned_off_turn(name: impl std::fmt::Display) -> String {
+pub(crate) fn coding_agents_off(name: impl std::fmt::Display) -> String {
     format!(
         "Coding agents are turned off. Turn them on to let the assistant hand your requests to \
          {name}. The desktop still checks what {name} does and asks you when it matters."

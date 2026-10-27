@@ -24,9 +24,6 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::style::tokens::control_size::ControlSize;
 
-/// The group's title.
-const TITLE: &str = crate::copy::assistants::CODING_ASSISTANTS;
-
 fn items_of(menu: &[Entry]) -> Vec<MenuItem<String>> {
     menu.iter()
         .map(|entry| {
@@ -102,7 +99,7 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
     let can_add = !new.is_empty() || env.client.agents_program().is_some();
     rsx! {
         div { class: "assistants", "data-assistants": "coding",
-            FieldGroup { title: Some(TITLE.to_owned()),
+            FieldGroup { title: Some(crate::copy::assistants::CODING_ASSISTANTS.to_owned()),
                 for assistant in rows {
                     OutsideRow {
                         key: "{assistant.name}",

@@ -11,9 +11,6 @@ use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 
-/// The title of the group, and of its row when the portal is not there.
-pub(super) const TITLE: &str = crate::copy::screen_sharing::SCREEN_SHARING;
-
 /// The apps the portal lets share the screen without asking again, with a Remove on each.
 #[component]
 pub(crate) fn ScreenSharingPane() -> Element {
@@ -29,9 +26,9 @@ pub(crate) fn ScreenSharingPane() -> Element {
         ScreenSharingState::Looking => rsx! {},
         ScreenSharingState::Unavailable(absence) => rsx! {
             div { class: "screen-sharing", "data-screen-sharing": "unavailable",
-                FieldGroup { title: Some(TITLE.to_owned()),
+                FieldGroup { title: Some(crate::copy::screen_sharing::SCREEN_SHARING.to_owned()),
                     FieldRow {
-                        label: TextLine::from(TITLE),
+                        label: TextLine::from(crate::copy::screen_sharing::SCREEN_SHARING),
                         help: Some(TextLine::from(absence_words(Subject::ScreenSharing, absence))),
                         availability: Availability::Disabled,
                         Label { text: "Unavailable", role: LabelRole::Secondary }

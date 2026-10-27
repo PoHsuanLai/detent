@@ -1,9 +1,12 @@
 //! A fake inferd: `org.quire.SettingsModule1` at inferd's path on a private bus, with the rows
 //! the real module describes (`ai.model.<kind>.<tier>`, each a Menu of "", `auto` and models, and
 //! on slots the text slot's `ai.auto.pool.text`, the list of models Automatic chooses among).
-#![allow(dead_code)]
+
+mod data;
+mod module;
 
 use super::bus::PrivateBus;
+use data::{POOL_KEY, PROGRAMS, WORDS, places_of, tier_word};
 use ds_settings::live::{Access, Caller, LiveError, LiveModule, LiveSchema, Verdict, serve};
 use ds_settings::schema::{
     AgentSetting, ChoiceGroup, ChoicePlace, ChoiceWord, CompanyName, EngineName, Exposure, Help,
@@ -14,79 +17,8 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
 
-/// The tiers each fake kind lists.
-const ROWS: &[(&str, &str, &str)] = &[
-    ("llm", "Language", "fast"),
-    ("llm", "Language", "balanced"),
-    ("llm", "Language", "best"),
-    ("computer_use", "Computer use", "balanced"),
-];
-
-/// The rows of an inferd that has moved to slots (`ai.model.<slot>.<tier>`): the slot's key
-/// segment and the display name its section carries (`Models / Text`).
-const SLOT_ROWS: &[(&str, &str, &str)] = &[
-    ("text", "Text", "fast"),
-    ("text", "Text", "balanced"),
-    ("text", "Text", "best"),
-    ("voice_in", "Speech to text", "fast"),
-    ("computer_use", "Computer use", "balanced"),
-];
-
-/// The display word of a tier's key segment.
-fn tier_word(tier: &str) -> &'static str {
-    match tier {
-        "fast" => "Fast",
-        "balanced" => "Balanced",
-        _ => "Demanding",
-    }
-}
-
-/// The words a slot's rows list, and the group each model sits in (slots layout only).
-const WORDS: [(&str, &str, Option<&str>); 6] = [
-    ("", "Catalogue default", None),
-    ("auto", "Automatic", None),
-    ("local/qwen", "qwen", Some("On this computer")),
-    ("anthropic/claude", "claude", Some("Anthropic")),
-    ("google/gemini", "gemini", Some("Google")),
-    ("local/holo", "holo", Some("On this computer")),
-];
-
-/// Where a model of the slots layout runs: the two local ones on this computer through
-/// llama.cpp, as porter's inferd says them; the hosted ones in their company's cloud.
-fn place_of(word: &str) -> Option<ChoicePlace> {
-    let engine = |name: &str| ChoicePlace::ThisComputer {
-        engine: Some(EngineName(name.to_owned())),
-    };
-    let cloud = |company: &str| ChoicePlace::Cloud {
-        company: CompanyName(company.to_owned()),
-    };
-    match word {
-        "local/qwen" | "local/holo" => Some(engine("llama.cpp")),
-        "anthropic/claude" => Some(cloud("Anthropic")),
-        "google/gemini" => Some(cloud("Google")),
-        _ => None,
-    }
-}
-
-/// The places of `words`, for the words that have one.
-fn places_of(words: &[(&str, &str, Option<&str>)]) -> BTreeMap<ChoiceWord, ChoicePlace> {
-    words
-        .iter()
-        .filter_map(|(word, _, _)| Some((ChoiceWord((*word).to_owned()), place_of(word)?)))
-        .collect()
-}
-
-/// The engine program rows the fake lists when asked to, with their labels.
-const PROGRAMS: &[(&str, &str)] = &[
-    ("engines.vllm_python", "vLLM's Python"),
-    ("engines.llama_server", "llama-server"),
-];
-
 /// What the module refuses a path that is not whole with, as the real one words it.
 pub const NOT_WHOLE: &str = "Give the whole path of the program, starting with a slash.";
-
-/// The key of the text slot's Automatic list.
-const POOL_KEY: &str = "ai.auto.pool.text";
 
 /// Which keys the fake serves.
 #[derive(Clone, Copy)]
@@ -320,99 +252,5 @@ impl Inferd {
             },
             note: self.note.clone().filter(|_| slots).map(Note),
         }
-    }
-}
-
-impl LiveModule for Inferd {
-    async fn permit(&self, _caller: &Caller, _access: Access) -> Verdict {
-        match self.policy {
-            Policy::Allow => Verdict::Allow,
-            Policy::Refuse => Verdict::Refuse,
-        }
-    }
-
-    async fn describe(&self) -> LiveSchema {
-        LiveSchema {
-            version: 1,
-            key: match self.layout {
-                Layout::Kinds => ROWS,
-                Layout::Slots => SLOT_ROWS,
-            }
-            .iter()
-            .map(|(kind, label, tier)| self.spec(kind, label, tier))
-            .chain(matches!(self.layout, Layout::Slots).then(|| self.pool_spec()))
-            .chain(
-                PROGRAMS
-                    .iter()
-                    .filter(|(path, _)| self.programs.lock().expect("programs").contains_key(*path))
-                    .map(|(path, label)| Inferd::program_spec(path, label)),
-            )
-            .collect(),
-        }
-    }
-
-    async fn get(&self, key: &KeyPath) -> Result<toml::Value, LiveError> {
-        if key.0 == POOL_KEY {
-            let pool = self.pool.lock().expect("pool").clone();
-            return Ok(toml::Value::Array(
-                pool.into_iter().map(toml::Value::String).collect(),
-            ));
-        }
-        if let Some(program) = self.programs.lock().expect("programs").get(&key.0) {
-            return Ok(toml::Value::String(program.clone()));
-        }
-        let values = self.values.lock().expect("values");
-        Ok(toml::Value::String(
-            values.get(&key.0).cloned().unwrap_or_default(),
-        ))
-    }
-
-    async fn set(&self, key: &KeyPath, value: toml::Value) -> Result<(), LiveError> {
-        if key.0 == POOL_KEY {
-            let toml::Value::Array(items) = value else {
-                return Err(LiveError::BadValue("a pool is a list of models".to_owned()));
-            };
-            let words: Vec<String> = items
-                .iter()
-                .filter_map(|item| item.as_str().map(str::to_owned))
-                .collect();
-            self.pool_sets
-                .lock()
-                .expect("pool sets")
-                .push(words.clone());
-            *self.pool.lock().expect("pool") = words;
-            return Ok(());
-        }
-        let toml::Value::String(word) = value else {
-            return Err(LiveError::BadValue("a model is text".to_owned()));
-        };
-        let is_program = self.programs.lock().expect("programs").contains_key(&key.0);
-        if is_program {
-            if !word.is_empty() && !word.starts_with('/') {
-                return Err(LiveError::BadValue(NOT_WHOLE.to_owned()));
-            }
-            self.sets
-                .lock()
-                .expect("sets")
-                .push((key.0.clone(), word.clone()));
-            self.programs
-                .lock()
-                .expect("programs")
-                .insert(key.0.clone(), word);
-            return Ok(());
-        }
-        self.sets
-            .lock()
-            .expect("sets")
-            .push((key.0.clone(), word.clone()));
-        let held = *self.held.lock().expect("held");
-        if held {
-            self.release.notified().await;
-        }
-        self.values
-            .lock()
-            .expect("values")
-            .insert(key.0.clone(), word);
-        Ok(())
     }
 }

@@ -1,7 +1,6 @@
 //! A fake inferd (`org.quire.Inference1`) for the Local models group: `Running`, `Start` and `Stop`
 //! with the `RunningChanged` signal, on a private bus. A Start can be held until the test lets it
 //! finish, a call can be refused with inferd's own sentence, and every call is written down.
-#![allow(dead_code)]
 
 use super::bus::PrivateBus;
 use super::inferd::Inferd;

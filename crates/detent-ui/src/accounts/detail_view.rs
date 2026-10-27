@@ -124,7 +124,7 @@ pub(super) fn AccountDetail(
                         }
                     }
                 }
-                Note { text: crate::copy::account_views::WHETHER_APPS_MAY_USE_EACH_SERVICE }
+                Note { text: crate::copy::account_views::SERVICES_HELP }
             }
             if let Some(bar) = account.spend.bar() {
                 FieldGroup { title: Some(crate::copy::account_views::SPENDING.to_owned()),
@@ -174,7 +174,7 @@ pub(super) fn AccountDetail(
                     availability,
                     onrevoke: move |row| on.ran.call(row),
                 }
-                Note { text: crate::copy::account_views::REVOKING_ASKS_THE_APP_AGAIN_THE }
+                Note { text: crate::copy::account_views::REVOKE_HELP }
             }
             if !account.used_by.is_empty() {
                 FieldGroup { title: Some(crate::copy::account_views::APPS_USING_THIS_IDENTITY.to_owned()),

@@ -2,7 +2,6 @@
 //! program to another at the moment it is asked: after the owner was found and before the call.
 //! A call made by name from then on reaches the second program; a call made to the owner that was
 //! found reaches the first.
-#![allow(dead_code)]
 
 use ds_settings::live::{OwnerAnswer, OwnerCheck, SenderName, Verdict};
 use std::sync::Arc;

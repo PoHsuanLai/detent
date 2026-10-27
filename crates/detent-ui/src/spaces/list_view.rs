@@ -53,7 +53,7 @@ fn Listed(ready: SpacesReady, drive: EventHandler<SpacesInput>) -> Element {
             if ready.rows.is_empty() {
                 EmptyState {
                     title: crate::copy::spaces::NO_SPACES,
-                    description: crate::copy::spaces::A_SPACE_YOU_MAKE_IN_AN,
+                    description: crate::copy::spaces::NO_SPACES_HINT,
                 }
             } else {
                 FieldGroup { title: Some(crate::copy::spaces::SPACES.to_owned()),

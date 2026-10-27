@@ -97,7 +97,7 @@ pub fn Window(
                         (None, Searching::No) => rsx! {
                             EmptyState {
                                 title: crate::copy::window::NO_SETTINGS,
-                                description: crate::copy::window::NO_INSTALLED_PROGRAM_SHIPS_A_SETTINGS,
+                                description: crate::copy::window::NO_SCHEMAS,
                             }
                         },
                     }

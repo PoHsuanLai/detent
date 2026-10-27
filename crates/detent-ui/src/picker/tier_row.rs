@@ -19,9 +19,6 @@ use ds::root::common::Common;
 use ds::root::pass_through::ExtraClass;
 use ds::style::tokens::control_size::ControlSize;
 
-/// What the button says while nothing is chosen.
-pub(super) const NOTHING_CHOSEN: &str = crate::copy::common::CHOOSE_ELLIPSIS;
-
 /// One tier's menu; while a set applies the row says "Loading <model>" and takes no input, and
 /// while the add-account sheet is open no row does. A row that has chosen nothing shows no
 /// selection.
@@ -63,7 +60,7 @@ pub(crate) fn TierRow(
             PopUpButton::<String> {
                 items,
                 value: shown.selected(),
-                title: Some(NOTHING_CHOSEN.to_owned()),
+                title: Some(crate::copy::common::CHOOSE_ELLIPSIS.to_owned()),
                 size: ControlSize::Small,
                 availability: calm,
                 onpick: move |word| onask.call(PickerInput::Chose { path: path.clone(), word }),

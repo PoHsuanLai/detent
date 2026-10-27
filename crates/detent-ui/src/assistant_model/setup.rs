@@ -17,9 +17,6 @@ use ds::style::icon::family::PlateFamily;
 use ds::style::tokens::control_size::ControlSize;
 use ds_blitz::{AppHandle, use_app_handle};
 
-/// Said once, at the top.
-const HEADING: &str = crate::copy::assistant_model::CHOOSE_A_MODEL_FOR_YOUR_ASSISTANT;
-
 /// The step, under the frame: the picker's row and the two buttons.
 #[component]
 pub(crate) fn AssistantSetup() -> Element {
@@ -44,7 +41,7 @@ pub(crate) fn AssistantSetup() -> Element {
                 size: IconSize::Tile48,
                 plate: Some(PlateFamily::Violet),
             }
-            Label { text: HEADING, role: LabelRole::Primary, style: LabelStyle::Title }
+            Label { text: crate::copy::assistant_model::CHOOSE_A_MODEL_FOR_YOUR_ASSISTANT, role: LabelRole::Primary, style: LabelStyle::Title }
             div { class: "assistant-setup-card",
                 AssistantPicker { state: now, clearing: Clearing::Withheld, onask: ask }
             }

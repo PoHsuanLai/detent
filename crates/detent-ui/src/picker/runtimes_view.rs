@@ -18,12 +18,6 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::root::pass_through::{DataAttr, DataName};
 
-/// The group's title.
-const TITLE: &str = crate::copy::picker::MODELS_ON_THIS_COMPUTER;
-
-/// What the list says before any runtime is found.
-const NONE_FOUND: &str = crate::copy::picker::NOTHING_IS_RUNNING_HERE_YET_OLLAMA;
-
 /// Where the list stands.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Found {
@@ -55,7 +49,7 @@ pub fn LocalRuntimes() -> Element {
         Found::Looking => rsx! {},
         Found::Absent(absence) => rsx! {
             div { class: "runtimes", "data-runtimes": "unavailable",
-                FieldGroup { title: Some(TITLE.to_owned()),
+                FieldGroup { title: Some(crate::copy::picker::MODELS_ON_THIS_COMPUTER.to_owned()),
                     FieldRow {
                         label: TextLine::from(crate::copy::common::LOCAL_MODELS),
                         help: Some(TextLine::from(copy::absence::absence(Subject::Runtimes, absence))),
@@ -67,10 +61,10 @@ pub fn LocalRuntimes() -> Element {
         },
         Found::Runtimes(runtimes) if runtimes.is_empty() => rsx! {
             div { class: "runtimes", "data-runtimes": "empty",
-                FieldGroup { title: Some(TITLE.to_owned()),
+                FieldGroup { title: Some(crate::copy::picker::MODELS_ON_THIS_COMPUTER.to_owned()),
                     FieldRow {
                         label: TextLine::from(crate::copy::common::LOCAL_MODELS),
-                        help: Some(TextLine::from(NONE_FOUND)),
+                        help: Some(TextLine::from(crate::copy::picker::NOTHING_RUNNING_HERE)),
                         Label { text: "None", role: LabelRole::Tertiary }
                     }
                 }
@@ -78,7 +72,7 @@ pub fn LocalRuntimes() -> Element {
         },
         Found::Runtimes(runtimes) => rsx! {
             div { class: "runtimes", "data-runtimes": "list",
-                FieldGroup { title: Some(TITLE.to_owned()),
+                FieldGroup { title: Some(crate::copy::picker::MODELS_ON_THIS_COMPUTER.to_owned()),
                     for runtime in runtimes {
                         RuntimeRow {
                             key: "{runtime.key.0}",

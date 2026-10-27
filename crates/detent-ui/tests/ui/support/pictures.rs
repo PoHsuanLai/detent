@@ -1,6 +1,5 @@
 //! Pictures for the Wallpaper page that lists what it is given and chooses what it is told to,
 //! and writes down every time it was asked: never a real folder, never the chooser.
-#![allow(dead_code)]
 
 use detent_client::Pictures;
 use detent_model::{AddOutcome, Picture, PictureFrom, Work};

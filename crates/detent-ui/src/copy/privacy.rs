@@ -42,13 +42,13 @@ pub(crate) fn program_name(look: &ProgramLook) -> String {
 pub(crate) const PRIVACY_SECURITY: &str = "Privacy & Security";
 
 /// The words "Other programs ask the first time.".
-pub(crate) const OTHER_PROGRAMS_ASK_THE_FIRST_TIME: &str = "Other programs ask the first time.";
+pub(crate) const NOT_LISTED_HELP: &str = "Other programs ask the first time.";
 
 /// The words "Nothing has asked yet".
 pub(crate) const NOTHING_HAS_ASKED_YET: &str = "Nothing has asked yet";
 
 /// The words "Programs that ask to see your screen or type for you appear here.".
-pub(crate) const PROGRAMS_THAT_ASK_TO_SEE_YOUR: &str =
+pub(crate) const NO_PROGRAMS_HINT: &str =
     "Programs that ask to see your screen or type for you appear here.";
 
 /// The words "In {place}".

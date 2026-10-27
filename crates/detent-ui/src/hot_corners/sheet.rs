@@ -78,9 +78,6 @@ fn use_sheet_state() -> SheetState {
     }
 }
 
-/// What the footnote under the screen says.
-const HINT: &str = crate::copy::hot_corners::MOVE_THE_POINTER_INTO_A_CORNER;
-
 /// The corner keys as `(corner, key)`, in the order the corners sit on the screen.
 fn corners_of(entries: &[KeyEntry]) -> Vec<(Corner, Option<KeyEntry>)> {
     Corner::ALL
@@ -143,7 +140,7 @@ pub(super) fn HotCornersSheet(
             if let Some(words) = told {
                 Label { text: words, role: LabelRole::Secondary, style: LabelStyle::Footnote }
             }
-            Label { text: HINT, role: LabelRole::Secondary, style: LabelStyle::Footnote }
+            Label { text: crate::copy::hot_corners::MOVE_THE_POINTER_INTO_A_CORNER, role: LabelRole::Secondary, style: LabelStyle::Footnote }
             div { class: "hot-corners-buttons",
                 Button {
                     label: crate::copy::common::DONE,

@@ -112,7 +112,7 @@ fn CommandAsk(
         })
     };
     rsx! {
-        AskTitle { title: crate::copy::hot_corners::COMMAND, words: crate::copy::hot_corners::RUN_A_COMMAND_WHEN_THE_POINTER }
+        AskTitle { title: crate::copy::hot_corners::COMMAND, words: crate::copy::hot_corners::COMMAND_HELP }
         TextField {
             label: crate::copy::hot_corners::COMMAND,
             value: typed(),
@@ -198,7 +198,7 @@ fn ActionAsk(
         .as_ref()
         .map(|(app, action)| format!("{app}|{action}"));
     let words = if known.actions.is_empty() {
-        crate::copy::hot_corners::NO_INSTALLED_APP_OFFERS_AN_ACTION
+        crate::copy::hot_corners::NO_PLAIN_ACTIONS
     } else if groups.is_empty() {
         crate::copy::hot_corners::NOTHING_MATCHES
     } else {
@@ -319,7 +319,7 @@ fn OpenAsk(
         }
     });
     rsx! {
-        AskTitle { title: crate::copy::common::OPEN, words: crate::copy::hot_corners::OPEN_AN_APP_A_FILE_A }
+        AskTitle { title: crate::copy::common::OPEN, words: crate::copy::hot_corners::OPEN_HELP }
         SegmentedControl::<HotOpenKind> {
             label: crate::copy::hot_corners::WHAT_TO_OPEN,
             choices: Choice::pairs(HotOpenKind::ALL.map(|kind| (kind, open_kind_label(kind)))),

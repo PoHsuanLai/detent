@@ -19,5 +19,4 @@ pub(crate) const NOTHING_IN_SETTINGS_MATCHES_THAT_SEARCH: &str =
 pub(crate) const NO_SETTINGS: &str = "No Settings";
 
 /// The words "No installed program ships a settings schema.".
-pub(crate) const NO_INSTALLED_PROGRAM_SHIPS_A_SETTINGS: &str =
-    "No installed program ships a settings schema.";
+pub(crate) const NO_SCHEMAS: &str = "No installed program ships a settings schema.";

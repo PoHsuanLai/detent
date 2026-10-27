@@ -1,0 +1,112 @@
+//! The pages' own shapes: read-only kinds, sheet rows, gesture actions and saving.
+
+use super::*;
+
+#[test]
+fn a_kind_without_a_component_is_shown_read_only_with_a_note() {
+    let sandbox = Sandbox::new("file-only");
+    let mut harness = sandbox.harness(Opening::default());
+    search_for(&mut harness, "control center modules");
+    let row = harness.text_of(".key-hit").expect("a highlighted row");
+    assert!(row.contains("Control center"), "the section's row: {row}");
+    click(&mut harness, ".key-hit .ds-button");
+    let sheet = harness.text_of(".ds-sheet").expect("the section's sheet");
+    assert!(sheet.contains("Modules"), "{sheet}");
+    assert!(
+        sheet.contains("wifi, bluetooth"),
+        "the value is shown: {sheet}"
+    );
+    assert!(sheet.contains("Edit in file"), "{sheet}");
+}
+
+#[test]
+fn a_page_ends_with_one_group_of_sheet_rows_one_per_advanced_section() {
+    let sandbox = Sandbox::new("one-advanced");
+    for page in ["appearance", "dock", "mouse_and_gestures"] {
+        let harness = sandbox.harness(opening(page));
+        assert_eq!(harness.count(".ds-disclosure"), 0, "{page}: no disclosure");
+        assert_eq!(
+            harness.count(".advanced .ds-field-group"),
+            1,
+            "{page}: one group"
+        );
+        assert!(
+            harness.count(".advanced .ds-field-row") > 1,
+            "{page}: a row for each advanced section"
+        );
+        assert_eq!(harness.count(".ds-sheet"), 0, "{page}: sheets start closed");
+        let html = harness.html();
+        let last_section = html.rfind("class=\"section\"").expect("a section");
+        let advanced = html.find("class=\"advanced\"").expect("the group");
+        assert!(last_section < advanced, "{page}: the group is last");
+        assert!(html.contains('\u{2026}'), "{page}: rows end in an ellipsis");
+    }
+}
+
+const CUSTOM_ACTION: &str = "two_finger_swipe_left = { kind = \"keys\", v = \"alt+left\" }";
+
+#[test]
+fn a_custom_gesture_action_is_read_only_and_survives_a_save() {
+    let sandbox = Sandbox::new("custom-action");
+    let before = format!(
+        "# mine\nrejection = \"on\"\n[gestures.gesture_action_map]\n{CUSTOM_ACTION}\n[feel]\nfuture_key = 3\n"
+    );
+    sandbox.write("palmrest/gestures.toml", &before);
+    let mut harness = sandbox.harness(opening("mouse_and_gestures"));
+    let row = harness
+        .text_of(".key-file-only")
+        .expect("the custom action row is read-only");
+    assert!(row.contains("Edit in file"), "{row}");
+    assert_eq!(harness.count(".key-file-only"), 1, "only the custom action");
+
+    click(&mut harness, ".section .ds-toggle");
+    let after = sandbox.read("palmrest/gestures.toml").expect("written");
+    assert_eq!(
+        after,
+        before.replace("\"on\"", "\"off\""),
+        "one value changed"
+    );
+}
+
+#[test]
+fn a_gesture_action_menu_reads_in_the_schemas_words() {
+    let sandbox = Sandbox::new("action-labels");
+    let harness = sandbox.harness(opening("mouse_and_gestures"));
+    let html = harness.html();
+    for label in [
+        "Previous workspace",
+        "Next workspace",
+        "Workspace overview",
+        "Smart zoom",
+    ] {
+        assert!(html.contains(label), "{label}");
+    }
+    assert!(!html.contains("Workspace prev<"), "no code-like label");
+}
+
+#[test]
+fn saving_never_removes_a_key_from_sill_or_quire_files() {
+    let sandbox = Sandbox::new("keep-unknown");
+    let sill = "[dock]\npuppy = true\nposition = \"sideways\"\n[mystery]\nx = 1\n";
+    let quire = "version = 1\n[appearance]\nold_key = 1\n";
+    sandbox.write("sill/settings.toml", sill);
+    sandbox.write("quire/appearance.toml", quire);
+
+    let mut harness = sandbox.harness(opening("dock"));
+    click(&mut harness, ".ds-toggle");
+    let text = sandbox.read("sill/settings.toml").expect("written");
+    assert!(
+        text.contains("puppy = true") && text.contains("[mystery]\nx = 1"),
+        "{text}"
+    );
+    assert!(
+        text.contains("position = \"sideways\""),
+        "an unknown word stays: {text}"
+    );
+
+    let mut harness = sandbox.harness(opening("appearance"));
+    click(&mut harness, ".ds-segmented-segment:nth-of-type(3)");
+    let text = sandbox.read("quire/appearance.toml").expect("written");
+    assert!(text.starts_with("version = 1\n"), "{text}");
+    assert!(text.contains("old_key = 1"), "{text}");
+}

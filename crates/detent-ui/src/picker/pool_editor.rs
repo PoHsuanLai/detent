@@ -12,12 +12,6 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds_settings::schema::KeyPath;
 
-/// What the list is called.
-const TITLE: &str = crate::copy::picker::CHOOSE_FROM;
-
-/// Said under a model the list holds and the module no longer offers.
-const GONE: &str = crate::copy::picker::NO_LONGER_AVAILABLE_TURN_OFF_TO;
-
 /// The list, or nothing when the module offers no list for the slot.
 #[component]
 pub(super) fn PoolEditor(
@@ -30,7 +24,7 @@ pub(super) fn PoolEditor(
     };
     rsx! {
         div { class: "picker-auto", "data-pool": "editor",
-            Label { text: TITLE, role: LabelRole::Secondary }
+            Label { text: crate::copy::picker::CHOOSE_FROM, role: LabelRole::Secondary }
         }
         for group in pool.groups() {
             if let Some(name) = copy::pool_heading(&group.heading) {
@@ -66,7 +60,7 @@ fn PoolRow(
         Availability::Disabled
     };
     let help = match &entry.standing {
-        PoolStanding::Gone => Some(GONE.to_owned()),
+        PoolStanding::Gone => Some(crate::copy::picker::GONE_TURN_OFF.to_owned()),
         PoolStanding::Offered(gate) => copy::gate_note(gate),
     };
     let word = entry.word.clone();

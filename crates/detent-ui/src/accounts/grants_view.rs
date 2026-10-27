@@ -20,9 +20,6 @@ const KEY_PREFIX: &str = "grant:";
 /// The strip's one action.
 const REVOKE: &str = "revoke";
 
-/// What the strip's action tells the person before it is pressed.
-const REVOKE_FLY: &str = crate::copy::account_views::REVOKE_ASKS_AGAIN_NEXT_TIME;
-
 /// Revoke, on the strip of `permission`'s row. It acts inside the press and only while the pane is
 /// free.
 fn revoke_strip(
@@ -35,7 +32,7 @@ fn revoke_strip(
         id: ActionId(REVOKE.to_owned()),
         icon: Icon::X,
         label: crate::copy::account_views::revoke(&permission.label),
-        fly: REVOKE_FLY.to_owned(),
+        fly: crate::copy::account_views::REVOKE_ASKS_AGAIN_NEXT_TIME.to_owned(),
         onhover: None,
         onclick: EventHandler::new(|_| {}),
     }];
@@ -93,7 +90,7 @@ fn card_of(account: &Account, key: &HoverKey) -> Option<Vec<HoverCardPart>> {
     let app = permission.sentence()?.app;
     let services = account.services_of_app(&app);
     let uses = if services.is_empty() {
-        crate::copy::account_views::USES_NONE_OF_THIS_ACCOUNT_S.to_owned()
+        crate::copy::account_views::USES_NO_SERVICE.to_owned()
     } else {
         crate::copy::account_views::uses(services.join(", "))
     };
