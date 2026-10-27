@@ -1,10 +1,11 @@
 //! The Bluetooth page: the switch, the devices this computer knows (My Devices) and the ones
 //! nearby, with the buttons that connect, disconnect and forget them.
 
-use super::drive::use_bluetooth;
 use super::sheets::{ForgetSheet, PairingSheet};
 use crate::copy::{self, Subject};
+use crate::live::use_live;
 use crate::system::Unavailable;
+use detent_client::Client;
 use detent_model::{BtAsking, BtDevice, BtInput, BtKind, BtLink, BtPower, BtReady, BtState};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
@@ -16,15 +17,17 @@ use ds::root::common::Common;
 /// The page: the switch and the devices, or why there are none.
 #[component]
 pub(crate) fn BluetoothPane() -> Element {
-    let driver = use_bluetooth();
-    let state = driver.state.read().clone();
+    let bluetooth = use_live(Client::bluetooth);
+    let state = bluetooth.state.read().clone();
     match state {
         BtState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
         BtState::Unavailable(absence) => rsx! {
             Unavailable { title: "Bluetooth", subject: Subject::Bluetooth, absence }
         },
         BtState::Ready(page) => {
-            let press = EventHandler::new(move |input: BtInput| driver.feed(input));
+            let press = EventHandler::new(move |input: BtInput| {
+                spawn(bluetooth.pane.send(input));
+            });
             rsx! { Listed { page, press } }
         }
     }

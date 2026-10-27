@@ -8,6 +8,7 @@ use crate::copy::{self, Subject, picker};
 use crate::engine_install::EngineSheetView;
 use crate::env::Env;
 use crate::files::{Files, value_of};
+use crate::live::use_client;
 use detent_model::{Absence, Adding, Clearing, KindRows, PickerInput, PickerState, Reason};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -32,19 +33,15 @@ pub(crate) fn show_reason(env: &Env, files: &Files) -> Shown {
 /// inferd's model rows, or why they are not there. `reasons` is whether the footer is shown.
 #[component]
 pub fn ModelPicker(reasons: Shown) -> Element {
-    let env = use_context::<Env>();
+    let client = use_client();
     let Picker { state, ask } = use_picker();
     let mut reason = use_signal(|| None::<Reason>);
 
-    let feed = env.reasons.clone();
     use_future(move || {
-        let taken = feed.take();
+        let mut reasons = client.reasons();
         async move {
-            let Some(mut events) = taken else { return };
-            while let Some(event) = events.recv().await {
-                if let Some(next) = Reason::of(&event) {
-                    reason.set(Some(next));
-                }
+            while let Some(next) = reasons.next().await {
+                reason.set(Some(next));
             }
         }
     });

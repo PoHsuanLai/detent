@@ -7,7 +7,6 @@
 use crate::{HEIGHT, WIDTH, ended, enter_runtime_block, environment};
 use detent_intents::{ServeFault, SettingsProvider, serve_session};
 use detent_model::{Inbox, Notice, Outbox, Receiver, inbox};
-use detent_system::bus::BusSource;
 use detent_ui::{App, Env, Opening};
 use ds_blitz::{
     AppConfig, AppHandle, AppId, Decorations, FileRoots, LastWindowClosed, WindowSize, WindowSpec,
@@ -76,7 +75,7 @@ pub fn run() -> ExitCode {
         env.catalogue.clone(),
         env.config_home.clone(),
         outbox,
-        Arc::new(crate::accounts::LiveAccounts(BusSource::Session)),
+        Arc::new(env.client.clone()),
     ) {
         Ok(provider) => provider,
         Err(fault) => {
@@ -98,7 +97,7 @@ pub fn run() -> ExitCode {
         return ExitCode::FAILURE;
     };
     tokio::spawn(dispatch(notices, windows, app.clone()));
-    let roots = FileRoots::new(env.pictures.roots());
+    let roots = FileRoots::new(env.client.wallpaper().roots());
     let config = AppConfig::new("Settings", WindowSize::new(WIDTH, HEIGHT))
         .with_app_id(AppId("org.quire.Settings".to_owned()))
         .with_decorations(Decorations::Client)

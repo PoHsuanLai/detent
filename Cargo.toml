@@ -3,6 +3,7 @@ resolver = "3"
 members = [
   "crates/detent",
   "crates/detent-callers",
+  "crates/detent-client",
   "crates/detent-files",
   "crates/detent-intents",
   "crates/detent-model",
@@ -22,6 +23,7 @@ publish = false
 
 [workspace.dependencies]
 detent-callers = { path = "crates/detent-callers" }
+detent-client  = { path = "crates/detent-client" }
 detent-files   = { path = "crates/detent-files" }
 detent-intents = { path = "crates/detent-intents" }
 detent-model   = { path = "crates/detent-model" }

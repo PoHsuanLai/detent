@@ -1,10 +1,10 @@
 //! BlueZ from memory: nothing here reaches a bus. It writes down what the page asked, counts how
 //! many sessions look for devices, and lets a test make a device ask something.
 
+use detent_client::{BluetoothLink, BtSession, PairingReply, PairingRequest, Ticker, Ticks};
 use detent_model::{
     Absence, BtAddress, BtLink, BtPairing, BtPower, BtStatus, PairingAnswer, PairingQuestion, Work,
 };
-use detent_ui::{BluetoothLink, BtSession, PairingReply, PairingRequest, Ticker, Ticks};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, oneshot};

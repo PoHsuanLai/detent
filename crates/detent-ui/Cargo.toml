@@ -11,9 +11,9 @@ publish.workspace = true
 [dependencies]
 almanac-core = { workspace = true }
 chordkit = { workspace = true }
+detent-client = { workspace = true }
 detent-files = { workspace = true }
 detent-model = { workspace = true }
-detent-system = { workspace = true }
 docket-settings = { workspace = true }
 dioxus = { workspace = true }
 ds = { workspace = true }
@@ -23,11 +23,10 @@ ds-lint = { workspace = true }
 ds-settings = { workspace = true, features = ["dioxus", "live", "tokio"] }
 porter-client = { workspace = true, features = ["infer", "lending"] }
 porter-core = { workspace = true }
-porter-provider = { workspace = true }
 porter-infer = { workspace = true }
+porter-provider = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
-zbus = { workspace = true, features = ["tokio"] }
 
 [dev-dependencies]
 # A stand-in service on a test's private bus is vouched for by `AnyOwner`, or by the role check over
@@ -36,6 +35,7 @@ detent-callers = { workspace = true, features = ["testing"] }
 detent-system = { workspace = true, features = ["testing"] }
 detent-testkit = { workspace = true }
 porter-dbus = { workspace = true }
+zbus = { workspace = true, features = ["tokio"] }
 ds-settings = { workspace = true, features = ["testing"] }
 dioxus-ssr = { workspace = true }
 ds-harness = { workspace = true }

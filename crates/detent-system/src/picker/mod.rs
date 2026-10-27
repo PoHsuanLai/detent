@@ -2,9 +2,13 @@
 //! put the row in force.
 
 mod bus;
+#[cfg(feature = "testing")]
+mod fake;
 mod set;
 
 pub use bus::OnClient;
+#[cfg(feature = "testing")]
+pub use fake::{FakePicker, PickerAsked};
 
 use detent_model::Work;
 use ds_settings::live::LiveClient;

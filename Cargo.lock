@@ -350,9 +350,9 @@ dependencies = [
  "bayonet",
  "dirs 6.0.0",
  "ds-core",
- "ds-extensions 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3)",
+ "ds-extensions 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10)",
  "ds-helpers",
- "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3)",
+ "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10)",
  "latchkey",
  "log",
  "md-5",
@@ -1501,10 +1501,10 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "detent-callers",
+ "detent-client",
  "detent-files",
  "detent-intents",
  "detent-model",
- "detent-system",
  "detent-testkit",
  "detent-ui",
  "ds-blitz",
@@ -1522,6 +1522,21 @@ dependencies = [
  "peephole-bus",
  "rustix",
  "thiserror 2.0.21",
+ "zbus",
+]
+
+[[package]]
+name = "detent-client"
+version = "0.1.0"
+dependencies = [
+ "almanac-core",
+ "detent-files",
+ "detent-model",
+ "detent-system",
+ "ds-settings 0.1.0",
+ "porter-infer",
+ "tokio",
+ "toml",
  "zbus",
 ]
 
@@ -1550,6 +1565,7 @@ name = "detent-intents"
 version = "0.1.0"
 dependencies = [
  "detent-callers",
+ "detent-client",
  "detent-files",
  "detent-model",
  "detent-testkit",
@@ -1630,6 +1646,7 @@ dependencies = [
  "almanac-core",
  "chordkit",
  "detent-callers",
+ "detent-client",
  "detent-files",
  "detent-model",
  "detent-system",
@@ -2145,7 +2162,7 @@ dependencies = [
 [[package]]
 name = "ds-behaviour"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3#e13f96798dfc1ed30d790f59b9f995065b425ff3"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10#301be7fe9152792f4341ac658d4095ef0b9a8b10"
 dependencies = [
  "ds-core",
 ]
@@ -2234,13 +2251,13 @@ dependencies = [
 [[package]]
 name = "ds-extensions"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3#e13f96798dfc1ed30d790f59b9f995065b425ff3"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10#301be7fe9152792f4341ac658d4095ef0b9a8b10"
 dependencies = [
  "bayonet",
  "ds-core",
  "ds-helpers",
- "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3)",
- "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3)",
+ "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10)",
+ "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10)",
  "serde",
  "thiserror 2.0.21",
 ]
@@ -2321,7 +2338,7 @@ dependencies = [
 [[package]]
 name = "ds-peer"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3#e13f96798dfc1ed30d790f59b9f995065b425ff3"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10#301be7fe9152792f4341ac658d4095ef0b9a8b10"
 dependencies = [
  "futures-timer",
  "thiserror 2.0.21",
@@ -2351,14 +2368,14 @@ dependencies = [
 [[package]]
 name = "ds-settings"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3#e13f96798dfc1ed30d790f59b9f995065b425ff3"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10#301be7fe9152792f4341ac658d4095ef0b9a8b10"
 dependencies = [
  "ds-behaviour",
  "ds-core",
  "ds-helpers",
- "ds-peer 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3)",
- "ds-settings-derive 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3)",
- "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3)",
+ "ds-peer 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10)",
+ "ds-settings-derive 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10)",
+ "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10)",
  "futures-timer",
  "notify",
  "objc2-core-foundation",
@@ -2381,7 +2398,7 @@ dependencies = [
 [[package]]
 name = "ds-settings-derive"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3#e13f96798dfc1ed30d790f59b9f995065b425ff3"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10#301be7fe9152792f4341ac658d4095ef0b9a8b10"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2403,7 +2420,7 @@ dependencies = [
 [[package]]
 name = "ds-style"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=e13f96798dfc1ed30d790f59b9f995065b425ff3#e13f96798dfc1ed30d790f59b9f995065b425ff3"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=301be7fe9152792f4341ac658d4095ef0b9a8b10#301be7fe9152792f4341ac658d4095ef0b9a8b10"
 dependencies = [
  "ds-core",
  "ds-core-derive",

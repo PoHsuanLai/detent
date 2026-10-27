@@ -8,6 +8,7 @@ use detent_files::{AgentsTool, add_agent};
 use detent_model::{AddAction, AddForm, Request};
 use dioxus::prelude::*;
 use docket_settings::NewAgent;
+use std::path::Path;
 
 type Adding = Signal<Option<AddForm>>;
 
@@ -20,7 +21,7 @@ fn change(adding: &mut Adding, edit: impl FnOnce(AddForm) -> AddForm) {
 /// offer when there is a program to ask with.
 pub(super) fn open(env: &Env, mut adding: Adding, now: &Shown) {
     let rows = &now.agents.rows;
-    let Some(program) = env.agents_program.clone() else {
+    let Some(program) = env.client.agents_program().map(Path::to_path_buf) else {
         adding.set(Some(AddForm::offline(&now.new, rows)));
         return;
     };
@@ -89,7 +90,7 @@ fn install(
     want: (String, String),
     then: NewAgent,
 ) {
-    let Some(program) = env.agents_program.clone() else {
+    let Some(program) = env.client.agents_program().map(Path::to_path_buf) else {
         change(&mut adding, |form| form.install_failed(""));
         return;
     };

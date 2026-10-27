@@ -2,21 +2,18 @@
 
 use super::adapter::RemoveAlert;
 use super::detail_view::{AccountDetail, Handlers};
-use super::drive::drive;
-use super::feeds::Feeds;
-use super::follow_module::follow_module;
-use super::hold_drive::{drive_holds, drive_sync_now};
 use super::link::AccountLink;
 use super::list_view::{AccountList, ClientIds, FootHandlers};
-use super::sync_read::use_sync_book;
+use super::sync_read::use_sync_reading;
 use crate::copy::{Subject, absence as absence_words};
 use crate::env::Env;
+use crate::live::{use_events, use_live};
 use crate::marks::ProviderMarks;
+use detent_client::{Client, Pane};
 use detent_model::{
-    Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds, ModuleId,
-    ModuleRow, SyncBook,
+    Absence, AccountsInput, AccountsReady, AccountsState, DatasetName, HoldInput, Holds, ModuleRow,
+    SyncBook,
 };
-use detent_system::sync::follow_holds;
 use dioxus::prelude::*;
 use ds::components::chrome::split_view::model::{Collapsing, PaneSize, PaneSpec, SplitPane};
 use ds::components::chrome::split_view::view::SplitView;
@@ -38,92 +35,37 @@ const SOURCES: PaneSpec = PaneSpec {
 #[component]
 pub fn AccountsPane() -> Element {
     let env = use_context::<Env>();
-    let toasts = use_toasts();
-    let state = use_signal(AccountsState::default);
-    let feeds = Feeds::new();
-    let holds = use_signal(Holds::default);
+    let accounts = use_live(Client::accounts);
+    let state = accounts.state;
 
     // The sync service's held deletions are told apart from the accounts' rows.
+    let held = accounts.pane.holds().clone();
+    let holds = use_events(held.live());
     use_future({
-        let (bus, sync) = (env.bus.clone(), env.sync.clone());
+        let held = held.clone();
         move || {
-            let (bus, sync) = (bus.clone(), sync.clone());
-            async move {
-                follow_holds(&bus, |input| {
-                    spawn(drive_holds(holds, sync.clone(), toasts, input));
-                })
-                .await;
-            }
-        }
-    });
-
-    // Each module is followed on its own: one that is not there leaves only its part out.
-    use_future({
-        let (bus, accounts) = (env.bus.clone(), env.accounts.clone());
-        move || {
-            follow_module(
-                ModuleId::Accountd,
-                bus.clone(),
-                accounts.clone(),
-                state,
-                feeds,
-                toasts,
-            )
-        }
-    });
-    use_future({
-        let (bus, accounts) = (env.bus.clone(), env.accounts.clone());
-        move || {
-            follow_module(
-                ModuleId::Inferd,
-                bus.clone(),
-                accounts.clone(),
-                state,
-                feeds,
-                toasts,
-            )
-        }
-    });
-    use_future({
-        let (bus, accounts) = (env.bus.clone(), env.accounts.clone());
-        move || {
-            follow_module(
-                ModuleId::Syncd,
-                bus.clone(),
-                accounts.clone(),
-                state,
-                feeds,
-                toasts,
-            )
-        }
-    });
-
-    let send = EventHandler::new({
-        let accounts = env.accounts.clone();
-        move |input: AccountsInput| {
-            spawn(drive(state, feeds, accounts.clone(), toasts, input));
-        }
-    });
-    let send_hold = EventHandler::new({
-        let sync = env.sync.clone();
-        move |input: HoldInput| {
-            spawn(drive_holds(holds, sync.clone(), toasts, input));
+            let held = held.clone();
+            async move { held.watch().await }
         }
     });
 
     // What the sync service says of the accounts' datasets, read again once "Sync now" was asked.
-    let again = use_signal(|| 0_u32);
-    let book = use_sync_book(env.sync.clone(), state, again);
-    let send_sync = EventHandler::new({
-        let sync = env.sync.clone();
-        move |dataset: DatasetName| {
-            let mut again = again;
-            let (sync, toasts) = (sync.clone(), toasts);
-            spawn(async move {
-                drive_sync_now(sync, toasts, dataset).await;
-                again += 1;
-            });
+    let datasets = accounts.pane.datasets().clone();
+    let book = use_events(datasets.live());
+    use_sync_reading(datasets.clone(), state);
+
+    let send = EventHandler::new({
+        let pane = accounts.pane.clone();
+        move |input: AccountsInput| {
+            spawn(pane.send(input));
         }
+    });
+    let send_hold = EventHandler::new(move |input: HoldInput| {
+        spawn(held.send(input));
+    });
+    let send_sync = EventHandler::new(move |dataset: DatasetName| {
+        let datasets = datasets.clone();
+        spawn(async move { datasets.sync_now(dataset).await });
     });
 
     // A link from another page asked for an account: open it once the list is there.

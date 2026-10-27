@@ -7,15 +7,14 @@ mod grid;
 mod header;
 
 use crate::copy::pictures::add_failure;
-use crate::env::Env;
+use crate::live::use_client;
+use detent_client::Wallpaper;
 use detent_model::{AddOutcome, Picture, PictureSections, picture_sections};
-use detent_system::wallpaper::Pictures;
 use dioxus::prelude::*;
 use grid::pictures_grid;
 use header::picture_header;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 /// The small pictures made so far, by the file each is made from.
 pub(super) type Smalls = HashMap<PathBuf, PathBuf>;
@@ -28,11 +27,7 @@ const SYSTEMS: &str = "Desktop Pictures";
 
 /// Makes the small picture of each of `previews` not in `smalls` yet, one after the other so the
 /// first tiles fill in first, and puts each in `smalls` as it is made.
-async fn make_smalls(
-    pictures: Arc<dyn Pictures>,
-    previews: Vec<PathBuf>,
-    mut smalls: Signal<Smalls>,
-) {
+async fn make_smalls(pictures: Wallpaper, previews: Vec<PathBuf>, mut smalls: Signal<Smalls>) {
     for preview in previews {
         if smalls.peek().contains_key(&preview) {
             continue;
@@ -63,7 +58,7 @@ pub fn PictureControl(
     value: toml::Value,
     onchange: EventHandler<toml::Value>,
 ) -> Element {
-    let pictures = use_context::<Env>().pictures;
+    let pictures = use_client().wallpaper();
     let mut found = use_signal(Vec::<Picture>::new);
     let smalls = use_signal(Smalls::new);
     let mut told = use_signal(|| None::<String>);

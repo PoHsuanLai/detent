@@ -2,11 +2,9 @@
 
 use super::sheet_view::{RemovalSheetView, SheetHandlers};
 use crate::copy::{Subject, absence as absence_words};
-use crate::env::Env;
-use detent_model::{
-    RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState,
-    spaces_step,
-};
+use crate::live::use_live;
+use detent_client::Client;
+use detent_model::{RemovalStage, SpaceKey, SpaceRow, SpacesInput, SpacesReady, SpacesState};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::controls::button_model::ButtonRole;
@@ -19,62 +17,10 @@ use ds::style::tokens::control_size::ControlSize;
 /// The Spaces the desktop keeps, with a Remove on each.
 #[component]
 pub(crate) fn SpacesPane() -> Element {
-    let env = use_context::<Env>();
-    let toasts = use_toasts();
-    let mut state = use_signal(SpacesState::default);
-
-    let drive = EventHandler::new({
-        let link = env.spaces.clone();
-        move |input: SpacesInput| {
-            let (next, effects) = spaces_step(state.peek().clone(), input);
-            state.set(next);
-            for effect in effects {
-                let link = link.clone();
-                match effect {
-                    SpacesEffect::Tell(text) => toasts.push(text, None),
-                    SpacesEffect::Reload => {
-                        spawn(async move {
-                            let found = link.list().await;
-                            let (next, _) =
-                                spaces_step(state.peek().clone(), SpacesInput::Found(found));
-                            state.set(next);
-                        });
-                    }
-                    SpacesEffect::Remove { space, removal } => {
-                        spawn(async move {
-                            let ended = link.remove(space, removal).await;
-                            let (next, effects) =
-                                spaces_step(state.peek().clone(), SpacesInput::Removed(ended));
-                            state.set(next);
-                            for effect in effects {
-                                match effect {
-                                    SpacesEffect::Tell(text) => toasts.push(text, None),
-                                    SpacesEffect::Reload => {
-                                        let found = link.list().await;
-                                        let (next, _) = spaces_step(
-                                            state.peek().clone(),
-                                            SpacesInput::Found(found),
-                                        );
-                                        state.set(next);
-                                    }
-                                    SpacesEffect::Remove { .. } => {}
-                                }
-                            }
-                        });
-                    }
-                }
-            }
-        }
-    });
-
-    use_future({
-        let link = env.spaces.clone();
-        move || {
-            let link = link.clone();
-            async move {
-                drive.call(SpacesInput::Found(link.list().await));
-            }
-        }
+    let spaces = use_live(Client::spaces);
+    let state = spaces.state;
+    let drive = EventHandler::new(move |input: SpacesInput| {
+        spawn(spaces.pane.send(input));
     });
 
     match state() {

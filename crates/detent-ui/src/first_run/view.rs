@@ -8,7 +8,6 @@ use detent_model::{
     Clearing, FirstRun, FirstRunEffect, FirstRunInput, LocalOnly, PageKind, PickerInput,
     PickerState, Stage, first_run_step,
 };
-use detent_system::bus::start;
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button::Button;
@@ -65,10 +64,10 @@ fn FirstRunWindow() -> Element {
     let mut state = use_signal(FirstRun::default);
     let Picker { state: picker, ask } = use_picker();
     use_future({
-        let bus = env.bus.clone();
+        let client = env.client.clone();
         move || {
-            let bus = bus.clone();
-            async move { start(&bus, PageKind::AssistantModel.modules_read()).await }
+            let client = client.clone();
+            async move { client.start(PageKind::AssistantModel.modules_read()).await }
         }
     });
 

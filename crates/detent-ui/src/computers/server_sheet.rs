@@ -3,7 +3,8 @@
 //! wants one, a key.
 
 use crate::copy::server_refusal;
-use crate::env::Env;
+use crate::live::use_client;
+use detent_client::Client;
 use detent_model::{
     ComputersInput, HotOpenKind, KeyField, NewServer, ServerEdit, ServerModels, ServerPhase,
 };
@@ -48,11 +49,11 @@ fn button(label: &str, subject: &str, id: &str) -> Common {
 
 /// Asks the person for a file and feeds the choice in.
 fn choose_file(
-    env: &Env,
+    client: &Client,
     then: impl FnOnce(PathBuf) -> ComputersInput + 'static,
     feed: EventHandler<ComputersInput>,
 ) {
-    let corners = env.corners.clone();
+    let corners = client.corners();
     spawn(async move {
         if let Some(path) = corners.choose(HotOpenKind::File).await {
             feed.call(then(PathBuf::from(path)));
@@ -63,15 +64,15 @@ fn choose_file(
 /// The sheet, with the sentence of the last refusal under its fields.
 #[component]
 pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInput>) -> Element {
-    let env = use_context::<Env>();
+    let client = use_client();
     let editing = sheet.phase == ServerPhase::Editing;
     let close = EventHandler::new(move |()| feed.call(ComputersInput::CloseServer));
     let add = EventHandler::new(move |()| feed.call(ComputersInput::AddServer));
     let edit = move |edit: ServerEdit| feed.call(ComputersInput::ServerEdit(edit));
     let form = sheet.form.clone();
     let chosen_model = form.model.as_ref().map(ToString::to_string);
-    let socket_env = env.clone();
-    let key_env = env;
+    let socket_client = client.clone();
+    let key_client = client;
     rsx! {
         Sheet {
             label: TITLE.to_owned(),
@@ -135,7 +136,7 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
                     Button {
                         label: "Choose a file\u{2026}",
                         common: button("Choose a file for", "where it answers", "server-socket"),
-                        onclick: move |_| choose_file(&socket_env, |path| ComputersInput::ServerEdit(ServerEdit::Socket(Some(path))), feed),
+                        onclick: move |_| choose_file(&socket_client, |path| ComputersInput::ServerEdit(ServerEdit::Socket(Some(path))), feed),
                     }
                 }
                 Label { text: ON_THIS_COMPUTER, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
@@ -160,7 +161,7 @@ pub(super) fn ServerSheetView(sheet: NewServer, feed: EventHandler<ComputersInpu
                     Button {
                         label: "Use a key file\u{2026}",
                         common: button("Use a key file for", "the server", "server-key-file"),
-                        onclick: move |_| choose_file(&key_env, |path| ComputersInput::ServerEdit(ServerEdit::KeyFile(Some(path))), feed),
+                        onclick: move |_| choose_file(&key_client, |path| ComputersInput::ServerEdit(ServerEdit::KeyFile(Some(path))), feed),
                     }
                 }
                 if let Some(fault) = sheet.fault.clone() {

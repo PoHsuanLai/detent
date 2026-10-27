@@ -8,6 +8,7 @@ use crate::copy::account_notices::add_end_line;
 use crate::copy::accounts::status_label;
 use crate::env::Env;
 use crate::key_row::row_id;
+use crate::live::use_client;
 use crate::marks::ProviderMarks;
 use detent_model::{
     Adding, SetupAction, SetupAvailability, SignedIn, SyncWork, accounts_setup_offer, signed_in,
@@ -96,7 +97,7 @@ pub(crate) fn AccountsSetup() -> Element {
     };
     let items = rows_of(&rows, &env.marks);
     let empty = rows.is_empty();
-    let accounts = env.accounts.clone();
+    let client = use_client();
     let (skip_app, next_app) = (app.clone(), app);
     rsx! {
         div { class: "accounts-setup", "data-accounts": "setup",
@@ -123,10 +124,10 @@ pub(crate) fn AccountsSetup() -> Element {
                 size: ControlSize::Large,
                 availability: add,
                 onclick: move |_| {
-                    let (accounts, mut adding) = (accounts.clone(), adding);
+                    let (client, mut adding) = (client.clone(), adding);
                     adding.set(Adding::SheetOpen);
                     spawn(async move {
-                        let end = accounts.add_account().await;
+                        let end = client.add_account().await;
                         adding.set(Adding::Idle);
                         if let Some(line) = add_end_line(&end) {
                             toasts.push(line.to_owned(), None);

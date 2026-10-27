@@ -1,9 +1,9 @@
 //! The Software Update page: the version row with its buttons, the progress bar, when the last
 //! check was, the daily check, and the release notes in their sheet.
 
-use super::drive::use_updates;
 use crate::copy::{self, Subject};
-use crate::env::Env;
+use crate::live::use_live;
+use detent_client::Client;
 use detent_model::{
     CheckActivity, ReleaseNotes, UpdateAction, UpdateMeter, UpdatesInput, UpdatesPage,
     UpdatesShown, updates_shown,
@@ -19,9 +19,8 @@ use ds::root::common::Common;
 /// The page: what the update service says and the buttons that move it, or why there is none.
 #[component]
 pub(crate) fn SoftwareUpdatePane() -> Element {
-    let env = use_context::<Env>();
-    let standing = use_updates();
-    let shown = updates_shown(&standing.state.read(), env.updates.now());
+    let updates = use_live(Client::updates);
+    let shown = updates_shown(&updates.state.read(), updates.pane.now());
     match shown {
         UpdatesShown::Looking => rsx! { div { class: "updates", "data-updates": "looking" } },
         UpdatesShown::Unavailable(absence) => rsx! {
@@ -37,7 +36,9 @@ pub(crate) fn SoftwareUpdatePane() -> Element {
             }
         },
         UpdatesShown::Page(page) => {
-            let press = EventHandler::new(move |input: UpdatesInput| standing.feed(input));
+            let press = EventHandler::new(move |input: UpdatesInput| {
+                spawn(updates.pane.send(input));
+            });
             rsx! { Listed { page, press } }
         }
     }

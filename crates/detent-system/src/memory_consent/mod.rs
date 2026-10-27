@@ -3,9 +3,13 @@
 //! with it not running nothing waits on anyone, and opening Settings must not start it.
 
 mod bus;
+#[cfg(feature = "testing")]
+mod fake;
 mod proxy;
 
 pub use bus::OnBus;
+#[cfg(feature = "testing")]
+pub use fake::FakeMemory;
 pub use proxy::control;
 
 use almanac_core::WaitingSetting;

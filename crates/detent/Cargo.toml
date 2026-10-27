@@ -11,10 +11,10 @@ publish.workspace = true
 [dependencies]
 clap = { workspace = true }
 detent-callers = { workspace = true, optional = true }
+detent-client = { workspace = true }
 detent-files = { workspace = true }
 detent-intents = { workspace = true }
 detent-model = { workspace = true }
-detent-system = { workspace = true }
 detent-ui = { workspace = true }
 ds-blitz = { workspace = true }
 ds-settings = { workspace = true }

@@ -2,8 +2,8 @@
 //! and writes down every time it was asked: never a real folder, never the chooser.
 #![allow(dead_code)]
 
+use detent_client::Pictures;
 use detent_model::{AddOutcome, Picture, PictureFrom, Work};
-use detent_ui::Pictures;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};

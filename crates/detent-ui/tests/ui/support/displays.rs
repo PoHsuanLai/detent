@@ -1,10 +1,10 @@
 //! The compositor's displays from memory: nothing here reaches a compositor. It writes down what
 //! the page asked and moves its own standing the way the real one would.
 
+use detent_client::{DisplaysLink, Ticker, Ticks};
 use detent_model::{
     Absence, DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, ModePreference, Work, mode_at,
 };
-use detent_ui::{DisplaysLink, Ticker, Ticks};
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]

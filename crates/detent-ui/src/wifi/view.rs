@@ -2,11 +2,12 @@
 //! in range, each with its lock and its signal and a Join button; known ones can be forgotten, and
 //! a network that hides its name is joined from Other.
 
-use super::drive::use_wifi;
 use super::network_sheets::{ForgetSheet, OtherSheet};
 use super::sheets::{DetailsSheet, PasswordSheet};
 use crate::copy::{self, Subject};
+use crate::live::use_live;
 use crate::system::Unavailable;
+use detent_client::Client;
 use detent_model::{
     NetworkLock, Remembered, SignalBars, Ssid, WifiAsking, WifiInput, WifiNetwork, WifiRadio,
     WifiReady, WifiState,
@@ -20,15 +21,17 @@ use ds::root::common::Common;
 /// The page: the switch and the networks, or why there are none.
 #[component]
 pub(crate) fn WifiPane() -> Element {
-    let driver = use_wifi();
-    let state = driver.state.read().clone();
+    let wifi = use_live(Client::wifi);
+    let state = wifi.state.read().clone();
     match state {
         WifiState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
         WifiState::Unavailable(absence) => rsx! {
             Unavailable { title: "Wi-Fi", subject: Subject::Wifi, absence }
         },
         WifiState::Ready(page) => {
-            let press = EventHandler::new(move |input: WifiInput| driver.feed(input));
+            let press = EventHandler::new(move |input: WifiInput| {
+                spawn(wifi.pane.send(input));
+            });
             rsx! { Listed { page, press } }
         }
     }

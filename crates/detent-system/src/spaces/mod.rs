@@ -3,8 +3,12 @@
 //! goes to the owner of the service's name that was confirmed, never to the name.
 
 mod bus;
+#[cfg(feature = "testing")]
+mod fake;
 
 pub use bus::OnBus;
+#[cfg(feature = "testing")]
+pub use fake::FakeSpaces;
 
 use almanac_core::Removal;
 use detent_model::{Absence, SpaceKey, SpaceRow, Work};

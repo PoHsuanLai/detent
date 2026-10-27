@@ -2,10 +2,14 @@
 //! holds for the person's word. Looked for, never started.
 
 mod bus;
+#[cfg(feature = "testing")]
+mod fake;
 mod holds;
 mod status;
 
 pub use bus::OnBus;
+#[cfg(feature = "testing")]
+pub use fake::{FakeSync, SyncAsked};
 pub use holds::follow_holds;
 
 use detent_model::{DatasetName, HoldInput, SyncNowEnd, SyncStatus, Work};

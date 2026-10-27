@@ -2,7 +2,6 @@
 //! log-out that finishes an update. The service, the clock and the log-out each come through a
 //! handle the environment carries.
 
-mod drive;
 mod view;
 
 pub(crate) use view::SoftwareUpdatePane;

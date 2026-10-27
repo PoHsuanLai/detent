@@ -1,20 +1,18 @@
 //! `detent`: the desktop's Settings app, one window on Blitz.
 
-mod accounts;
 mod cli;
 mod dev_callers;
 mod dirs;
 mod service;
 
-use accounts::LiveAccounts;
 use clap::Parser;
 use cli::Run;
+use detent_client::{BusSource, ClientBuilder, ClientHomes};
 use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles, find_agents_program};
 use detent_intents::{
     ServeFault, SettingsProvider, hand_over_session, search_entries, serve_session,
 };
 use detent_model::{Catalogue, PageSlug, discover, inbox, is_assistant_setup};
-use detent_system::bus::BusSource;
 use detent_ui::{App, Env, FirstRunApp, Homes, Opening};
 use ds_blitz::{
     AppConfig, AppId, Decorations, FileRoots, LaunchError, WindowSize, enter_runtime, launch,
@@ -90,27 +88,35 @@ fn environment(opening: Opening) -> Result<Env, ExitCode> {
         return Err(ExitCode::FAILURE);
     };
     let path = std::env::var("PATH").unwrap_or_default();
+    let client = ClientBuilder::over(
+        BusSource::Session,
+        ClientHomes {
+            config: config_home.clone(),
+            data: data_home.clone(),
+            cache: cache_home,
+        },
+    )
+    .with_intent_dirs(dirs::intent_dirs())
+    .with_programs_path(path.clone())
+    .with_agents_program(find_agents_program(
+        std::env::current_exe().ok().as_deref(),
+        &path,
+    ))
+    .build();
     let env = Env::discover(
         &dirs::schema_dirs(),
         Homes {
             config: config_home,
             data: data_home,
             state: state_home,
-            cache: cache_home,
         },
         SystemPrefsSource::Portal,
         opening,
-        BusSource::Session,
+        client,
     )
     .with_keymap(KeymapFiles::standard())
     .with_application_dirs(dirs::application_dirs())
-    .with_intent_dirs(dirs::intent_dirs())
-    .with_system_data_dirs(dirs::system_data_dirs())
-    .with_programs_path(path.clone())
-    .with_agents_program(find_agents_program(
-        std::env::current_exe().ok().as_deref(),
-        &path,
-    ));
+    .with_system_data_dirs(dirs::system_data_dirs());
     for warning in &env.warnings {
         eprintln!("detent: {warning}");
     }
@@ -158,7 +164,7 @@ fn settings(opening: Opening) -> ExitCode {
         env.catalogue.clone(),
         config_home,
         outbox,
-        Arc::new(LiveAccounts(BusSource::Session)),
+        Arc::new(env.client.clone()),
     );
     // Held until the process ends: dropping the connection takes the service off the bus.
     let _service = match provider {
@@ -176,7 +182,7 @@ fn settings(opening: Opening) -> ExitCode {
         }
     };
     // The folders the Wallpaper page draws pictures from; the window reads no other `file:` URL.
-    let roots = FileRoots::new(env.pictures.roots());
+    let roots = FileRoots::new(env.client.wallpaper().roots());
     let config = AppConfig::new("Settings", window_size(wanted.as_ref()))
         .with_app_id(AppId("org.quire.Settings".to_owned()))
         .with_decorations(Decorations::Client)

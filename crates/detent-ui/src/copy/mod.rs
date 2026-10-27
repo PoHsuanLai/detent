@@ -17,6 +17,7 @@ mod extensions;
 pub(crate) mod first_run;
 pub(crate) mod hot_corners;
 mod memory;
+mod notice;
 pub(crate) mod picker;
 pub(crate) mod pictures;
 mod privacy;
@@ -36,6 +37,7 @@ pub(crate) use extensions::{
     group_title,
 };
 pub(crate) use memory::{CONFIRM, confinement_line, trouble_line, waiting_note};
+pub(crate) use notice::notice;
 pub(crate) use privacy::{SET_BY_ADMINISTRATOR, power_label, program_name, standing_label};
 pub(crate) use screen_sharing::grant_line;
 pub(crate) use spaces::{

@@ -4,22 +4,16 @@
 use super::server_sheet::ServerSheetView;
 use crate::assistants::{PlaceEntry, PlaceRow};
 use crate::copy::{self, Subject, absence as absence_words, guest_standing};
-use crate::env::Env;
-use detent_model::{
-    AddList, ComputersEffect, ComputersInput, ComputersReady, ComputersState, computers_step,
-};
-use detent_system::bus::{BusSource, Daemon, next_owner, owner_changes};
-use detent_system::computers::{Change, ChangeFailure, ComputersLink};
+use crate::live::use_live;
+use detent_model::{AddList, ComputersInput, ComputersReady, ComputersState};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_help::HelpShown;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
 use ds::prelude::*;
 use ds::root::common::Common;
-use ds::stack::toast_hub::ToastHub;
 use ds::style::tokens::control_size::ControlSize;
 use porter_core::lending::{Approval, ComputerCandidate, GuestAnswer, GuestRow, RowState};
-use std::sync::Arc;
 
 /// The group's title.
 const TITLE: &str = "Your computers";
@@ -41,126 +35,14 @@ const NOBODY_LENDING: &str = "None of your other computers is lending its models
 /// What the Add list says while Tailscale is asked.
 const LOOKING: &str = "Looking for your computers on Tailscale\u{2026}";
 
-fn change_of(effect: ComputersEffect) -> Option<Change> {
-    match effect {
-        ComputersEffect::Add(node) => Some(Change::Add(node)),
-        ComputersEffect::Remove(id) => Some(Change::Remove(id)),
-        ComputersEffect::Answer(node, answer) => Some(Change::Answer(node, answer)),
-        ComputersEffect::Forget(node) => Some(Change::Forget(node)),
-        ComputersEffect::AddServer(draft) => Some(Change::Server(draft)),
-        ComputersEffect::Reload
-        | ComputersEffect::LoadCandidates
-        | ComputersEffect::LoadServerModels
-        | ComputersEffect::Tell(_) => None,
-    }
-}
-
-/// The sentence for a change that was not made: the form's own, or the service's.
-fn sentence_of_failure(failure: ChangeFailure) -> String {
-    match failure {
-        ChangeFailure::Fault(fault) => copy::server_fault(fault).to_owned(),
-        ChangeFailure::Told(words) => words,
-    }
-}
-
-/// Steps the state on `input` and does what that asks; what each ask ends with is fed back in.
-fn drive(
-    mut state: Signal<ComputersState>,
-    toasts: ToastHub,
-    link: Arc<dyn ComputersLink>,
-    input: ComputersInput,
-) {
-    let (next, effects) = computers_step(state.peek().clone(), input);
-    state.set(next);
-    for effect in effects {
-        let link = link.clone();
-        match effect {
-            ComputersEffect::Tell(text) => toasts.push(text, None),
-            ComputersEffect::Reload => {
-                spawn(async move {
-                    let found = link.read().await;
-                    drive(state, toasts, link, ComputersInput::Found(found));
-                });
-            }
-            ComputersEffect::LoadCandidates => {
-                spawn(async move {
-                    let found = link.candidates().await;
-                    drive(state, toasts, link, ComputersInput::Candidates(found));
-                });
-            }
-            ComputersEffect::LoadServerModels => {
-                spawn(async move {
-                    let found = link.models().await;
-                    drive(state, toasts, link, ComputersInput::ServerModels(found));
-                });
-            }
-            other => {
-                if let Some(asked) = change_of(other) {
-                    let server = matches!(asked, Change::Server(_));
-                    spawn(async move {
-                        let ended = link.change(asked).await.map_err(sentence_of_failure);
-                        let input = if server {
-                            ComputersInput::ServerAdded(ended)
-                        } else {
-                            ComputersInput::Changed(ended)
-                        };
-                        drive(state, toasts, link, input);
-                    });
-                }
-            }
-        }
-    }
-}
-
-/// Reads the lists, then reads them again each time inferd says they changed or comes back.
-async fn follow_lists(
-    state: Signal<ComputersState>,
-    toasts: ToastHub,
-    bus: BusSource,
-    link: Arc<dyn ComputersLink>,
-) {
-    let connection = match detent_system::bus::connect(&bus).await {
-        Ok(connection) => connection,
-        Err(absence) => return drive(state, toasts, link, ComputersInput::Found(Err(absence))),
-    };
-    let Ok(mut owners) = owner_changes(&connection, &Daemon::inferd()).await else {
-        return;
-    };
-    loop {
-        // Subscribed before the first read, so a change in between is not lost.
-        let watch = link.changes().await;
-        reread(state, toasts, &link).await;
-        if let Ok(mut watch) = watch {
-            while watch.recv().await.is_some() {
-                reread(state, toasts, &link).await;
-            }
-        }
-        if next_owner(&mut owners).await.is_none() {
-            return;
-        }
-    }
-}
-
-/// Reads the lists and steps the state on what was found.
-async fn reread(state: Signal<ComputersState>, toasts: ToastHub, link: &Arc<dyn ComputersLink>) {
-    let found = link.read().await;
-    drive(state, toasts, link.clone(), ComputersInput::Found(found));
-}
-
 /// Follows the computers and hands back their state and the way to feed it an input.
 pub(crate) fn use_computers() -> (Signal<ComputersState>, EventHandler<ComputersInput>) {
-    let env = use_context::<Env>();
-    let toasts = use_toasts();
-    let state = use_signal(ComputersState::default);
-    use_future({
-        let (bus, link) = (env.bus.clone(), env.computers.clone());
-        move || follow_lists(state, toasts, bus.clone(), link.clone())
-    });
-    let link = env.computers.clone();
+    let computers = use_live(|client| client.computers(copy::server_fault));
+    let pane = computers.pane.clone();
     let feed = EventHandler::new(move |input: ComputersInput| {
-        drive(state, toasts, link.clone(), input);
+        spawn(pane.send(input));
     });
-    (state, feed)
+    (computers.state, feed)
 }
 
 /// The person's computers (`rows`, one per computer the service lists), the Add list, and the

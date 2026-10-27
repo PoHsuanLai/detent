@@ -2,8 +2,8 @@
 //! asked: never a download, never a folder chooser, never the real computer.
 #![allow(dead_code)]
 
+use detent_client::Desk;
 use detent_model::{EngineRow, EngineStanding, EngineWay, InstallScope, Work};
-use detent_ui::Desk;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 

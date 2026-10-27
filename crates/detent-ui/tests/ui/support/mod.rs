@@ -26,13 +26,14 @@ pub mod updates;
 pub mod wifi;
 
 use bluetooth::Bluetooth;
+use detent_client::{
+    BusSource, ClientBuilder, ClientHomes, CornerDesk, Desk, Lender, NoCorners, NoPictures,
+    Pictures, Quiet, ReasonFeed, Vouch,
+};
 use detent_files::{CacheHome, ConfigHome, DataHome, StateHome};
 use detent_model::{Absence, OriginRule, Outbox, inbox};
 use detent_testkit::{Scratch, seed_schemas};
-use detent_ui::{
-    App, BusSource, CornerDesk, Desk, Env, FirstRunApp, Homes, Lender, NoCorners, NoPictures,
-    Opening, Pictures, Quiet, ReasonFeed, Vouch,
-};
+use detent_ui::{App, Env, FirstRunApp, Homes, Opening};
 use displays::Displays;
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
@@ -225,17 +226,13 @@ impl Sandbox {
 
     /// The app's environment, the desktop reporting `scheme`.
     pub fn env(&self, opening: Opening, scheme: Scheme) -> Env {
-        Env::discover(
-            &[self.scratch.join("data/quire/settings")],
-            Homes {
+        let client = ClientBuilder::over(
+            self.bus.clone(),
+            ClientHomes {
                 config: self.config_home(),
                 data: self.data_home(),
-                state: self.state_home(),
                 cache: CacheHome(self.scratch.join("cache")),
             },
-            SystemPrefsSource::Fixed(SystemPrefs::default().with_scheme(scheme)),
-            opening,
-            self.bus.clone(),
         )
         .with_reasons(self.reasons.clone())
         .with_lender(self.lender())
@@ -248,6 +245,18 @@ impl Sandbox {
         .with_pictures(self.pictures.clone())
         .with_corners(self.corners.clone())
         .with_agents_program(self.agents_program.clone())
+        .build();
+        Env::discover(
+            &[self.scratch.join("data/quire/settings")],
+            Homes {
+                config: self.config_home(),
+                data: self.data_home(),
+                state: self.state_home(),
+            },
+            SystemPrefsSource::Fixed(SystemPrefs::default().with_scheme(scheme)),
+            opening,
+            client,
+        )
         .with_os_release(self.os_release_path())
         .with_application_dirs(vec![self.scratch.join("applications")])
         .with_entry_rule(self.entry_rule())

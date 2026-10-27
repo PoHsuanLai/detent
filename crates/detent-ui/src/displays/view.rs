@@ -1,9 +1,10 @@
 //! The Displays page: a card for each display with its resolution, the pixel size of its mode, its
 //! refresh rate and rotation, and where it sits beside the others.
 
-use super::drive::use_displays;
 use crate::copy::{self, Subject};
+use crate::live::{use_events, use_live};
 use crate::system::Unavailable;
+use detent_client::Client;
 use detent_model::{
     ArrangeSide, Brightness, BrightnessList, DisplayChange, DisplayEdit, DisplayRotation,
     DisplaysInput, DisplaysReady, DisplaysState, Monitor, OutputId, PixelSize, RefreshMilliHz,
@@ -18,20 +19,25 @@ use ds::style::tokens::control_size::ControlSize;
 /// The page: the displays, or why there are none.
 #[component]
 pub(crate) fn DisplaysPane() -> Element {
-    let driver = use_displays();
-    let state = driver.state.read().clone();
+    let displays = use_live(Client::displays);
+    let brightness_now = use_events(displays.pane.brightness());
+    let state = displays.state.read().clone();
     match state {
         DisplaysState::Looking => rsx! { div { class: "system-page", "data-system": "looking" } },
         DisplaysState::Unavailable(absence) => rsx! {
             Unavailable { title: "Displays", subject: Subject::Displays, absence }
         },
         DisplaysState::Ready(page) => {
-            let brightness = driver.brightness.read().clone();
+            let brightness = brightness_now.read().clone();
             let dim = EventHandler::new({
-                let driver = driver.clone();
-                move |(output, level): (OutputId, Brightness)| driver.set_brightness(output, level)
+                let displays = displays.clone();
+                move |(output, level): (OutputId, Brightness)| {
+                    spawn(displays.pane.set_brightness(output, level));
+                }
             });
-            let press = EventHandler::new(move |input: DisplaysInput| driver.feed(input));
+            let press = EventHandler::new(move |input: DisplaysInput| {
+                spawn(displays.pane.send(input));
+            });
             rsx! { Listed { page, brightness, press, dim } }
         }
     }

@@ -1,8 +1,8 @@
 //! The update service and the log-out, from memory: nothing here reaches a bus, the clock or a
 //! process.
 
+use detent_client::{Departure, InstallRefusal, Ticker, UpdateTicks, UpdatesLink};
 use detent_model::{Absence, UnixSeconds, UpdatePhase, UpdateStatus, UpdateVersion, Work};
-use detent_ui::{Departure, InstallRefusal, Ticker, UpdateTicks, UpdatesLink};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 

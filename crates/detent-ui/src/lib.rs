@@ -43,21 +43,9 @@ mod wifi;
 mod window;
 
 pub use app::App;
-pub use detent_system::accounts::read_accounts;
-pub use detent_system::bluetooth::{BluetoothLink, BtSession, PairingReply, PairingRequest};
-pub use detent_system::bus::{BusSource, Vouch};
-pub use detent_system::displays::DisplaysLink;
-pub use detent_system::engine_install::{Desk, Quiet};
-pub use detent_system::hot_corners::{CornerDesk, NoCorners};
-pub use detent_system::lending::Lender;
-pub use detent_system::updates::{Departure, InstallRefusal, UpdateTicks, UpdatesLink};
-pub use detent_system::wallpaper::{NoPictures, Pictures, ThumbFault, Thumbnails};
-pub use detent_system::wifi::WifiLink;
-pub use detent_system::{Gone, Ticker, Ticks};
 pub use env::{Env, Homes, Opening};
 pub use first_run::FirstRunApp;
 pub use marks::ProviderMarks;
-pub use picker::ReasonFeed;
 
 /// The app's own layout stylesheet: tokens only.
 pub const STYLE: &str = include_str!("style.css");

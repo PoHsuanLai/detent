@@ -3,32 +3,9 @@
 //! so a test starts it on scratch directories.
 
 use crate::marks::ProviderMarks;
-use crate::picker::ReasonFeed;
-use detent_files::{
-    CacheHome, ConfigHome, DataHome, ExtensionHome, FirstRunMark, KeymapFiles, PictureDirs,
-    StateHome,
-};
+use detent_client::Client;
+use detent_files::{ConfigHome, DataHome, ExtensionHome, FirstRunMark, KeymapFiles, StateHome};
 use detent_model::{Catalogue, Inbox, OriginRule, PageSlug, Warning, discover};
-use detent_system::accounts::{AccountsLink, OnBus as AccountsOnBus};
-use detent_system::bluetooth::{BluetoothLink, OnBluetooth};
-use detent_system::bus::BusSource;
-use detent_system::chooser::{ChooserLink, OnPortal};
-use detent_system::computers::{ComputersLink, OnBus as ComputersOnBus};
-use detent_system::displays::{DisplaysLink, OnCompositor};
-use detent_system::engine_install::{Desk, OnEngines};
-use detent_system::engines::{EnginesLink, OnBus as EnginesOnBus};
-use detent_system::hot_corners::{CornerDesk, OnCorners};
-use detent_system::lending::Lender;
-use detent_system::memory_consent::{MemoryLink, OnBus as MemoryOnBus};
-use detent_system::picker::{OnClient as PickerOnClient, PickerLink};
-use detent_system::privacy::{OnClient as PrivacyOnClient, PrivacyLink};
-use detent_system::running::{OnBus as RunningOnBus, RunningLink};
-use detent_system::screen_sharing::{OnBus as ScreenSharingOnBus, ScreenSharingLink};
-use detent_system::spaces::{OnBus as SpacesOnBus, SpacesLink};
-use detent_system::sync::{OnBus as SyncOnBus, SyncLink};
-use detent_system::updates::{Departure, OnBus, PowerMenu, UpdatesLink};
-use detent_system::wallpaper::{OnDisk, Pictures, Thumbnails};
-use detent_system::wifi::{OnWifi, WifiLink};
 use ds_helpers::Environment;
 use ds_settings::SystemPrefsSource;
 use std::path::PathBuf;
@@ -43,7 +20,8 @@ pub struct Opening {
     pub query: String,
 }
 
-/// The app's ambient inputs.
+/// The app's ambient inputs: the one door to the computer (`client`), and what only the window
+/// holds.
 #[derive(Debug, Clone)]
 pub struct Env {
     /// Every key of every schema found.
@@ -62,49 +40,12 @@ pub struct Env {
     pub opening: Opening,
     /// What the window is told while it runs; empty until the launcher gives it one.
     pub inbox: Inbox,
-    /// Where inferd is looked for.
-    pub bus: BusSource,
-    /// The desktop's file chooser, which a folder, a file or a picture is asked of.
-    pub chooser: Arc<dyn ChooserLink>,
-    /// The account and key services behind the Accounts pane.
-    pub accounts: Arc<dyn AccountsLink>,
-    /// The sync service behind the Accounts pane.
-    pub sync: Arc<dyn SyncLink>,
-    /// inferd's module, as the model picker sets its rows.
-    pub picker: Arc<dyn PickerLink>,
-    /// The compositor's module, as the Privacy page sets its rows.
-    pub privacy: Arc<dyn PrivacyLink>,
-    /// The screen-sharing portal behind the Privacy page.
-    pub screen_sharing: Arc<dyn ScreenSharingLink>,
-    /// accountd's registry and memory's controls behind the Spaces page.
-    pub spaces: Arc<dyn SpacesLink>,
-    /// The memory service's consent and confinement.
-    pub memory: Arc<dyn MemoryLink>,
-    /// The models inferd runs itself.
-    pub running: Arc<dyn RunningLink>,
-    /// The computers over inferd.
-    pub computers: Arc<dyn ComputersLink>,
-    /// The llama.cpp note's look at the assistant, and its restart.
-    pub engine_note: Arc<dyn EnginesLink>,
-    /// Where the model picker's reason footer reads inferd's `Why` and `Declined` from.
-    pub reasons: ReasonFeed,
+    /// Every service the window reaches.
+    pub client: Client,
     /// The marks of the providers the Accounts page shows.
     pub marks: ProviderMarks,
-    /// How the switch that lends this computer's models reaches the files and the service
-    /// manager; the person's own session unless a test hands in another.
-    pub lender: Lender,
     /// The keymap files the Shortcuts list reads, and the one it writes: the person's own.
     pub keymap: KeymapFiles,
-    /// The update service the Software Update page follows, looked for on `bus`.
-    pub updates: Arc<dyn UpdatesLink>,
-    /// How the Software Update page logs the person out once an update is installed.
-    pub log_out: Arc<dyn Departure>,
-    /// The network service the Wi-Fi page follows, looked for on the system bus.
-    pub wifi: Arc<dyn WifiLink>,
-    /// BlueZ, which the Bluetooth page follows, looked for on the system bus.
-    pub bluetooth: Arc<dyn BluetoothLink>,
-    /// The compositor's output management, which the Displays page follows.
-    pub displays: Arc<dyn DisplaysLink>,
     /// The file that says which distro this is (`os-release`), read to word an install line.
     pub os_release: PathBuf,
     /// The folders of desktop entries, in the order of precedence: where the Privacy page finds
@@ -113,22 +54,6 @@ pub struct Env {
     /// How those folders are judged: only an entry in one closed to everyone but an
     /// administrator may name a program. A test declares its scratch folder to be one.
     pub entry_rule: OriginRule,
-    /// What the sheet that downloads an engine does to the computer: the person's own unless a
-    /// test hands in another.
-    pub engines: Arc<dyn Desk>,
-    /// The value of `PATH`: where the coding agents already on this computer are looked for for
-    /// the assistant's model. Empty until the launcher gives it, so a test finds none.
-    pub programs_path: String,
-    /// The program that lists and downloads coding assistants, where the launcher found it. None
-    /// until it is given, so a test reaches no network and the Add sheet offers only the
-    /// assistants already installed.
-    pub agents_program: Option<PathBuf>,
-    /// The pictures the Wallpaper page offers and the chooser that adds one: this computer's own
-    /// unless a test hands in another.
-    pub pictures: Arc<dyn Pictures>,
-    /// The apps' actions and the file chooser the Hot Corners sheet asks for: this computer's own
-    /// unless a test hands in another.
-    pub corners: Arc<dyn CornerDesk>,
     /// The Extensions installed, which the Look menu offers and the Extensions page lists; the
     /// person's own folders only unless the launcher names the system's.
     pub extensions: ExtensionHome,
@@ -138,8 +63,8 @@ pub struct Env {
     pub system_data_dirs: Vec<PathBuf>,
 }
 
-/// The person's own folders the app reads and writes: settings, data, state and cache (or
-/// scratch folders standing in for them).
+/// The person's own folders the window reads and writes: settings, data and state (or scratch
+/// folders standing in for them).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Homes {
     /// Where the settings files are.
@@ -148,43 +73,25 @@ pub struct Homes {
     pub data: DataHome,
     /// Where the first-run mark is.
     pub state: StateHome,
-    /// Where the Wallpaper page's small pictures are kept.
-    pub cache: CacheHome,
 }
 
 impl Env {
-    /// The environment after scanning `schema_dirs` for schemas.
+    /// The environment after scanning `schema_dirs` for schemas, reaching the computer through
+    /// `client`.
     pub fn discover(
         schema_dirs: &[PathBuf],
         homes: Homes,
         system: SystemPrefsSource,
         opening: Opening,
-        bus: BusSource,
+        client: Client,
     ) -> Env {
         let Homes {
             config: config_home,
             data: data_home,
             state: state_home,
-            cache: cache_home,
         } = homes;
         let found = discover(schema_dirs);
         let keymap = KeymapFiles::under(&config_home);
-        let chooser: Arc<dyn ChooserLink> = Arc::new(OnPortal(bus.clone()));
-        let updates = Arc::new(OnBus(bus.clone()));
-        let engines = Arc::new(OnEngines::new(
-            bus.clone(),
-            Arc::clone(&chooser),
-            &data_home.0,
-        ));
-        let pictures = Arc::new(OnDisk::new(
-            Arc::clone(&chooser),
-            PictureDirs::standard(&data_home),
-            Thumbnails::under(&cache_home),
-        ));
-        let corners = Arc::new(OnCorners::new(Arc::clone(&chooser), Vec::new()));
-        let wifi = Arc::new(OnWifi(bus.clone()));
-        let bluetooth = Arc::new(OnBluetooth::new(bus.clone()));
-        let displays = Arc::new(OnCompositor(bus.clone()));
         let extensions = ExtensionHome::under(&config_home, &data_home, &[]);
         Env {
             catalogue: Arc::new(Catalogue::build(&found.programs)),
@@ -195,73 +102,20 @@ impl Env {
             system,
             opening,
             inbox: Inbox::default(),
-            chooser,
-            accounts: Arc::new(AccountsOnBus(bus.clone())),
-            sync: Arc::new(SyncOnBus(bus.clone())),
-            picker: Arc::new(PickerOnClient),
-            privacy: Arc::new(PrivacyOnClient),
-            screen_sharing: Arc::new(ScreenSharingOnBus(bus.clone())),
-            spaces: Arc::new(SpacesOnBus(bus.clone())),
-            memory: Arc::new(MemoryOnBus(bus.clone())),
-            running: Arc::new(RunningOnBus(bus.clone())),
-            computers: Arc::new(ComputersOnBus(bus.clone())),
-            engine_note: Arc::new(EnginesOnBus(bus.clone())),
-            bus,
-            reasons: ReasonFeed::default(),
+            client,
             marks: ProviderMarks::shipped(),
-            lender: Lender::from_env(),
             keymap,
-            updates,
-            log_out: Arc::new(PowerMenu),
-            wifi,
-            bluetooth,
-            displays,
             os_release: Environment::system().os_release,
             application_dirs: Vec::new(),
             entry_rule: OriginRule::Ownership,
-            engines,
-            programs_path: String::new(),
-            agents_program: None,
-            pictures,
-            corners,
             extensions,
             system_data_dirs: Vec::new(),
         }
     }
 
-    /// This environment with the lending switch reaching `lender`.
-    pub fn with_lender(self, lender: Lender) -> Env {
-        Env { lender, ..self }
-    }
-
     /// This environment with the Shortcuts list over `keymap`.
     pub fn with_keymap(self, keymap: KeymapFiles) -> Env {
         Env { keymap, ..self }
-    }
-
-    /// This environment with the Software Update page following `updates`.
-    pub fn with_updates(self, updates: Arc<dyn UpdatesLink>) -> Env {
-        Env { updates, ..self }
-    }
-
-    /// This environment with the Software Update page logging out through `log_out`.
-    pub fn with_log_out(self, log_out: Arc<dyn Departure>) -> Env {
-        Env { log_out, ..self }
-    }
-
-    /// This environment with the Wi-Fi page following `wifi`.
-    pub fn with_wifi(self, wifi: Arc<dyn WifiLink>) -> Env {
-        Env { wifi, ..self }
-    }
-
-    /// This environment with the Bluetooth page following `bluetooth`.
-    pub fn with_bluetooth(self, bluetooth: Arc<dyn BluetoothLink>) -> Env {
-        Env { bluetooth, ..self }
-    }
-
-    /// This environment with the Displays page following `displays`.
-    pub fn with_displays(self, displays: Arc<dyn DisplaysLink>) -> Env {
-        Env { displays, ..self }
     }
 
     /// This environment reading the distro from `os_release`.
@@ -282,27 +136,6 @@ impl Env {
         Env { entry_rule, ..self }
     }
 
-    /// This environment with the engine sheet working through `engines`.
-    pub fn with_engines(self, engines: Arc<dyn Desk>) -> Env {
-        Env { engines, ..self }
-    }
-
-    /// This environment looking for coding agents on `programs_path` (the value of `PATH`).
-    pub fn with_programs_path(self, programs_path: String) -> Env {
-        Env {
-            programs_path,
-            ..self
-        }
-    }
-
-    /// This environment downloading coding assistants with the program at `agents_program`.
-    pub fn with_agents_program(self, agents_program: Option<PathBuf>) -> Env {
-        Env {
-            agents_program,
-            ..self
-        }
-    }
-
     /// This environment looking for Extensions and published style parts in `system_data_dirs`
     /// as well as the person's own data home.
     pub fn with_system_data_dirs(self, system_data_dirs: Vec<PathBuf>) -> Env {
@@ -313,78 +146,5 @@ impl Env {
             system_data_dirs,
             ..self
         }
-    }
-
-    /// This environment with the Wallpaper page working through `pictures`.
-    pub fn with_pictures(self, pictures: Arc<dyn Pictures>) -> Env {
-        Env { pictures, ..self }
-    }
-
-    /// This environment listing the apps' actions from the manifests in `intent_dirs`, in the order
-    /// of trust.
-    pub fn with_intent_dirs(self, intent_dirs: Vec<PathBuf>) -> Env {
-        let corners = Arc::new(OnCorners::new(Arc::clone(&self.chooser), intent_dirs));
-        Env { corners, ..self }
-    }
-
-    /// This environment with the Hot Corners sheet working through `corners`.
-    pub fn with_corners(self, corners: Arc<dyn CornerDesk>) -> Env {
-        Env { corners, ..self }
-    }
-
-    /// This environment asking `chooser` for folders, files and pictures.
-    pub fn with_chooser(self, chooser: Arc<dyn ChooserLink>) -> Env {
-        Env { chooser, ..self }
-    }
-
-    /// This environment with the Accounts pane over `accounts`.
-    pub fn with_accounts(self, accounts: Arc<dyn AccountsLink>) -> Env {
-        Env { accounts, ..self }
-    }
-
-    /// This environment with the Accounts pane asking the sync service through `sync`.
-    pub fn with_sync(self, sync: Arc<dyn SyncLink>) -> Env {
-        Env { sync, ..self }
-    }
-
-    /// This environment with the Spaces page over `spaces`.
-    pub fn with_spaces(self, spaces: Arc<dyn SpacesLink>) -> Env {
-        Env { spaces, ..self }
-    }
-
-    /// This environment with the Privacy page's portal list over `screen_sharing`.
-    pub fn with_screen_sharing(self, screen_sharing: Arc<dyn ScreenSharingLink>) -> Env {
-        Env {
-            screen_sharing,
-            ..self
-        }
-    }
-
-    /// This environment with the memory consent over `memory`.
-    pub fn with_memory(self, memory: Arc<dyn MemoryLink>) -> Env {
-        Env { memory, ..self }
-    }
-
-    /// This environment with the running-models list over `running`.
-    pub fn with_running(self, running: Arc<dyn RunningLink>) -> Env {
-        Env { running, ..self }
-    }
-
-    /// This environment with Your computers over `computers`.
-    pub fn with_computers(self, computers: Arc<dyn ComputersLink>) -> Env {
-        Env { computers, ..self }
-    }
-
-    /// This environment with the llama.cpp note over `engine_note`.
-    pub fn with_engine_note(self, engine_note: Arc<dyn EnginesLink>) -> Env {
-        Env {
-            engine_note,
-            ..self
-        }
-    }
-
-    /// This environment with the picker's reason footer reading `reasons`.
-    pub fn with_reasons(self, reasons: ReasonFeed) -> Env {
-        Env { reasons, ..self }
     }
 }

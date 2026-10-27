@@ -3,8 +3,12 @@
 //! to say, and opening Settings must not start it. Restarting is the person's word.
 
 mod bus;
+#[cfg(feature = "testing")]
+mod fake;
 
 pub use bus::{OnBus, restart};
+#[cfg(feature = "testing")]
+pub use fake::FakeEngines;
 
 use detent_model::{LlamaCpp, Restarted, Work};
 use std::fmt::Debug;

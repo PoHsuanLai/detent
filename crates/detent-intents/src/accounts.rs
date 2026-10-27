@@ -1,5 +1,6 @@
 //! Where the provider learns which accounts there are: from accountd, through the binary.
 
+use detent_client::Client;
 use detent_model::{Absence, Account, AccountStatus, AccountsPane, Work, humanize};
 
 /// What reading the accounts is, once: a future that answers with the accounts or why not.
@@ -10,6 +11,14 @@ pub type AccountsRead<'a> = Work<'a, Result<AccountsPane, Absence>>;
 pub trait AccountsSource: Send + Sync {
     /// The accounts now; never starts accountd.
     fn read(&self) -> AccountsRead<'_>;
+}
+
+/// The window's own client is the source: there is one way to reach accountd, and it is the
+/// window's.
+impl AccountsSource for Client {
+    fn read(&self) -> AccountsRead<'_> {
+        self.read_accounts()
+    }
 }
 
 /// The account as one line for an agent: its label, the kinds of service it offers and how it

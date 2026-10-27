@@ -4,9 +4,13 @@
 
 mod add;
 mod bus;
+#[cfg(feature = "testing")]
+mod fake;
 mod read;
 
 pub use bus::OnBus;
+#[cfg(feature = "testing")]
+pub use fake::{FakeAccounts, SheetAsked};
 pub use read::read_accounts;
 
 use detent_model::{Absence, AccountsPane, AddEnd, Work};

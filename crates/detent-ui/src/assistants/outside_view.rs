@@ -92,11 +92,11 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
     let accounts: Vec<_> = pane.in_group(ProviderGroup::Agent).cloned().collect();
     let Shown { agents, new } = now();
     let rows = assistants_of(&agents.rows, &accounts);
-    if rows.is_empty() && new.is_empty() && env.agents_program.is_none() {
+    if rows.is_empty() && new.is_empty() && env.client.agents_program().is_none() {
         return rsx! {};
     }
     // With the program that lists what is on offer, Add is there even when nothing is installed.
-    let can_add = !new.is_empty() || env.agents_program.is_some();
+    let can_add = !new.is_empty() || env.client.agents_program().is_some();
     rsx! {
         div { class: "assistants", "data-assistants": "coding",
             FieldGroup { title: Some(TITLE.to_owned()),

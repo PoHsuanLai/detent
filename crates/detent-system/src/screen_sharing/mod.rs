@@ -2,9 +2,13 @@
 //! without asking again, and taking one back.
 
 mod bus;
+#[cfg(feature = "testing")]
+mod fake;
 mod proxy;
 
 pub use bus::OnBus;
+#[cfg(feature = "testing")]
+pub use fake::FakeScreenSharing;
 
 use detent_model::{Absence, ProgramSubject, ScreenGrant, Work};
 use std::fmt::Debug;

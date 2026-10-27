@@ -1,5 +1,6 @@
-//! Following a daemon: look for it when its pane appears and again each time its bus name
-//! changes hands, never starting it (`detent_system::bus::start` does that, once per page visit).
+//! Following a daemon's live settings module (`org.quire.SettingsModule1`) as a pane does: look
+//! for it when the pane appears, read its rows, and read again each time it comes back or says a
+//! row changed. Looking never starts it (`Client::start` does that, once per page visit).
 
 use detent_model::{Absence, Described};
 use detent_system::bus::{
@@ -7,9 +8,11 @@ use detent_system::bus::{
 };
 use ds_settings::live::{Changes, LiveClient};
 use ds_settings::schema::{KeyKind, KeyPath};
+use std::sync::{Arc, Mutex, PoisonError};
+use tokio::sync::mpsc::unbounded_channel;
 use zbus::fdo::NameOwnerChangedStream;
 
-/// What the window learns about the daemon, in the order it happens.
+/// What the client learns about the daemon, in the order it happens.
 pub(crate) enum Followed {
     /// The daemon is on the bus: its client and its rows.
     Opened(LiveClient, Described),
@@ -17,6 +20,25 @@ pub(crate) enum Followed {
     Gone(Absence),
     /// The daemon put a row's value in force.
     Changed(KeyPath, toml::Value),
+}
+
+/// The client of a module while it is on the bus.
+#[derive(Debug, Clone, Default)]
+pub(crate) struct Slot(Arc<Mutex<Option<LiveClient>>>);
+
+impl Slot {
+    /// The client now, if the module is there.
+    pub(crate) fn get(&self) -> Option<LiveClient> {
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// The module is there with this client, or is gone.
+    pub(crate) fn put(&self, client: Option<LiveClient>) {
+        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = client;
+    }
 }
 
 /// Tells `tell` what `daemon` is doing until the bus goes away; `valued` picks the rows whose
@@ -51,6 +73,26 @@ pub(crate) async fn follow(
             return;
         }
     }
+}
+
+/// [`follow`], with each event handled by `handle` one after the other, so a handler that waits
+/// on a service holds up the next event and never the daemon's own signals.
+pub(crate) async fn follow_with(
+    bus: &BusSource,
+    daemon: &Daemon,
+    valued: fn(&KeyKind) -> bool,
+    mut handle: impl AsyncFnMut(Followed),
+) {
+    let (told, mut heard) = unbounded_channel();
+    let following = follow(bus, daemon, valued, move |followed| {
+        let _gone = told.send(followed);
+    });
+    let handling = async {
+        while let Some(followed) = heard.recv().await {
+            handle(followed).await;
+        }
+    };
+    tokio::join!(following, handling);
 }
 
 /// Passes on each change the daemon announces until its name changes hands (`Some`) or the bus

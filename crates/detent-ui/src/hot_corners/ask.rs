@@ -276,7 +276,7 @@ fn OpenAsk(
             }
         }
         kind @ (HotOpenKind::File | HotOpenKind::Folder) => {
-            let corners = env.corners.clone();
+            let corners = env.client.corners();
             let words = if shown.path.is_empty() {
                 "Nothing chosen yet.".to_owned()
             } else {

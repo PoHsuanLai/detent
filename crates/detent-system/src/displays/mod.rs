@@ -3,9 +3,13 @@
 
 mod brightness;
 mod bus;
+#[cfg(feature = "testing")]
+mod fake;
 mod map;
 
 pub use bus::OnCompositor;
+#[cfg(feature = "testing")]
+pub use fake::FakeDisplays;
 
 use crate::ticks::Ticks;
 use detent_model::{

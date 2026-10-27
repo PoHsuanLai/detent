@@ -2,21 +2,22 @@
 //! sets sharing up through porter, and only when that worked is the setting written; turning it
 //! off takes sharing away and clears the setting. The steps are `detent-model`'s `sharing_step`.
 
-use crate::copy::sharing::{ALLOW, CANCEL, sharing_question};
+use crate::copy::{
+    self,
+    sharing::{ALLOW, CANCEL, sharing_question},
+};
 use crate::env::Env;
 use crate::files::{Edit, Files, store};
-use detent_model::{SHARING_KEY, Sharing, SharingEffect, SharingInput, Way, sharing_step};
+use detent_client::{Heard, Lending, Notice, Pane};
+use detent_model::{SHARING_KEY, Sharing, SharingInput, Way};
 use dioxus::prelude::*;
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
-use ds::stack::toast_hub::ToastHub;
 
 /// The switch's state and what it needs to act.
 #[derive(Clone)]
 pub(crate) struct SharingSwitch {
-    env: Env,
-    files: Signal<Files>,
-    toasts: ToastHub,
+    pane: Lending,
     state: Signal<Sharing>,
     /// The edit the person made, written once sharing is set up (or taken away).
     pending: Signal<Option<Edit>>,
@@ -24,12 +25,40 @@ pub(crate) struct SharingSwitch {
 
 /// The switch of the window whose values are `files`.
 pub(crate) fn use_sharing(files: Signal<Files>) -> SharingSwitch {
+    let env = use_context::<Env>();
+    let toasts = use_toasts();
+    let pane = use_hook(|| env.client.lending());
+    let state = use_signal(|| pane.live().state());
+    let pending = use_signal(|| None::<Edit>);
+    use_future({
+        let events = pane.live().events();
+        move || {
+            let (events, env) = (events.clone(), env.clone());
+            let mut state = state;
+            async move {
+                while let Some(heard) = events.next().await {
+                    match heard {
+                        Heard::State(next) => state.set(next),
+                        Heard::Notice(Notice::Recorded(way)) => {
+                            let edit = pending.peek().clone();
+                            if let Some(edit) = edit.filter(|edit| way_of(edit) == way) {
+                                store(&env, files, toasts, &edit);
+                            }
+                        }
+                        Heard::Notice(other) => {
+                            if let Some(words) = copy::notice(&other) {
+                                toasts.push(words, None);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
     SharingSwitch {
-        env: use_context::<Env>(),
-        files,
-        toasts: use_toasts(),
-        state: use_signal(Sharing::default),
-        pending: use_signal(|| None),
+        pane,
+        state,
+        pending,
     }
 }
 
@@ -51,42 +80,10 @@ impl SharingSwitch {
         let way = way_of(&edit);
         let mut pending = self.pending;
         pending.set(Some(edit));
-        self.feed(SharingInput::Switched(way, self.env.lender.existing()));
-    }
-
-    fn feed(&self, input: SharingInput) {
-        let mut state = self.state;
-        let (next, effects) = sharing_step(*state.peek(), input);
-        state.set(next);
-        for effect in effects {
-            self.run(effect);
-        }
-    }
-
-    fn run(&self, effect: SharingEffect) {
-        match effect {
-            SharingEffect::Enable => {
-                let (me, lender) = (self.clone(), self.env.lender.clone());
-                spawn(async move {
-                    let done = lender.enable().await;
-                    me.feed(SharingInput::Finished(done));
-                });
-            }
-            SharingEffect::Disable => {
-                let (me, lender) = (self.clone(), self.env.lender.clone());
-                spawn(async move {
-                    let done = lender.disable().await;
-                    me.feed(SharingInput::Finished(done));
-                });
-            }
-            SharingEffect::Record(way) => {
-                let edit = self.pending.peek().clone();
-                if let Some(edit) = edit.filter(|edit| way_of(edit) == way) {
-                    store(&self.env, self.files, self.toasts, &edit);
-                }
-            }
-            SharingEffect::Tell(words) => self.toasts.push(words, None),
-        }
+        spawn(
+            self.pane
+                .send(SharingInput::Switched(way, self.pane.existing())),
+        );
     }
 
     /// The question while one is asked.
@@ -105,12 +102,16 @@ impl SharingSwitch {
                     AlertButton::new(
                         ALLOW,
                         AlertRole::Normal,
-                        EventHandler::new(move |()| allow.feed(SharingInput::Allowed)),
+                        EventHandler::new(move |()| {
+                            spawn(allow.pane.send(SharingInput::Allowed));
+                        }),
                     ),
                     AlertButton::new(
                         CANCEL,
                         AlertRole::Cancel,
-                        EventHandler::new(move |()| cancel.feed(SharingInput::Cancelled)),
+                        EventHandler::new(move |()| {
+                            spawn(cancel.pane.send(SharingInput::Cancelled));
+                        }),
                     ),
                 ],
             }

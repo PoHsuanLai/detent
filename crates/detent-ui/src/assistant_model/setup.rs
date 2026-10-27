@@ -6,7 +6,6 @@ use super::picker::AssistantPicker;
 use crate::env::Env;
 use crate::picker::{Picker, use_picker};
 use detent_model::{Clearing, PageKind, SetupAction, SetupAvailability, setup_availability};
-use detent_system::bus::start;
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button::Button;
@@ -28,10 +27,10 @@ pub(crate) fn AssistantSetup() -> Element {
     let app = use_app_handle();
     let Picker { state, ask } = use_picker();
     use_future({
-        let bus = env.bus.clone();
+        let client = env.client.clone();
         move || {
-            let bus = bus.clone();
-            async move { start(&bus, PageKind::AssistantModel.modules_read()).await }
+            let client = client.clone();
+            async move { client.start(PageKind::AssistantModel.modules_read()).await }
         }
     });
     let now = state();

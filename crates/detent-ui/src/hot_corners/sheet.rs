@@ -108,7 +108,7 @@ pub(super) fn HotCornersSheet(
     let book = use_program_book();
     let mut actions = use_signal(Vec::<HotActionChoice>::new);
     use_future({
-        let corners = env.corners.clone();
+        let corners = env.client.corners();
         move || {
             let corners = corners.clone();
             async move { actions.set(corners.actions().await) }

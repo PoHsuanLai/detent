@@ -4,14 +4,11 @@
 //! Settings must not start it.
 
 use crate::copy;
-use crate::env::Env;
 use crate::key_row::row_id;
+use crate::live::use_live;
 use crate::picker::NoteLine;
-use detent_model::{
-    InFlight, Live, RunAction, RunEffect, RunInput, RunPane, RunRowView, running_step,
-};
-use detent_system::bus::{BusSource, Daemon, connect, next_owner, owner_changes};
-use detent_system::running::RunningLink;
+use detent_client::Client;
+use detent_model::{InFlight, Live, RunInput, RunRowView};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -19,89 +16,23 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::root::pass_through::{DataAttr, DataName};
 use ds::style::tokens::control_size::ControlSize;
-use std::sync::Arc;
 
 /// The group's title.
 const TITLE: &str = "Local models";
 
-/// Steps the pane on `input` and does what that asks; what each ask ends with is fed back in.
-fn drive(mut pane: Signal<RunPane>, link: Arc<dyn RunningLink>, input: RunInput) {
-    let (next, effects) = running_step(pane.peek().clone(), input);
-    pane.set(next);
-    for effect in effects {
-        let link = link.clone();
-        spawn(async move {
-            match effect {
-                RunEffect::Look => {
-                    let found = link.read().await;
-                    drive(pane, link, RunInput::Found(found));
-                }
-                RunEffect::Start(model) => {
-                    let ended = link.act(model.clone(), RunAction::Start).await;
-                    drive(pane, link, RunInput::Answered(model, ended));
-                }
-                RunEffect::Stop(model) => {
-                    let ended = link.act(model.clone(), RunAction::Stop).await;
-                    drive(pane, link, RunInput::Answered(model, ended));
-                }
-            }
-        });
-    }
-}
-
-/// Reads the list, then reads it again each time a model changes state or inferd comes back.
-async fn follow(pane: Signal<RunPane>, bus: BusSource, link: Arc<dyn RunningLink>) {
-    let connection = match connect(&bus).await {
-        Ok(connection) => connection,
-        Err(absence) => return drive(pane, link, RunInput::Found(Err(absence))),
-    };
-    let Ok(mut owners) = owner_changes(&connection, &Daemon::inferd()).await else {
-        return;
-    };
-    loop {
-        // Subscribed before the first read, so a change in between is not lost.
-        let watch = link.changes().await;
-        drive(pane, link.clone(), RunInput::Found(link.read().await));
-        if let Ok(mut watch) = watch {
-            loop {
-                tokio::select! {
-                    changed = watch.recv() => match changed {
-                        Some(()) => drive(pane, link.clone(), RunInput::Found(link.read().await)),
-                        None => break,
-                    },
-                    owner = next_owner(&mut owners) => match owner {
-                        Some(()) => break,
-                        None => return,
-                    },
-                }
-            }
-            continue;
-        }
-        if next_owner(&mut owners).await.is_none() {
-            return;
-        }
-    }
-}
-
 /// The group of models inferd runs itself; nothing when it lists none or is not there.
 #[component]
 pub(crate) fn RunningModels() -> Element {
-    let env = use_context::<Env>();
-    let pane = use_signal(RunPane::default);
-    use_future({
-        let (bus, link) = (env.bus.clone(), env.running.clone());
-        move || follow(pane, bus.clone(), link.clone())
-    });
-    let Live::Ready(board) = pane() else {
+    let running = use_live(Client::running);
+    let Live::Ready(board) = (running.state)() else {
         return rsx! {};
     };
     let rows = board.rows();
     if rows.is_empty() {
         return rsx! {};
     }
-    let link = env.running.clone();
     let onpress = EventHandler::new(move |model: String| {
-        drive(pane, link.clone(), RunInput::Act(model));
+        spawn(running.pane.send(RunInput::Act(model)));
     });
     rsx! {
         div { class: "running-models", "data-running": "list",

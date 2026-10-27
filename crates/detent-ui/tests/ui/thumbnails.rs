@@ -1,9 +1,9 @@
 //! The small pictures of the Wallpaper page, over a scratch cache: made once from the original,
 //! scaled to the size kept, found again the next time, refused for what is not a picture.
 
+use detent_client::{ThumbFault, Thumbnails};
 use detent_files::CacheHome;
 use detent_testkit::Scratch;
-use detent_ui::{ThumbFault, Thumbnails};
 use std::path::Path;
 
 /// A picture of `width` by `height` pixels at `path`, in the ending's format.

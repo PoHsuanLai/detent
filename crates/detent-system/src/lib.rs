@@ -15,6 +15,8 @@ mod deadline_tests;
 pub mod displays;
 pub mod engine_install;
 pub mod engines;
+#[cfg(feature = "testing")]
+mod fake_kit;
 pub mod hot_corners;
 pub mod lending;
 #[cfg(feature = "testing")]

@@ -2,9 +2,13 @@
 //! program, and asking again.
 
 mod bus;
+#[cfg(feature = "testing")]
+mod fake;
 mod set;
 
 pub use bus::OnClient;
+#[cfg(feature = "testing")]
+pub use fake::{FakePrivacy, PrivacyAsked};
 
 use detent_model::{PrivacySwitch, Work};
 use ds_settings::live::LiveClient;
