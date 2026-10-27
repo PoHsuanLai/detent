@@ -47,7 +47,7 @@ ds-settings = { path = "../quire/crates/ds-settings" }  # detent-ui adds the `di
 desktop-client = { path = "../casement-protocols/desktop-client", features = ["client"] }
 # docket (private repo, by path like quire): the app side of the intents wire. `docket-client`'s `dbus`
 # feature serves `org.quire.IntentProvider1`; `prov` and `porter-core` are the label and name types
-# its signatures use, taken from the same porter checkout docket takes.
+# its signatures use, the same prov and porter checkouts docket takes.
 docket-client = { path = "../docket/crates/docket-client", features = ["dbus"] }
 docket-core   = { path = "../docket/crates/docket-core" }
 docket-dbus   = { path = "../docket/crates/docket-dbus" }
@@ -286,8 +286,6 @@ porter-core = { path = "../porter/crates/porter-core" }
 porter-dbus = { path = "../porter/crates/porter-dbus" }
 porter-provider = { path = "../porter/crates/porter-provider" }
 porter-infer = { path = "../porter/crates/porter-infer" }
-# prov left porter for its own repo; until every sibling pins it there, porter's prov is the same crate.
-prov = { path = "../prov/prov" }
 
 [patch."https://github.com/PoHsuanLai/prov"]
 prov = { path = "../prov/prov" }
