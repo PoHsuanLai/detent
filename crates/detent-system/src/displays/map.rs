@@ -1,6 +1,7 @@
 //! The compositor's heads and modes as the page's displays, and back.
 
-use desktop_client::output::{Enabled, Head, Mode, Outputs, Preferred, Transform};
+use casement_protocols::vocab::Transform;
+use desktop_client::output::{Head, Mode, Outputs};
 use detent_model::{
     DisplayMode, DisplayPosition, DisplayRotation, Millimetres, Monitor, OutputId, PixelSize,
     RefreshMilliHz, ScaleMilli,
@@ -10,7 +11,7 @@ use detent_model::{
 pub fn monitors_of(outputs: &Outputs) -> Vec<Monitor> {
     outputs
         .heads()
-        .filter(|head| head.enabled == Enabled::On)
+        .filter(|head| head.enabled)
         .map(monitor_of)
         .collect()
 }
@@ -64,7 +65,7 @@ pub fn mode_of(mode: &Mode) -> DisplayMode {
             height: mode.size.h,
         },
         refresh: RefreshMilliHz(mode.refresh.get()),
-        preferred: matches!(mode.preferred, Preferred::Yes),
+        preferred: mode.preferred,
     }
 }
 
@@ -72,10 +73,9 @@ pub fn mode_of(mode: &Mode) -> DisplayMode {
 fn rotation_of(transform: Transform) -> DisplayRotation {
     match transform {
         Transform::Normal | Transform::Flipped => DisplayRotation::Standard,
-        Transform::Rotate90 | Transform::Flipped90 => DisplayRotation::Quarter,
-        Transform::Rotate180 | Transform::Flipped180 => DisplayRotation::Half,
-        Transform::Rotate270 | Transform::Flipped270 => DisplayRotation::ThreeQuarters,
-        _ => DisplayRotation::Standard,
+        Transform::R90 | Transform::Flipped90 => DisplayRotation::Quarter,
+        Transform::R180 | Transform::Flipped180 => DisplayRotation::Half,
+        Transform::R270 | Transform::Flipped270 => DisplayRotation::ThreeQuarters,
     }
 }
 
@@ -83,16 +83,16 @@ fn rotation_of(transform: Transform) -> DisplayRotation {
 pub fn transform_of(rotation: DisplayRotation) -> Transform {
     match rotation {
         DisplayRotation::Standard => Transform::Normal,
-        DisplayRotation::Quarter => Transform::Rotate90,
-        DisplayRotation::Half => Transform::Rotate180,
-        DisplayRotation::ThreeQuarters => Transform::Rotate270,
+        DisplayRotation::Quarter => Transform::R90,
+        DisplayRotation::Half => Transform::R180,
+        DisplayRotation::ThreeQuarters => Transform::R270,
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{rotation_of, transform_of};
-    use desktop_client::output::Transform;
+    use casement_protocols::vocab::Transform;
     use detent_model::DisplayRotation;
 
     #[test]

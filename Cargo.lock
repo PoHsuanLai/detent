@@ -1671,6 +1671,7 @@ dependencies = [
  "anyview-fs",
  "anyview-image",
  "anyview-platform",
+ "casement-protocols",
  "desktop-client",
  "detent-callers",
  "detent-files",

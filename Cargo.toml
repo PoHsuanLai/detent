@@ -45,6 +45,8 @@ ds-settings = { path = "../quire/crates/ds-settings" }  # detent-ui adds the `di
 # The typed desktop client for wlroots-style compositors (own repo, a sibling checkout): the Displays page
 # reads the output heads and applies a change through it, as sill's desktop arm does.
 desktop-client = { path = "../casement-protocols/desktop-client", features = ["client"] }
+# Its vocabulary: the output `Transform` the heads carry.
+casement-protocols = { path = "../casement-protocols" }
 # docket (private repo, by path like quire): the app side of the intents wire. `docket-provider`'s `dbus`
 # feature serves `org.quire.IntentProvider1`; `prov` and `porter-core` are the label and name types
 # its signatures use, the same prov and porter checkouts docket takes.

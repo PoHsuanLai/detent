@@ -86,7 +86,7 @@ EDGES=(
   "detent-files: agents-core detent-model docket-agents docket-settings ds-extensions ds-helpers ds-settings"
   "detent-client: detent-files detent-model detent-system ds-settings porter-infer porter-provider"
   "detent-intents: detent-callers detent-client detent-files detent-model docket-core docket-dbus docket-provider ds-peer ds-settings porter-core prov"
-  "detent-system: almanac-core anyview-core anyview-fs anyview-image anyview-platform desktop-client detent-callers detent-files detent-model ds-peer ds-settings porter-client porter-core porter-daemon porter-dbus porter-engines porter-engines-install"
+  "detent-system: almanac-core anyview-core anyview-fs anyview-image anyview-platform casement-protocols desktop-client detent-callers detent-files detent-model ds-peer ds-settings porter-client porter-core porter-daemon porter-dbus porter-engines porter-engines-install"
   "detent-ui: detent-client detent-model ds ds-blitz ds-helpers ds-lint ds-settings"
   "detent: detent-callers detent-client detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
 )

@@ -20,6 +20,7 @@ anyview-core = { workspace = true }
 anyview-fs = { workspace = true }
 anyview-image = { workspace = true }
 anyview-platform = { workspace = true }
+casement-protocols = { workspace = true }
 desktop-client = { workspace = true }
 detent-callers = { workspace = true }
 detent-files = { workspace = true }
