@@ -3,8 +3,8 @@
 //! restart does, lets inferd find llama.cpp from then on. Both are on the test's private bus.
 
 use super::bus::PrivateBus;
-use porter_dbus::names::{INFERENCE_BUS, INFERENCE_PATH};
-use porter_dbus::{EngineState, LocalEngine, local_engine_to_dbus};
+use porter_dbus::inference::{EngineState, LocalEngine, local_engine_to_dbus};
+use porter_dbus::inference::{INFERENCE_BUS, INFERENCE_PATH};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};

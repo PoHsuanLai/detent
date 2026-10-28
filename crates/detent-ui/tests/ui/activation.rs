@@ -7,7 +7,9 @@ use crate::support::bus::PrivateBus;
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::Harness;
-use porter_dbus::names::{ACCOUNTS_BUS, INFERENCE_BUS, SYNC_BUS};
+use porter_dbus::accounts::ACCOUNTS_BUS;
+use porter_dbus::inference::INFERENCE_BUS;
+use porter_dbus::sync::SYNC_BUS;
 use std::time::Duration;
 
 /// A daemon no page reads: starting it would be a start for a page nobody opened.

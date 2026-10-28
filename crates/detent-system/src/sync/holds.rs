@@ -4,8 +4,9 @@
 use crate::bus::{BusSource, Daemon, Pinned, connect, next_owner, owner_changes, pinned};
 use crate::deadline::{Deadline, answered, peer};
 use detent_model::{DatasetName, HoldCounts, HoldInput, SyncNowEnd};
-use porter_dbus::names::{SYNC_ERROR_NOTHING_HELD, SYNC_ERROR_PAUSED};
-use porter_dbus::{BusError, SyncProxy};
+use porter_dbus::BusError;
+use porter_dbus::sync::SyncProxy;
+use porter_dbus::sync::{SYNC_ERROR_NOTHING_HELD, SYNC_ERROR_PAUSED};
 use std::collections::HashMap;
 use zbus::zvariant::OwnedValue;
 

@@ -4,7 +4,7 @@
 
 use super::bus::PrivateBus;
 use porter_dbus::Details;
-use porter_dbus::names::{SYNC_BUS, SYNC_PATH};
+use porter_dbus::sync::{SYNC_BUS, SYNC_PATH};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use zbus::object_server::SignalEmitter;

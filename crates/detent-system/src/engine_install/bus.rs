@@ -7,7 +7,7 @@ use crate::chooser::{ChooserLink, Want, choose};
 use crate::deadline::{Deadline, answered, peer};
 use crate::engines::restart;
 use detent_model::{EngineFailure, EngineRow, EngineStanding, EngineWay, InstallScope, Work};
-use porter_dbus::{EngineState, LocalEngine};
+use porter_dbus::inference::{EngineState, LocalEngine};
 use porter_engines::{BackendChoice, EngineId, Failure, Host, Manifest, Roots, Scope};
 use porter_engines_install::{
     EngineInstalls, Fetcher, HelperProgram, InstallChoice, Parts, Standing, StartError,
@@ -41,7 +41,7 @@ impl OnEngines {
                 fetcher: Fetcher::system(),
                 helper: HelperProgram::system(),
                 strata_folder: Arc::new(|| None),
-                held: porter_daemon::root_held,
+                held: porter_callers::root_held,
             })
         });
         Self {

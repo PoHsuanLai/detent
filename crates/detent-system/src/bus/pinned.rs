@@ -79,5 +79,5 @@ pub async fn pinned_starting(bus: &BusSource, name: &str) -> Result<Pinned, Abse
 /// inferd and its confirmed owner, only when it is already on the bus: asking would start it, and
 /// opening Settings must not. Every call goes to that owner.
 pub async fn inferd(bus: &BusSource) -> Result<Pinned, Absence> {
-    pinned(bus, porter_dbus::names::INFERENCE_BUS).await
+    pinned(bus, porter_dbus::inference::INFERENCE_BUS).await
 }

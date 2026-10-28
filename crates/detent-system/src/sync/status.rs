@@ -6,7 +6,7 @@ use super::holds::{sync_of, syncd_running};
 use crate::bus::BusSource;
 use crate::deadline::{Deadline, answered, peer};
 use detent_model::{DatasetName, StorageQuota, SyncStatus};
-use porter_dbus::names::STATUS_KEY_QUOTA;
+use porter_dbus::sync::STATUS_KEY_QUOTA;
 use std::collections::HashMap;
 use zbus::zvariant::OwnedValue;
 

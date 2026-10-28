@@ -33,7 +33,7 @@ ds-settings = { workspace = true, features = ["live", "tokio"] }
 md-5 = { workspace = true }
 porter-client = { workspace = true, features = ["infer", "lending"] }
 porter-core = { workspace = true }
-porter-daemon = { workspace = true }
+porter-callers = { workspace = true }
 porter-dbus = { workspace = true }
 porter-engines = { workspace = true }
 porter-engines-install = { workspace = true }

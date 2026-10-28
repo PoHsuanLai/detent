@@ -3,8 +3,9 @@
 //! finish, a call can be refused with inferd's own sentence, and every call is written down.
 
 use super::bus::PrivateBus;
-use porter_dbus::names::{INFERENCE_BUS, INFERENCE_PATH};
-use porter_dbus::{Details, RunState, RunningModel, running_to_dbus};
+use porter_dbus::Details;
+use porter_dbus::inference::{INFERENCE_BUS, INFERENCE_PATH};
+use porter_dbus::inference::{RunState, RunningModel, running_to_dbus};
 use std::sync::{Arc, Mutex};
 use tokio::sync::Notify;
 use zbus::fdo;

@@ -6,7 +6,7 @@ use porter_core::AccountId;
 use porter_ids::object_segment;
 
 /// The object path every account lives under (`org.quire.Accounts1`'s `account/<segment>`).
-/// accountd's `porter_dbus::account_path` is the writer of this; detent-model may not depend
+/// accountd's `porter_dbus::accounts::account_path` is the writer of this; detent-model may not depend
 /// on porter-dbus, so the prefix is repeated here and nowhere else.
 const ACCOUNT_PREFIX: &str = "/org/quire/Accounts1/account/";
 

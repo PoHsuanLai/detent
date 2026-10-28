@@ -14,7 +14,8 @@ use porter_client::{
     Accounts, ClientError, ComputerReach, ComputerReason, DbusTransport, NewComputer,
     NewComputerModel, TransportError,
 };
-use porter_dbus::{BusStream, InferenceProxy};
+use porter_dbus::BusStream;
+use porter_dbus::inference::InferenceProxy;
 use porter_tailnet::ComputerCandidate;
 use std::path::Path;
 

@@ -9,7 +9,8 @@ use almanac_core::Removal;
 use detent_callers::{ACCOUNTS_BUS, MEMORY_BUS};
 use detent_model::{Absence, SpaceKey, SpaceRow, Work, needs_memory};
 use ds_peer::within;
-use porter_dbus::{BusFailure, SpacesProxy, classify};
+use porter_dbus::accounts::SpacesProxy;
+use porter_dbus::{BusFailure, classify};
 
 /// What the person reads when a delete choice cannot be carried out because memory is not running.
 const MEMORY_NOT_RUNNING: &str = "Memory isn\u{2019}t running right now, so this Space can\u{2019}t be deleted. Try again in a moment.";

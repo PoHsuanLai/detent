@@ -9,7 +9,7 @@ use crate::ticks::Ticks;
 use detent_model::{Absence, ModelRun, RunAction, RunStanding, Work};
 use ds_peer::within;
 use porter_client::TransportError;
-use porter_dbus::{InferenceProxy, RunState, RunningModel};
+use porter_dbus::inference::{InferenceProxy, RunState, RunningModel};
 
 /// What the person reads when a model could not be started or stopped and the assistant gave no
 /// sentence.

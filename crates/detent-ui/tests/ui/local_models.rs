@@ -14,7 +14,7 @@ use detent_ui::Opening;
 use ds::prelude::ShortcutKey;
 use ds_harness::{Harness, Input};
 use ds_settings::live::Verdict;
-use porter_dbus::{RunState, RunningModel};
+use porter_dbus::inference::{RunState, RunningModel};
 use std::time::Duration;
 
 const READY: &str = "[data-run=\"ready\"]";

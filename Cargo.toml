@@ -77,7 +77,7 @@ porter-dbus  = { path = "../porter/crates/porter-dbus" }
 # The engines Settings can download (llama.cpp, vLLM, Strata): the pinned manifest and the installs.
 porter-engines = { path = "../porter/crates/porter-engines" }
 porter-engines-install = { path = "../porter/crates/porter-engines-install" }
-porter-daemon = { path = "../porter/crates/porter-daemon", default-features = false }
+porter-callers = { path = "../porter/crates/porter-callers" }
 # Settings' own "Add Account…" goes through the app-facing client (the Settings role may call AddAccount).
 porter-client = { path = "../porter/crates/porter-client", default-features = false, features = ["dbus"] }
 # The provider files porter ships, for the marks (`mark_face`) of the providers Settings shows.
@@ -296,6 +296,7 @@ almanac-core = { path = "../almanac/crates/almanac-core" }
 [patch."https://github.com/PoHsuanLai/porter"]
 porter-client = { path = "../porter/crates/porter-client" }
 porter-core = { path = "../porter/crates/porter-core" }
+porter-callers = { path = "../porter/crates/porter-callers" }
 porter-dbus = { path = "../porter/crates/porter-dbus" }
 porter-provider = { path = "../porter/crates/porter-provider" }
 porter-infer = { path = "../porter/crates/porter-infer" }

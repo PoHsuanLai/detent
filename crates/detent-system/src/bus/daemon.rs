@@ -2,10 +2,9 @@
 
 use detent_callers::COMPOSITOR_BUS;
 use detent_model::ModuleId;
-use porter_dbus::names::{
-    ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH, SYNC_BUS,
-    SYNC_PATH,
-};
+use porter_dbus::accounts::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
+use porter_dbus::inference::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
+use porter_dbus::sync::{SYNC_BUS, SYNC_PATH};
 
 /// The object path of syncd's settings module.
 const SYNC_SETTINGS_PATH: &str = "/org/quire/Sync1/settings";

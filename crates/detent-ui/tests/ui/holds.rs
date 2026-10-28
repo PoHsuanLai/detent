@@ -13,7 +13,7 @@ use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::Harness;
 use ds_settings::live::{AnyOwner, Verdict};
-use porter_dbus::names::SYNC_BUS;
+use porter_dbus::sync::SYNC_BUS;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;

@@ -2,7 +2,7 @@
 //! on a private bus, writing what they were asked, in order, into one log.
 
 use crate::private_bus::PrivateBus;
-use porter_dbus::names::{SPACE_KEY_CREATED, SPACE_KEY_LOOK, SPACE_KEY_NAME};
+use porter_dbus::accounts::{SPACE_KEY_CREATED, SPACE_KEY_LOOK, SPACE_KEY_NAME};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use zbus::zvariant::{OwnedValue, Value};

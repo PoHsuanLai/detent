@@ -16,9 +16,9 @@ use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Page, Section,
 };
-use porter_dbus::names::{
-    ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS, INFERENCE_SETTINGS_PATH, SYNC_BUS,
-};
+use porter_dbus::accounts::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
+use porter_dbus::inference::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
+use porter_dbus::sync::SYNC_BUS;
 use std::sync::{Arc, Mutex};
 
 /// Where each daemon's module is: its bus name, the daemon it is looked for as, and its path.
