@@ -281,6 +281,11 @@ subsecond-types = { git = "https://github.com/PoHsuanLai/dioxus", rev = "a615fd9
 ds-core = { path = "../quire/crates/ds-core" }
 ds-core-derive = { path = "../quire/crates/ds-core-derive" }
 ds-helpers = { path = "../quire/crates/ds-helpers" }
+ds-extensions = { path = "../quire/crates/ds-extensions" }
+ds-peer = { path = "../quire/crates/ds-peer" }
+ds-settings = { path = "../quire/crates/ds-settings" }
+ds-settings-derive = { path = "../quire/crates/ds-settings-derive" }
+ds-style = { path = "../quire/crates/ds-style" }
 
 # porter takes stoker by git rev (porter ARCHITECTURE section 1); the sibling checkout is the one copy of cua-action.
 [patch."https://github.com/PoHsuanLai/stoker"]

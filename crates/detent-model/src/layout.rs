@@ -91,13 +91,14 @@ pub fn blocks(page: &PageModel) -> Vec<Block> {
     drawn.into_iter().chain(sheet).collect()
 }
 
-/// The Appearance page's section that holds the "Use my styles" switch, which the notes follow.
-const STYLES_SECTION: &str = "Appearance";
+/// The "Use my styles" switch, which the notes follow: found by its key, so the section quire
+/// puts it in can be renamed.
+const STYLES_KEY: &str = "appearance.custom_styles";
 
 /// `block`, followed by the notes line when it is the section that holds the styles switch.
 fn with_style_notes(block: Block) -> Vec<Block> {
     match &block {
-        Block::Section(section) if section.title == STYLES_SECTION => {
+        Block::Section(section) if section.keys.iter().any(|e| e.spec.path.0 == STYLES_KEY) => {
             vec![block, Block::StyleNotes]
         }
         _ => vec![block],
@@ -139,9 +140,13 @@ fn intelligence_blocks(page: &PageModel) -> Vec<Block> {
 mod tests {
     use super::{Block, blocks};
     use crate::catalogue::{PageModel, SectionModel};
+    use crate::config_file::ConfigFile;
+    use crate::entry::KeyEntry;
     use crate::page::PageSlug;
     use crate::page_kind::PageKind;
-    use ds_settings::schema::Page;
+    use ds_settings::schema::{
+        AgentSetting, Exposure, FilePath, Help, KeyKind, KeyPath, KeySpec, Label, Page, Section,
+    };
 
     fn page(kind: Page, titles: &[&str]) -> PageModel {
         PageModel {
@@ -154,11 +159,42 @@ mod tests {
                 .map(|title| SectionModel {
                     title: (*title).to_owned(),
                     footnote: None,
-                    keys: Vec::new(),
+                    keys: if *title == "Style" {
+                        vec![styles_switch()]
+                    } else {
+                        Vec::new()
+                    },
                 })
                 .collect(),
             advanced: Vec::new(),
         }
+    }
+
+    /// The "Use my styles" switch, which quire files under "Style" (the notes find it by its key,
+    /// not by that title).
+    fn styles_switch() -> KeyEntry {
+        let spec = KeySpec {
+            ends: None,
+            control: None,
+            path: KeyPath("appearance.custom_styles".to_owned()),
+            kind: KeyKind::Toggle {
+                variants: ["use".to_owned(), "off".to_owned()],
+            },
+            default: toml::Value::String("use".to_owned()),
+            label: Label("Use my styles".to_owned()),
+            help: Help(String::new()),
+            page: Page::Appearance,
+            section: Section("Style".to_owned()),
+            exposure: Exposure::Basic,
+            labels: Default::default(),
+            agent: AgentSetting::HandsOff,
+            unavailable: Default::default(),
+            groups: Default::default(),
+            places: Default::default(),
+            note: None,
+        };
+        let file = ConfigFile::parse(&FilePath("quire/appearance.toml".to_owned()));
+        KeyEntry::new(spec, file.expect("a plain file"))
     }
 
     fn names(blocks: &[Block]) -> Vec<String> {
@@ -239,10 +275,10 @@ mod tests {
             &["Typing", "<Shortcuts>"],
         ),
         (
-            "the style notes follow the appearance section that holds the styles switch",
+            "the style notes follow the section that holds the styles switch",
             Page::Appearance,
-            &["Icons", "Appearance", "Time"],
-            &["Icons", "Appearance", "<style notes>", "Time"],
+            &["Icons", "Style", "Time"],
+            &["Icons", "Style", "<style notes>", "Time"],
         ),
         (
             "the dock preview comes before the sections of the dock page",

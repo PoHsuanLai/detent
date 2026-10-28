@@ -297,6 +297,7 @@ fn the_page_has_its_own_slug_label_and_place_and_the_setup_step_is_never_listed(
             ASSISTANT_MODEL_SLUG,
             "privacy",
             "displays",
+            "spaces",
             "software-update",
             "accounts"
         ]

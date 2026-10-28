@@ -61,11 +61,18 @@ fn a_page_lists_its_basic_sections_and_one_advanced_group_after_them() {
     };
     assert_eq!(
         titles(&appearance.sections),
-        ["Appearance", "Files", "Icons", "Time", "Bar"],
-        "only sections with a basic key are headers of their own (Files for appearance.file_icons, Bar for bar.autohide)"
+        [
+            "Colour",
+            "Accessibility",
+            "Style",
+            "Icons",
+            "Text and time",
+            "Menu bar"
+        ],
+        "only sections with a basic key are headers of their own (Icons for icons.style, Menu bar for bar.autohide)"
     );
     let advanced = titles(&appearance.advanced);
-    assert!(advanced.contains(&"Bar".to_owned()), "{advanced:?}");
+    assert!(advanced.contains(&"Menu bar".to_owned()), "{advanced:?}");
     assert!(
         appearance
             .sections
@@ -90,10 +97,10 @@ fn a_page_lists_its_basic_sections_and_one_advanced_group_after_them() {
             .unwrap_or_default()
     };
     assert_eq!(
-        paths(&dock.sections, "Magnification"),
-        ["dock.magnification"]
+        paths(&dock.sections, "Dock"),
+        ["dock.tile_size_px", "dock.magnification"]
     );
-    let advanced = paths(&dock.advanced, "Magnification");
+    let advanced = paths(&dock.advanced, "Dock");
     assert!(
         advanced.contains(&"dock.magnified_size_px".to_owned()),
         "{advanced:?}"
@@ -101,8 +108,8 @@ fn a_page_lists_its_basic_sections_and_one_advanced_group_after_them() {
 }
 
 #[test]
-fn mouse_and_gestures_holds_palmrests_keys_with_its_advanced_ones_apart() {
-    let catalogue = real("mouse_and_gestures_holds_palmrests_keys");
+fn mouse_and_gestures_holds_palmrests_and_sills_keys_with_the_advanced_ones_apart() {
+    let catalogue = real("mouse_and_gestures_holds_palmrests_and_sills_keys");
     let page = catalogue
         .page(&slug("mouse_and_gestures"))
         .expect("the page");
@@ -112,26 +119,23 @@ fn mouse_and_gestures_holds_palmrests_keys_with_its_advanced_ones_apart() {
         .flat_map(|s| &s.keys)
         .map(|e| e.spec.path.0.as_str())
         .collect();
-    assert!(basic.contains(&"rejection"), "{basic:?}");
-    assert!(basic.contains(&"foreign_output"), "{basic:?}");
+    assert!(basic.contains(&"scroll.speed"), "{basic:?}");
+    assert!(
+        basic.contains(&"gestures.gesture_action_map.two_finger_swipe_left"),
+        "{basic:?}"
+    );
     assert!(
         basic.contains(&"scroll.natural"),
         "sill's key sits beside palmrest's"
     );
-    assert!(
-        !basic.contains(&"palm_rejection.click_guard_ms"),
-        "{basic:?}"
-    );
+    assert!(!basic.contains(&"scroll.momentum"), "{basic:?}");
     let advanced: Vec<&str> = page
         .advanced
         .iter()
         .flat_map(|s| &s.keys)
         .map(|e| e.spec.path.0.as_str())
         .collect();
-    assert!(
-        advanced.contains(&"palm_rejection.click_guard_ms"),
-        "{advanced:?}"
-    );
+    assert!(advanced.contains(&"scroll.momentum"), "{advanced:?}");
 }
 
 #[test]
@@ -168,7 +172,7 @@ fn a_query_resolves_to_the_key_the_schemas_word_says() {
         ("magnification", "dock.magnification", "dock"),
         ("natural scrolling", "scroll.natural", "mouse_and_gestures"),
         ("do not disturb", "notifications.dnd", "notifications"),
-        ("palm rejection", "rejection", "mouse_and_gestures"),
+        ("scroll speed", "scroll.speed", "mouse_and_gestures"),
         ("reduce motion", "appearance.motion_level", "appearance"),
     ];
     let catalogue = real("a_query_resolves_to_the_key_the_schemas_word_says");

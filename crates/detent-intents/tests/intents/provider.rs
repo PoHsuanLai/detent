@@ -9,7 +9,7 @@ use prov::Integrity;
 const MAGNIFICATION: &str = "dock.magnification";
 const TILE_SIZE: &str = "dock.tile_size_px";
 const HANDS_OFF: &str = "dock.autohide";
-const WEB_ADDRESS: &str = "launcher.web_engine_url";
+const SOURCES: &str = "calendar.sources";
 const SILL: &str = "sill/settings.toml";
 
 async fn world(test: &str) -> World {
@@ -138,9 +138,9 @@ async fn reading_a_key_answers_the_file_then_the_default_and_trusts_neither() {
 async fn a_value_longer_than_the_manifest_allows_is_cut_to_one_line() {
     let world = world("read-a-huge-value").await;
     let huge = "word\\nand more words ".repeat(5000);
-    world.write(SILL, &format!("[launcher]\nweb_engine_url = \"{huge}\"\n"));
+    world.write(SILL, &format!("[calendar]\nsources = \"{huge}\"\n"));
     let out = world
-        .perform("settings.key.read", &[("key", key(WEB_ADDRESS))])
+        .perform("settings.key.read", &[("key", key(SOURCES))])
         .await
         .expect("read");
     let Value::Text(shown) = out.value.expect("a value").value else {
@@ -401,7 +401,7 @@ async fn suggestions_offer_pages_every_key_and_only_the_settable_ones_to_set() {
     let pages = keys(world.suggest("settings.page.show", "page", "dock").await);
     assert_eq!(pages, ["dock"]);
     let settable = keys(world.suggest("settings.key.set", "key", "dock.").await);
-    assert_eq!(settable, [MAGNIFICATION, TILE_SIZE]);
+    assert_eq!(settable, [TILE_SIZE, MAGNIFICATION]);
     let readable = keys(world.suggest("settings.key.read", "key", "dock.").await);
     assert!(readable.contains(&HANDS_OFF.to_owned()), "{readable:?}");
     assert!(readable.len() > settable.len());

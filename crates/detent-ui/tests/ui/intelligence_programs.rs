@@ -40,12 +40,7 @@ fn in_order(html: &str, texts: &[&str]) {
 const BASIC: &[(&str, &[&str])] = &[
     (
         "Assistant",
-        &[
-            "New conversations start in",
-            "Other apps",
-            "Coding Agents",
-            "Undo history",
-        ],
+        &["New conversations start in", "Other apps", "Coding agents"],
     ),
     (
         "Auto",
@@ -88,18 +83,16 @@ const BASIC: &[(&str, &[&str])] = &[
 ];
 
 /// The names of the advanced drill-in rows: a section's title, except where a basic
-/// section has the same title, then what its sheet holds ("Assistant Details", "Apply tidying").
+/// section has the same title, then what its sheet holds ("Code editors", "Apply tidying").
 const ADVANCED: &[&str] = &[
     "Apply tidying",
     "History",
     "Run limits",
-    "Timing",
-    "Window detail",
-    "Assistant Details",
+    "Code editors",
     "Limits",
     "Automatic",
+    "Local models",
     "Structured output",
-    "Confirmations",
 ];
 
 #[test]
@@ -237,13 +230,13 @@ fn an_advanced_row_writes_its_own_file_too() {
         1,
         "the section's page is up"
     );
-    let slider = "[aria-label=\"Steps per run\"] .ds-slider";
+    let slider = "[aria-label=\"Spending per run\"] .ds-slider";
     scroll_into_view(&mut harness, slider);
     let at = harness.centre(slider).expect("the slider");
     harness.send(Input::click(Point { x: at.x, y: at.y }));
     harness.advance(Duration::from_millis(400));
     let cua = sandbox.read("cua/settings.toml").expect("cua's file");
-    assert!(cua.contains("steps = "), "{cua}");
+    assert!(cua.contains("spend_microusd = "), "{cua}");
     assert_eq!(sandbox.read("docket/settings.toml"), None);
 }
 

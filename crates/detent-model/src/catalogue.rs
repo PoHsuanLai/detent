@@ -221,12 +221,13 @@ fn group_pages(entries: &[KeyEntry], footnotes: &[&Footnote]) -> Vec<PageModel> 
         }
         pages
     });
-    // Accounts is accountd's live pane, Privacy the compositor's list, Assistant Model inferd's
-    // picker row, Software Update the update service's, Wi-Fi, Bluetooth and Displays the
-    // computer's own, and Extensions the folders of what is installed (no file names any of
-    // them), so all eight pages are always there.
+    // Accounts is accountd's live pane, Spaces accountd's registry, Privacy the compositor's
+    // list, Assistant Model inferd's picker row, Software Update the update service's, Wi-Fi,
+    // Bluetooth and Displays the computer's own, and Extensions the folders of what is
+    // installed (no file needs to name any of them), so all nine pages are always there.
     for live in [
         Page::Accounts,
+        Page::Spaces,
         Page::Privacy,
         assistant_model_page(),
         software_update_page(),

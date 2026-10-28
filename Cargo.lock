@@ -365,9 +365,9 @@ dependencies = [
  "bayonet",
  "dirs 6.0.0",
  "ds-core",
- "ds-extensions 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246)",
+ "ds-extensions",
  "ds-helpers",
- "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246)",
+ "ds-settings",
  "latchkey",
  "log",
  "md-5",
@@ -1596,7 +1596,7 @@ dependencies = [
  "detent-testkit",
  "detent-ui",
  "ds-blitz",
- "ds-settings 0.1.0",
+ "ds-settings",
  "tokio",
  "toml",
 ]
@@ -1606,7 +1606,7 @@ name = "detent-callers"
 version = "0.1.0"
 dependencies = [
  "detent-testkit",
- "ds-settings 0.1.0",
+ "ds-settings",
  "peephole-bus",
  "rustix",
  "thiserror 2.0.21",
@@ -1621,7 +1621,7 @@ dependencies = [
  "detent-files",
  "detent-model",
  "detent-system",
- "ds-settings 0.1.0",
+ "ds-settings",
  "porter-infer",
  "porter-provider",
  "tokio",
@@ -1638,9 +1638,9 @@ dependencies = [
  "detent-testkit",
  "docket-agents",
  "docket-settings",
- "ds-extensions 0.1.0",
+ "ds-extensions",
  "ds-helpers",
- "ds-settings 0.1.0",
+ "ds-settings",
  "freedesktop-icons",
  "keycap-client",
  "serde_json",
@@ -1664,8 +1664,8 @@ dependencies = [
  "docket-provider",
  "docket-vocab",
  "docket-wire",
- "ds-peer 0.1.0",
- "ds-settings 0.1.0",
+ "ds-peer",
+ "ds-settings",
  "porter-core",
  "porter-ids",
  "porter-sheet",
@@ -1690,7 +1690,7 @@ dependencies = [
  "docket-settings",
  "docket-vocab",
  "ds-helpers",
- "ds-settings 0.1.0",
+ "ds-settings",
  "keycap-client",
  "porter-capability",
  "porter-core",
@@ -1721,8 +1721,8 @@ dependencies = [
  "detent-files",
  "detent-model",
  "detent-system",
- "ds-peer 0.1.0",
- "ds-settings 0.1.0",
+ "ds-peer",
+ "ds-settings",
  "md-5",
  "porter-callers",
  "porter-client",
@@ -1763,7 +1763,7 @@ dependencies = [
  "ds-harness",
  "ds-helpers",
  "ds-lint",
- "ds-settings 0.1.0",
+ "ds-settings",
  "image",
  "porter-capability",
  "porter-client",
@@ -2359,7 +2359,7 @@ dependencies = [
  "ds-core",
  "ds-intents",
  "ds-motion",
- "ds-style 0.1.0",
+ "ds-style",
  "serde",
  "thiserror 2.0.21",
  "toml",
@@ -2430,7 +2430,7 @@ dependencies = [
 name = "ds-desktop"
 version = "0.1.0"
 dependencies = [
- "ds-peer 0.1.0",
+ "ds-peer",
 ]
 
 [[package]]
@@ -2440,22 +2440,8 @@ dependencies = [
  "bayonet",
  "ds-core",
  "ds-helpers",
- "ds-settings 0.1.0",
- "ds-style 0.1.0",
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "ds-extensions"
-version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246#8760244b938ff2603af5e5b3f59b55ad0aab9246"
-dependencies = [
- "bayonet",
- "ds-core",
- "ds-helpers",
- "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246)",
- "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246)",
+ "ds-settings",
+ "ds-style",
  "serde",
  "thiserror 2.0.21",
 ]
@@ -2493,7 +2479,7 @@ dependencies = [
 name = "ds-helpers"
 version = "0.1.0"
 dependencies = [
- "ds-peer 0.1.0",
+ "ds-peer",
  "rustix",
  "serde",
  "thiserror 2.0.21",
@@ -2513,7 +2499,7 @@ version = "0.1.0"
 dependencies = [
  "cssparser",
  "ds-core",
- "ds-style 0.1.0",
+ "ds-style",
 ]
 
 [[package]]
@@ -2522,21 +2508,12 @@ version = "0.1.0"
 dependencies = [
  "dioxus",
  "ds-core",
- "ds-style 0.1.0",
+ "ds-style",
 ]
 
 [[package]]
 name = "ds-peer"
 version = "0.1.0"
-dependencies = [
- "futures-timer",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "ds-peer"
-version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246#8760244b938ff2603af5e5b3f59b55ad0aab9246"
 dependencies = [
  "futures-timer",
  "thiserror 2.0.21",
@@ -2549,9 +2526,9 @@ dependencies = [
  "dioxus",
  "ds-core",
  "ds-helpers",
- "ds-peer 0.1.0",
- "ds-settings-derive 0.1.0",
- "ds-style 0.1.0",
+ "ds-peer",
+ "ds-settings-derive",
+ "ds-style",
  "futures-timer",
  "notify",
  "objc2-core-foundation",
@@ -2564,38 +2541,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "ds-settings"
-version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246#8760244b938ff2603af5e5b3f59b55ad0aab9246"
-dependencies = [
- "ds-core",
- "ds-helpers",
- "ds-peer 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246)",
- "ds-settings-derive 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246)",
- "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246)",
- "futures-timer",
- "notify",
- "objc2-core-foundation",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
- "toml",
- "toml_edit",
-]
-
-[[package]]
 name = "ds-settings-derive"
 version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
-name = "ds-settings-derive"
-version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246#8760244b938ff2603af5e5b3f59b55ad0aab9246"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2610,17 +2557,6 @@ dependencies = [
  "ds-core",
  "ds-core-derive",
  "image",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "ds-style"
-version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=8760244b938ff2603af5e5b3f59b55ad0aab9246#8760244b938ff2603af5e5b3f59b55ad0aab9246"
-dependencies = [
- "ds-core",
- "ds-core-derive",
  "serde",
  "serde_json",
 ]

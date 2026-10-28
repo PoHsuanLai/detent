@@ -83,12 +83,7 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
         [
             (
                 "Assistant",
-                vec![
-                    "agent.start_mode",
-                    "agent.mcp.expose",
-                    "agent.acp.agents",
-                    "agent.undo.keep_h"
-                ]
+                vec!["agent.start_mode", "agent.mcp.expose", "agent.acp.agents"]
             ),
             (
                 "Auto",
@@ -128,17 +123,9 @@ fn every_row_is_on_the_intelligence_page_in_the_section_it_names() {
     );
     let advanced = titles(&page.advanced);
     let advanced_keys: usize = advanced.iter().map(|(_, keys)| keys.len()).sum();
-    assert_eq!(advanced_keys, 17 + 7 + 11, "docket 17, almanac 7, cua 11");
+    assert_eq!(advanced_keys, 2 + 3 + 1, "docket 2, almanac 3, cua 1");
     let names: Vec<&str> = advanced.iter().map(|(title, _)| *title).collect();
-    for section in [
-        "Assistant",
-        "Limits",
-        "Memory",
-        "History",
-        "Run limits",
-        "Timing",
-        "Window detail",
-    ] {
+    for section in ["Assistant", "Limits", "Memory", "History", "Run limits"] {
         assert!(names.contains(&section), "{section}: {names:?}");
     }
 }
@@ -148,11 +135,11 @@ fn a_key_is_held_by_its_programs_file() {
     let catalogue = catalogue("schemas-files");
     for (path, file) in [
         ("agent.mcp.expose", "docket/settings.toml"),
-        ("agent.budget.calls", "docket/settings.toml"),
+        ("agent.budget.spend_microusd", "docket/settings.toml"),
         ("memory.consolidation.when", "almanac/settings.toml"),
-        ("memory.pending_ttl_days", "almanac/settings.toml"),
+        ("memory.retention.session_days", "almanac/settings.toml"),
         ("cua.apps", "cua/settings.toml"),
-        ("cua.tree.max_nodes", "cua/settings.toml"),
+        ("cua.budget.spend_microusd", "cua/settings.toml"),
     ] {
         let entry = catalogue
             .entry(&ds_settings::schema::KeyPath(path.to_owned()))
@@ -183,8 +170,6 @@ fn an_advanced_row_that_repeats_a_basic_section_says_what_is_inside() {
             "History",
             "Limits",
             "Run limits",
-            "Timing",
-            "Window detail",
         ]
     );
 }

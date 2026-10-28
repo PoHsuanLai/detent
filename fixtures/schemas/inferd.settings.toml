@@ -8,6 +8,9 @@
 # read), and `ai.auto.pool.<slot>`, the models Automatic chooses among. Their choices are the models
 # inferd knows now, so inferd describes those rows itself, as the live module
 # org.quire.SettingsModule1 at /org/quire/Inference1/settings (callable by the Settings role only).
+# The same module lists `engines.vllm_python` and `engines.llama_server`, the program of each engine
+# when the person names it (a full path to a program only they or root can change); `engines` stays
+# a foreign table here because its other keys (attached, replay, record) are not settings rows.
 #
 # Every row is hands-off: ai.* is never agent-settable (AGENT_NEVER_SETTABLE), so no row carries
 # `agent = "settable"`.
@@ -473,7 +476,7 @@ kind = "intelligence"
 path = "ai.spend.account_daily_cents"
 default = 0
 label = "Daily cap per account"
-help = "The most a cloud account may cost in a day, in US cents, counting every app that uses it. 0 is no cap. Days and months are counted in UTC."
+help = "The most a cloud account may cost in a day, in US cents, counting every app that uses it. 0 is no cap. Only charges a provider reports count toward it (today that is OpenRouter), so a provider that reports none is never stopped by it. Days and months are counted in UTC."
 section = "Automatic"
 exposure = "advanced"
 
@@ -492,7 +495,7 @@ kind = "intelligence"
 path = "ai.spend.account_monthly_cents"
 default = 0
 label = "Monthly cap per account"
-help = "The most a cloud account may cost in a month, in US cents, counting every app that uses it. 0 is no cap. Days and months are counted in UTC."
+help = "The most a cloud account may cost in a month, in US cents, counting every app that uses it. 0 is no cap. Only charges a provider reports count toward it (today that is OpenRouter), so a provider that reports none is never stopped by it. Days and months are counted in UTC."
 section = "Automatic"
 exposure = "advanced"
 
@@ -511,7 +514,7 @@ kind = "intelligence"
 path = "ai.spend.app_daily_cents"
 default = 0
 label = "Daily cap per app"
-help = "The most one app may spend on cloud models in a day, in US cents, whichever account pays. 0 is no cap. Days and months are counted in UTC."
+help = "The most one app may spend on cloud models in a day, in US cents, whichever account pays. 0 is no cap. Only charges a provider reports count toward it (today that is OpenRouter), so a provider that reports none is never stopped by it. Days and months are counted in UTC."
 section = "Automatic"
 exposure = "advanced"
 
@@ -530,7 +533,7 @@ kind = "intelligence"
 path = "ai.spend.app_monthly_cents"
 default = 0
 label = "Monthly cap per app"
-help = "The most one app may spend on cloud models in a month, in US cents, whichever account pays. 0 is no cap. Days and months are counted in UTC."
+help = "The most one app may spend on cloud models in a month, in US cents, whichever account pays. 0 is no cap. Only charges a provider reports count toward it (today that is OpenRouter), so a provider that reports none is never stopped by it. Days and months are counted in UTC."
 section = "Automatic"
 exposure = "advanced"
 
@@ -541,6 +544,57 @@ kind = "bounded"
 min = 0
 max = 10000000
 unit = "cents"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.length.conversation"
+default = "automatic"
+label = "Longest conversation"
+help = "How much one conversation with a model on this computer can hold at once: your messages, its answers and anything attached. Automatic uses as much as the model supports and your graphics card has room for. A longer conversation uses more graphics memory. Sizes are rough, in pages of text. Takes effect the next time the model starts."
+section = "Local models"
+exposure = "advanced"
+
+[key.kind]
+kind = "menu"
+
+[key.kind.v]
+variants = ["automatic", "8192", "16384", "32768", "65536", "131072"]
+
+[key.labels]
+automatic = "Automatic"
+"8192" = "About 12 pages"
+"16384" = "About 25 pages"
+"32768" = "About 50 pages"
+"65536" = "About 100 pages"
+"131072" = "About 200 pages"
+
+[key.page]
+kind = "intelligence"
+
+[[key]]
+path = "ai.length.reply"
+default = "automatic"
+label = "Longest reply"
+help = "The most one answer from a model on this computer can run to. Automatic allows as much as the model supports and its conversation length leaves room for. An app that asks for a shorter answer still gets it. Sizes are rough, in pages of text."
+section = "Local models"
+exposure = "advanced"
+
+[key.kind]
+kind = "menu"
+
+[key.kind.v]
+variants = ["automatic", "1024", "2048", "4096", "8192", "16384", "32768"]
+
+[key.labels]
+automatic = "Automatic"
+"1024" = "About 2 pages"
+"2048" = "About 3 pages"
+"4096" = "About 6 pages"
+"8192" = "About 12 pages"
+"16384" = "About 25 pages"
+"32768" = "About 50 pages"
 
 [key.page]
 kind = "intelligence"

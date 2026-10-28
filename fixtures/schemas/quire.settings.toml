@@ -6,8 +6,8 @@ version = 1
 path = "appearance.theme"
 default = "system"
 label = "Theme"
-help = "Follow the desktop, or force light or dark mode."
-section = "Appearance"
+help = "Follows the desktop, or stays in light or dark mode."
+section = "Colour"
 exposure = "basic"
 agent = "settable"
 
@@ -24,8 +24,8 @@ kind = "appearance"
 path = "appearance.accent"
 default = "blue"
 label = "Accent"
-help = "The colour of buttons, selection, switches and focus rings across the desktop."
-section = "Appearance"
+help = "Colours buttons, selection, switches and focus rings."
+section = "Colour"
 exposure = "basic"
 agent = "settable"
 
@@ -42,9 +42,10 @@ kind = "appearance"
 path = "appearance.motion_level"
 default = "standard"
 label = "Reduce motion"
-help = "Replace slides, scales and springs with cross-fades. The desktop's own reduce-motion setting always applies."
-section = "Appearance"
+help = "Swaps slides and springs for fades."
+section = "Accessibility"
 exposure = "basic"
+note = "The desktop's own reduce-motion setting always applies."
 
 [key.kind]
 kind = "toggle"
@@ -59,8 +60,8 @@ kind = "appearance"
 path = "appearance.transparency"
 default = "system"
 label = "Reduce transparency"
-help = "Make blurred and translucent areas solid. Windows, menus and panels stop showing what is behind them."
-section = "Appearance"
+help = "Makes blurred and see-through areas solid."
+section = "Accessibility"
 exposure = "basic"
 
 [key.kind]
@@ -73,30 +74,14 @@ variants = ["system", "reduced"]
 kind = "appearance"
 
 [[key]]
-path = "appearance.typeface"
-default = "system"
-label = "Typeface"
-help = "The text face of the desktop's windows and controls: System is Inter; Editorial is mail's Bricolage Grotesque and Karla. Code stays in Space Mono."
-section = "Appearance"
-exposure = "basic"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["system", "editorial"]
-
-[key.page]
-kind = "appearance"
-
-[[key]]
 path = "appearance.look"
 default = "standard"
 label = "Look"
-help = "Standard, or a look you added in Extensions. A look restyles every window; choosing Standard puts the desktop back as it shipped."
-section = "Appearance"
+help = "Restyles every window."
+section = "Style"
 exposure = "basic"
 agent = "settable"
+note = "Standard puts the desktop back as it shipped."
 
 [key.kind]
 kind = "provided"
@@ -111,10 +96,11 @@ kind = "appearance"
 path = "appearance.file_icons"
 default = "standard"
 label = "File icons"
-help = "Standard, or a set of file icons you added in Extensions. A type a set has no picture for keeps the standard icon; choosing Standard puts them all back."
-section = "Files"
+help = "Shows icons you added for each file type."
+section = "Icons"
 exposure = "basic"
 agent = "settable"
+note = "A file type without an icon keeps the standard one."
 
 [key.kind]
 kind = "provided"
@@ -129,10 +115,11 @@ kind = "appearance"
 path = "appearance.custom_styles"
 default = "use"
 label = "Use my styles"
-help = "Draw the look you chose and your own style sheets. Turn this off if a style made something hard to use."
-section = "Appearance"
+help = "Draws the look you chose and your own style sheets."
+section = "Style"
 exposure = "basic"
 agent = "settable"
+note = "Turn this off if a style makes something hard to use."
 
 [key.kind]
 kind = "toggle"
@@ -144,145 +131,13 @@ variants = ["use", "off"]
 kind = "appearance"
 
 [[key]]
-path = "appearance.material_tint_alpha"
-default = 80
-label = "Material tint"
-help = "The tint's alpha over the compositor's behind-surface blur."
-section = "Appearance"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-unit = "%"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "appearance.material_highlight_light"
-default = 30
-label = "Highlight (light)"
-help = "The top highlight's alpha on a light material."
-section = "Appearance"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-unit = "%"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "appearance.material_highlight_dark"
-default = 12
-label = "Highlight (dark)"
-help = "The top highlight's alpha on a dark material."
-section = "Appearance"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-unit = "%"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "appearance.material_hairline_light"
-default = 14
-label = "Hairline (light)"
-help = "The outer hairline's alpha on a light material."
-section = "Appearance"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-unit = "%"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "appearance.material_hairline_dark"
-default = 60
-label = "Hairline (dark)"
-help = "The outer hairline's alpha on a dark material."
-section = "Appearance"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-unit = "%"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "appearance.material_shadow_strength"
-default = 100
-label = "Shadow strength"
-help = "How strong a floating material's contact and ambient shadows are."
-section = "Appearance"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-unit = "%"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "appearance.material_vibrancy"
-default = 100
-label = "Vibrancy"
-help = "How much of the tint the vibrancy boost saturates."
-section = "Appearance"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-unit = "%"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
 path = "icons.style"
 default = "colour"
 label = "App icon style"
-help = "Colour draws each app icon as designed; Muted holds the colour down; Monochrome draws every icon in one hue."
+help = "How colourful app icons are."
 section = "Icons"
 exposure = "basic"
+note = "Colour keeps each icon as designed; Muted holds the colour down; Monochrome uses one hue."
 
 [key.kind]
 kind = "segmented"
@@ -294,137 +149,13 @@ variants = ["colour", "muted", "monochrome"]
 kind = "appearance"
 
 [[key]]
-path = "icons.monochrome_tint"
-default = "space"
-label = "Monochrome tint"
-help = "Where Monochrome icons take their hue: the Space, the accent, or none."
-section = "Icons"
-exposure = "basic"
-
-[key.kind]
-kind = "segmented"
-
-[key.kind.v]
-variants = ["space", "accent", "neutral"]
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "icons.plate_inset_percent"
-default = 72
-label = "Plate inset"
-help = "How far a third-party icon sits inside its plate."
-section = "Icons"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-unit = "%"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "icons.symbolic_fallback_glyph_percent"
-default = 56
-label = "Symbolic fallback size"
-help = "The glyph's size when an app ships only a symbolic icon."
-section = "Icons"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 100
-unit = "%"
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "icons.squircle_detect_iou"
-default = 900
-label = "Squircle detection"
-help = "How closely an icon must already match a squircle to skip re-masking it (stored per-mille: 900 is 0.90)."
-section = "Icons"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 1000
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "icons.symbolic_chroma_max"
-default = 40
-label = "Symbolic icon colour limit"
-help = "An icon with less colour than this is drawn as a symbolic mask in the ink colour (stored per-mille: 40 is 0.04)."
-section = "Icons"
-exposure = "advanced"
-
-[key.kind]
-kind = "bounded"
-
-[key.kind.v]
-min = 0
-max = 200
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "icons.plate_glyph_colour_policy"
-default = "auto"
-label = "Plate glyph colour"
-help = "Auto picks white or ink per family for contrast; the other two force one."
-section = "Icons"
-exposure = "advanced"
-
-[key.kind]
-kind = "segmented"
-
-[key.kind.v]
-variants = ["auto", "force_white", "force_ink"]
-
-[key.page]
-kind = "appearance"
-
-[[key]]
-path = "icons.dark_mode_variant"
-default = "same_as_light"
-label = "Icon dark variant"
-help = "Whether a third-party icon adapts to the dark scheme or stays the same."
-section = "Icons"
-exposure = "advanced"
-
-[key.kind]
-kind = "toggle"
-
-[key.kind.v]
-variants = ["same_as_light", "adaptive"]
-
-[key.page]
-kind = "appearance"
-
-[[key]]
 path = "region.hours"
 default = "auto"
 label = "Time format"
-help = "Write times with a 12-hour or a 24-hour clock everywhere. Automatic follows the language and region of the session."
-section = "Time"
+help = "Writes times in 12 or 24 hours everywhere."
+section = "Text and time"
 exposure = "basic"
+note = "Automatic follows your language and region."
 
 [key.kind]
 kind = "segmented"

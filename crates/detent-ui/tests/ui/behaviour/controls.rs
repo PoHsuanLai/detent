@@ -221,19 +221,19 @@ fn reduce_motion_is_a_switch_that_is_on_for_reduced() {
 #[test]
 fn a_two_word_choice_that_is_not_on_and_off_is_two_segments() {
     let sandbox = Sandbox::new("two-segments");
-    let mut harness = sandbox.harness(opening("appearance"));
-    let typeface = ".ds-segmented[*|aria-label=Typeface]";
+    let mut harness = sandbox.harness(opening("intelligence"));
+    let start = ".ds-segmented[*|aria-label=\"New conversations start in\"]";
     assert_eq!(
-        harness.count(&format!("{typeface} .ds-segmented-segment")),
+        harness.count(&format!("{start} .ds-segmented-segment")),
         2,
-        "System and Editorial"
+        "Auto and Manual"
     );
     click(
         &mut harness,
-        &format!("{typeface} .ds-segmented-segment:nth-of-type(2)"),
+        &format!("{start} .ds-segmented-segment:nth-of-type(2)"),
     );
     let text = sandbox
-        .read("quire/appearance.toml")
+        .read("docket/settings.toml")
         .expect("the file was written");
-    assert!(text.contains("typeface = \"editorial\""), "{text}");
+    assert!(text.contains("start_mode = \"manual\""), "{text}");
 }
