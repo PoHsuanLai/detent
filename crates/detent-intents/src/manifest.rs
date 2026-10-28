@@ -1,7 +1,7 @@
 //! The manifest this app ships, read from the file the installer puts under
 //! `$XDG_DATA_DIRS/quire/intents/`: one declaration, so the file and the provider cannot drift.
 
-use docket_core::{Manifest, ManifestError, ValidManifest, validate};
+use docket_manifest::{Manifest, ManifestError, ValidManifest, validate};
 
 /// `dist/intents/org.quire.Settings.toml`.
 const TEXT: &str = include_str!("../../../dist/intents/org.quire.Settings.toml");

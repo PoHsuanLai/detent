@@ -11,12 +11,10 @@ use detent_model::{
     Absence, AccountsPane, Catalogue, Notice, OriginRule, Receiver, discover_under, inbox,
 };
 use detent_testkit::{Scratch, seed_schemas_settable};
-use docket_core::{
-    AppRefusal, Args, CallId, EntityRef, Hit, Invocation, Origin, Outcome, ParamName, Preview,
-    SuggestAsk, UndoFault, UndoToken, Value,
-};
+use docket_core::{AppRefusal, Hit, Invocation, Outcome, Preview, SuggestAsk, UndoFault};
 use docket_dbus::callers::{INTENTD, Identity, intentd_only};
 use docket_dbus::{Details, INTENTS_BUS, IntentProviderProxy};
+use docket_vocab::{Args, CallId, EntityRef, Origin, ParamName, UndoToken, Value};
 use prov::{Actor, EntityId, Label, Labelled, Source, SpaceId};
 use std::sync::{Arc, Mutex};
 
@@ -97,7 +95,7 @@ pub fn invocation(action: &str, args: &[(&str, Value)]) -> Invocation {
     Invocation {
         call: CallId(1),
         action: prov::ActionName::parse(action).expect("action"),
-        target: docket_core::TargetValue::Nothing,
+        target: docket_vocab::TargetValue::Nothing,
         args,
         actor: Actor::Cli,
         origin: Origin::Cli,
@@ -233,7 +231,7 @@ impl World {
     /// An `.open` action on the one thing `id`, as the launcher's Enter on a hit calls it.
     pub async fn open(&self, action: &str, id: EntityId) -> Result<Outcome, AppRefusal> {
         let mut call = invocation(action, &[]);
-        call.target = docket_core::TargetValue::Entities(vec![id]);
+        call.target = docket_vocab::TargetValue::Entities(vec![id]);
         let json = serde_json::to_string(&call).expect("json");
         let answer = self
             .proxy
@@ -266,7 +264,7 @@ impl World {
 
     pub async fn suggest(&self, action: &str, param: &str, typed: &str) -> Vec<EntityRef> {
         let ask = SuggestAsk {
-            action: docket_core::ActionRef {
+            action: docket_vocab::ActionRef {
                 app: prov::AppName::parse(APP).expect("app"),
                 name: prov::ActionName::parse(action).expect("action"),
             },

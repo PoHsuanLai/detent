@@ -5,7 +5,7 @@ use crate::fake_kit::Kit;
 use crate::lock::locked;
 use crate::ticks::Ticks;
 use detent_model::{Absence, ComputersFound, ComputersReason, ServerModel, Work};
-use porter_core::lending::ComputerCandidate;
+use porter_tailnet::ComputerCandidate;
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Default)]

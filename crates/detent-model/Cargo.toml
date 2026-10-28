@@ -9,6 +9,13 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+docket-manifest = { workspace = true }
+docket-vocab = { workspace = true }
+porter-tailscale = { workspace = true }
+porter-tailnet = { workspace = true }
+porter-sheet = { workspace = true }
+porter-capability = { workspace = true }
+porter-ids = { workspace = true }
 almanac-core = { workspace = true }
 chordkit = { workspace = true }
 docket-core = { workspace = true }

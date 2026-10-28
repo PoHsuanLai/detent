@@ -3,7 +3,7 @@
 use crate::accounts::{AccountStatus, AccountsPane, Place};
 use crate::computers::ComputerRow;
 use docket_settings::{Known, KnownPlace, PlaceName};
-use porter_core::sheet::ProviderGroup;
+use porter_sheet::ProviderGroup;
 
 /// The cloud accounts accountd lists that are signed in: an account of the Intelligence group
 /// that is not a program on this computer, and does not need signing in again. Each carries its

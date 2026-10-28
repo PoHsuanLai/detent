@@ -12,10 +12,11 @@ use detent_model::{
     arrival, show_value,
 };
 use docket_core::{
-    AppRefusal, EntityRef, FactLine, Hit, Invocation, LabelText, Outcome, Preview, SuggestAsk,
-    UndoFault, UndoToken, Undoable, ValidManifest, Value,
+    AppRefusal, FactLine, Hit, Invocation, Outcome, Preview, SuggestAsk, UndoFault, Undoable,
 };
+use docket_manifest::ValidManifest;
 use docket_provider::IntentProvider;
+use docket_vocab::{EntityRef, LabelText, UndoToken, Value};
 use ds_settings::schema::KeyPath;
 use ds_settings::target::SettingsTarget;
 use porter_core::{AppName, DataClass};

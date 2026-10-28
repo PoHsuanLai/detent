@@ -4,9 +4,9 @@
 
 use crate::Absence;
 use crate::Live;
-use porter_core::NodeId;
-use porter_core::lending::{ComputerCandidate, GuestAnswer, GuestRow};
 use porter_infer::{ComputerName, PlaceKind, PlaceRow, PlaceState, PlaceTarget};
+use porter_tailnet::{ComputerCandidate, GuestAnswer, GuestRow};
+use porter_tailscale::NodeId;
 
 use super::server::{
     ComputersReason, NewServer, ServerDraft, ServerEdit, ServerModel, ServerPhase, ServerRefusal,

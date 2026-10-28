@@ -40,7 +40,7 @@ mod tests {
     use crate::accounts::model::{AccountExpiry, AccountProvider};
     use crate::accounts::{AccountKey, AccountSpend, ModuleId, Place};
     use ds_settings::schema::KeyPath;
-    use porter_core::sheet::ProviderGroup;
+    use porter_sheet::ProviderGroup;
 
     /// Whether the account has a Sign in again row.
     enum Reauth {

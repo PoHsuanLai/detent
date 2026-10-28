@@ -9,7 +9,8 @@ use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::{Harness, Input};
 use ds_settings::live::Verdict;
-use porter_core::{AccountId, ModelId};
+use porter_capability::ModelId;
+use porter_core::AccountId;
 use porter_infer::{Declined, DeclinedBecause, InferEvent, ModelRef, Why};
 use std::time::Duration;
 

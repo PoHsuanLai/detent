@@ -33,7 +33,8 @@ pub(crate) fn many_lines(text: &str, max: usize) -> String {
 mod tests {
     use super::{ACCOUNTS_CHARS, KEY_VALUE_CHARS, many_lines, one_line};
     use crate::manifest::manifest;
-    use docket_core::{Lines, ParamType, ResultShape};
+    use docket_manifest::ResultShape;
+    use docket_vocab::{Lines, ParamType};
 
     /// The text size and line rule the manifest declares for `action`'s result.
     fn declared(action: &str) -> (usize, Lines) {

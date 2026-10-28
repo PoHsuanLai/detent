@@ -6,9 +6,10 @@ use detent_model::{
     Absence, Account, AccountKey, AccountService, AccountSpend, AccountStatus, AccountsPane,
     ModuleId, Place, SwitchState,
 };
-use docket_core::{AppRefusal, Value};
+use docket_core::AppRefusal;
+use docket_vocab::Value;
 use ds_settings::schema::KeyPath;
-use porter_core::sheet::ProviderGroup;
+use porter_sheet::ProviderGroup;
 use prov::Integrity;
 
 fn account(id: &str, label: &str, status: AccountStatus, kinds: &[&str]) -> Account {

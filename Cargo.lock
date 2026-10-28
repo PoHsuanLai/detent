@@ -147,6 +147,7 @@ version = "0.1.0"
 dependencies = [
  "const-hex",
  "porter-core",
+ "porter-ids",
  "prov",
  "serde",
  "serde_json",
@@ -364,9 +365,9 @@ dependencies = [
  "bayonet",
  "dirs 6.0.0",
  "ds-core",
- "ds-extensions 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f)",
+ "ds-extensions 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba)",
  "ds-helpers",
- "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f)",
+ "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba)",
  "latchkey",
  "log",
  "md-5",
@@ -611,7 +612,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae67d5c03ee972c101a1d8db3ddbf8a9c819ad1ea9d6fd9cd385605547b60edb"
 dependencies = [
  "nix",
- "rand",
+ "rand 0.10.3",
 ]
 
 [[package]]
@@ -883,8 +884,22 @@ version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "553c5d846a6ba5150c65e3b1b8ec073bcf1abc20f9b7220de384a4443ea4e20a"
 dependencies = [
+ "borsh-derive",
  "bytes",
  "cfg_aliases",
+]
+
+[[package]]
+name = "borsh-derive"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12cdfe656708a01f89b451a7d36466e6fe6c414de0aa18fc54f864f6f9ca9f56"
+dependencies = [
+ "once_cell",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 3.0.6",
 ]
 
 [[package]]
@@ -1040,7 +1055,7 @@ checksum = "65c35e4b699c7e15ccbe7ee35c005e4fc0a278d22238a2857e6ce2dadeda1b06"
 dependencies = [
  "cfg-if",
  "cpufeatures 0.3.1",
- "rand_core",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -1176,6 +1191,23 @@ checksum = "cfc320937d09e6de266b31b9afb480f197d7a861be86be7cb2ea7e5d1bfffc5e"
 dependencies = [
  "bytes",
  "memchr",
+]
+
+[[package]]
+name = "companion-model"
+version = "0.1.0"
+dependencies = [
+ "almanac-core",
+ "docket-manifest",
+ "docket-permissions-core",
+ "docket-vocab",
+ "porter-core",
+ "porter-ids",
+ "porter-infer",
+ "prov",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -1628,10 +1660,15 @@ dependencies = [
  "detent-testkit",
  "docket-core",
  "docket-dbus",
+ "docket-manifest",
  "docket-provider",
+ "docket-vocab",
+ "docket-wire",
  "ds-peer 0.1.0",
  "ds-settings 0.1.0",
  "porter-core",
+ "porter-ids",
+ "porter-sheet",
  "prov",
  "serde",
  "serde_json",
@@ -1649,12 +1686,19 @@ dependencies = [
  "chordkit",
  "detent-testkit",
  "docket-core",
+ "docket-manifest",
  "docket-settings",
+ "docket-vocab",
  "ds-helpers",
  "ds-settings 0.1.0",
  "keycap-client",
+ "porter-capability",
  "porter-core",
+ "porter-ids",
  "porter-infer",
+ "porter-sheet",
+ "porter-tailnet",
+ "porter-tailscale",
  "regex",
  "serde_json",
  "toml",
@@ -1686,6 +1730,9 @@ dependencies = [
  "porter-dbus",
  "porter-engines",
  "porter-engines-install",
+ "porter-tailnet",
+ "porter-tailscale",
+ "porter-wire",
  "serde_json",
  "thiserror 2.0.21",
  "tokio",
@@ -1718,6 +1765,7 @@ dependencies = [
  "ds-lint",
  "ds-settings 0.1.0",
  "image",
+ "porter-capability",
  "porter-client",
  "porter-core",
  "porter-dbus",
@@ -2120,17 +2168,21 @@ name = "docket-core"
 version = "0.1.0"
 dependencies = [
  "almanac-core",
- "bulkhead",
- "chrono",
- "cua-action",
+ "companion-model",
+ "docket-manifest",
+ "docket-permissions-core",
+ "docket-vocab",
+ "iso_currency",
  "model-provider",
+ "porter-capability",
  "porter-core",
+ "porter-ids",
  "porter-infer",
  "prov",
+ "rust_decimal",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
- "url",
 ]
 
 [[package]]
@@ -2138,8 +2190,14 @@ name = "docket-dbus"
 version = "0.1.0"
 dependencies = [
  "docket-core",
+ "docket-manifest",
+ "docket-vocab",
+ "docket-wire",
+ "porter-capability",
  "porter-core",
  "porter-dbus",
+ "porter-match",
+ "porter-wire",
  "prov",
  "serde",
  "serde_json",
@@ -2148,11 +2206,56 @@ dependencies = [
 ]
 
 [[package]]
+name = "docket-gate-wire"
+version = "0.1.0"
+dependencies = [
+ "cua-action",
+ "docket-core",
+ "porter-core",
+ "prov",
+ "serde",
+]
+
+[[package]]
+name = "docket-manifest"
+version = "0.1.0"
+dependencies = [
+ "almanac-core",
+ "docket-vocab",
+ "porter-core",
+ "prov",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "url",
+]
+
+[[package]]
+name = "docket-permissions-core"
+version = "0.1.0"
+dependencies = [
+ "bulkhead",
+ "docket-manifest",
+ "docket-vocab",
+ "porter-capability",
+ "porter-core",
+ "porter-ids",
+ "prov",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "url",
+]
+
+[[package]]
 name = "docket-provider"
 version = "0.1.0"
 dependencies = [
  "docket-core",
  "docket-dbus",
+ "docket-manifest",
+ "docket-vocab",
+ "docket-wire",
  "futures-util",
  "prov",
  "serde",
@@ -2167,8 +2270,11 @@ version = "0.1.0"
 dependencies = [
  "agents-core",
  "docket-core",
+ "docket-permissions-core",
  "docket-store",
- "porter-core",
+ "docket-vocab",
+ "model-provider",
+ "rust_decimal",
  "serde",
  "thiserror 2.0.21",
  "toml",
@@ -2180,9 +2286,39 @@ name = "docket-store"
 version = "0.1.0"
 dependencies = [
  "atomic-write-file",
- "docket-core",
+ "docket-vocab",
  "futures-util",
  "prov",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "docket-vocab"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "porter-core",
+ "porter-ids",
+ "prov",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "docket-wire"
+version = "0.1.0"
+dependencies = [
+ "almanac-core",
+ "companion-model",
+ "docket-core",
+ "docket-gate-wire",
+ "docket-manifest",
+ "docket-permissions-core",
+ "docket-vocab",
+ "porter-core",
+ "porter-ids",
+ "prov",
+ "serde",
  "thiserror 2.0.21",
 ]
 
@@ -2312,13 +2448,13 @@ dependencies = [
 [[package]]
 name = "ds-extensions"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f#515c104bdb852740d6a10397e0e75f6cd3105d2f"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba#ccced9314a43b4349755a1e4cc0b005d58c2b4ba"
 dependencies = [
  "bayonet",
  "ds-core",
  "ds-helpers",
- "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f)",
- "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f)",
+ "ds-settings 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba)",
+ "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba)",
  "serde",
  "thiserror 2.0.21",
 ]
@@ -2399,7 +2535,7 @@ dependencies = [
 [[package]]
 name = "ds-peer"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f#515c104bdb852740d6a10397e0e75f6cd3105d2f"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba#ccced9314a43b4349755a1e4cc0b005d58c2b4ba"
 dependencies = [
  "futures-timer",
  "thiserror 2.0.21",
@@ -2429,13 +2565,13 @@ dependencies = [
 [[package]]
 name = "ds-settings"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f#515c104bdb852740d6a10397e0e75f6cd3105d2f"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba#ccced9314a43b4349755a1e4cc0b005d58c2b4ba"
 dependencies = [
  "ds-core",
  "ds-helpers",
- "ds-peer 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f)",
- "ds-settings-derive 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f)",
- "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f)",
+ "ds-peer 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba)",
+ "ds-settings-derive 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba)",
+ "ds-style 0.1.0 (git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba)",
  "futures-timer",
  "notify",
  "objc2-core-foundation",
@@ -2458,7 +2594,7 @@ dependencies = [
 [[package]]
 name = "ds-settings-derive"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f#515c104bdb852740d6a10397e0e75f6cd3105d2f"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba#ccced9314a43b4349755a1e4cc0b005d58c2b4ba"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2480,7 +2616,7 @@ dependencies = [
 [[package]]
 name = "ds-style"
 version = "0.1.0"
-source = "git+https://github.com/PoHsuanLai/quire.git?rev=515c104bdb852740d6a10397e0e75f6cd3105d2f#515c104bdb852740d6a10397e0e75f6cd3105d2f"
+source = "git+https://github.com/PoHsuanLai/quire.git?rev=ccced9314a43b4349755a1e4cc0b005d58c2b4ba#ccced9314a43b4349755a1e4cc0b005d58c2b4ba"
 dependencies = [
  "ds-core",
  "ds-core-derive",
@@ -2946,6 +3082,18 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "r-efi 5.3.0",
+ "wasip2",
+]
+
+[[package]]
+name = "getrandom"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
@@ -2953,8 +3101,8 @@ dependencies = [
  "cfg-if",
  "js-sys",
  "libc",
- "r-efi",
- "rand_core",
+ "r-efi 6.0.0",
+ "rand_core 0.10.1",
  "wasm-bindgen",
 ]
 
@@ -3541,6 +3689,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a6cb138bb79a146c1bd460005623e142ef0181e3d0219cb493e02f7d08a35695"
 
 [[package]]
+name = "iso_country"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20633e788d3948ea7336861fdb09ec247f5dae4267e8f0743fa97de26c28624d"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
+name = "iso_currency"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52d721074ff687a7ac523217a2bedb8277ac81d83dc10216ffc2a19128ca3dd5"
+dependencies = [
+ "iso_country",
+ "proc-macro2",
+ "quote",
+ "serde",
+]
+
+[[package]]
 name = "itertools"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4055,6 +4224,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51cdaa5abc885e2d606e6985281ace220778bde190be20aab1ec2346ed8bd1fa"
 
 [[package]]
+name = "lazy_static"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
+
+[[package]]
 name = "lebe"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4353,6 +4528,8 @@ dependencies = [
  "base64 0.22.1",
  "cua-action",
  "genai-names",
+ "iso_currency",
+ "rust_decimal",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -5247,13 +5424,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "porter-capability"
+version = "0.1.0"
+dependencies = [
+ "porter-ids",
+ "serde",
+]
+
+[[package]]
 name = "porter-client"
 version = "0.1.0"
 dependencies = [
+ "porter-capability",
  "porter-core",
  "porter-dbus",
  "porter-fs",
+ "porter-ids",
  "porter-infer",
+ "porter-match",
+ "porter-tailnet",
+ "porter-tailscale",
+ "porter-wire",
  "rustix",
  "serde",
  "serde_json",
@@ -5267,9 +5458,9 @@ dependencies = [
 name = "porter-core"
 version = "0.1.0"
 dependencies = [
- "chrono",
  "peephole-core 0.1.11",
- "percent-encoding",
+ "porter-capability",
+ "porter-ids",
  "secrecy",
  "serde",
  "serde_json",
@@ -5293,6 +5484,10 @@ dependencies = [
  "peephole-bus 0.1.11",
  "peephole-core 0.1.11",
  "porter-core",
+ "porter-ids",
+ "porter-match",
+ "porter-tailscale",
+ "porter-wire",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -5316,10 +5511,10 @@ name = "porter-engines-install"
 version = "0.1.0"
 dependencies = [
  "flate2",
- "porter-core",
  "porter-engines",
  "porter-http",
  "porter-http-reqwest",
+ "porter-ids",
  "rustix",
  "sha2 0.10.9",
  "tar",
@@ -5338,6 +5533,7 @@ dependencies = [
  "http",
  "httpdate",
  "porter-core",
+ "porter-ids",
  "thiserror 2.0.21",
 ]
 
@@ -5345,11 +5541,21 @@ dependencies = [
 name = "porter-http-reqwest"
 version = "0.1.0"
 dependencies = [
- "porter-core",
  "porter-http",
+ "porter-ids",
  "reqwest",
  "rustls",
  "tokio",
+]
+
+[[package]]
+name = "porter-ids"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "percent-encoding",
+ "serde",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -5358,20 +5564,83 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "cua-action",
+ "model-provider",
+ "porter-capability",
  "porter-core",
+ "porter-ids",
+ "porter-match",
+ "rust_decimal",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
 ]
 
 [[package]]
+name = "porter-match"
+version = "0.1.0"
+dependencies = [
+ "porter-capability",
+ "porter-ids",
+ "serde",
+]
+
+[[package]]
 name = "porter-provider"
 version = "0.1.0"
 dependencies = [
+ "porter-capability",
  "porter-core",
+ "porter-ids",
+ "porter-match",
+ "porter-sheet",
  "serde",
  "thiserror 2.0.21",
  "toml",
+]
+
+[[package]]
+name = "porter-sheet"
+version = "0.1.0"
+dependencies = [
+ "porter-capability",
+ "porter-core",
+ "porter-ids",
+ "porter-tailscale",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "porter-tailnet"
+version = "0.1.0"
+dependencies = [
+ "porter-ids",
+ "porter-tailscale",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "porter-tailscale"
+version = "0.1.0"
+dependencies = [
+ "porter-ids",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "porter-wire"
+version = "0.1.0"
+dependencies = [
+ "porter-capability",
+ "porter-core",
+ "porter-match",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
 ]
 
 [[package]]
@@ -5383,6 +5652,15 @@ dependencies = [
  "serde_core",
  "writeable",
  "zerovec",
+]
+
+[[package]]
+name = "ppv-lite86"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85eae3c4ed2f50dcfe72643da4befc30deadb458a9b590d720cde2f2b1e97da9"
+dependencies = [
+ "zerocopy",
 ]
 
 [[package]]
@@ -5443,7 +5721,7 @@ dependencies = [
  "chacha20",
  "core_detect",
  "num-traits",
- "rand",
+ "rand 0.10.3",
  "rand_xorshift",
  "regex-syntax",
  "unarray",
@@ -5453,7 +5731,9 @@ dependencies = [
 name = "prov"
 version = "0.1.0"
 dependencies = [
+ "porter-capability",
  "porter-core",
+ "porter-ids",
  "serde",
  "thiserror 2.0.21",
 ]
@@ -5549,7 +5829,7 @@ dependencies = [
  "bytes",
  "getrandom 0.4.3",
  "lru-slab",
- "rand",
+ "rand 0.10.3",
  "rand_pcg",
  "ring",
  "rustc-hash 2.1.3",
@@ -5594,9 +5874,36 @@ dependencies = [
 
 [[package]]
 name = "r-efi"
+version = "5.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
+
+[[package]]
+name = "r-efi"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
+
+[[package]]
+name = "rand"
+version = "0.8.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e058c7de0b26af77780c769414d6257830bb240f3c38477dbc2c16e5f54d6d4c"
+dependencies = [
+ "libc",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "rand"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9ef1d0d795eb7d84685bca4f72f3649f064e6641543d3a8c415898726a57b41"
+dependencies = [
+ "rand_chacha 0.9.0",
+ "rand_core 0.9.5",
+]
 
 [[package]]
 name = "rand"
@@ -5606,7 +5913,45 @@ checksum = "65c9fb96cbc91e3478eaae79a69fcd3f1ae4ad052e471fe6732fff548984b4af"
 dependencies = [
  "chacha20",
  "getrandom 0.4.3",
- "rand_core",
+ "rand_core 0.10.1",
+]
+
+[[package]]
+name = "rand_chacha"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
+dependencies = [
+ "ppv-lite86",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "rand_chacha"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3022b5f1df60f26e1ffddd6c66e8aa15de382ae63b3a0c1bfc0e4d3e3f325cb"
+dependencies = [
+ "ppv-lite86",
+ "rand_core 0.9.5",
+]
+
+[[package]]
+name = "rand_core"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
+dependencies = [
+ "getrandom 0.2.17",
+]
+
+[[package]]
+name = "rand_core"
+version = "0.9.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76afc826de14238e6e8c374ddcc1fa19e374fd8dd986b0d2af0d02377261d83c"
+dependencies = [
+ "getrandom 0.3.4",
 ]
 
 [[package]]
@@ -5621,7 +5966,7 @@ version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "caa0f4137e1c0a72f4c651489402276c8e8e1cf081f3b0ba156d2cbeef09e86a"
 dependencies = [
- "rand_core",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -5630,7 +5975,7 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60aa6af80be32871323012e02e6e65f8a7cc7890931ae421d217ad8fe0df2ccf"
 dependencies = [
- "rand_core",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -5882,6 +6227,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1964b10c76125c36f8afe190065a4bf9a87bf324842c05701330bba9f1cacbb"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "rust_decimal"
+version = "1.43.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7653272e75dcac41dc199fbea6f5797633994fafd339943c06c9af16bf29cd3a"
+dependencies = [
+ "arrayvec",
+ "borsh",
+ "bytes",
+ "num-traits",
+ "rand 0.8.8",
+ "rand 0.9.5",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -7367,6 +7729,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
 
 [[package]]
+name = "wasip2"
+version = "1.0.4+wasi-0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b67efb37e106e55ce722a510d6b5f9c17f083e5fc79afc2badeb12cc313d9487"
+dependencies = [
+ "wit-bindgen",
+]
+
+[[package]]
 name = "wasm-bindgen"
 version = "0.2.129"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7375,6 +7746,7 @@ dependencies = [
  "cfg-if",
  "once_cell",
  "rustversion",
+ "serde",
  "wasm-bindgen-macro",
  "wasm-bindgen-shared",
 ]
@@ -8519,6 +8891,12 @@ checksum = "23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "wit-bindgen"
+version = "0.57.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
 name = "wl-clipboard-rs"

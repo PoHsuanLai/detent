@@ -2,7 +2,8 @@
 
 use crate::support::{World, entity, key, text};
 use detent_model::{ASSISTANT_MODEL_SLUG, Notice, PageSlug};
-use docket_core::{AppRefusal, Preview, UndoFault, Undoable, Value};
+use docket_core::{AppRefusal, Preview, UndoFault, Undoable};
+use docket_vocab::Value;
 use prov::Integrity;
 
 const MAGNIFICATION: &str = "dock.magnification";
@@ -348,7 +349,7 @@ async fn undo_does_not_overwrite_a_change_made_since() {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_token_settings_never_minted_is_gone() {
     let world = world("undo-stranger").await;
-    let stranger = docket_core::UndoToken::parse("mail-undo-7").expect("a token");
+    let stranger = docket_vocab::UndoToken::parse("mail-undo-7").expect("a token");
     assert_eq!(world.undo(&stranger).await, Err(UndoFault::Gone));
 }
 
@@ -391,7 +392,7 @@ async fn a_dry_run_shows_the_change_and_makes_none() {
 #[tokio::test(flavor = "multi_thread")]
 async fn suggestions_offer_pages_every_key_and_only_the_settable_ones_to_set() {
     let world = world("suggest").await;
-    let keys = |things: Vec<docket_core::EntityRef>| -> Vec<String> {
+    let keys = |things: Vec<docket_vocab::EntityRef>| -> Vec<String> {
         things
             .iter()
             .map(|t| t.id.key.as_str().to_owned())

@@ -2,7 +2,7 @@
 //! value the change gave it. In memory only: an undo after the app restarted is `Gone`.
 
 use detent_model::ConfigFile;
-use docket_core::UndoToken;
+use docket_vocab::UndoToken;
 use ds_settings::schema::KeyPath;
 use std::collections::BTreeMap;
 
@@ -99,7 +99,7 @@ mod tests {
     #[test]
     fn a_token_the_journal_did_not_mint_finds_nothing() {
         let journal = Journal::default();
-        let stranger = docket_core::UndoToken::parse("mail-undo-1").expect("a token");
+        let stranger = docket_vocab::UndoToken::parse("mail-undo-1").expect("a token");
         assert_eq!(journal.find(&stranger), None);
     }
 }

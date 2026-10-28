@@ -1,7 +1,8 @@
 //! The actions of installed apps a corner may run: read from the apps' intents manifests, only
 //! those that need nothing from the person, grouped by app for a searchable list.
 
-use docket_core::{AgentReach, Manifest, ParamNeed, TargetKind, action_prefix, validate};
+use docket_manifest::{AgentReach, Manifest, ParamNeed, TargetKind, validate};
+use docket_vocab::action_prefix;
 
 /// One action of an installed app that a corner can run as it is.
 #[derive(Debug, Clone, PartialEq, Eq)]

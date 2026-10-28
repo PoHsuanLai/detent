@@ -72,7 +72,7 @@ fn items_of(
         let heading = (!accounts.is_empty()).then(|| {
             ListItem::heading(
                 format!("group:{}", group.slug()),
-                rsx! { SectionHeader { title: group.display_name().to_owned() } },
+                rsx! { SectionHeader { title: crate::copy::accounts::group_heading(group).to_owned() } },
             )
         });
         let rows = accounts

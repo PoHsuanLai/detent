@@ -8,7 +8,8 @@ use crate::page::PageSlug;
 use crate::page_kind::PageKind;
 use ds_settings::schema::PageTable;
 use ds_settings::target::{ExtensionId, SettingsTarget};
-use porter_core::{AccountId, object_segment};
+use porter_core::AccountId;
+use porter_ids::object_segment;
 
 /// What the window does for a target.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -26,7 +27,7 @@ pub enum Arrival {
 /// not an account's gives the list.
 fn account_of(id: &str) -> AccountTarget {
     AccountId::parse(id).map_or(AccountTarget::List, |id| {
-        AccountTarget::Detail(AccountSegment(object_segment(&id)))
+        AccountTarget::Detail(AccountSegment(object_segment(id.as_str())))
     })
 }
 

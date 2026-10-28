@@ -5,9 +5,9 @@ use super::{
     ComputersReason, ComputersState as State, computers_step,
 };
 use crate::Absence;
-use porter_core::NodeId;
-use porter_core::lending::{Approval, CandidateModel, ComputerCandidate, GuestAnswer};
 use porter_infer::{ComputerName, PlaceId, PlaceKind, PlaceModel, PlaceRow, PlaceState};
+use porter_tailnet::{Approval, CandidateModel, ComputerCandidate, GuestAnswer};
+use porter_tailscale::NodeId;
 
 fn node(text: &str) -> NodeId {
     NodeId::parse(text).expect("a node id")
@@ -61,7 +61,7 @@ fn only_the_persons_own_computers_make_rows() {
             state,
         )
         .with_models(vec![PlaceModel {
-            id: porter_core::ModelId::parse("qwen").expect("a model id"),
+            id: porter_capability::ModelId::parse("qwen").expect("a model id"),
             name: "Qwen".to_owned(),
             engine: None,
             takes: Default::default(),

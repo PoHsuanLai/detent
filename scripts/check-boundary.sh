@@ -56,7 +56,7 @@ done
 # refuses a use of the files, the services, porter, almanac, docket or the bus in a view
 # (ARCHITECTURE.md "The fence"). The EDGES row below is the exact list of what it may name.
 DIRECT=(
-  "detent-ui: detent-files detent-system porter-client porter-core porter-dbus porter-infer porter-provider almanac-core docket-core docket-settings docket-dbus docket-provider docket-agents agents-core zbus"
+  "detent-ui: detent-files detent-system porter-client porter-core porter-dbus porter-infer porter-provider almanac-core docket-core docket-settings docket-dbus docket-provider docket-agents agents-core porter-ids porter-capability porter-match porter-wire porter-sheet porter-tailnet porter-tailscale docket-vocab docket-manifest docket-wire docket-gate-wire docket-permissions-core companion-model zbus"
 )
 for rule in "${DIRECT[@]}"; do
   crate="${rule%%:*}"
@@ -82,11 +82,11 @@ done
 EDGES=(
   "detent-testkit:"
   "detent-callers: ds-settings"
-  "detent-model: almanac-core docket-core docket-settings ds-helpers ds-settings porter-core porter-infer"
+  "detent-model: almanac-core docket-core docket-manifest docket-settings docket-vocab ds-helpers ds-settings porter-capability porter-core porter-ids porter-infer porter-sheet porter-tailnet porter-tailscale"
   "detent-files: agents-core detent-model docket-agents docket-settings ds-extensions ds-helpers ds-settings"
   "detent-client: detent-files detent-model detent-system ds-settings porter-infer porter-provider"
-  "detent-intents: detent-callers detent-client detent-files detent-model docket-core docket-dbus docket-provider ds-peer ds-settings porter-core prov"
-  "detent-system: almanac-core anyview-core anyview-fs anyview-image anyview-platform casement-protocols desktop-client detent-callers detent-files detent-model ds-peer ds-settings porter-client porter-core porter-daemon porter-dbus porter-engines porter-engines-install"
+  "detent-intents: detent-callers detent-client detent-files detent-model docket-core docket-dbus docket-manifest docket-provider docket-vocab docket-wire ds-peer ds-settings porter-core porter-ids prov"
+  "detent-system: almanac-core anyview-core anyview-fs anyview-image anyview-platform casement-protocols desktop-client detent-callers detent-files detent-model ds-peer ds-settings porter-client porter-core porter-daemon porter-dbus porter-engines porter-engines-install porter-tailnet porter-tailscale porter-wire"
   "detent-ui: detent-client detent-model ds ds-blitz ds-helpers ds-lint ds-settings"
   "detent: detent-callers detent-client detent-files detent-intents detent-model detent-ui ds-blitz ds-settings"
 )

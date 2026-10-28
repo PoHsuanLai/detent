@@ -179,7 +179,7 @@ mod offers {
     use crate::assistants::{PlaceRef, offers_for};
     use crate::picker::{Busy, ChoiceSection, KindRows, ModelRow, Ready};
     use ds_settings::schema::{KeyPath, WordLabels};
-    use porter_core::sheet::ProviderGroup;
+    use porter_sheet::ProviderGroup;
     use std::collections::BTreeMap;
 
     fn picker(words: &[&str]) -> Ready {

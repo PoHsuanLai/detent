@@ -14,7 +14,7 @@ use super::spend::{AccountSpend, Cents};
 use crate::picker::Described;
 use ds_settings::schema::{KeyKind, KeyPath};
 use porter_core::SignInWay;
-use porter_core::sheet::ProviderGroup;
+use porter_sheet::ProviderGroup;
 use std::collections::BTreeSet;
 
 impl Account {

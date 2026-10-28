@@ -3,7 +3,8 @@
 
 use crate::answer::{not_found, refusal};
 use detent_model::PageSlug;
-use docket_core::{AppRefusal, Invocation, ParamName, TargetValue, Value};
+use docket_core::{AppRefusal, Invocation};
+use docket_vocab::{ParamName, TargetValue, Value};
 use ds_settings::schema::KeyPath;
 use ds_settings::target::SettingsTarget;
 use porter_core::AppName;

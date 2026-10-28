@@ -6,7 +6,8 @@ use super::{
     ServerFault, ServerForm, ServerModel, ServerModels, ServerPhase, ServerReach, ServerRefusal,
     computers_step,
 };
-use porter_core::{ModelId, SecretText};
+use porter_capability::ModelId;
+use porter_core::SecretText;
 use std::io;
 use std::path::PathBuf;
 

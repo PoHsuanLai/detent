@@ -1,7 +1,8 @@
 //! What the provider says back: refusals in words, outcomes, labels and entity references.
 
 use detent_model::KeyEntry;
-use docket_core::{AppRefusal, EntityRef, FailText, Follow, LabelText, Outcome, Preview, Undoable};
+use docket_core::{AppRefusal, FailText, Follow, Outcome, Preview, Undoable};
+use docket_vocab::{EntityRef, LabelText};
 use porter_core::AppName;
 use prov::{Confidentiality, EntityId, EntityKey, EntityKind, Integrity, Label, Labelled, Source};
 use std::collections::BTreeSet;

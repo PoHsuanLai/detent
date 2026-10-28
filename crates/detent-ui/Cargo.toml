@@ -23,6 +23,7 @@ ds-settings = { workspace = true, features = ["dioxus", "live", "tokio"] }
 tokio = { workspace = true }
 
 [dev-dependencies]
+porter-capability = { workspace = true }
 # Fixtures: the in-memory links (the daemons' live settings modules among them: `FakeModules`) and
 # the test kit, and quire's harness. The tests that stand a service that is no live module up on a
 # private bus (the portal, running models, the engines, computers, memory, the sync service, and

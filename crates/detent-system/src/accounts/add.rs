@@ -7,7 +7,8 @@ use crate::deadline::{Deadline, answered, peer};
 use detent_callers::{ACCOUNTS_BUS, INFERENCE_BUS};
 use detent_model::{AccountKey, AddEnd};
 use porter_client::{Accounts, AiKeys, ClientError, TransportError};
-use porter_core::wire::{ParentWindow, ProviderHint, Refusal};
+use porter_core::ProviderHint;
+use porter_wire::{ParentWindow, Refusal};
 
 /// The bus's own word for a second sheet of a kind from the same app.
 const SHEET_OPEN: &str = "LimitsExceeded";

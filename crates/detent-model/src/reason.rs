@@ -27,7 +27,8 @@ impl Reason {
 #[cfg(test)]
 mod tests {
     use super::Reason;
-    use porter_core::{AccountId, ModelId};
+    use porter_capability::ModelId;
+    use porter_core::AccountId;
     use porter_infer::{Declined, DeclinedBecause, InferEvent, ModelRef, Why};
 
     fn model(name: &str) -> ModelRef {

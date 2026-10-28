@@ -14,8 +14,8 @@ use porter_client::{
     Accounts, ClientError, ComputerReach, ComputerReason, DbusTransport, NewComputer,
     NewComputerModel, TransportError,
 };
-use porter_core::lending::ComputerCandidate;
 use porter_dbus::{BusStream, InferenceProxy};
+use porter_tailnet::ComputerCandidate;
 use std::path::Path;
 
 /// Why a call was refused, as the pane knows it.

@@ -5,7 +5,8 @@
 use crate::Described;
 use crate::picker::Ready;
 use ds_settings::schema::ChoicePlace;
-use porter_core::{ModelId, SecretText};
+use porter_capability::ModelId;
+use porter_core::SecretText;
 use std::io;
 use std::path::{Path, PathBuf};
 

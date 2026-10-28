@@ -2,7 +2,8 @@
 //! segment accountd names it by.
 
 use super::model::{AccountKey, AccountsPane};
-use porter_core::{AccountId, object_segment};
+use porter_core::AccountId;
+use porter_ids::object_segment;
 
 /// The object path every account lives under (`org.quire.Accounts1`'s `account/<segment>`).
 /// accountd's `porter_dbus::account_path` is the writer of this; detent-model may not depend
@@ -46,7 +47,8 @@ impl AccountsPane {
         self.accounts
             .iter()
             .find(|account| {
-                AccountId::parse(&account.key.0).is_ok_and(|id| object_segment(&id) == segment.0)
+                AccountId::parse(&account.key.0)
+                    .is_ok_and(|id| object_segment(id.as_str()) == segment.0)
             })
             .map(|account| account.key.clone())
     }

@@ -5,7 +5,7 @@
 use super::model::{AccountKey, AccountProvider, AccountStatus, AccountsPane};
 use super::module::ModuleId;
 use crate::assistant_model::{SetupAction, SetupAvailability};
-use porter_core::sheet::ProviderGroup;
+use porter_sheet::ProviderGroup;
 
 /// The step's slug: what `--page` and `open-page` take.
 pub const ACCOUNTS_SETUP_SLUG: &str = "accounts-setup";

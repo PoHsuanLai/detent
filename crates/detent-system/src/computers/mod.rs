@@ -13,8 +13,10 @@ use crate::ticks::Ticks;
 use detent_model::{
     Absence, ComputersFound, ComputersReason, ServerDraft, ServerFault, ServerModel, Work,
 };
-use porter_client::{ComputerName, GuestAnswer, NodeId};
-use porter_core::lending::ComputerCandidate;
+use porter_client::ComputerName;
+use porter_tailnet::ComputerCandidate;
+use porter_tailnet::GuestAnswer;
+use porter_tailscale::NodeId;
 use std::fmt::Debug;
 
 /// One change to the computers.

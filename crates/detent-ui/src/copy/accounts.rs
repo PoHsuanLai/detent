@@ -1,7 +1,7 @@
 //! The accounts pane's words: how an account stands, how it signs in, what needs the person, what
 //! an app is allowed, and the question before an account is removed.
 
-use detent_model::external::SignInWay;
+use detent_model::external::{ProviderGroup, SignInWay};
 use detent_model::{
     Account, AccountPermission, AccountService, AccountStatus, Ask, Attention, CalendarDay,
     GrantDecision, GrantScope, RemovalQuestion, humanize,
@@ -33,7 +33,7 @@ pub(crate) fn reauth_help(way: Option<SignInWay>) -> &'static str {
         Some(SignInWay::Agent) => {
             "Asks the assistant to sign itself in, which needs its app to be running."
         }
-        Some(SignInWay::Outside | SignInWay::Nothing) | None => "Sign in to the account again.",
+        Some(SignInWay::Outside | SignInWay::Nothing | _) | None => "Sign in to the account again.",
     }
 }
 
@@ -45,7 +45,17 @@ pub(crate) fn sign_in_words(way: Option<SignInWay>) -> Option<&'static str> {
         SignInWay::Password => Some("Signs in with a password"),
         SignInWay::Key => Some("Signs in with a key"),
         SignInWay::Agent => Some("Signs in inside its own app"),
-        SignInWay::Outside | SignInWay::Nothing => None,
+        SignInWay::Outside | SignInWay::Nothing | _ => None,
+    }
+}
+
+/// The heading over a group of accounts in the list.
+pub(crate) fn group_heading(group: ProviderGroup) -> &'static str {
+    match group {
+        ProviderGroup::Internet => "Internet Accounts",
+        ProviderGroup::Intelligence => "Intelligence",
+        ProviderGroup::Agent => "Assistants",
+        _ => "Other Accounts",
     }
 }
 

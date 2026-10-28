@@ -9,7 +9,7 @@ use super::spend::AccountSpend;
 use crate::Absence;
 use ds_settings::schema::KeyPath;
 use porter_core::SignInWay;
-use porter_core::sheet::ProviderGroup;
+use porter_sheet::ProviderGroup;
 
 /// Before an id in the key of an account that is syncd's: an id never holds a `/`, so the same
 /// id in two modules is two accounts.

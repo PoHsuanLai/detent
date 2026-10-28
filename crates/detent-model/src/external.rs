@@ -9,9 +9,10 @@ pub use docket_settings::{
     AddFault, AgentChoice, AgentRow, Agents, ChoiceFault, CloudAccount, CloudAllowed, ModelChoice,
     NewAgent, OwnComputer, PlaceKind, PlaceName, Toggle, kind_label,
 };
-pub use porter_core::lending::{Approval, ComputerCandidate, GuestAnswer, GuestRow, RowState};
-pub use porter_core::sheet::ProviderGroup;
-pub use porter_core::{AccountId, ModelId, SecretText, SignInWay};
+pub use porter_capability::ModelId;
+pub use porter_core::{AccountId, SecretText, SignInWay};
 pub use porter_infer::{ComputerName, Declined, DeclinedBecause, InferRefusal, ModelRef, Why};
+pub use porter_sheet::ProviderGroup;
+pub use porter_tailnet::{Approval, ComputerCandidate, GuestAnswer, GuestRow, RowState};
 /// The value of a settings key as the files hold it.
 pub use toml;
