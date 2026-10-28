@@ -61,9 +61,7 @@ impl Account {
 
 /// The group a `group` row's word names; none for a word this build does not know.
 fn group_of(word: &str) -> Option<ProviderGroup> {
-    ProviderGroup::ALL
-        .into_iter()
-        .find(|group| group.slug() == word)
+    porter_ids::word::from_word(word)
 }
 
 fn account_of<'a>(

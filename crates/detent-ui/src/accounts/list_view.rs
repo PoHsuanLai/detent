@@ -71,7 +71,7 @@ fn items_of(
             .collect();
         let heading = (!accounts.is_empty()).then(|| {
             ListItem::heading(
-                format!("group:{}", group.slug()),
+                format!("group:{}", detent_model::external::word(&group)),
                 rsx! { SectionHeader { title: crate::copy::accounts::group_heading(group).to_owned() } },
             )
         });

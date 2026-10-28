@@ -11,6 +11,7 @@ pub use docket_settings::{
 };
 pub use porter_capability::ModelId;
 pub use porter_core::{AccountId, SecretText, SignInWay};
+pub use porter_ids::word::word;
 pub use porter_infer::{ComputerName, Declined, DeclinedBecause, InferRefusal, ModelRef, Why};
 pub use porter_sheet::ProviderGroup;
 pub use porter_tailnet::{Approval, ComputerCandidate, GuestAnswer, GuestRow, RowState};

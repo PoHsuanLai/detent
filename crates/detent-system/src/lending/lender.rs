@@ -8,7 +8,7 @@ use detent_model::{Existing, LendFailure, Work};
 use ds_peer::within;
 use porter_client::{
     LendingConfig, LendingError, LendingState, SessionUnits, TailnetLending, UnitFailure,
-    UnitManager, UnitName,
+    UnitManager,
 };
 use std::fmt::Debug;
 use std::path::Path;
@@ -69,7 +69,7 @@ impl UnitManager for NoUnits {
         Err(UnitFailure(NO_SERVICES.to_owned()))
     }
 
-    async fn restart(&self, _unit: UnitName) -> Result<(), UnitFailure> {
+    async fn restart(&self, _unit: &'static str) -> Result<(), UnitFailure> {
         Err(UnitFailure(NO_SERVICES.to_owned()))
     }
 }

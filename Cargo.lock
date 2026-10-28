@@ -1607,7 +1607,7 @@ version = "0.1.0"
 dependencies = [
  "detent-testkit",
  "ds-settings 0.1.0",
- "peephole-bus 0.1.9",
+ "peephole-bus",
  "rustix",
  "thiserror 2.0.21",
  "zbus",
@@ -5119,37 +5119,13 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "peephole"
-version = "0.1.9"
-source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.9#f22e99b447d1ef7f84d81ddce6ceb614088ee0ef"
-dependencies = [
- "nix",
- "peephole-core 0.1.9",
- "rustix",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "peephole"
 version = "0.1.11"
 source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.11#06a97c105d833b07a37feb48a16dde49ef4d8bc0"
 dependencies = [
  "nix",
- "peephole-core 0.1.11",
+ "peephole-core",
  "rustix",
  "thiserror 2.0.21",
-]
-
-[[package]]
-name = "peephole-bus"
-version = "0.1.9"
-source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.9#f22e99b447d1ef7f84d81ddce6ceb614088ee0ef"
-dependencies = [
- "futures-timer",
- "peephole 0.1.9",
- "peephole-core 0.1.9",
- "thiserror 2.0.21",
- "tokio",
- "zbus",
 ]
 
 [[package]]
@@ -5158,21 +5134,11 @@ version = "0.1.11"
 source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.11#06a97c105d833b07a37feb48a16dde49ef4d8bc0"
 dependencies = [
  "futures-timer",
- "peephole 0.1.11",
- "peephole-core 0.1.11",
+ "peephole",
+ "peephole-core",
  "thiserror 2.0.21",
  "tokio",
  "zbus",
-]
-
-[[package]]
-name = "peephole-core"
-version = "0.1.9"
-source = "git+https://github.com/PoHsuanLai/peephole?tag=v0.1.9#f22e99b447d1ef7f84d81ddce6ceb614088ee0ef"
-dependencies = [
- "serde",
- "thiserror 2.0.21",
- "toml",
 ]
 
 [[package]]
@@ -5458,7 +5424,7 @@ dependencies = [
 name = "porter-core"
 version = "0.1.0"
 dependencies = [
- "peephole-core 0.1.11",
+ "peephole-core",
  "porter-capability",
  "porter-ids",
  "secrecy",
@@ -5480,9 +5446,9 @@ dependencies = [
 name = "porter-dbus"
 version = "0.1.0"
 dependencies = [
- "peephole 0.1.11",
- "peephole-bus 0.1.11",
- "peephole-core 0.1.11",
+ "peephole",
+ "peephole-bus",
+ "peephole-core",
  "porter-core",
  "porter-ids",
  "porter-match",

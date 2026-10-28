@@ -1,7 +1,7 @@
 //! The lending switch's world: a shipped file in a scratch folder, and a service manager that
 //! writes down what it was asked and never touches the real one.
 
-use porter_client::{UnitFailure, UnitManager, UnitName};
+use porter_client::{UnitFailure, UnitManager};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -37,8 +37,8 @@ impl UnitManager for Units {
         Ok(())
     }
 
-    async fn restart(&self, unit: UnitName) -> Result<(), UnitFailure> {
-        self.note(format!("restart {}", unit.as_str()));
+    async fn restart(&self, unit: &'static str) -> Result<(), UnitFailure> {
+        self.note(format!("restart {}", unit));
         if self.refuse_restart.load(Ordering::SeqCst) {
             Err(UnitFailure("refused by the test".to_owned()))
         } else {

@@ -9,7 +9,7 @@ use detent_model::Absence;
 use ds_peer::within;
 use ds_settings::live::{Changes, LiveClient, LiveError, OwnerCheck, SenderName, Verdict};
 use ds_settings::schema::KeyPath;
-use porter_client::{ClientError, SpacesError, TransportError};
+use porter_client::{CallFailure, ClientError, SpacesError, TransportError};
 use porter_dbus::{BusFailure, classify};
 use zbus::Connection;
 use zbus::fdo::{DBusProxy, NameOwnerChangedStream};
@@ -71,11 +71,20 @@ impl ToAbsence for ClientError {
     }
 }
 
+impl ToAbsence for CallFailure {
+    fn absence(&self) -> Absence {
+        match self {
+            CallFailure::Unreachable => Absence::NotRunning,
+            CallFailure::Denied(_) => Absence::NotPermitted,
+            _ => Absence::Failed,
+        }
+    }
+}
+
 impl ToAbsence for SpacesError {
     fn absence(&self) -> Absence {
         match self {
-            SpacesError::Unreachable => Absence::NotRunning,
-            SpacesError::Denied(_) => Absence::NotPermitted,
+            SpacesError::Bus(failure) => failure.absence(),
             _ => Absence::Failed,
         }
     }

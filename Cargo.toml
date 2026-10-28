@@ -115,7 +115,7 @@ keycap-client = { git = "https://github.com/PoHsuanLai/keycap", rev = "bc3d41754
 # NetworkManager and BlueZ zbus proxies, shared with sill.
 airwaves-nm = { git = "https://github.com/PoHsuanLai/airwaves", tag = "v0.1.0", default-features = false, features = ["tokio"] }
 airwaves-bluez = { git = "https://github.com/PoHsuanLai/airwaves", tag = "v0.1.0", default-features = false, features = ["tokio"] }
-peephole-bus = { git = "https://github.com/PoHsuanLai/peephole", tag = "v0.1.9", default-features = false, features = ["desktop", "tokio"] }
+peephole-bus = { git = "https://github.com/PoHsuanLai/peephole", tag = "v0.1.11", default-features = false, features = ["desktop", "tokio"] }
 
 # The person's own user id, to tell their rows file from someone else's (only behind `dev-callers`).
 rustix = { version = "1.1", default-features = false, features = ["std", "process"] }
