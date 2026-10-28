@@ -2,7 +2,7 @@
 //! be done, and how far a download has come. The window words them (`detent-ui`'s copy).
 
 use super::offer::{EngineOffer, EngineOfferInput, EngineRef, Replacing};
-use super::rows::{EngineWay, InstallScope};
+use super::rows::{EngineFailure, EngineWay, InstallScope};
 
 /// What the person may do about the offer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -57,8 +57,8 @@ pub enum EngineMatter {
     Ready,
     /// It did not work, and why.
     Failed {
-        /// The plain reason.
-        reason: String,
+        /// The reason.
+        reason: EngineFailure,
     },
 }
 
@@ -163,12 +163,7 @@ pub fn engine_brief(offer: &EngineOffer) -> Option<EngineBrief> {
                 EngineWay::Download { .. } | EngineWay::Folder => Some(EngineAction::TryAgain),
             },
             secondary: Some(EngineAction::NotNow),
-            ..plain(
-                engine,
-                EngineMatter::Failed {
-                    reason: reason.clone(),
-                },
-            )
+            ..plain(engine, EngineMatter::Failed { reason: *reason })
         },
     })
 }

@@ -7,7 +7,7 @@ use crate::support::Sandbox;
 use crate::support::desk::{Fake, nothing_installed};
 use crate::support::drive::{click, scroll_into_view};
 use crate::support::inferd::{Inferd, Policy};
-use detent_model::{ASSISTANT_MODEL_SLUG, EngineStanding, InstallScope, PageSlug};
+use detent_model::{ASSISTANT_MODEL_SLUG, EngineFailure, EngineStanding, InstallScope, PageSlug};
 use detent_ui::Opening;
 use ds_harness::{Harness, Input};
 use std::time::Duration;
@@ -141,7 +141,7 @@ fn a_failed_download_says_why_and_try_again_asks_again() {
     settle(&mut world.harness, "the sheet", |h| h.count(SHEET) == 1);
     click(&mut world.harness, GO);
     let mut rows = nothing_installed();
-    rows[1].standing = EngineStanding::Failed("The download didn't finish.".to_owned());
+    rows[1].standing = EngineStanding::Failed(EngineFailure::Offline);
     world.desk.show(rows);
     settle(&mut world.harness, "the failure", |h| {
         h.attr(SHEET, "data-engine-sheet").as_deref() == Some("failed")

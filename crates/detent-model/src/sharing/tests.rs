@@ -1,9 +1,9 @@
 //! The sharing switch's transitions.
 
-use super::{Existing, Sharing, SharingEffect, SharingInput, Way, sharing_step};
+use super::{Existing, LendFailure, Sharing, SharingEffect, SharingInput, Way, sharing_step};
 
-fn failed() -> Result<(), String> {
-    Err("It did not work.".to_owned())
+fn failed() -> Result<(), LendFailure> {
+    Err(LendFailure::CouldNotRestart)
 }
 
 type Case = (Sharing, SharingInput, Sharing, Vec<SharingEffect>);
@@ -45,7 +45,7 @@ fn the_transitions() {
             Sharing::Working(Way::On),
             SharingInput::Finished(failed()),
             Sharing::Idle,
-            vec![SharingEffect::Tell("It did not work.".to_owned())],
+            vec![SharingEffect::Tell(LendFailure::CouldNotRestart)],
         ),
         (
             Sharing::Working(Way::Off),
@@ -59,7 +59,7 @@ fn the_transitions() {
             Sharing::Idle,
             vec![
                 SharingEffect::Record(Way::Off),
-                SharingEffect::Tell("It did not work.".to_owned()),
+                SharingEffect::Tell(LendFailure::CouldNotRestart),
             ],
         ),
         // Presses that mean nothing now change nothing.

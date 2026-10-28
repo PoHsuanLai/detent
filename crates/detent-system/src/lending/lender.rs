@@ -4,26 +4,34 @@
 
 use crate::deadline::{Deadline, peer};
 use detent_files::ConfigHome;
-use detent_model::{Existing, Work};
+use detent_model::{Existing, LendFailure, Work};
 use ds_peer::within;
 use porter_client::{
-    LendingConfig, LendingState, SessionUnits, TailnetLending, UnitFailure, UnitManager, UnitName,
+    LendingConfig, LendingError, LendingState, SessionUnits, TailnetLending, UnitFailure,
+    UnitManager, UnitName,
 };
 use std::fmt::Debug;
 use std::path::Path;
 use std::sync::Arc;
 
-/// What the person reads when there is nowhere to keep the setting.
-const NO_HOME: &str = "There is no home folder to keep this setting in, so nothing was changed.";
-
-/// What the person reads when the computer's own services cannot be reached.
-const NO_SERVICES: &str = "This computer's services could not be reached, so nothing was changed.";
+/// What the log says when the computer's own services cannot be reached.
+const NO_SERVICES: &str = "the session's service manager could not be reached";
 
 /// The two things the switch does, and what is there before it does them.
 trait Lend: Debug + Send + Sync {
     fn existing(&self) -> Existing;
-    fn enable(&self) -> Work<'_, Result<(), String>>;
-    fn disable(&self) -> Work<'_, Result<(), String>>;
+    fn enable(&self) -> Work<'_, Result<(), LendFailure>>;
+    fn disable(&self) -> Work<'_, Result<(), LendFailure>>;
+}
+
+fn failure_of(error: LendingError) -> LendFailure {
+    match error {
+        LendingError::ShippedFileMissing => LendFailure::NotInstalled,
+        LendingError::CouldNotWrite(_) => LendFailure::CouldNotSave,
+        LendingError::ReloadFailed(_) => LendFailure::CouldNotReload,
+        LendingError::RestartFailed(_) => LendFailure::CouldNotRestart,
+        _ => LendFailure::CouldNotSave,
+    }
 }
 
 fn existing_of(state: LendingState) -> Existing {
@@ -43,12 +51,12 @@ impl<M: UnitManager + Debug + 'static> Lend for Over<M> {
         existing_of(self.0.state())
     }
 
-    fn enable(&self) -> Work<'_, Result<(), String>> {
-        Box::pin(async move { self.0.enable().await.map_err(|e| e.to_string()) })
+    fn enable(&self) -> Work<'_, Result<(), LendFailure>> {
+        Box::pin(async move { self.0.enable().await.map_err(failure_of) })
     }
 
-    fn disable(&self) -> Work<'_, Result<(), String>> {
-        Box::pin(async move { self.0.disable().await.map_err(|e| e.to_string()) })
+    fn disable(&self) -> Work<'_, Result<(), LendFailure>> {
+        Box::pin(async move { self.0.disable().await.map_err(failure_of) })
     }
 }
 
@@ -71,10 +79,10 @@ impl UnitManager for NoUnits {
 struct Session(LendingConfig);
 
 impl Session {
-    async fn lending(&self) -> Result<TailnetLending<SessionUnits>, String> {
+    async fn lending(&self) -> Result<TailnetLending<SessionUnits>, LendFailure> {
         let units = SessionUnits::session()
             .await
-            .map_err(|_| NO_SERVICES.to_owned())?;
+            .map_err(|_| LendFailure::NoServices)?;
         Ok(TailnetLending::new(self.0.clone(), units))
     }
 }
@@ -84,17 +92,17 @@ impl Lend for Session {
         existing_of(TailnetLending::new(self.0.clone(), NoUnits).state())
     }
 
-    fn enable(&self) -> Work<'_, Result<(), String>> {
+    fn enable(&self) -> Work<'_, Result<(), LendFailure>> {
         Box::pin(async move {
             let lending = self.lending().await?;
-            lending.enable().await.map_err(|e| e.to_string())
+            lending.enable().await.map_err(failure_of)
         })
     }
 
-    fn disable(&self) -> Work<'_, Result<(), String>> {
+    fn disable(&self) -> Work<'_, Result<(), LendFailure>> {
         Box::pin(async move {
             let lending = self.lending().await?;
-            lending.disable().await.map_err(|e| e.to_string())
+            lending.disable().await.map_err(failure_of)
         })
     }
 }
@@ -108,12 +116,12 @@ impl Lend for Nowhere {
         Existing::Absent
     }
 
-    fn enable(&self) -> Work<'_, Result<(), String>> {
-        Box::pin(async { Err(NO_HOME.to_owned()) })
+    fn enable(&self) -> Work<'_, Result<(), LendFailure>> {
+        Box::pin(async { Err(LendFailure::NoHome) })
     }
 
-    fn disable(&self) -> Work<'_, Result<(), String>> {
-        Box::pin(async { Err(NO_HOME.to_owned()) })
+    fn disable(&self) -> Work<'_, Result<(), LendFailure>> {
+        Box::pin(async { Err(LendFailure::NoHome) })
     }
 }
 
@@ -126,7 +134,8 @@ impl Lender {
     /// The person's own session: the shipped file is looked for where the environment says
     /// (`XDG_DATA_HOME`, `XDG_DATA_DIRS`), the setting kept under `XDG_CONFIG_HOME`.
     pub fn from_env() -> Lender {
-        LendingConfig::from_env().map_or_else(|| Lender(Arc::new(Nowhere)), Lender::session)
+        LendingConfig::from_lookup(|key| std::env::var_os(key))
+            .map_or_else(|| Lender(Arc::new(Nowhere)), Lender::session)
     }
 
     /// The person's own session, with porter's file at `<prefix>/share/porter/` and the setting
@@ -153,17 +162,17 @@ impl Lender {
         self.0.existing()
     }
 
-    /// Sets sharing up; the sentence that says why not when it could not be.
-    pub async fn enable(&self) -> Result<(), String> {
+    /// Sets sharing up; why not when it could not be.
+    pub async fn enable(&self) -> Result<(), LendFailure> {
         within(Deadline::ACTION, peer::SERVICES, self.0.enable())
             .await
-            .map_err(|silent| silent.to_string())?
+            .map_err(|_silent| LendFailure::NoServices)?
     }
 
-    /// Takes sharing away; the sentence that says why not when it could not be.
-    pub async fn disable(&self) -> Result<(), String> {
+    /// Takes sharing away; why not when it could not be.
+    pub async fn disable(&self) -> Result<(), LendFailure> {
         within(Deadline::ACTION, peer::SERVICES, self.0.disable())
             .await
-            .map_err(|silent| silent.to_string())?
+            .map_err(|_silent| LendFailure::NoServices)?
     }
 }

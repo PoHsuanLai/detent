@@ -1,6 +1,6 @@
 //! The offer to get an engine: asked, working, done or failed, and what each answer does.
 
-use super::rows::{EngineRow, EngineStanding, EngineWay, InstallScope};
+use super::rows::{EngineFailure, EngineRow, EngineStanding, EngineWay, InstallScope};
 
 /// Which engine the offer is about.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,8 +53,8 @@ pub enum EngineOffer {
         way: EngineWay,
         /// For whom it was tried.
         scope: InstallScope,
-        /// The plain reason.
-        reason: String,
+        /// The reason.
+        reason: EngineFailure,
     },
 }
 
@@ -96,9 +96,9 @@ pub enum EngineOfferInput {
     /// A folder was chosen (`None`: the chooser was closed).
     Folder(Option<String>),
     /// The assistant was asked to count that folder; `Err` carries the reason.
-    Pointed(Result<(), String>),
+    Pointed(Result<(), EngineFailure>),
     /// The install could not be started; carries the reason.
-    NotStarted(String),
+    NotStarted(EngineFailure),
 }
 
 /// What the window does next.
@@ -173,7 +173,7 @@ fn followed(offer: EngineOffer, rows: &[EngineRow]) -> EngineOffer {
             engine,
             way: row.way.clone(),
             scope: first_scope(&row.way),
-            reason: reason.clone(),
+            reason: *reason,
         },
         // Stopped: nothing was installed, and nothing is said.
         EngineStanding::NotInstalled | EngineStanding::Changed => EngineOffer::Idle,

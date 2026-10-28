@@ -4,7 +4,7 @@ use super::{Change, ChangeFailure, ComputersLink};
 use crate::fake_kit::Kit;
 use crate::lock::locked;
 use crate::ticks::Ticks;
-use detent_model::{Absence, ComputersFound, ServerModel, Work};
+use detent_model::{Absence, ComputersFound, ComputersReason, ServerModel, Work};
 use porter_core::lending::ComputerCandidate;
 use std::sync::{Arc, Mutex};
 
@@ -65,7 +65,7 @@ impl ComputersLink for FakeComputers {
         Box::pin(std::future::ready(self.kit.standing()))
     }
 
-    fn candidates(&self) -> Work<'_, Result<Vec<ComputerCandidate>, String>> {
+    fn candidates(&self) -> Work<'_, Result<Vec<ComputerCandidate>, ComputersReason>> {
         let found = locked(&self.offers).candidates.clone();
         Box::pin(std::future::ready(Ok(found)))
     }

@@ -6,8 +6,8 @@ mod server;
 mod step;
 
 pub use server::{
-    KeyField, NAME_MOST, NewServer, ServerDraft, ServerEdit, ServerFault, ServerForm, ServerModel,
-    ServerModels, ServerPhase, ServerReach, ServerRefusal, server_models,
+    ComputersReason, KeyField, NAME_MOST, NewServer, ServerDraft, ServerEdit, ServerFault,
+    ServerForm, ServerModel, ServerModels, ServerPhase, ServerReach, ServerRefusal, server_models,
 };
 pub use step::{
     AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,

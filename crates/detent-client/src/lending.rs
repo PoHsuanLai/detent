@@ -60,8 +60,8 @@ impl Machine for Lending {
                 self.live.notice(Notice::Recorded(way));
                 Vec::new()
             }
-            SharingEffect::Tell(words) => {
-                self.live.notice(Notice::Words(words));
+            SharingEffect::Tell(why) => {
+                self.live.notice(Notice::LendRefused(why));
                 Vec::new()
             }
         }

@@ -6,18 +6,15 @@ use crate::bus::{BusSource, inferd};
 use crate::chooser::{ChooserLink, Want, choose};
 use crate::deadline::{Deadline, answered, peer};
 use crate::engines::restart;
-use detent_model::{EngineRow, EngineStanding, EngineWay, InstallScope, Work};
+use detent_model::{EngineFailure, EngineRow, EngineStanding, EngineWay, InstallScope, Work};
 use porter_dbus::{EngineState, LocalEngine};
-use porter_engines::{BackendChoice, EngineId, Host, Manifest, Roots, Scope};
+use porter_engines::{BackendChoice, EngineId, Failure, Host, Manifest, Roots, Scope};
 use porter_engines_install::{
     EngineInstalls, Fetcher, HelperProgram, InstallChoice, Parts, Standing, StartError,
 };
 use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
-
-/// The words of a download that cannot start.
-const NOT_STARTED: &str = "The download could not be started.";
 
 /// The engines `porter-engines-install` finds and installs, and what the assistant says of them.
 pub struct OnEngines {
@@ -81,7 +78,7 @@ impl OnEngines {
             (_, Some(EngineState::Found(_))) => EngineStanding::Ready,
             (_, Some(EngineState::Changed(_))) => EngineStanding::Changed,
             (Some(Standing::Ready(_)), _) => EngineStanding::Ready,
-            (Some(Standing::Failed(why)), _) => EngineStanding::Failed(why.sentence().to_owned()),
+            (Some(Standing::Failed(why)), _) => EngineStanding::Failed(failure_of(why)),
             _ => EngineStanding::NotInstalled,
         };
         let choice = self
@@ -94,6 +91,20 @@ impl OnEngines {
             standing,
             way: way_of(id, choice),
         }
+    }
+}
+
+/// Why an install ended without an engine, as the model knows it.
+fn failure_of(why: Failure) -> EngineFailure {
+    match why {
+        Failure::NoSpace => EngineFailure::NoSpace,
+        Failure::Offline => EngineFailure::Offline,
+        Failure::Corrupt => EngineFailure::Corrupt,
+        Failure::Declined => EngineFailure::Declined,
+        Failure::Unsupported => EngineFailure::Unsupported,
+        Failure::Package => EngineFailure::Package,
+        Failure::Cancelled => EngineFailure::Cancelled,
+        _ => EngineFailure::Other,
     }
 }
 
@@ -127,17 +138,18 @@ impl Desk for OnEngines {
         })
     }
 
-    fn install(&self, engine: &str, scope: InstallScope) -> Result<(), String> {
+    fn install(&self, engine: &str, scope: InstallScope) -> Result<(), EngineFailure> {
         let (Some(installs), Some(id)) = (&self.installs, EngineId::from_slug(engine)) else {
-            return Err(NOT_STARTED.to_owned());
+            return Err(EngineFailure::Other);
         };
         let scope = match scope {
             InstallScope::AllUsers => Scope::AllUsers,
             InstallScope::JustMe => Scope::JustMe,
         };
         installs.start(id, scope).map_err(|why| match why {
-            StartError::Busy => "It is already being downloaded.".to_owned(),
-            StartError::Nothing => "There is no download of it for this computer.".to_owned(),
+            StartError::Busy => EngineFailure::Busy,
+            StartError::Nothing => EngineFailure::Unsupported,
+            _ => EngineFailure::Other,
         })
     }
 
@@ -151,16 +163,14 @@ impl Desk for OnEngines {
         Box::pin(choose(self.chooser.as_ref(), Want::Folder))
     }
 
-    fn point(&self, engine: &str, folder: &str) -> Work<'_, Result<(), String>> {
+    fn point(&self, engine: &str, folder: &str) -> Work<'_, Result<(), EngineFailure>> {
         let (engine, folder) = (engine.to_owned(), folder.to_owned());
         Box::pin(async move {
-            let name = EngineId::from_slug(&engine).map_or("it", EngineId::name);
-            let refused = format!("That folder doesn't hold {name}.");
             let Ok(running) = inferd(&self.bus).await else {
-                return Err("The assistant is not running.".to_owned());
+                return Err(EngineFailure::NotRunning);
             };
             let Ok(transport) = running.inference() else {
-                return Err("The assistant is not running.".to_owned());
+                return Err(EngineFailure::NotRunning);
             };
             match answered(
                 Deadline::ACTION,
@@ -170,7 +180,7 @@ impl Desk for OnEngines {
             .await
             {
                 Some(Ok(())) => Ok(()),
-                Some(Err(_)) | None => Err(refused),
+                Some(Err(_)) | None => Err(EngineFailure::NotThere),
             }
         })
     }

@@ -37,8 +37,35 @@ pub enum EngineStanding {
     NotInstalled,
     /// It is being downloaded, this many thousandths done.
     Installing(u32),
-    /// The last download failed, for this plain reason.
-    Failed(String),
+    /// The last download failed, for this reason.
+    Failed(EngineFailure),
+}
+
+/// Why an engine did not get installed, or counted. The words are the pane's.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EngineFailure {
+    /// Not enough free space for the download and its unpacking.
+    NoSpace,
+    /// The download could not be finished: no connection, or it broke off.
+    Offline,
+    /// What arrived is not what was expected, so nothing was installed.
+    Corrupt,
+    /// The person did not give the administrator's password.
+    Declined,
+    /// There is no download for this computer.
+    Unsupported,
+    /// The system's software installer could not install it.
+    Package,
+    /// The person stopped it.
+    Cancelled,
+    /// It is already being downloaded.
+    Busy,
+    /// The assistant is not running, so it cannot count a folder.
+    NotRunning,
+    /// The chosen folder does not hold the engine.
+    NotThere,
+    /// Anything else, or a download that could not be started.
+    Other,
 }
 
 /// One engine.

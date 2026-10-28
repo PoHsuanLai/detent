@@ -2,8 +2,9 @@
 
 use super::{
     ComputerRow, ComputersEffect as Effect, ComputersFound, ComputersInput as Input,
-    ComputersState as State, KeyField, NewServer, ServerDraft, ServerEdit, ServerFault, ServerForm,
-    ServerModel, ServerModels, ServerPhase, ServerReach, ServerRefusal, computers_step,
+    ComputersReason, ComputersState as State, KeyField, NewServer, ServerDraft, ServerEdit,
+    ServerFault, ServerForm, ServerModel, ServerModels, ServerPhase, ServerReach, ServerRefusal,
+    computers_step,
 };
 use porter_core::{ModelId, SecretText};
 use std::io;
@@ -219,16 +220,16 @@ fn adding() -> State {
 }
 
 #[test]
-fn a_refusal_stays_on_the_sheet_in_the_services_words() {
+fn a_refusal_stays_on_the_sheet_for_its_reason() {
     let (state, effects) = computers_step(
         adding(),
-        Input::ServerAdded(Err(ServerRefusal::Service("Taken.".to_owned()))),
+        Input::ServerAdded(Err(ServerRefusal::Service(ComputersReason::AlreadyThere))),
     );
     assert!(effects.is_empty());
     let sheet = sheet_of(&state).expect("open");
     assert_eq!(
         sheet.fault,
-        Some(ServerRefusal::Service("Taken.".to_owned()))
+        Some(ServerRefusal::Service(ComputersReason::AlreadyThere))
     );
     assert_eq!(sheet.phase, ServerPhase::Editing);
     assert_eq!(sheet.form.name, "Lab");
@@ -247,7 +248,7 @@ fn cancel_closes_an_idle_sheet_and_a_late_answer_is_dropped() {
     assert_eq!(sheet_of(&closed), None);
     let (late, effects) = computers_step(
         closed,
-        Input::ServerAdded(Err(ServerRefusal::Service("x".to_owned()))),
+        Input::ServerAdded(Err(ServerRefusal::Service(ComputersReason::Failed))),
     );
     assert_eq!(sheet_of(&late), None);
     assert!(effects.is_empty());

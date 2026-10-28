@@ -2,7 +2,7 @@
 //! asked: never a download, never a folder chooser, never the real computer.
 
 use detent_client::Desk;
-use detent_model::{EngineRow, EngineStanding, EngineWay, InstallScope, Work};
+use detent_model::{EngineFailure, EngineRow, EngineStanding, EngineWay, InstallScope, Work};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -94,7 +94,7 @@ impl Desk for Fake {
         Box::pin(async move { self.0.rows.lock().expect("rows").clone() })
     }
 
-    fn install(&self, engine: &str, scope: InstallScope) -> Result<(), String> {
+    fn install(&self, engine: &str, scope: InstallScope) -> Result<(), EngineFailure> {
         self.0
             .installs
             .lock()
@@ -115,7 +115,7 @@ impl Desk for Fake {
         Box::pin(async move { self.0.folder.lock().expect("folder").clone() })
     }
 
-    fn point(&self, engine: &str, folder: &str) -> Work<'_, Result<(), String>> {
+    fn point(&self, engine: &str, folder: &str) -> Work<'_, Result<(), EngineFailure>> {
         self.0
             .points
             .lock()

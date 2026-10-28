@@ -2,7 +2,7 @@
 
 use super::{
     AddList, ComputerRow, ComputersEffect as Effect, ComputersFound, ComputersInput as Input,
-    ComputersState as State, Standing, computers_step,
+    ComputersReason, ComputersState as State, Standing, computers_step,
 };
 use crate::Absence;
 use porter_core::NodeId;
@@ -96,9 +96,9 @@ fn add_asks_who_is_there_and_lists_them() {
 #[test]
 fn a_failed_look_closes_the_list_and_says_why() {
     let opened = computers_step(ready(), Input::OpenAdd).0;
-    let (state, effects) = computers_step(opened, Input::Candidates(Err("no".to_owned())));
+    let (state, effects) = computers_step(opened, Input::Candidates(Err(ComputersReason::Failed)));
     assert_eq!(adding_of(&state), &AddList::Closed);
-    assert_eq!(effects, vec![Effect::Tell("no".to_owned())]);
+    assert_eq!(effects, vec![Effect::Tell(ComputersReason::Failed)]);
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn a_change_that_worked_reads_the_lists_and_the_candidates_again() {
 }
 
 fn refusal() -> super::ServerRefusal {
-    super::ServerRefusal::Service("Nope.".to_owned())
+    super::ServerRefusal::Service(ComputersReason::NotSaved)
 }
 
 #[test]

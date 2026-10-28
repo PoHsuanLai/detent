@@ -1,6 +1,6 @@
 //! What the offer to get an engine says: Mac wording, and no path, program name or protocol.
 
-use detent_model::{EngineAction, EngineMatter, InstallScope, Replacing};
+use detent_model::{EngineAction, EngineFailure, EngineMatter, InstallScope, Replacing};
 
 /// What the label above the choice of who it is for says.
 pub(crate) fn install_for() -> &'static str {
@@ -73,8 +73,30 @@ pub(crate) fn message(name: &str, matter: &EngineMatter) -> String {
         EngineMatter::Unavailable => format!("There is no download of {name} for this computer."),
         EngineMatter::Checking | EngineMatter::Downloading => String::new(),
         EngineMatter::Ready => "Your assistant restarts to use it.".to_owned(),
-        EngineMatter::Failed { reason } => reason.clone(),
+        EngineMatter::Failed { reason } => failure(name, *reason),
     }
+}
+
+/// Why a download or a chosen folder did not work, for the engine `name`.
+fn failure(name: &str, reason: EngineFailure) -> String {
+    match reason {
+        EngineFailure::NoSpace => "There isn't enough free space on this computer to download it.",
+        EngineFailure::Offline => {
+            "The download didn't finish. Check your internet connection and try again."
+        }
+        EngineFailure::Corrupt => {
+            "What was downloaded wasn't what was expected, so it wasn't installed."
+        }
+        EngineFailure::Declined => "It needs an administrator's password to install for all users.",
+        EngineFailure::Unsupported => "There is no download of it for this computer.",
+        EngineFailure::Package => "This computer's software installer couldn't install it.",
+        EngineFailure::Cancelled => "The download was stopped.",
+        EngineFailure::Busy => "It is already being downloaded.",
+        EngineFailure::NotRunning => "The assistant is not running.",
+        EngineFailure::NotThere => return format!("That folder doesn't hold {name}."),
+        EngineFailure::Other => "It couldn't be installed.",
+    }
+    .to_owned()
 }
 
 /// A size as a person says it: `30 MB`, `4.4 GB` (decimal units, as the Mac does).
@@ -171,10 +193,10 @@ mod tests {
             (
                 "llama.cpp",
                 EngineMatter::Failed {
-                    reason: "The download didn't finish.".to_owned(),
+                    reason: EngineFailure::Offline,
                 },
                 "Couldn't Download llama.cpp",
-                "The download didn't finish.",
+                "The download didn't finish. Check your internet connection and try again.",
             ),
         ];
         for (name, matter, want_title, want_message) in cases {

@@ -171,14 +171,14 @@ fn a_failed_download_says_why_and_try_again_asks_again_and_a_stop_closes_it() {
     let (failed, _) = step(
         working.clone(),
         [EngineOfferInput::Rows(vec![llama(EngineStanding::Failed(
-            "The download didn't finish.".to_owned(),
+            EngineFailure::Offline,
         ))])],
     );
     let brief = engine_brief(&failed.offer).expect("an offer");
     assert_eq!(
         brief.matter,
         EngineMatter::Failed {
-            reason: "The download didn't finish.".to_owned()
+            reason: EngineFailure::Offline
         }
     );
     assert_eq!(brief.primary, Some(EngineAction::TryAgain));
@@ -202,7 +202,7 @@ fn a_failed_download_says_why_and_try_again_asks_again_and_a_stop_closes_it() {
         [
             chose("llama_cpp"),
             EngineOfferInput::Go,
-            EngineOfferInput::NotStarted("Nothing can be installed.".to_owned()),
+            EngineOfferInput::NotStarted(EngineFailure::Unsupported),
         ],
     );
     assert!(matches!(refused.offer, EngineOffer::Failed { .. }));
@@ -262,9 +262,7 @@ fn an_engine_with_no_download_asks_for_a_folder_and_counts_the_one_chosen() {
     assert!(matches!(done.offer, EngineOffer::Done { .. }));
     let (failed, _) = step(
         pointing,
-        [EngineOfferInput::Pointed(Err(
-            "That folder doesn't hold Strata.".to_owned(),
-        ))],
+        [EngineOfferInput::Pointed(Err(EngineFailure::NotThere))],
     );
     assert!(matches!(failed.offer, EngineOffer::Failed { .. }));
 

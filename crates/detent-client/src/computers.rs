@@ -70,11 +70,11 @@ impl Computers {
     }
 }
 
-/// Why a change was not made: the form's own fault, or the service's words.
+/// Why a change was not made: the form's own fault, or the service's reason.
 fn refusal_of(failure: ChangeFailure) -> ServerRefusal {
     match failure {
         ChangeFailure::Fault(fault) => ServerRefusal::Form(fault),
-        ChangeFailure::Told(words) => ServerRefusal::Service(words),
+        ChangeFailure::Refused(reason) => ServerRefusal::Service(reason),
     }
 }
 
@@ -91,8 +91,9 @@ impl Machine for Computers {
 
     async fn run(&self, effect: ComputersEffect) -> Vec<ComputersInput> {
         let input = match effect {
-            ComputersEffect::Tell(text) => {
-                self.live.notice(Notice::Words(text));
+            ComputersEffect::Tell(reason) => {
+                self.live
+                    .notice(Notice::ComputerRefused(ServerRefusal::Service(reason)));
                 return Vec::new();
             }
             ComputersEffect::Refused(refusal) => {

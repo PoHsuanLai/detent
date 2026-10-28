@@ -8,7 +8,9 @@ use porter_core::NodeId;
 use porter_core::lending::{ComputerCandidate, GuestAnswer, GuestRow};
 use porter_infer::{ComputerName, PlaceKind, PlaceRow, PlaceState, PlaceTarget};
 
-use super::server::{NewServer, ServerDraft, ServerEdit, ServerModel, ServerPhase, ServerRefusal};
+use super::server::{
+    ComputersReason, NewServer, ServerDraft, ServerEdit, ServerModel, ServerPhase, ServerRefusal,
+};
 
 /// Whether a computer answers now.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -94,7 +96,7 @@ pub enum ComputersInput {
     /// The person pressed Add.
     OpenAdd,
     /// The candidates were read, or why not.
-    Candidates(Result<Vec<ComputerCandidate>, String>),
+    Candidates(Result<Vec<ComputerCandidate>, ComputersReason>),
     /// The person pressed Done on the Add list.
     CloseAdd,
     /// The person chose a candidate.
@@ -140,8 +142,8 @@ pub enum ComputersEffect {
     LoadServerModels,
     /// Add the server.
     AddServer(ServerDraft),
-    /// Tell the person something, in the service's words.
-    Tell(String),
+    /// Tell the person why the candidates could not be listed.
+    Tell(ComputersReason),
     /// Tell the person why a change was not made.
     Refused(ServerRefusal),
 }

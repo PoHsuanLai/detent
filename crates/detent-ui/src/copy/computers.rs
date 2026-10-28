@@ -1,7 +1,7 @@
 //! The computers pane's words: how a guest stands and what is wrong with the Add a server sheet.
 
 use detent_model::external::RowState;
-use detent_model::{ServerFault, ServerRefusal};
+use detent_model::{ComputersReason, ServerFault, ServerRefusal};
 
 /// The line under a guest's name: how it stands.
 pub(crate) fn guest_standing(state: RowState) -> &'static str {
@@ -28,11 +28,42 @@ pub(crate) fn server_fault(fault: ServerFault) -> &'static str {
     }
 }
 
+/// Why the service refused a change to the computers, or could not make it.
+pub(crate) fn computers_reason(reason: ComputersReason) -> &'static str {
+    match reason {
+        ComputersReason::BadName => "Use a shorter name without special characters.",
+        ComputersReason::NoModels => "Choose at least one model.",
+        ComputersReason::TooMany => "There are too many models or computers already.",
+        ComputersReason::AlreadyThere => "A computer with that name is already there.",
+        ComputersReason::UnknownModel => "Your assistant doesn't know that model.",
+        ComputersReason::ModelNotUsable => "That model can't be used from another computer.",
+        ComputersReason::ModelTaken => "That model is already set up.",
+        ComputersReason::BadAddress => "Where it answers can't be used. Check it and try again.",
+        ComputersReason::BadKey => "That key can't be used.",
+        ComputersReason::NotSaved => "The change couldn't be saved.",
+        ComputersReason::NotThere => "That computer isn't there any more.",
+        ComputersReason::AddedByHand => {
+            "That computer was added in a settings file, so it has to be changed there."
+        }
+        ComputersReason::Unavailable => "Adding computers isn't set up on this computer.",
+        ComputersReason::NotOnTailscale => "That computer isn't one of yours on Tailscale.",
+        ComputersReason::NotAnswering => "That computer isn't sharing its models right now.",
+        ComputersReason::NotAsking => "That computer isn't asking to use this computer's models.",
+        ComputersReason::TooManyAsking => {
+            "Too many computers are asking at once. Answer some of them first."
+        }
+        ComputersReason::NotAllowed => {
+            "Your computers can only be changed when Settings is opened from the desktop."
+        }
+        ComputersReason::Failed => "Your computers could not be changed. Try again in a moment.",
+    }
+}
+
 /// The sentence under the sheet's fields when the last Add did not go through.
 pub(crate) fn server_refusal(refusal: &ServerRefusal) -> String {
     match refusal {
         ServerRefusal::Form(fault) => server_fault(*fault).to_owned(),
-        ServerRefusal::Service(sentence) => sentence.clone(),
+        ServerRefusal::Service(reason) => computers_reason(*reason).to_owned(),
     }
 }
 
@@ -192,7 +223,10 @@ mod tests {
                 ServerRefusal::Form(ServerFault::KeyFileEmpty),
                 "The key file is empty.",
             ),
-            (ServerRefusal::Service("Taken.".to_owned()), "Taken."),
+            (
+                ServerRefusal::Service(ComputersReason::AlreadyThere),
+                "A computer with that name is already there.",
+            ),
         ];
         for (refusal, want) in cases {
             assert_eq!(server_refusal(&refusal), want);

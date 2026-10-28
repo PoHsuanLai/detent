@@ -6,24 +6,17 @@ use crate::bus::{BusSource, Daemon, Pinned, absence_of_bus, inferd, read_once};
 use crate::deadline::{Deadline, answered, peer};
 use crate::ticks::{Ticker, Ticks};
 use detent_model::{
-    Absence, ComputerRow, ComputersFound, ServerDraft, ServerModel, ServerReach, Work,
-    picker_row_is_choice, server_models,
+    Absence, ComputerRow, ComputersFound, ComputersReason, ServerDraft, ServerModel, ServerReach,
+    Work, picker_row_is_choice, server_models,
 };
 use ds_peer::within;
 use porter_client::{
-    Accounts, ClientError, ComputerReach, DbusTransport, NewComputer, NewComputerModel,
-    TransportError,
+    Accounts, ClientError, ComputerReach, ComputerReason, DbusTransport, NewComputer,
+    NewComputerModel, TransportError,
 };
 use porter_core::lending::ComputerCandidate;
 use porter_dbus::{BusStream, InferenceProxy};
 use std::path::Path;
-
-/// What the person reads when a change could not be made and the service gave no sentence.
-const COULD_NOT: &str = "Your computers could not be changed. Try again in a moment.";
-
-/// What the person reads when Settings is not allowed to change them.
-const NOT_ALLOWED: &str =
-    "Your computers can only be changed when Settings is opened from the desktop.";
 
 fn absence_of(error: ClientError) -> Absence {
     match error {
@@ -35,14 +28,31 @@ fn absence_of(error: ClientError) -> Absence {
     }
 }
 
-/// The sentence for a refused call: the service's own words, else the general one.
-fn sentence_of(error: &ClientError) -> String {
+/// Why a call was refused, as the pane knows it.
+fn reason_of(error: &ClientError) -> ComputersReason {
     match error {
-        ClientError::Transport(TransportError::Computer { words, .. }) if !words.is_empty() => {
-            words.clone()
-        }
-        ClientError::Transport(TransportError::Denied(_)) => NOT_ALLOWED.to_owned(),
-        _ => COULD_NOT.to_owned(),
+        ClientError::Transport(TransportError::Computer { reason, .. }) => match reason {
+            ComputerReason::BadName => ComputersReason::BadName,
+            ComputerReason::NoModels => ComputersReason::NoModels,
+            ComputerReason::TooMany => ComputersReason::TooMany,
+            ComputerReason::AlreadyThere => ComputersReason::AlreadyThere,
+            ComputerReason::UnknownModel => ComputersReason::UnknownModel,
+            ComputerReason::ModelNotUsable => ComputersReason::ModelNotUsable,
+            ComputerReason::ModelTaken => ComputersReason::ModelTaken,
+            ComputerReason::BadAddress => ComputersReason::BadAddress,
+            ComputerReason::BadKey => ComputersReason::BadKey,
+            ComputerReason::NotSaved => ComputersReason::NotSaved,
+            ComputerReason::NotThere => ComputersReason::NotThere,
+            ComputerReason::AddedByHand => ComputersReason::AddedByHand,
+            ComputerReason::Unavailable => ComputersReason::Unavailable,
+            ComputerReason::NotOnTailscale => ComputersReason::NotOnTailscale,
+            ComputerReason::NotAnswering => ComputersReason::NotAnswering,
+            ComputerReason::NotAsking => ComputersReason::NotAsking,
+            ComputerReason::TooManyAsking => ComputersReason::TooManyAsking,
+            _ => ComputersReason::Failed,
+        },
+        ClientError::Transport(TransportError::Denied(_)) => ComputersReason::NotAllowed,
+        _ => ComputersReason::Failed,
     }
 }
 
@@ -68,20 +78,20 @@ async fn read(bus: &BusSource) -> Result<ComputersFound, Absence> {
     })
 }
 
-/// The Tailscale computers that can be added, or the sentence that says why they cannot be listed.
-async fn candidates(bus: &BusSource) -> Result<Vec<ComputerCandidate>, String> {
-    let running = inferd(bus).await.map_err(|_| COULD_NOT.to_owned())?;
-    let accounts = accounts(&running).map_err(|_| COULD_NOT.to_owned())?;
+/// The Tailscale computers that can be added, or why they cannot be listed.
+async fn candidates(bus: &BusSource) -> Result<Vec<ComputerCandidate>, ComputersReason> {
+    let running = inferd(bus).await.map_err(|_| ComputersReason::Failed)?;
+    let accounts = accounts(&running).map_err(|_| ComputersReason::Failed)?;
     answered(Deadline::READ, peer::ASSISTANT, accounts.candidates())
         .await
-        .ok_or_else(|| COULD_NOT.to_owned())?
-        .map_err(|e| sentence_of(&e))
+        .ok_or(ComputersReason::Failed)?
+        .map_err(|e| reason_of(&e))
 }
 
 /// Adds the server. A key kept in a file is read now, and only now; a file that cannot be read
 /// is told in the sheet's own words, and nothing is sent.
 async fn add_server(bus: &BusSource, draft: ServerDraft) -> Result<(), ChangeFailure> {
-    let told = |words: &str| ChangeFailure::Told(words.to_owned());
+    let refused = ChangeFailure::Refused;
     let key = draft
         .secret(|path: &Path| std::fs::read_to_string(path))
         .map_err(ChangeFailure::Fault)?;
@@ -95,17 +105,19 @@ async fn add_server(bus: &BusSource, draft: ServerDraft) -> Result<(), ChangeFai
         None => served,
     };
     let computer = NewComputer::new(draft.name, vec![served]);
-    let running = inferd(bus).await.map_err(|_| told(COULD_NOT))?;
-    let accounts = accounts(&running).map_err(|_| told(COULD_NOT))?;
+    let running = inferd(bus)
+        .await
+        .map_err(|_| refused(ComputersReason::Failed))?;
+    let accounts = accounts(&running).map_err(|_| refused(ComputersReason::Failed))?;
     answered(
         Deadline::ACTION,
         peer::ASSISTANT,
         accounts.add_computer(&computer),
     )
     .await
-    .ok_or_else(|| told(COULD_NOT))?
+    .ok_or(refused(ComputersReason::Failed))?
     .map(drop)
-    .map_err(|e| told(&sentence_of(&e)))
+    .map_err(|e| refused(reason_of(&e)))
 }
 
 /// The models a server may run, as inferd's picker lists them; none when it cannot be read.
@@ -121,15 +133,17 @@ async fn models(bus: &BusSource) -> Vec<ServerModel> {
     .unwrap_or_default()
 }
 
-/// Makes one change; the sentence that says why not when it was refused.
+/// Makes one change; why not when it was refused.
 async fn change(bus: &BusSource, change: Change) -> Result<(), ChangeFailure> {
-    let told = |words: &str| ChangeFailure::Told(words.to_owned());
+    let refused = ChangeFailure::Refused;
     let change = match change {
         Change::Server(draft) => return add_server(bus, draft).await,
         other => other,
     };
-    let running = inferd(bus).await.map_err(|_| told(COULD_NOT))?;
-    let accounts = accounts(&running).map_err(|_| told(COULD_NOT))?;
+    let running = inferd(bus)
+        .await
+        .map_err(|_| refused(ComputersReason::Failed))?;
+    let accounts = accounts(&running).map_err(|_| refused(ComputersReason::Failed))?;
     let done = answered(Deadline::ACTION, peer::ASSISTANT, async {
         match change {
             Change::Add(node) => accounts.add_tailnet_computer(&node).await.map(drop),
@@ -140,8 +154,8 @@ async fn change(bus: &BusSource, change: Change) -> Result<(), ChangeFailure> {
         }
     })
     .await
-    .ok_or_else(|| told(COULD_NOT))?;
-    done.map_err(|e| told(&sentence_of(&e)))
+    .ok_or(refused(ComputersReason::Failed))?;
+    done.map_err(|e| refused(reason_of(&e)))
 }
 
 /// Tells `out` each time `stream` yields, until the stream ends or nobody listens.
@@ -196,7 +210,7 @@ impl ComputersLink for OnBus {
         Box::pin(read(&self.0))
     }
 
-    fn candidates(&self) -> Work<'_, Result<Vec<ComputerCandidate>, String>> {
+    fn candidates(&self) -> Work<'_, Result<Vec<ComputerCandidate>, ComputersReason>> {
         Box::pin(candidates(&self.0))
     }
 

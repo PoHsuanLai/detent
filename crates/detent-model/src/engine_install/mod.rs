@@ -13,7 +13,7 @@ pub use offer::{
     EngineOffer, EngineOfferEffect, EngineOfferInput, EngineOfferState, EngineRef, Replacing,
     engine_offer_step,
 };
-pub use rows::{EngineRow, EngineStanding, EngineWay, InstallScope, engine_named};
+pub use rows::{EngineFailure, EngineRow, EngineStanding, EngineWay, InstallScope, engine_named};
 
 #[cfg(test)]
 mod tests;

@@ -35,6 +35,23 @@ pub enum Sharing {
     Working(Way),
 }
 
+/// Why the sharing could not be set up or taken away.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LendFailure {
+    /// There is no home folder to keep the setting in.
+    NoHome,
+    /// The computer's own services could not be reached.
+    NoServices,
+    /// The file Settings sets up is missing from this computer.
+    NotInstalled,
+    /// The setting could not be saved.
+    CouldNotSave,
+    /// The setting was saved, but the computer did not read its files again.
+    CouldNotReload,
+    /// The setting was saved, but the models service did not restart.
+    CouldNotRestart,
+}
+
 /// What happened to the switch.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SharingInput {
@@ -44,8 +61,8 @@ pub enum SharingInput {
     Allowed,
     /// The person pressed Cancel.
     Cancelled,
-    /// The change finished: done, or the sentence that says why not.
-    Finished(Result<(), String>),
+    /// The change finished: done, or why not.
+    Finished(Result<(), LendFailure>),
 }
 
 /// What the window does next.
@@ -57,8 +74,8 @@ pub enum SharingEffect {
     Disable,
     /// Write the setting.
     Record(Way),
-    /// Tell the person.
-    Tell(String),
+    /// Tell the person why it did not work.
+    Tell(LendFailure),
 }
 
 /// The next state and what to do.

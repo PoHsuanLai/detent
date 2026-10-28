@@ -34,7 +34,7 @@ pub fn absence_of_bus(error: &zbus::Error) -> Absence {
     match classify(error) {
         BusFailure::NoDaemon => Absence::NotRunning,
         BusFailure::Denied(_) => Absence::NotPermitted,
-        BusFailure::Other(_) => failed(error),
+        _ => failed(error),
     }
 }
 

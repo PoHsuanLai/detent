@@ -97,9 +97,9 @@ pub use coding_agents::{
 };
 pub use computers::{
     AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,
-    ComputersState, KeyField, NAME_MOST, NewServer, ServerDraft, ServerEdit, ServerFault,
-    ServerForm, ServerModel, ServerModels, ServerPhase, ServerReach, ServerRefusal, Standing,
-    computers_step, server_models,
+    ComputersReason, ComputersState, KeyField, NAME_MOST, NewServer, ServerDraft, ServerEdit,
+    ServerFault, ServerForm, ServerModel, ServerModels, ServerPhase, ServerReach, ServerRefusal,
+    Standing, computers_step, server_models,
 };
 pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
@@ -114,9 +114,9 @@ pub use displays::{
 /// Whether an agent may set a key: quire's own type, carried by each `KeySpec`.
 pub use ds_settings::schema::AgentSetting;
 pub use engine_install::{
-    EngineAction, EngineBrief, EngineMatter, EngineOffer, EngineOfferEffect, EngineOfferInput,
-    EngineOfferState, EngineRef, EngineRow, EngineStanding, EngineWay, InstallScope, Replacing,
-    Waiting, engine_brief, engine_named, engine_offer_step,
+    EngineAction, EngineBrief, EngineFailure, EngineMatter, EngineOffer, EngineOfferEffect,
+    EngineOfferInput, EngineOfferState, EngineRef, EngineRow, EngineStanding, EngineWay,
+    InstallScope, Replacing, Waiting, engine_brief, engine_named, engine_offer_step,
 };
 pub use engines::{
     EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LLAMA_CPP_ID, ListedEngine, LlamaCpp,
@@ -184,7 +184,9 @@ pub use screen_sharing::{
     ScreenSharingReady, ScreenSharingState, ShareLength, screen_grants_of, screen_sharing_step,
 };
 pub use search::{Found, Hit, Rank, Search, search};
-pub use sharing::{Existing, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way, sharing_step};
+pub use sharing::{
+    Existing, LendFailure, SHARING_KEY, Sharing, SharingEffect, SharingInput, Way, sharing_step,
+};
 pub use shortcuts::{
     KeymapLayer, KeymapText, KeymapTexts, MachineLayer, Origin, ReplaceQuestion, ShortcutGroup,
     ShortcutProblem, ShortcutRow, ShortcutSection, ShortcutsEffect, ShortcutsInput, ShortcutsState,

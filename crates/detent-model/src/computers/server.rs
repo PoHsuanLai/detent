@@ -30,13 +30,57 @@ pub enum ServerFault {
     KeyFileEmpty,
 }
 
+/// Why the service refused a change to the computers, or could not make it. The words are the
+/// pane's.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ComputersReason {
+    /// The name is empty, too long or has control characters.
+    BadName,
+    /// No model was given.
+    NoModels,
+    /// More models, or more computers, than may be kept.
+    TooMany,
+    /// A computer of that name is already there.
+    AlreadyThere,
+    /// The assistant does not know a model that was named.
+    UnknownModel,
+    /// A model that cannot be used from another computer.
+    ModelNotUsable,
+    /// A model that is already set up.
+    ModelTaken,
+    /// How to reach a model cannot be used.
+    BadAddress,
+    /// A key that cannot be used.
+    BadKey,
+    /// The change could not be saved.
+    NotSaved,
+    /// There is no computer of that name.
+    NotThere,
+    /// The computer was written in the settings file by hand.
+    AddedByHand,
+    /// Adding computers is not set up here.
+    Unavailable,
+    /// The computer is not one of the person's own on Tailscale.
+    NotOnTailscale,
+    /// The computer does not lend its models right now.
+    NotAnswering,
+    /// The computer is not asking to use this computer's models.
+    NotAsking,
+    /// Too many computers are asking at once.
+    TooManyAsking,
+    /// Settings may not change the computers unless it is opened from the desktop.
+    NotAllowed,
+    /// Anything else: the service could not be reached, or gave a reason not known here.
+    Failed,
+}
+
 /// Why the last Add did not go through.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServerRefusal {
     /// The sheet itself is wrong.
     Form(ServerFault),
-    /// The service refused, in its own sentence.
-    Service(String),
+    /// The service refused, for this reason.
+    Service(ComputersReason),
 }
 
 /// The longest name a server may be given, in characters.

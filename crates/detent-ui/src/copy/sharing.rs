@@ -1,6 +1,6 @@
 //! The sharing switch's words: the question put to the person before it is turned on.
 
-use detent_model::Existing;
+use detent_model::{Existing, LendFailure};
 
 /// The button that agrees.
 pub(crate) const ALLOW: &str = "Allow";
@@ -21,6 +21,34 @@ pub(crate) fn sharing_question(existing: Existing) -> (String, String) {
         "Let your other computers use this computer's models?".to_owned(),
         message,
     )
+}
+
+/// Why the sharing could not be set up or taken away.
+pub(crate) fn lend_failure(why: LendFailure) -> &'static str {
+    match why {
+        LendFailure::NoHome => {
+            "There is no home folder to keep this setting in, so nothing was changed."
+        }
+        LendFailure::NoServices => {
+            "This computer's services could not be reached, so nothing was changed."
+        }
+        LendFailure::NotInstalled => {
+            "This computer is missing a file it needs to share its models, so nothing was \
+             changed. Installing the software again puts it back."
+        }
+        LendFailure::CouldNotSave => {
+            "Your setting for sharing this computer's models could not be saved. Check that \
+             your home folder can be written to."
+        }
+        LendFailure::CouldNotReload => {
+            "Your setting was saved, but the computer did not take it up yet. Signing out \
+             and back in will apply it."
+        }
+        LendFailure::CouldNotRestart => {
+            "Your setting was saved, but the models service did not restart. Try again, or \
+             sign out and back in."
+        }
+    }
 }
 
 #[cfg(test)]

@@ -10,7 +10,9 @@ pub use bus::{OnBus, relay};
 pub use fake::FakeComputers;
 
 use crate::ticks::Ticks;
-use detent_model::{Absence, ComputersFound, ServerDraft, ServerFault, ServerModel, Work};
+use detent_model::{
+    Absence, ComputersFound, ComputersReason, ServerDraft, ServerFault, ServerModel, Work,
+};
 use porter_client::{ComputerName, GuestAnswer, NodeId};
 use porter_core::lending::ComputerCandidate;
 use std::fmt::Debug;
@@ -35,16 +37,16 @@ pub enum Change {
 pub enum ChangeFailure {
     /// The server's form was wrong before anything was sent.
     Fault(ServerFault),
-    /// The service refused or could not be reached, in these words.
-    Told(String),
+    /// The service refused or could not be reached, for this reason.
+    Refused(ComputersReason),
 }
 
 /// What the Your computers group asks of inferd.
 pub trait ComputersLink: Debug + Send + Sync {
     /// The person's computers and the guests, as inferd lists them now.
     fn read(&self) -> Work<'_, Result<ComputersFound, Absence>>;
-    /// The Tailscale computers that can be added, or the sentence that says why not.
-    fn candidates(&self) -> Work<'_, Result<Vec<ComputerCandidate>, String>>;
+    /// The Tailscale computers that can be added, or why not.
+    fn candidates(&self) -> Work<'_, Result<Vec<ComputerCandidate>, ComputersReason>>;
     /// The models a server may run, as inferd's picker lists them; none when it cannot be read.
     fn models(&self) -> Work<'_, Vec<ServerModel>>;
     /// Makes one change.

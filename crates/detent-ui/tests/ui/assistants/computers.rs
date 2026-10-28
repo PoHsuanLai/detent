@@ -98,7 +98,7 @@ fn a_sheet_that_asks_for_nothing_sendable_tells_why_and_calls_nothing() {
 }
 
 #[test]
-fn a_refused_server_keeps_the_sheet_open_with_the_services_sentence() {
+fn a_refused_server_keeps_the_sheet_open_with_detents_sentence_for_the_reason() {
     let mut c = computers_with_models("computers-server-refused", vec![LAB_COMPUTER]);
     press(&mut c.harness, "Add a server");
     settle(&mut c.harness, "the sheet", |h| h.count(SERVER_SHEET) == 1);
@@ -112,7 +112,7 @@ fn a_refused_server_keeps_the_sheet_open_with_the_services_sentence() {
     settle(&mut c.harness, "the sentence", |h| {
         h.text_of(SERVER_SHEET)
             .unwrap_or_default()
-            .contains("The sentence for NotAnswering.")
+            .contains("That computer isn't sharing its models right now.")
     });
     assert_eq!(c.harness.count(SERVER_SHEET), 1);
 }
@@ -159,22 +159,33 @@ fn each_refusal_reads_as_a_sentence_and_changes_nothing() {
     settle(&mut c.harness, "the lender", |h| {
         group_text(h).contains("Say yes on studio")
     });
-    // The service's own sentence is what the person reads.
-    const REFUSALS: &[&str] = &[
-        "NotOnTailscale",
-        "NotAnswering",
-        "NotAsking",
-        "TooManyAsking",
+    // The person reads Settings' own sentence for the reason, never the service's text.
+    const REFUSALS: &[(&str, &str)] = &[
+        (
+            "NotOnTailscale",
+            "That computer isn't one of yours on Tailscale.",
+        ),
+        (
+            "NotAnswering",
+            "That computer isn't sharing its models right now.",
+        ),
+        (
+            "NotAsking",
+            "That computer isn't asking to use this computer's models.",
+        ),
+        (
+            "TooManyAsking",
+            "Too many computers are asking at once. Answer some of them first.",
+        ),
     ];
-    for refusal in REFUSALS {
-        let sentence = format!("The sentence for {refusal}.");
+    for (refusal, sentence) in REFUSALS {
         c.fake.refuse_next(refusal);
         press(&mut c.harness, "Add studio");
         settle(&mut c.harness, refusal, |h| {
             h.html()
                 .replace("&#39;", "'")
                 .replace('\u{2019}', "'")
-                .contains(&sentence)
+                .contains(sentence)
         });
     }
     assert_eq!(
