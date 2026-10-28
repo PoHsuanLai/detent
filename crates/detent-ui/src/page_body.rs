@@ -7,6 +7,7 @@ use crate::assistant_model::AssistantModelPane;
 use crate::assistants::Assistants;
 use crate::bluetooth::BluetoothPane;
 use crate::displays::DisplaysPane;
+use crate::dock_preview::DockPreview;
 use crate::env::Env;
 use crate::extensions::ExtensionsPane;
 use crate::files::{Edit, Files};
@@ -46,7 +47,7 @@ pub(crate) fn PageBody(
                 Block::Section(section) => rsx! {
                     SectionView { key: "{section.title}", section, hits: hits.clone(), files, onedit }
                 },
-                Block::Pane(pane) => mount(pane, &env, files),
+                Block::Pane(pane) => mount(pane, &page, &env, files),
                 Block::StyleNotes => rsx! { StyleNotesLine {} },
                 Block::HotCorners(entries) => rsx! { HotCorners { entries, files, onedit } },
             }
@@ -63,8 +64,8 @@ pub(crate) fn PageBody(
     }
 }
 
-/// The pane that fills `pane`'s rows.
-fn mount(pane: LivePane, env: &Env, files: Signal<Files>) -> Element {
+/// The pane that fills `pane`'s rows; `page` is the page it is on.
+fn mount(pane: LivePane, page: &PageModel, env: &Env, files: Signal<Files>) -> Element {
     match pane {
         LivePane::Accounts => rsx! { AccountsPane {} },
         LivePane::Privacy => rsx! { PrivacyPane {} },
@@ -79,6 +80,7 @@ fn mount(pane: LivePane, env: &Env, files: Signal<Files>) -> Element {
         LivePane::Extensions => rsx! { ExtensionsPane {} },
         LivePane::Assistants => rsx! { Assistants {} },
         LivePane::LocalRuntimes => rsx! { LocalRuntimes {} },
+        LivePane::DockPreview => rsx! { DockPreview { page: page.clone(), files } },
         LivePane::ModelPicker => rsx! { ModelPicker { reasons: show_reason(env, &files()) } },
     }
 }

@@ -22,6 +22,11 @@ fn opening(page: &str) -> Opening {
     }
 }
 
+/// The `n`th picture choice of the theme row (1 Light, 2 Dark, 3 the one that follows the desktop).
+fn theme_choice(n: usize) -> String {
+    format!("[*|data-key=\"appearance.theme\"] .ds-radio-group-item:nth-of-type({n})")
+}
+
 fn harness_spec(sandbox: &Sandbox) -> detent_model::FileSpec {
     sandbox
         .env(Opening::default(), ds::prelude::Scheme::Light)

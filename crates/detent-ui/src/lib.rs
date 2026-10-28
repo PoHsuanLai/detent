@@ -12,6 +12,7 @@ mod computers;
 mod controls;
 mod copy;
 mod displays;
+mod dock_preview;
 mod engine_install;
 mod engines;
 mod env;

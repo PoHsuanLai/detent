@@ -107,7 +107,7 @@ fn saving_never_removes_a_key_from_sill_or_quire_files() {
     );
 
     let mut harness = sandbox.harness(opening("appearance"));
-    click(&mut harness, ".ds-segmented-segment:nth-of-type(3)");
+    click(&mut harness, &theme_choice(3));
     let text = sandbox.read("quire/appearance.toml").expect("written");
     assert!(text.starts_with("version = 1\n"), "{text}");
     assert!(text.contains("old_key = 1"), "{text}");

@@ -69,39 +69,83 @@ fn toggling_a_switch_writes_the_file_and_the_value_round_trips() {
 }
 
 #[test]
-fn a_segmented_choice_writes_its_word() {
-    let sandbox = Sandbox::new("segmented-writes");
+fn the_theme_is_three_picture_choices_and_a_press_writes_its_word() {
+    const GROUP: &str = "[*|data-key=\"appearance.theme\"]";
+    let sandbox = Sandbox::new("theme-pictures");
     let mut harness = sandbox.harness(opening("appearance"));
     assert_eq!(sandbox.read("quire/appearance.toml"), None);
-    click(&mut harness, ".ds-segmented-segment:nth-of-type(3)");
+    assert_eq!(harness.count(&format!("{GROUP} .ds-radio-group-item")), 3);
+    assert_eq!(
+        harness.count(&format!("{GROUP} .ds-radio-group-image .ds-ext-icon")),
+        3,
+        "each choice has its picture"
+    );
+    assert_eq!(
+        harness.attr(GROUP, "data-arrangement").as_deref(),
+        Some("row")
+    );
+    assert_eq!(
+        harness.attr(&theme_choice(3), "aria-checked").as_deref(),
+        Some("true"),
+        "the default, the word that follows the desktop, starts checked"
+    );
 
+    click(&mut harness, &theme_choice(2));
     let text = sandbox
         .read("quire/appearance.toml")
         .expect("the file was written");
     assert!(text.contains("theme = \"dark\""), "{text}");
     assert_eq!(
-        harness
-            .attr(".ds-segmented-segment:nth-of-type(3)", "aria-checked")
-            .as_deref(),
+        harness.attr(&theme_choice(2), "aria-checked").as_deref(),
         Some("true"),
         "Dark is selected"
+    );
+    click(&mut harness, &theme_choice(1));
+    let text = sandbox.read("quire/appearance.toml").expect("written");
+    assert!(text.contains("theme = \"light\""), "{text}");
+}
+
+#[test]
+fn the_dock_page_opens_with_a_preview_at_the_stored_tile_size() {
+    const PREVIEW: &str = "[*|data-dock-preview]";
+    let sandbox = Sandbox::new("dock-preview");
+    sandbox.write("sill/settings.toml", "[dock]\ntile_size_px = 64\n");
+    let harness = sandbox.harness(opening("dock"));
+    assert_eq!(harness.count(PREVIEW), 1);
+    assert_eq!(
+        harness.attr(PREVIEW, "data-dock-preview").as_deref(),
+        Some("64")
+    );
+    assert_eq!(harness.count("[*|data-dock-tile]"), 5);
+    assert!(
+        harness
+            .attr(".dock-preview-pill", "style")
+            .is_some_and(|style| style.contains("--row-icon-tile:64px")),
+        "the tiles are drawn at the stored size"
+    );
+
+    let sandbox = Sandbox::new("dock-preview-default");
+    let harness = sandbox.harness(opening("dock"));
+    assert_eq!(
+        harness.attr(PREVIEW, "data-dock-preview").as_deref(),
+        Some("48"),
+        "with nothing stored, the key's default"
     );
 }
 
 #[test]
 fn choosing_an_accent_swatch_writes_that_accent() {
+    const SWATCH_THREE: &str = "[*|data-arrangement=swatches] .ds-radio-group-item:nth-of-type(3)";
     let sandbox = Sandbox::new("swatch-writes");
     let mut harness = sandbox.harness(opening("appearance"));
-    click(&mut harness, ".ds-radio-group-item:nth-of-type(3)");
+    click(&mut harness, SWATCH_THREE);
     let want = ds::prelude::Accent::ALL[2].slug();
     let text = sandbox
         .read("quire/appearance.toml")
         .expect("the file was written");
     assert!(text.contains(&format!("accent = \"{want}\"")), "{text}");
     assert_eq!(
-        harness
-            .attr(".ds-radio-group-item:nth-of-type(3)", "aria-checked")
-            .as_deref(),
+        harness.attr(SWATCH_THREE, "aria-checked").as_deref(),
         Some("true")
     );
 }

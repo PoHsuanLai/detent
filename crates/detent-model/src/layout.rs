@@ -245,8 +245,14 @@ mod tests {
             &["Icons", "Appearance", "<style notes>", "Time"],
         ),
         (
-            "another page keeps the schema order and has no picker",
+            "the dock preview comes before the sections of the dock page",
             Page::Dock,
+            &["Size", "Behaviour"],
+            &["<DockPreview>", "Size", "Behaviour"],
+        ),
+        (
+            "another page keeps the schema order and has no pane",
+            Page::Power,
             &["Size", "Behaviour"],
             &["Size", "Behaviour"],
         ),

@@ -15,6 +15,7 @@ pub(crate) mod coding_agents;
 pub(crate) mod common;
 pub(crate) mod computers;
 pub(crate) mod displays;
+pub(crate) mod dock;
 pub(crate) mod engine_install;
 pub(crate) mod engines;
 pub(crate) mod extensions;

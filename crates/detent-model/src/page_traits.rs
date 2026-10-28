@@ -43,6 +43,8 @@ pub enum LivePane {
     LocalRuntimes,
     /// inferd's live model picker.
     ModelPicker,
+    /// The strip at the top of the Dock page: a few tiles on a pill at the size the page sets.
+    DockPreview,
 }
 
 /// How a page lays out its sections and its live panes.
@@ -151,7 +153,7 @@ impl PageKind {
             PageKind::Privacy => row(Some("privacy"), Look, 4)
                 .with_hero()
                 .drawing(Before(&[P::Privacy, P::ScreenSharing])),
-            PageKind::Dock => row(Some("dock"), Desktop, 0),
+            PageKind::Dock => row(Some("dock"), Desktop, 0).drawing(Before(&[P::DockPreview])),
             PageKind::Displays => row(Some(DISPLAYS_SLUG), Desktop, 1).drawing(Only(P::Displays)),
             PageKind::Wallpaper => row(Some(WALLPAPER_SLUG), Desktop, 2),
             PageKind::Spaces => row(Some("spaces"), Desktop, 3)
@@ -195,6 +197,10 @@ mod tests {
     #[test]
     fn a_live_page_draws_its_pane_and_a_file_page_draws_sections() {
         assert_eq!(PageKind::Wifi.traits().body, Body::Only(LivePane::Wifi));
-        assert_eq!(PageKind::Dock.traits().body, Body::Sections);
+        assert_eq!(
+            PageKind::Dock.traits().body,
+            Body::Before(&[LivePane::DockPreview])
+        );
+        assert_eq!(PageKind::Power.traits().body, Body::Sections);
     }
 }

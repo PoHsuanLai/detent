@@ -540,3 +540,23 @@
   align-self: flex-end;
   gap: var(--s-8);
 }
+
+.dock-preview {
+  display: flex;
+  justify-content: center;
+  padding: var(--s-6) 0;
+}
+
+.dock-preview-pill {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-6);
+  padding: var(--s-6);
+  background: var(--raise);
+  border: var(--hair) solid var(--line);
+  border-radius: var(--r-pill);
+}
+
+.dock-preview-pill > span {
+  display: flex;
+}

@@ -9,6 +9,8 @@ mod segmented;
 mod slider;
 mod swatches;
 mod text;
+mod theme;
+mod theme_picture;
 mod toggle;
 
 use detent_model::external::toml;
@@ -24,6 +26,7 @@ use segmented::SegmentedKey;
 use slider::SliderControl;
 use swatches::{SwatchControl, swatch_words};
 use text::TextControl;
+use theme::{ThemeControl, theme_words};
 use toggle::ToggleControl;
 
 /// The control for `entry`, showing `value`; a change is sent to `onchange` as the value to
@@ -35,6 +38,7 @@ pub fn Control(
     onchange: EventHandler<toml::Value>,
 ) -> Element {
     let label = entry.spec.label.0.clone();
+    let path = entry.spec.path.0.clone();
     let labels = entry.spec.labels.clone();
     let ends = entry
         .spec
@@ -45,6 +49,9 @@ pub fn Control(
         Kind::Toggle(pair) => rsx! { ToggleControl { label, pair, value, onchange } },
         Kind::Segmented(words) | Kind::Menu(words) if swatch_words(&words) => {
             rsx! { SwatchControl { label, value, onchange } }
+        }
+        Kind::Segmented(words) if theme_words(&words) => {
+            rsx! { ThemeControl { label, path, labels, value, onchange } }
         }
         Kind::Segmented(words) => rsx! { SegmentedKey { label, words, labels, value, onchange } },
         Kind::Menu(words) | Kind::Provided(words) => {

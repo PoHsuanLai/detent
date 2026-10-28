@@ -15,6 +15,16 @@ pub const GREY: Hex = Hex([0x8e, 0x8e, 0x93]);
 /// The assistant and Spaces.
 pub const INDIGO: Hex = Hex([0x5e, 0x5c, 0xe6]);
 
+/// The apps the Dock page's preview stands on the pill: a folder, mail, pictures, a terminal and
+/// Settings, as app tiles rather than blanks.
+pub const DOCK_SAMPLE: [(Icon, Hex); 5] = [
+    (Icon::Folder, CYAN),
+    (Icon::Mail, BLUE),
+    (Icon::Image, INDIGO),
+    (Icon::Terminal, GRAPHITE),
+    (Icon::Settings, GREY),
+];
+
 /// The sidebar glyph and the colour of a page of `kind`.
 pub fn look_of(kind: PageKind) -> (Icon, Hex) {
     match kind {
