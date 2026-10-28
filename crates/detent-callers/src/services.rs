@@ -6,7 +6,7 @@ use peephole_bus::peephole_core::{Proof, RoleName, roles};
 pub const ACCOUNTS_BUS: &str = "org.quire.Accounts1";
 /// syncd: the datasets and the deletions it holds for the person's word.
 pub const SYNC_BUS: &str = "org.quire.Sync1";
-/// inferd: the model picker, the person's computers, the AI keys.
+/// inferd: the model picker, the person's computers, the month's spend of AI accounts.
 pub const INFERENCE_BUS: &str = "org.quire.Inference1";
 /// slipway: the software-update service.
 pub const UPDATES_BUS: &str = "org.quire.Updates1";

@@ -10,9 +10,10 @@ use ds_settings::schema::KeyPath;
 /// back to the module the row came from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ModuleId {
-    /// Identities, and Tailscale.
+    /// Identities, AI keys and assistant accounts (with the permits apps hold for them), and
+    /// Tailscale.
     Accountd,
-    /// AI keys and assistant accounts, with the permits apps hold for them.
+    /// The month's spend and cap of the AI accounts accountd lists; it lists no account itself.
     Inferd,
     /// The accounts sync signed in for itself, with their sync switches.
     Syncd,

@@ -153,10 +153,6 @@ fn ready_step(
             ready.sheet_open = true;
             effects.push(AccountsEffect::OpenAddSheet);
         }
-        AccountsInput::AddAiKey if idle && !ready.sheet_open => {
-            ready.sheet_open = true;
-            effects.push(AccountsEffect::OpenAiKeySheet);
-        }
         AccountsInput::AddEnded(module, end) => {
             ready.sheet_open = false;
             if !matches!(end, AddEnd::Added | AddEnd::Closed) {

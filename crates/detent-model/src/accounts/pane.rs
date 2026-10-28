@@ -64,15 +64,22 @@ fn group_of(word: &str) -> Option<ProviderGroup> {
     porter_ids::word::from_word(word)
 }
 
+/// The account with `key`, whichever module listed it: an account is its key alone. A key no
+/// module has listed yet starts an account of `module`, except for inferd, which only adds the
+/// month's spend to accounts accountd listed: its rows for any other key are left out, so a
+/// stray row never makes an account.
 fn account_of<'a>(
     accounts: &'a mut Vec<Account>,
     module: ModuleId,
     key: &AccountKey,
-) -> &'a mut Account {
+) -> Option<&'a mut Account> {
     let at = accounts
         .iter()
-        .position(|account| account.module == module && &account.key == key)
-        .unwrap_or_else(|| {
+        .position(|account| &account.key == key)
+        .or_else(|| {
+            if module == ModuleId::Inferd {
+                return None;
+            }
             accounts.push(Account {
                 key: key.clone(),
                 module,
@@ -93,9 +100,9 @@ fn account_of<'a>(
                 used_by: Vec::new(),
                 spend: AccountSpend::default(),
             });
-            accounts.len() - 1
-        });
-    &mut accounts[at]
+            Some(accounts.len() - 1)
+        })?;
+    accounts.get_mut(at)
 }
 
 impl AccountsPane {
@@ -105,7 +112,8 @@ impl AccountsPane {
     }
 
     /// The pane the modules' rows make together: each module's accounts in its own order,
-    /// accountd's first.
+    /// accountd's first. Accountd's and inferd's rows with the same key are one account: inferd's
+    /// are read after accountd's, and only for the accounts accountd listed.
     pub fn of_modules<'a>(
         modules: impl IntoIterator<Item = (ModuleId, &'a Described)>,
     ) -> AccountsPane {
@@ -147,7 +155,9 @@ impl AccountsPane {
             let Some((key, row)) = classify(module, spec, described) else {
                 continue;
             };
-            let account = account_of(&mut pane.accounts, module, &key);
+            let Some(account) = account_of(&mut pane.accounts, module, &key) else {
+                continue;
+            };
             match row {
                 Row::Label(label) => account.label = label.to_owned(),
                 Row::State(word) => account.status = AccountStatus::of(word),

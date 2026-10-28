@@ -6,7 +6,7 @@ use super::io::{confirmed, connect};
 use super::source::BusSource;
 use detent_model::Absence;
 use ds_settings::live::SenderName;
-use porter_client::{DbusTransport, Destination};
+use porter_client::DbusTransport;
 use zbus::Connection;
 use zbus::names::UniqueName;
 
@@ -42,12 +42,6 @@ impl Pinned {
     /// that was confirmed.
     pub fn inference(&self) -> Result<DbusTransport, Absence> {
         Ok(DbusTransport::over(self.connection.clone()).inference_at(self.unique()?))
-    }
-
-    /// The confirmed owner as the destination of one of porter's per-interface clients
-    /// (`AiKeys::connect_at`).
-    pub fn at_owner(&self) -> Result<Destination, Absence> {
-        Ok(Destination::Owner(self.unique()?))
     }
 }
 

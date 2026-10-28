@@ -22,6 +22,7 @@ fn sign_in_again_runs_the_action_in_accountd_at_once() {
 #[test]
 fn removing_an_account_asks_first_and_keeping_it_does_nothing() {
     let mut w = world("accounts-keep");
+    let held = w.accountd.accounts.lock().expect("accounts").len();
     detail(&mut w);
     click(&mut w.harness, REMOVE);
     settle(&mut w.harness, "the question", |h| {
@@ -39,12 +40,13 @@ fn removing_an_account_asks_first_and_keeping_it_does_nothing() {
         !h.html().contains("Remove account Home cloud?")
     });
     assert!(w.accountd.sets().is_empty());
-    assert_eq!(w.accountd.accounts.lock().expect("accounts").len(), 2);
+    assert_eq!(w.accountd.accounts.lock().expect("accounts").len(), held);
 }
 
 #[test]
 fn confirming_the_removal_removes_the_account_and_returns_to_the_list() {
     let mut w = world("accounts-remove");
+    let held = w.accountd.accounts.lock().expect("accounts").len();
     detail(&mut w);
     click(&mut w.harness, REMOVE);
     settle(&mut w.harness, "the question", |h| {
@@ -55,7 +57,7 @@ fn confirming_the_removal_removes_the_account_and_returns_to_the_list() {
         ".ds-alert .ds-button[data-role=\"destructive\"]",
     );
     settle(&mut w.harness, "the removal", |_| {
-        w.accountd.accounts.lock().expect("accounts").len() == 1
+        w.accountd.accounts.lock().expect("accounts").len() == held - 1
     });
     assert_eq!(
         w.accountd.sets(),

@@ -140,7 +140,6 @@ fn Ready(
                 onselect: move |key| send.call(AccountsInput::Select(key)),
                 on: FootHandlers {
                     add: EventHandler::new(move |()| send.call(AccountsInput::AddAccount)),
-                    add_key: EventHandler::new(move |()| send.call(AccountsInput::AddAiKey)),
                     continue_as: EventHandler::new(move |row| send.call(AccountsInput::Ran(row))),
                     remove: EventHandler::new(move |()| {
                         if let Some(row) = removal_row.clone() {

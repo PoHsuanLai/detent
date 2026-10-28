@@ -1,7 +1,7 @@
-//! The account service and the key service on the bus, as the Accounts pane's link.
+//! The account service on the bus, as the Accounts pane's link.
 
 use super::AccountsLink;
-use super::add::{add_account, add_ai_key};
+use super::add::add_account;
 use super::read::read_accounts;
 use crate::bus::BusSource;
 use detent_model::{Absence, AccountsPane, AddEnd, Work};
@@ -17,9 +17,5 @@ impl AccountsLink for OnBus {
 
     fn add_account(&self) -> Work<'_, AddEnd> {
         Box::pin(add_account(&self.0))
-    }
-
-    fn add_ai_key(&self) -> Work<'_, AddEnd> {
-        Box::pin(add_ai_key(&self.0))
     }
 }

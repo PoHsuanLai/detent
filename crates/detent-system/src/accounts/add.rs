@@ -1,12 +1,12 @@
-//! Opening an add sheet from Settings, through porter's client: an identity through the account
-//! service, an AI key through the key service. The Settings role may call each `AddAccount`. The
-//! sheet is asked of the owner of the service's name that was confirmed, never of the name.
+//! Opening the add sheet from Settings, through porter's client: one sheet in the account service
+//! adds everything, an identity or an AI key. The Settings role may call `AddAccount`. The sheet
+//! is asked of the owner of the service's name that was confirmed, never of the name.
 
-use crate::bus::{BusSource, Pinned, pinned_starting};
+use crate::bus::{BusSource, pinned_starting};
 use crate::deadline::{Deadline, answered, peer};
-use detent_callers::{ACCOUNTS_BUS, INFERENCE_BUS};
+use detent_callers::ACCOUNTS_BUS;
 use detent_model::{AccountKey, AddEnd};
-use porter_client::{Accounts, AiKeys, ClientError, TransportError};
+use porter_client::{Accounts, ClientError, TransportError};
 use porter_core::ProviderHint;
 use porter_wire::{ParentWindow, Refusal};
 
@@ -45,48 +45,4 @@ fn end_of(error: &ClientError) -> AddEnd {
         }
         _ => AddEnd::Failed,
     }
-}
-
-/// What adding an AI key asks: the key service's own add sheet, ended with how it went. The one
-/// seam to porter's `AiKeys` client, so the call is written once.
-trait KeySheet {
-    async fn add(&self) -> AddEnd;
-}
-
-/// The key service, at the owner of its name that was confirmed.
-struct OverBus(Pinned);
-
-impl KeySheet for OverBus {
-    async fn add(&self) -> AddEnd {
-        let Ok(to) = self.0.at_owner() else {
-            return AddEnd::Failed;
-        };
-        let Some(Ok(keys)) = answered(
-            Deadline::READ,
-            peer::ACCOUNTS,
-            AiKeys::connect_at(&self.0.connection, &to),
-        )
-        .await
-        else {
-            return AddEnd::Failed;
-        };
-        let asked = answered(
-            Deadline::PROMPT,
-            peer::ACCOUNTS,
-            keys.add_account(ProviderHint::Any, &ParentWindow::Unparented),
-        )
-        .await;
-        match asked {
-            Some(Ok(_)) => AddEnd::Added,
-            Some(Err(_)) | None => AddEnd::Failed,
-        }
-    }
-}
-
-/// Asks the key service for its add sheet and waits for it to end.
-pub async fn add_ai_key(bus: &BusSource) -> AddEnd {
-    let Ok(inferd) = pinned_starting(bus, INFERENCE_BUS).await else {
-        return AddEnd::Failed;
-    };
-    OverBus(inferd).add().await
 }

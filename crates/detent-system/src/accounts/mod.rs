@@ -1,5 +1,5 @@
 //! The account service as the Accounts pane meets it: the accounts the live modules list, and the
-//! sheets that add an account (an identity through accountd, an AI key through inferd), each asked
+//! sheet that adds an account (an identity or an AI key, through accountd), asked
 //! of the owner of the service's name that was confirmed.
 
 mod add;
@@ -16,12 +16,10 @@ pub use read::read_accounts;
 use detent_model::{Absence, AccountsPane, AddEnd, Work};
 use std::fmt::Debug;
 
-/// What the Accounts pane asks of the account and key services.
+/// What the Accounts pane asks of the account service.
 pub trait AccountsLink: Debug + Send + Sync {
     /// The accounts the modules list now, read once; never starts a daemon.
     fn read(&self) -> Work<'_, Result<AccountsPane, Absence>>;
     /// Asks accountd for the add sheet and waits for it to end.
     fn add_account(&self) -> Work<'_, AddEnd>;
-    /// Asks the key service for its add sheet and waits for it to end.
-    fn add_ai_key(&self) -> Work<'_, AddEnd>;
 }

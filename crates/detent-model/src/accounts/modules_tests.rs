@@ -1,5 +1,6 @@
 //! The pane over three modules: each module's rows stay tied to it, one that is gone leaves only
-//! its part out, and the same id in two modules is two accounts.
+//! its part out, accountd's and inferd's rows with one id are one account, and syncd's are
+//! another.
 
 use super::*;
 use crate::Absence;
@@ -72,7 +73,7 @@ fn module(keys: Vec<KeySpec>, values: &[(&str, &str)]) -> Described {
     }
 }
 
-/// accountd: an identity two apps use.
+/// accountd: an identity two apps use, and an AI key with one permit.
 fn accountd() -> Described {
     module(
         vec![
@@ -80,18 +81,20 @@ fn accountd() -> Described {
             fixed("accounts.me.used_by.0", "Photos"),
             fixed("accounts.me.used_by.1", "Mail"),
             action("accounts.me.remove", "Remove account"),
+            fixed("accounts.key.label", "Claude key"),
+            fixed("accounts.key.group", "intelligence"),
+            action("accounts.key.grant.g1", "Revoke"),
         ],
         &[],
     )
 }
 
-/// inferd: an AI key with one permit.
+/// inferd: the month's spend and cap of the AI key.
 fn inferd() -> Described {
     module(
         vec![
-            fixed("accounts.key.label", "Claude key"),
-            fixed("accounts.key.group", "intelligence"),
-            action("accounts.key.grant.g1", "Revoke"),
+            fixed("accounts.key.spend.month", "2500"),
+            fixed("accounts.key.spend.cap", "5000"),
         ],
         &[],
     )
@@ -131,7 +134,7 @@ fn ready(state: AccountsState) -> AccountsReady {
 }
 
 #[test]
-fn each_account_keeps_the_module_it_came_from_and_the_same_id_is_two_accounts() {
+fn each_account_keeps_the_module_that_listed_it_and_syncds_same_id_is_another_account() {
     let pane = ready(heard_all()).pane;
     let found: Vec<(ModuleId, &str)> = pane
         .accounts
@@ -142,7 +145,7 @@ fn each_account_keeps_the_module_it_came_from_and_the_same_id_is_two_accounts() 
         found,
         [
             (ModuleId::Accountd, "Me"),
-            (ModuleId::Inferd, "Claude key"),
+            (ModuleId::Accountd, "Claude key"),
             (ModuleId::Syncd, "Me (sync)"),
         ]
     );
@@ -158,12 +161,12 @@ fn an_identity_lists_the_apps_using_it_and_has_no_revoke_row() {
 }
 
 #[test]
-fn the_permits_of_an_ai_key_are_inferds_revoke_rows() {
+fn the_permits_of_an_ai_key_are_accountds_revoke_rows() {
     let pane = ready(heard_all()).pane;
     let key = &pane.accounts[1];
     assert_eq!(key.permissions.len(), 1);
     assert_eq!(key.permissions[0].action, "Revoke");
-    assert_eq!(key.row(&key.permissions[0].path).module, ModuleId::Inferd);
+    assert_eq!(key.row(&key.permissions[0].path).module, ModuleId::Accountd);
 }
 
 #[test]
@@ -225,13 +228,14 @@ fn continue_as_runs_on_one_press_in_syncd() {
 }
 
 #[test]
-fn a_pane_with_only_accountd_has_no_ai_or_sync_part() {
+fn a_pane_with_only_accountd_has_no_spend_or_sync_part() {
     let (state, _) = accounts_step(
         AccountsState::default(),
         AccountsInput::Found(ModuleId::Accountd, Ok(accountd())),
     );
     let pane = ready(state).pane;
-    assert_eq!(pane.accounts.len(), 1);
+    assert_eq!(pane.accounts.len(), 2);
+    assert_eq!(pane.accounts[1].spend.bar(), None);
     assert!(pane.has(ModuleId::Accountd));
     assert!(!pane.has(ModuleId::Inferd) && !pane.has(ModuleId::Syncd));
     assert!(pane.sync_add.is_none());
@@ -277,13 +281,40 @@ fn a_change_in_a_module_reads_that_module_again() {
 }
 
 #[test]
-fn adding_an_ai_key_opens_its_own_sheet_and_reads_inferd_again() {
-    let (open, effects) = accounts_step(heard_all(), AccountsInput::AddAiKey);
-    assert_eq!(effects, [AccountsEffect::OpenAiKeySheet]);
-    let (done, effects) = accounts_step(
-        open,
-        AccountsInput::AddEnded(ModuleId::Inferd, AddEnd::Added),
+fn inferds_spend_rows_join_the_account_accountd_listed() {
+    let accountd = module(vec![fixed("accounts.x.label", "Claude key")], &[]);
+    let inferd = module(
+        vec![
+            fixed("accounts.x.spend.month", "2500"),
+            fixed("accounts.x.spend.cap", "5000"),
+        ],
+        &[],
     );
-    assert_eq!(effects, [AccountsEffect::Reload(ModuleId::Inferd)]);
-    assert!(!ready(done).sheet_open);
+    let pane =
+        AccountsPane::of_modules([(ModuleId::Accountd, &accountd), (ModuleId::Inferd, &inferd)]);
+    assert_eq!(pane.accounts.len(), 1);
+    let x = &pane.accounts[0];
+    assert_eq!(
+        (x.module, x.label.as_str()),
+        (ModuleId::Accountd, "Claude key")
+    );
+    assert_eq!(x.spend.bar().map(|bar| bar.permille), Some(500));
+}
+
+#[test]
+fn inferds_spend_rows_for_an_id_accountd_did_not_list_make_no_account() {
+    let accountd = module(vec![fixed("accounts.x.label", "Claude key")], &[]);
+    let inferd = module(
+        vec![
+            fixed("accounts.ghost.spend.month", "100"),
+            fixed("accounts.ghost.spend.cap", "200"),
+        ],
+        &[],
+    );
+    let pane =
+        AccountsPane::of_modules([(ModuleId::Accountd, &accountd), (ModuleId::Inferd, &inferd)]);
+    assert_eq!(pane.accounts.len(), 1);
+    assert_eq!(pane.accounts[0].key.id(), "x");
+    let alone = AccountsPane::of(ModuleId::Inferd, &inferd);
+    assert!(alone.accounts.is_empty());
 }

@@ -1,4 +1,5 @@
-//! The Accounts page over three fake modules in memory (identities, AI keys, sync): the
+//! The Accounts page over three fake modules in memory (identities and AI keys, an AI key's spend,
+//! sync): the
 //! list, one account's switches and actions, the question before a removal, and the page when
 //! a module or all of them are missing.
 
@@ -59,7 +60,6 @@ const REVOKE: &str = "[aria-label=\"Revoke Photos allowed: llm\"]";
 const SIGN_IN: &str = "[aria-label=\"Sign in again\"] .ds-field-row-control .ds-button";
 const REMOVE: &str = "[aria-label=\"Remove account\"] .ds-field-row-control .ds-button";
 const CONTINUE_AS: &str = ".accounts-more [aria-label=\"Continue as\u{2026}\"]";
-const ADD_KEY: &str = ".accounts-more [aria-label=\"Add AI Key\u{2026}\"]";
 
 fn accounts() -> Opening {
     Opening {
@@ -99,7 +99,7 @@ fn identities() -> Vec<Held> {
     ]
 }
 
-/// inferd's AI key, with one permit.
+/// accountd's AI key, with one permit; inferd adds the month's spend of it.
 fn keys() -> Vec<Held> {
     vec![
         Held::new("claude-key", "Claude key", "ok", &["llm"])
@@ -135,10 +135,11 @@ fn world(name: &str) -> World {
 }
 
 fn world_in(name: &str, scheme: Scheme) -> World {
+    let listed = [identities(), keys()].concat();
     start(
         name,
         scheme,
-        identities(),
+        listed,
         &[ModuleId::Accountd, ModuleId::Inferd, ModuleId::Syncd],
     )
 }
@@ -165,11 +166,15 @@ fn start_syncing(
     let rt = runtime();
     let bus = PrivateBus::start(name);
     let held = |module: ModuleId, count: usize| if served.contains(&module) { count } else { 0 };
-    let expected = held(ModuleId::Accountd, rows.len())
-        + held(ModuleId::Inferd, keys().len())
-        + held(ModuleId::Syncd, mirrored.len());
+    let expected = held(ModuleId::Accountd, rows.len()) + held(ModuleId::Syncd, mirrored.len());
+    // inferd only sends the spend rows of the accounts accountd lists.
+    let spent: Vec<Held> = rows
+        .iter()
+        .filter(|held| held.spend.is_some())
+        .cloned()
+        .collect();
     let accountd = Accountd::new(Verdict::Allow, rows);
-    let inferd = Accountd::on(ModuleId::Inferd, Verdict::Allow, keys());
+    let inferd = Accountd::on(ModuleId::Inferd, Verdict::Allow, spent);
     let syncd = Accountd::on(ModuleId::Syncd, Verdict::Allow, mirrored).continuing_as();
     let modules = FakeModules::new();
     for module in served {

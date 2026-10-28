@@ -3,9 +3,6 @@
 /// The words "Add Account".
 pub(crate) const ADD_ACCOUNT: &str = "Add Account";
 
-/// The words "Add AI Key…".
-pub(crate) const ADD_AI_KEY_ELLIPSIS: &str = "Add AI Key\u{2026}";
-
 /// The words "Remove Account".
 pub(crate) const REMOVE_ACCOUNT: &str = "Remove Account";
 
@@ -81,12 +78,6 @@ pub(crate) const NO_ACCOUNTS: &str = "No accounts";
 /// The words "An app that needs an account asks for it, and it appears here.".
 pub(crate) const NO_ACCOUNTS_HINT: &str =
     "An app that needs an account asks for it, and it appears here.";
-
-/// The words "AI keys".
-pub(crate) const AI_KEYS: &str = "AI keys";
-
-/// The words "Add a key, or sign in to an assistant.".
-pub(crate) const ADD_A_KEY_OR_SIGN_IN: &str = "Add a key, or sign in to an assistant.";
 
 /// The words "Choose an account to sync.".
 pub(crate) const CHOOSE_AN_ACCOUNT_TO_SYNC: &str = "Choose an account to sync.";

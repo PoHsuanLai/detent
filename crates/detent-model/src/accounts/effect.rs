@@ -26,10 +26,8 @@ pub enum AccountsEffect {
     },
     /// Run the action at the row.
     Invoke(ModuleRow),
-    /// Open the add sheet for an identity and tell how it ended as `AddEnded`.
+    /// Open the add sheet (for an identity or an AI key) and tell how it ended as `AddEnded`.
     OpenAddSheet,
-    /// Open the add sheet for an AI key and tell how it ended as `AddEnded`.
-    OpenAiKeySheet,
     /// Read the module again.
     Reload(ModuleId),
     /// Read the module again after a short wait: the last read failed.

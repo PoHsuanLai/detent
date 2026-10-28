@@ -1,6 +1,8 @@
 //! A fake accounts module: the live settings module at accountd's, inferd's or syncd's path, hosted
 //! in memory (or served on a private bus, for the tests of who owns a name), with the rows the real modules describe (`accounts.<id>.service.<kind>`, `.grant.<grant>`, `.sync.<leaf>`, `.reauth`,
-//! `.remove`, `accounts.clients.<issuer>`). A removed account and a revoked grant leave the rows.
+//! `.remove`, `accounts.clients.<issuer>`). A removed account and a revoked grant leave the rows. As in porter,
+//! inferd's module lists only the `spend.month` and `spend.cap` rows of the accounts it holds, and
+//! the others never list them.
 
 mod module;
 mod rows;
@@ -81,7 +83,8 @@ pub struct Held {
     pub grant_facts: Vec<(String, String, String)>,
     /// The names of the apps using the identity: the read-only `used_by` rows.
     pub used_by: Vec<String>,
-    /// This month's cost and the cap, in cents: the read-only `spend.month` and `spend.cap` rows.
+    /// This month's cost and the cap, in cents: the read-only `spend.month` and `spend.cap` rows,
+    /// which only inferd's module lists.
     pub spend: Option<(u64, u64)>,
 }
 

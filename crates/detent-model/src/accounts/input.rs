@@ -59,8 +59,6 @@ pub enum AccountsInput {
     },
     /// The person pressed Add Account….
     AddAccount,
-    /// The person pressed Add AI Key….
-    AddAiKey,
     /// The add sheet ended; it was the one of `module`.
     AddEnded(ModuleId, AddEnd),
     /// The module says something changed.

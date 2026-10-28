@@ -16,7 +16,7 @@ fn show_in_files_is_syncds_switch_with_its_line_under_it_and_a_turn_on_is_a_set(
         "accounts-show-in-files",
         Scheme::Light,
         identities(),
-        &[ModuleId::Accountd, ModuleId::Inferd, ModuleId::Syncd],
+        &[ModuleId::Accountd, ModuleId::Syncd],
         mirrored,
         Syncd::default(),
     );
@@ -121,7 +121,7 @@ fn a_synced_dataset_says_when_it_synced_and_how_full_the_storage_is_and_a_ring_t
         "accounts-sync-status",
         Scheme::Light,
         identities(),
-        &[ModuleId::Accountd, ModuleId::Inferd, ModuleId::Syncd],
+        &[ModuleId::Accountd, ModuleId::Syncd],
         mirrored_files(),
         sync1,
     );

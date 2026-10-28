@@ -21,7 +21,6 @@ fn the_list_has_a_row_per_account_of_every_module_with_its_state() {
         html.contains("Sign-in keys"),
         "the client ids have a disclosure"
     );
-    assert_eq!(w.harness.count(ADD_KEY), 1);
     assert_eq!(w.harness.count(CONTINUE_AS), 1);
 }
 
@@ -40,7 +39,6 @@ fn a_pane_with_only_accountd_shows_identities_and_no_ai_or_sync_part() {
         !headings(&w).iter().any(|heading| heading == "Intelligence"),
         "no AI part in the list"
     );
-    assert_eq!(w.harness.count(ADD_KEY), 0);
     assert_eq!(w.harness.count(CONTINUE_AS), 0);
     assert_eq!(w.harness.count(".accounts[data-accounts=\"ready\"]"), 1);
 }
@@ -202,15 +200,18 @@ fn an_account_without_a_group_row_is_listed_where_its_own_rows_put_it() {
 fn resting_the_pointer_on_an_app_names_the_services_it_uses() {
     let mut w = world("accounts-app-card");
     {
-        let mut held = w.inferd.accounts.lock().expect("accounts");
-        let key = held.first_mut().expect("the key");
+        let mut held = w.accountd.accounts.lock().expect("accounts");
+        let key = held
+            .iter_mut()
+            .find(|held| held.id == KEY.id)
+            .expect("the key");
         *key = key
             .clone()
             .granting("g3", "Companion can use Language model")
             .granted_on("g3", "2026-10-08", "always")
             .granting("g4", "Companion can use Speech");
     }
-    w.announce(ModuleId::Inferd, "accounts.claude-key.grant.g4", "added");
+    w.announce(ModuleId::Accountd, "accounts.claude-key.grant.g4", "added");
     open(&mut w, KEY);
     let row = "#permission-accounts-claude-key-grant-g3";
     settle(&mut w.harness, "the permit rows", |h| {

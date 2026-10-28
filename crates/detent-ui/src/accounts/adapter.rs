@@ -193,30 +193,6 @@ pub(super) fn AddAccountButton(
     }
 }
 
-/// The button on the AI keys' row, which opens the key service's add sheet; it waits while a
-/// sheet is open or a change is in flight.
-#[component]
-pub(super) fn AddKeyButton(
-    sheet_open: bool,
-    availability: Availability,
-    onpress: EventHandler<()>,
-) -> Element {
-    let availability = if sheet_open {
-        Availability::Disabled
-    } else {
-        availability
-    };
-    rsx! {
-        Button {
-            common: spoken(crate::copy::account_views::ADD_AI_KEY_ELLIPSIS, ""),
-            label: crate::copy::account_views::ADD_AI_KEY_ELLIPSIS,
-            size: ControlSize::Small,
-            availability,
-            onclick: move |_| onpress.call(()),
-        }
-    }
-}
-
 /// The minus under the list, which asks to remove the selected account.
 #[component]
 pub(super) fn RemoveAccountButton(

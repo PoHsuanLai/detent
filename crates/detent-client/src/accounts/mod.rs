@@ -145,10 +145,6 @@ impl Machine for Accounts {
                 let end = self.link.add_account().await;
                 vec![AccountsInput::AddEnded(ModuleId::Accountd, end)]
             }
-            AccountsEffect::OpenAiKeySheet => {
-                let end = self.link.add_ai_key().await;
-                vec![AccountsInput::AddEnded(ModuleId::Inferd, end)]
-            }
             AccountsEffect::Show(key) => vec![AccountsInput::Open(key)],
             AccountsEffect::Reload(module) => match opened(module) {
                 Some(client) => {

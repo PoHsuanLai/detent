@@ -1,4 +1,4 @@
-//! The account and key services from memory: the accounts they list, and how each add sheet ends.
+//! The account service from memory: the accounts they list, and how each add sheet ends.
 
 use super::AccountsLink;
 use crate::fake_kit::Kit;
@@ -11,8 +11,6 @@ use std::sync::{Arc, Mutex};
 pub enum SheetAsked {
     /// The add-account sheet.
     Account,
-    /// The add-key sheet.
-    AiKey,
 }
 
 /// Services that answer from what they were given.
@@ -63,9 +61,5 @@ impl AccountsLink for FakeAccounts {
 
     fn add_account(&self) -> Work<'_, AddEnd> {
         self.open(SheetAsked::Account)
-    }
-
-    fn add_ai_key(&self) -> Work<'_, AddEnd> {
-        self.open(SheetAsked::AiKey)
     }
 }

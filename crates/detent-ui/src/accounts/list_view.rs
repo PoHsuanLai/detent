@@ -1,8 +1,6 @@
 //! The list of accounts, and the sign-in client ids under it.
 
-use super::adapter::{
-    ActionButton, AddAccountButton, AddKeyButton, ClientField, RemoveAccountButton,
-};
+use super::adapter::{ActionButton, AddAccountButton, ClientField, RemoveAccountButton};
 use super::avatar_view::{AccountAvatar, AvatarPlace};
 use crate::copy::accounts::{attention_badge, status_label};
 use crate::key_row::row_id;
@@ -30,8 +28,6 @@ use ds_settings::schema::ActionWeight;
 pub(super) struct FootHandlers {
     /// The plus was pressed.
     pub add: EventHandler<()>,
-    /// Add AI Key was pressed.
-    pub add_key: EventHandler<()>,
     /// The sync service's row that continues as a new account was pressed.
     pub continue_as: EventHandler<ModuleRow>,
     /// The minus was pressed.
@@ -219,7 +215,7 @@ pub(super) fn AccountList(
                 }
             }
             ListFoot { sheet_open, availability, removal, on }
-            MoreRows { pane, sheet_open, availability, on }
+            MoreRows { pane, availability, on }
         };
     }
     let items = items_of(&pane, selected.as_ref(), &marks, &book, onselect);
@@ -234,45 +230,33 @@ pub(super) fn AccountList(
                 onpick: move |id: String| onselect.call(AccountKey(id)),
             }
             ListFoot { sheet_open, availability, removal, on }
-            MoreRows { pane: pane.clone(), sheet_open, availability, on }
+            MoreRows { pane: pane.clone(), availability, on }
         }
     }
 }
 
-/// The rows under the list that add what the foot's plus does not: an AI key (when the key
-/// service is there) and, for sync, a new account to continue as (when the sync service offers
-/// one).
+/// The row under the list that adds what the foot's plus does not: for sync, a new account to
+/// continue as (when the sync service offers one).
 #[component]
-fn MoreRows(pane: Pane, sheet_open: bool, availability: Availability, on: FootHandlers) -> Element {
-    let key_row = pane.has(ModuleId::Inferd);
-    let continue_row = pane.sync_add.clone();
-    if !key_row && continue_row.is_none() {
+fn MoreRows(pane: Pane, availability: Availability, on: FootHandlers) -> Element {
+    let Some(add) = pane.sync_add.clone() else {
         return rsx! {};
-    }
+    };
     rsx! {
         div { class: "accounts-more", "data-accounts": "more",
             FieldGroup {
-                if key_row {
-                    FieldRow {
-                        label: TextLine::from(crate::copy::account_views::AI_KEYS),
-                        help: Some(TextLine::from(crate::copy::account_views::ADD_A_KEY_OR_SIGN_IN)),
-                        AddKeyButton { sheet_open, availability, onpress: move |()| on.add_key.call(()) }
-                    }
-                }
-                if let Some(add) = continue_row {
-                    FieldRow {
-                        label: TextLine::from(crate::copy::account_views::SYNC),
-                        help: Some(TextLine::from(crate::copy::account_views::CHOOSE_AN_ACCOUNT_TO_SYNC)),
-                        ActionButton {
-                            label: add.name.clone(),
-                            subject: String::new(),
-                            weight: ActionWeight::Plain,
-                            availability,
-                            onpress: {
-                                let row = add.row();
-                                move |()| on.continue_as.call(row.clone())
-                            },
-                        }
+                FieldRow {
+                    label: TextLine::from(crate::copy::account_views::SYNC),
+                    help: Some(TextLine::from(crate::copy::account_views::CHOOSE_AN_ACCOUNT_TO_SYNC)),
+                    ActionButton {
+                        label: add.name.clone(),
+                        subject: String::new(),
+                        weight: ActionWeight::Plain,
+                        availability,
+                        onpress: {
+                            let row = add.row();
+                            move |()| on.continue_as.call(row.clone())
+                        },
                     }
                 }
             }

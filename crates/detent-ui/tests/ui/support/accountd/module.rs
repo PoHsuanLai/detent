@@ -16,6 +16,7 @@ impl LiveModule for Accountd {
             .expect("accounts")
             .iter()
             .flat_map(rows_of)
+            .filter(|row| row.path.0.contains(".spend.") == (self.module == ModuleId::Inferd))
             .collect();
         if self.continue_as {
             key.push(spec(

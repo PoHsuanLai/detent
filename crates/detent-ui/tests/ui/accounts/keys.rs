@@ -1,9 +1,9 @@
-//! AI keys: permits, switches, and the month's spend.
+//! AI keys: permits and switches (accountd's rows), and the month's spend (inferd's rows).
 
 use super::*;
 
 #[test]
-fn an_ai_key_shows_inferds_permits_with_revoke_and_revoking_goes_to_inferd() {
+fn an_ai_key_shows_its_permits_with_revoke_and_revoking_goes_to_accountd() {
     let mut w = world("accounts-permit");
     open(&mut w, KEY);
     let html = w.harness.html();
@@ -14,30 +14,30 @@ fn an_ai_key_shows_inferds_permits_with_revoke_and_revoking_goes_to_inferd() {
     );
     press_revoke(&mut w);
     settle(&mut w.harness, "the revoke", |_| {
-        !w.inferd.sets().is_empty()
+        !w.accountd.sets().is_empty()
     });
     assert_eq!(
-        w.inferd.sets(),
+        w.accountd.sets(),
         [(
             "accounts.claude-key.grant.g1".to_owned(),
             toml::Value::Boolean(true)
         )]
     );
-    assert!(w.accountd.sets().is_empty() && w.syncd.sets().is_empty());
+    assert!(w.syncd.sets().is_empty() && w.inferd.sets().is_empty());
     settle(&mut w.harness, "the permit to leave the page", |h| {
         !h.html().contains("Photos allowed: llm")
     });
 }
 
 #[test]
-fn a_switch_sets_the_service_in_inferd_and_the_answer_stays_on_screen() {
+fn a_switch_sets_the_service_in_accountd_and_the_answer_stays_on_screen() {
     let mut w = world("accounts-switch");
     open(&mut w, KEY);
     assert_eq!(w.harness.attr(LLM, "aria-checked").as_deref(), Some("true"));
     click(&mut w.harness, LLM);
-    settle(&mut w.harness, "the set", |_| !w.inferd.sets().is_empty());
+    settle(&mut w.harness, "the set", |_| !w.accountd.sets().is_empty());
     assert_eq!(
-        w.inferd.sets(),
+        w.accountd.sets(),
         [(
             "accounts.claude-key.service.llm".to_owned(),
             toml::Value::String("off".to_owned())
@@ -49,28 +49,30 @@ fn a_switch_sets_the_service_in_inferd_and_the_answer_stays_on_screen() {
 }
 
 #[test]
-fn a_session_permit_row_comes_and_goes_with_inferds_announcement() {
+fn a_session_permit_row_comes_and_goes_with_accountds_announcement() {
     let mut w = world("accounts-session-grant");
     open(&mut w, KEY);
     let sentence = "Claude Code can use Llm (this session)";
     let (grant, path) = ("s1", "accounts.claude-key.grant.s1");
-    w.inferd
+    w.accountd
         .accounts
         .lock()
         .expect("accounts")
         .iter_mut()
+        .filter(|held| held.id == KEY.id)
         .for_each(|held| held.grants.push((grant.to_owned(), sentence.to_owned())));
-    w.announce(ModuleId::Inferd, path, "added");
+    w.announce(ModuleId::Accountd, path, "added");
     settle(&mut w.harness, "the session row", |h| {
         h.html().contains(sentence)
     });
-    w.inferd
+    w.accountd
         .accounts
         .lock()
         .expect("accounts")
         .iter_mut()
+        .filter(|held| held.id == KEY.id)
         .for_each(|held| held.grants.retain(|(g, _)| g != grant));
-    w.announce(ModuleId::Inferd, path, "removed");
+    w.announce(ModuleId::Accountd, path, "removed");
     settle(&mut w.harness, "the session row to go", |h| {
         !h.html().contains(sentence)
     });
@@ -81,15 +83,18 @@ fn a_permit_says_the_day_it_was_allowed_or_that_it_lasts_a_session_from_the_rows
  {
     let mut w = world("accounts-grant-facts");
     {
-        let mut held = w.inferd.accounts.lock().expect("accounts");
-        let key = held.first_mut().expect("the key");
+        let mut held = w.accountd.accounts.lock().expect("accounts");
+        let key = held
+            .iter_mut()
+            .find(|held| held.id == KEY.id)
+            .expect("the key");
         *key = key
             .clone()
             .granted_on("g1", "2026-10-08", "always")
             .granting("g2", "Mail allowed: llm")
             .granted_on("g2", "2026-10-09", "session");
     }
-    w.announce(ModuleId::Inferd, "accounts.claude-key.grant.g2", "added");
+    w.announce(ModuleId::Accountd, "accounts.claude-key.grant.g2", "added");
     open(&mut w, KEY);
     settle(&mut w.harness, "the second permit", |h| {
         h.html().contains("This session")
@@ -102,6 +107,8 @@ fn an_ai_account_shows_this_months_spend_against_its_cap_as_a_bar() {
     let mut w = world("accounts-spend");
     open(&mut w, KEY);
     let bar = "[aria-label=\"Spent this month\"]";
+    // The spend is inferd's rows, read on their own: the bar joins the account's detail.
+    settle(&mut w.harness, "the spend", |h| h.count(bar) == 1);
     assert_eq!(
         w.harness.attr(bar, "aria-valuenow").as_deref(),
         Some("50"),
