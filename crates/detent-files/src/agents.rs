@@ -4,8 +4,9 @@
 use crate::error::FilesError;
 use crate::read::text_of;
 use crate::values::{ConfigHome, DataHome};
+use agents_core::dirs::AgentsDir;
 use detent_model::FoundAgent;
-use docket_agents::AgentsDir;
+use docket_agents::store::{agents, versions};
 use docket_settings::{
     AddFault, AgentChoice, Agents, ChoiceFault, NewAgent, read_agents, write_agent_add,
     write_agent_choice, write_agent_remove,
@@ -50,10 +51,10 @@ pub fn save_agent_choice(
 /// started and no network is used.
 pub fn installed_agents(data: &DataHome) -> Vec<FoundAgent> {
     let dir = AgentsDir::at(&data.0.join(AGENTS_DIR));
-    dir.agents()
+    agents(&dir)
         .into_iter()
         .filter_map(|id| {
-            let version = dir.versions(&id).pop()?;
+            let version = versions(&dir, &id).pop()?;
             Some(FoundAgent {
                 id: id.as_str().to_owned(),
                 version: version.as_str().to_owned(),

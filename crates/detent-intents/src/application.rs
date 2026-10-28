@@ -144,7 +144,7 @@ pub(crate) async fn export_application(
     connection: &zbus::Connection,
     window: Outbox,
     peers: Arc<BusPeers>,
-) -> Result<(), docket_client::TransportError> {
+) -> Result<(), docket_provider::ServeError> {
     let application = Application {
         window,
         peers,
@@ -155,7 +155,7 @@ pub(crate) async fn export_application(
         .at(APPLICATION_PATH, application)
         .await
         .map(|_| ())
-        .map_err(|e| docket_client::TransportError::Bus(e.to_string()))
+        .map_err(docket_provider::ServeError::Bus)
 }
 
 /// Why a second `detent` could not hand over.

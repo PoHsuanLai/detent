@@ -11,11 +11,11 @@ use detent_model::{
     AgentSetting, Arrival, Catalogue, Control, KeyEntry, Notice, Outbox, PageSlug, TextFault,
     arrival, show_value,
 };
-use docket_client::IntentProvider;
 use docket_core::{
     AppRefusal, EntityRef, FactLine, Hit, Invocation, LabelText, Outcome, Preview, SuggestAsk,
     UndoFault, UndoToken, Undoable, ValidManifest, Value,
 };
+use docket_provider::IntentProvider;
 use ds_settings::schema::KeyPath;
 use ds_settings::target::SettingsTarget;
 use porter_core::{AppName, DataClass};

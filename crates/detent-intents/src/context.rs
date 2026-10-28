@@ -1,11 +1,11 @@
 //! What Settings answers for the seams ds fills in other apps: it reports no particular place
 //! and declines a summon (the window has no prompt field).
 
-use docket_client::{ContextSource, SummonTarget};
 use docket_core::{
     ContextScope, ContextSnapshot, Here, Selection, SummonAnswer, SummonOrigin, SummonSerial,
     TextTarget, Visible, WindowPrivacy,
 };
+use docket_provider::{ContextSource, SummonTarget};
 use porter_core::{AppName, Count};
 
 use crate::answer::own;

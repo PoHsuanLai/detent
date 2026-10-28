@@ -5,9 +5,9 @@ use crate::application::export_application;
 use crate::context::SettingsContext;
 use crate::provider::SettingsProvider;
 use detent_callers::{BusPeers, desktop_peers};
-use docket_client::{TransportError, serve_on, serve_on_with};
 use docket_dbus::BusConnection;
 use docket_dbus::callers::Callers;
+use docket_provider::{ServeError, serve_on, serve_on_with};
 use ds_peer::{Deadline, within};
 use std::sync::Arc;
 
@@ -16,7 +16,7 @@ use std::sync::Arc;
 pub async fn serve(
     connection: &BusConnection,
     provider: SettingsProvider,
-) -> Result<(), TransportError> {
+) -> Result<(), ServeError> {
     // The activation object goes up before the name is claimed: a caller that was waiting for
     // the name finds it answering.
     let peers = Arc::new(desktop_peers(connection));
@@ -33,7 +33,7 @@ pub async fn serve_with<K: Callers>(
     provider: SettingsProvider,
     callers: Arc<K>,
     peers: Arc<BusPeers>,
-) -> Result<(), TransportError> {
+) -> Result<(), ServeError> {
     export_application(connection, provider.window(), peers).await?;
     let context = SettingsContext(provider.app().clone());
     serve_on_with(connection, provider, context.clone(), context, callers).await

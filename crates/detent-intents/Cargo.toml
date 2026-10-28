@@ -13,7 +13,7 @@ detent-callers = { workspace = true }
 detent-client = { workspace = true }
 detent-files = { workspace = true }
 detent-model = { workspace = true }
-docket-client = { workspace = true }
+docket-provider = { workspace = true }
 docket-core = { workspace = true }
 docket-dbus = { workspace = true }
 ds-peer = { workspace = true }

@@ -11,6 +11,7 @@ publish.workspace = true
 [dependencies]
 chordkit = { workspace = true }
 detent-model = { workspace = true }
+agents-core = { workspace = true }
 docket-agents = { workspace = true }
 docket-settings = { workspace = true }
 ds-extensions = { workspace = true }
