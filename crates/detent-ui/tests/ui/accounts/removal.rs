@@ -98,7 +98,7 @@ fn a_sign_in_that_ends_is_told_in_a_calm_line_and_the_rows_are_read_again() {
     let mut w = world("accounts-reauth-end");
     detail(&mut w);
     w.accountd.stop("home", "needs_reauth");
-    w.announce(Module::Accountd, "accounts.home.reauth", "failed");
+    w.announce(ModuleId::Accountd, "accounts.home.reauth", "failed");
     settle(&mut w.harness, "the line", |h| {
         h.html()
             .contains("Could not sign in to Home cloud. Try again later.")

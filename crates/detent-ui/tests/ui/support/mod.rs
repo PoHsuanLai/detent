@@ -3,13 +3,11 @@
 //! config, the session bus or the portal.
 
 pub mod accountd;
-pub mod bluetooth;
 pub mod bus;
 pub mod compositor;
 pub mod computers;
 pub mod corners;
 pub mod desk;
-pub mod displays;
 pub mod drive;
 pub mod engines;
 pub mod handover;
@@ -20,21 +18,21 @@ pub mod pictures;
 pub mod portal;
 pub mod running;
 pub mod syncd;
-pub mod updates;
 pub mod wifi;
 
-use bluetooth::Bluetooth;
 use detent_client::{
     BusSource, ClientBuilder, ClientHomes, CornerDesk, Desk, Lender, NoCorners, NoPictures,
     PersonLink, Pictures, Quiet, ReasonFeed, Vouch,
 };
 use detent_files::{CacheHome, ConfigHome, DataHome, StateHome};
 use detent_model::{Absence, OriginRule, Outbox, inbox};
+use detent_system::bluetooth::FakeBluetooth;
+use detent_system::displays::FakeDisplays;
 use detent_system::modules::FakeModules;
 use detent_system::spaces::SpacesLink;
+use detent_system::updates::{FakeLeaves, FakeUpdates};
 use detent_testkit::{Scratch, seed_schemas};
 use detent_ui::{App, Env, FirstRunApp, Homes, Opening};
-use displays::Displays;
 use ds::prelude::{Scheme, SystemPrefs};
 use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
 use ds_settings::SystemPrefsSource;
@@ -43,7 +41,6 @@ use ds_settings::schema::Schema;
 use lending::Units;
 use porter_client::LendingConfig;
 use std::sync::Arc;
-use updates::{Leaves, Service};
 use wifi::Wifi;
 
 pub const TMP: &str = env!("CARGO_TARGET_TMPDIR");
@@ -61,14 +58,14 @@ pub struct Sandbox {
     bus: BusSource,
     reasons: ReasonFeed,
     units: Units,
-    updates: Service,
-    leaves: Leaves,
+    updates: FakeUpdates,
+    leaves: FakeLeaves,
     engines: Arc<dyn Desk>,
     pictures: Arc<dyn Pictures>,
     corners: Arc<dyn CornerDesk>,
     wifi: Wifi,
-    bluetooth: Bluetooth,
-    displays: Displays,
+    bluetooth: FakeBluetooth,
+    displays: FakeDisplays,
     agents_program: Option<std::path::PathBuf>,
     spaces: Option<Arc<dyn SpacesLink>>,
     modules: Option<FakeModules>,
@@ -88,8 +85,8 @@ impl Sandbox {
             bus: BusSource::Absent,
             reasons: ReasonFeed::default(),
             units: Units::default(),
-            updates: Service::absent(),
-            leaves: Leaves::default(),
+            updates: FakeUpdates::absent(),
+            leaves: FakeLeaves::default(),
             // Nothing is listed and nothing is downloaded, whatever this computer has.
             engines: Arc::new(Quiet),
             // No folder is read and no chooser is opened, whatever this computer has.
@@ -98,8 +95,8 @@ impl Sandbox {
             corners: Arc::new(NoCorners),
             // No network, no Bluetooth and no display, whatever this computer has.
             wifi: Wifi::missing(Absence::NotRunning),
-            bluetooth: Bluetooth::missing(Absence::NotRunning),
-            displays: Displays::missing(Absence::NotRunning),
+            bluetooth: FakeBluetooth::missing(Absence::NotRunning),
+            displays: FakeDisplays::missing(Absence::NotRunning),
             // No program to list or download coding assistants with, whatever this computer has.
             agents_program: None,
             // The Spaces registry is looked for on the bus, which is absent unless a test names one.
@@ -172,7 +169,7 @@ impl Sandbox {
     }
 
     /// This world with the update service in this standing.
-    pub fn with_service(self, updates: Service) -> Sandbox {
+    pub fn with_service(self, updates: FakeUpdates) -> Sandbox {
         Sandbox { updates, ..self }
     }
 
@@ -182,12 +179,12 @@ impl Sandbox {
     }
 
     /// This world with BlueZ in this standing.
-    pub fn with_bluetooth(self, bluetooth: Bluetooth) -> Sandbox {
+    pub fn with_bluetooth(self, bluetooth: FakeBluetooth) -> Sandbox {
         Sandbox { bluetooth, ..self }
     }
 
     /// This world with the compositor's displays in this standing.
-    pub fn with_displays(self, displays: Displays) -> Sandbox {
+    pub fn with_displays(self, displays: FakeDisplays) -> Sandbox {
         Sandbox { displays, ..self }
     }
 
@@ -200,7 +197,7 @@ impl Sandbox {
     }
 
     /// The log-out the Software Update page starts, to read how often it was asked.
-    pub fn leaves(&self) -> Leaves {
+    pub fn leaves(&self) -> FakeLeaves {
         self.leaves.clone()
     }
 

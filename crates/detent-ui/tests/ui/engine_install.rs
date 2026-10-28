@@ -6,10 +6,11 @@
 use crate::support::Sandbox;
 use crate::support::desk::{Fake, nothing_installed};
 use crate::support::drive::{click, scroll_into_view};
-use crate::support::inferd::{Inferd, Policy};
+use crate::support::inferd::Inferd;
 use detent_model::{ASSISTANT_MODEL_SLUG, EngineFailure, EngineStanding, InstallScope, PageSlug};
 use detent_ui::Opening;
 use ds_harness::{Harness, Input};
+use ds_settings::live::Verdict;
 use std::time::Duration;
 
 const MODEL_BUTTON: &str = ".assistant-model .ds-popup .ds-button";
@@ -46,7 +47,7 @@ struct World {
 
 /// The assistant's page with Local chosen, over a computer whose engines `desk` lists.
 fn world(name: &str, desk: Fake) -> World {
-    let fake = Inferd::new(Policy::Allow).on_slots();
+    let fake = Inferd::new(Verdict::Allow).on_slots();
     let harness = Sandbox::new(name)
         .with_modules(fake.hosted())
         .with_engines(desk.desk())

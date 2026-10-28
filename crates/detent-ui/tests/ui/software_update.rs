@@ -3,11 +3,11 @@
 
 use crate::support::Sandbox;
 use crate::support::drive::{click, page_of, title_of};
-use crate::support::updates::{Asked, NOW, Service};
 use detent_model::{
     ByteCount, Permille, ProblemKind, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus,
     UpdateVersion,
 };
+use detent_system::updates::{FakeUpdates, NOW, UpdatesAsked};
 use detent_ui::Opening;
 use ds_harness::Harness;
 use std::time::Duration;
@@ -85,7 +85,7 @@ fn row_text(harness: &Harness) -> String {
     harness.text_of(ROW).unwrap_or_default()
 }
 
-fn world(name: &str, service: &Service) -> (Sandbox, Harness) {
+fn world(name: &str, service: &FakeUpdates) -> (Sandbox, Harness) {
     let sandbox = Sandbox::new(name).with_service(service.clone());
     let harness = sandbox.harness(software_update());
     (sandbox, harness)
@@ -114,7 +114,7 @@ fn the_page_opens_from_its_slug_and_says_plainly_when_nothing_serves_updates() {
 
 #[test]
 fn an_up_to_date_computer_shows_its_version_and_when_it_last_checked() {
-    let service = Service::answering(idle());
+    let service = FakeUpdates::answering(idle());
     let (_sandbox, mut harness) = world("swupdate-idle", &service);
     showing(&mut harness, "the version row", CHECK);
     let row = row_text(&harness);
@@ -129,13 +129,13 @@ fn an_up_to_date_computer_shows_its_version_and_when_it_last_checked() {
 
 #[test]
 fn checking_asks_the_service_shows_a_spinner_and_then_what_it_found() {
-    let service = Service::answering(idle());
+    let service = FakeUpdates::answering(idle());
     let (_sandbox, mut harness) = world("swupdate-check", &service);
     showing(&mut harness, "the button", CHECK);
     assert_eq!(harness.attr(CHECK, "aria-busy"), None, "not busy before");
 
     click(&mut harness, CHECK);
-    assert_eq!(service.asked(), [Asked::Check]);
+    assert_eq!(service.asked(), [UpdatesAsked::Check]);
     settle(&mut harness, "the busy button", |h| {
         h.attr(CHECK, "aria-busy").as_deref() == Some("true")
     });
@@ -155,7 +155,7 @@ fn checking_asks_the_service_shows_a_spinner_and_then_what_it_found() {
 
 #[test]
 fn more_info_shows_the_notes_and_done_puts_them_away() {
-    let service = Service::answering(offered(UpdatePhase::Available));
+    let service = FakeUpdates::answering(offered(UpdatePhase::Available));
     let (_sandbox, mut harness) = world("swupdate-notes", &service);
     showing(&mut harness, "More Info", MORE_INFO);
     assert_eq!(harness.count(NOTES), 0);
@@ -174,12 +174,12 @@ fn more_info_shows_the_notes_and_done_puts_them_away() {
 
 #[test]
 fn update_now_downloads_with_a_bar_installs_without_one_and_ends_with_log_out() {
-    let service = Service::answering(offered(UpdatePhase::Available));
+    let service = FakeUpdates::answering(offered(UpdatePhase::Available));
     let (sandbox, mut harness) = world("swupdate-install", &service);
     showing(&mut harness, "Update Now", UPDATE_NOW);
 
     click(&mut harness, UPDATE_NOW);
-    assert_eq!(service.asked(), [Asked::Install(version("0.4.0"))]);
+    assert_eq!(service.asked(), [UpdatesAsked::Install(version("0.4.0"))]);
     settle(&mut harness, "the download", |h| {
         row_text(h).contains("Downloading")
     });
@@ -230,7 +230,7 @@ fn a_failure_is_told_in_the_services_words_and_try_again_asks_again() {
         problem: Some("There is no network.".to_owned()),
         ..offered(UpdatePhase::Failed)
     };
-    let service = Service::answering(failed);
+    let service = FakeUpdates::answering(failed);
     let (_sandbox, mut harness) = world("swupdate-failed", &service);
     showing(&mut harness, "Try Again", TRY_AGAIN);
     assert!(row_text(&harness).contains("There is no network."));
@@ -238,20 +238,20 @@ fn a_failure_is_told_in_the_services_words_and_try_again_asks_again() {
     click(&mut harness, TRY_AGAIN);
     assert_eq!(
         service.asked(),
-        [Asked::Install(version("0.4.0"))],
+        [UpdatesAsked::Install(version("0.4.0"))],
         "what was on offer is installed again"
     );
 }
 
 #[test]
 fn a_refused_request_is_told_in_a_toast_and_changes_nothing() {
-    let service = Service::answering(idle());
+    let service = FakeUpdates::answering(idle());
     let (_sandbox, mut harness) = world("swupdate-refused", &service);
     showing(&mut harness, "the button", CHECK);
     service.refuses("Another update is in progress.");
 
     click(&mut harness, CHECK);
-    assert_eq!(service.asked(), [Asked::Check]);
+    assert_eq!(service.asked(), [UpdatesAsked::Check]);
     settle(&mut harness, "the toast", |h| h.count(".ds-toast") == 1);
     let toast = harness.text_of(".ds-toast").unwrap_or_default();
     assert!(toast.contains("Another update is in progress."), "{toast}");
@@ -260,7 +260,7 @@ fn a_refused_request_is_told_in_a_toast_and_changes_nothing() {
 
 #[test]
 fn a_service_that_goes_away_and_comes_back_is_followed() {
-    let service = Service::answering(idle());
+    let service = FakeUpdates::answering(idle());
     let (_sandbox, mut harness) = world("swupdate-away", &service);
     showing(&mut harness, "the version row", CHECK);
 
@@ -278,7 +278,7 @@ fn a_service_that_goes_away_and_comes_back_is_followed() {
 
 #[test]
 fn an_offer_that_changed_after_it_was_shown_is_not_installed_and_the_new_one_is_shown() {
-    let service = Service::answering(offered(UpdatePhase::Available));
+    let service = FakeUpdates::answering(offered(UpdatePhase::Available));
     let (_sandbox, mut harness) = world("swupdate-changed", &service);
     showing(&mut harness, "Update Now", UPDATE_NOW);
     assert!(row_text(&harness).contains("Quire 0.4.0"));
@@ -289,7 +289,7 @@ fn an_offer_that_changed_after_it_was_shown_is_not_installed_and_the_new_one_is_
     click(&mut harness, UPDATE_NOW);
     assert_eq!(
         service.asked(),
-        [Asked::Install(version("0.4.0"))],
+        [UpdatesAsked::Install(version("0.4.0"))],
         "what was shown is what was named"
     );
     showing(&mut harness, "the note", NOTICE);
@@ -304,8 +304,8 @@ fn an_offer_that_changed_after_it_was_shown_is_not_installed_and_the_new_one_is_
     assert_eq!(
         service.asked(),
         [
-            Asked::Install(version("0.4.0")),
-            Asked::Install(version("0.5.0"))
+            UpdatesAsked::Install(version("0.4.0")),
+            UpdatesAsked::Install(version("0.5.0"))
         ]
     );
     settle(&mut harness, "the download", |h| {
@@ -321,7 +321,7 @@ fn a_failure_that_says_the_offer_changed_shows_the_new_version_with_the_note() {
         problem_kind: ProblemKind::VersionChanged,
         ..offered_version(UpdatePhase::Failed, "0.5.0")
     };
-    let service = Service::answering(overtaken);
+    let service = FakeUpdates::answering(overtaken);
     let (_sandbox, mut harness) = world("swupdate-overtaken", &service);
     showing(&mut harness, "Update Now", UPDATE_NOW);
     assert_eq!(harness.text_of(NOTICE).as_deref(), Some(NEWER));
@@ -334,7 +334,7 @@ fn a_failure_that_says_the_offer_changed_shows_the_new_version_with_the_note() {
 
 #[test]
 fn nothing_on_offer_shows_no_way_to_install_and_asks_nothing() {
-    let service = Service::answering(idle());
+    let service = FakeUpdates::answering(idle());
     let (_sandbox, mut harness) = world("swupdate-nothing", &service);
     showing(&mut harness, "the version row", CHECK);
     assert_eq!(harness.count(UPDATE_NOW), 0);
@@ -344,7 +344,7 @@ fn nothing_on_offer_shows_no_way_to_install_and_asks_nothing() {
 
 #[test]
 fn a_refusal_to_install_is_told_in_a_toast_in_the_services_words() {
-    let service = Service::answering(offered(UpdatePhase::Available));
+    let service = FakeUpdates::answering(offered(UpdatePhase::Available));
     let (_sandbox, mut harness) = world("swupdate-install-refused", &service);
     showing(&mut harness, "Update Now", UPDATE_NOW);
     service.refuses("An update is already in progress.");

@@ -6,7 +6,7 @@ use crate::copy;
 use crate::copy::absence::Subject;
 use crate::icons::tile_of;
 use crate::live::use_live;
-use crate::system::Unavailable;
+use crate::system::{RowWork, Unavailable};
 use detent_client::Client;
 use detent_model::{BtAsking, BtDevice, BtInput, BtKind, BtLink, BtReady, BtState, PageKind};
 use dioxus::prelude::*;
@@ -44,17 +44,6 @@ fn glyph(kind: BtKind) -> Icon {
         BtKind::Phone => Icon::Phone,
         BtKind::Other => Icon::Bluetooth,
     }
-}
-
-/// Whether the page is busy with a device, another device, or neither.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum RowWork {
-    /// A press starts something.
-    Free,
-    /// This device is being connected or paired.
-    Working,
-    /// Another device is, so a press waits.
-    Held,
 }
 
 /// What the buttons of a row do.
@@ -166,11 +155,7 @@ fn DeviceRow(
         Group::Mine => copy::bluetooth::link(device.link),
         Group::Nearby => crate::copy::bluetooth::NOT_PAIRED,
     };
-    let availability = match work {
-        RowWork::Free => Availability::Enabled,
-        RowWork::Working => Availability::Busy,
-        RowWork::Held => Availability::Disabled,
-    };
+    let availability = work.availability();
     let (address, name) = (device.address.clone(), device.name.clone());
     rsx! {
         FieldRow {

@@ -60,7 +60,7 @@ fn a_session_permit_row_comes_and_goes_with_inferds_announcement() {
         .expect("accounts")
         .iter_mut()
         .for_each(|held| held.grants.push((grant.to_owned(), sentence.to_owned())));
-    w.announce(Module::Inferd, path, "added");
+    w.announce(ModuleId::Inferd, path, "added");
     settle(&mut w.harness, "the session row", |h| {
         h.html().contains(sentence)
     });
@@ -70,7 +70,7 @@ fn a_session_permit_row_comes_and_goes_with_inferds_announcement() {
         .expect("accounts")
         .iter_mut()
         .for_each(|held| held.grants.retain(|(g, _)| g != grant));
-    w.announce(Module::Inferd, path, "removed");
+    w.announce(ModuleId::Inferd, path, "removed");
     settle(&mut w.harness, "the session row to go", |h| {
         !h.html().contains(sentence)
     });
@@ -89,7 +89,7 @@ fn a_permit_says_the_day_it_was_allowed_or_that_it_lasts_a_session_from_the_rows
             .granting("g2", "Mail allowed: llm")
             .granted_on("g2", "2026-10-09", "session");
     }
-    w.announce(Module::Inferd, "accounts.claude-key.grant.g2", "added");
+    w.announce(ModuleId::Inferd, "accounts.claude-key.grant.g2", "added");
     open(&mut w, KEY);
     settle(&mut w.harness, "the second permit", |h| {
         h.html().contains("This session")

@@ -9,6 +9,7 @@ use detent_model::Absence;
 use ds_peer::within;
 use ds_settings::live::{Changes, LiveClient, LiveError, OwnerCheck, SenderName, Verdict};
 use ds_settings::schema::KeyPath;
+use porter_client::{ClientError, SpacesError, TransportError};
 use porter_dbus::{BusFailure, classify};
 use zbus::Connection;
 use zbus::fdo::{DBusProxy, NameOwnerChangedStream};
@@ -20,21 +21,63 @@ fn failed(why: impl std::fmt::Display) -> Absence {
     Absence::Failed
 }
 
-pub fn absence_of(error: LiveError) -> Absence {
-    match error {
-        LiveError::NotPermitted(_) => Absence::NotPermitted,
-        LiveError::NotTheService(_) => Absence::Unavailable,
-        other => failed(other),
+/// Why a call failed, as a pane says it: nobody on the name means the service is not running, a
+/// refusal means this caller is not permitted, anything else is a failure.
+pub trait ToAbsence {
+    fn absence(&self) -> Absence;
+}
+
+/// `map_err(absence_of)` for an error that is passed by value.
+pub fn absence_of<E: ToAbsence>(error: E) -> Absence {
+    error.absence()
+}
+
+impl ToAbsence for LiveError {
+    fn absence(&self) -> Absence {
+        match self {
+            LiveError::NotPermitted(_) => Absence::NotPermitted,
+            LiveError::NotTheService(_) => Absence::Unavailable,
+            other => failed(other),
+        }
     }
 }
 
-/// Why a call to a service's own interface failed: nobody on its name means it is not running, the
-/// bus's refusal means this caller is not permitted, anything else is a failure.
-pub fn absence_of_bus(error: &zbus::Error) -> Absence {
-    match classify(error) {
-        BusFailure::NoDaemon => Absence::NotRunning,
-        BusFailure::Denied(_) => Absence::NotPermitted,
-        _ => failed(error),
+impl ToAbsence for zbus::Error {
+    fn absence(&self) -> Absence {
+        match classify(self) {
+            BusFailure::NoDaemon => Absence::NotRunning,
+            BusFailure::Denied(_) => Absence::NotPermitted,
+            _ => failed(self),
+        }
+    }
+}
+
+impl ToAbsence for TransportError {
+    fn absence(&self) -> Absence {
+        match self {
+            TransportError::Unreachable | TransportError::Closed => Absence::NotRunning,
+            TransportError::Denied(_) => Absence::NotPermitted,
+            _ => Absence::Failed,
+        }
+    }
+}
+
+impl ToAbsence for ClientError {
+    fn absence(&self) -> Absence {
+        match self {
+            ClientError::Transport(transport) => transport.absence(),
+            _ => Absence::Failed,
+        }
+    }
+}
+
+impl ToAbsence for SpacesError {
+    fn absence(&self) -> Absence {
+        match self {
+            SpacesError::Unreachable => Absence::NotRunning,
+            SpacesError::Denied(_) => Absence::NotPermitted,
+            _ => Absence::Failed,
+        }
     }
 }
 

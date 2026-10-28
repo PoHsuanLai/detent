@@ -44,7 +44,7 @@ fn the_sign_in_step_lists_what_is_signed_in_and_offers_add_account_and_skip() {
         ("accounts-setup-signed-in", identities(), false),
     ];
     for (name, rows, waits) in cases {
-        let fake = Accountd::new(Policy::Allow, rows.clone());
+        let fake = Accountd::new(Verdict::Allow, rows.clone());
         let mut harness = Sandbox::new(name)
             .with_modules(fake.hosted())
             .harness(setup_opening());

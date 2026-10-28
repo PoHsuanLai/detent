@@ -6,6 +6,7 @@ mod module;
 mod rows;
 
 use super::bus::PrivateBus;
+use detent_model::ModuleId;
 use detent_system::bus::Daemon;
 use detent_system::modules::FakeModules;
 use ds_settings::live::{
@@ -20,48 +21,37 @@ use porter_dbus::names::{
 };
 use std::sync::{Arc, Mutex};
 
-/// Which daemon's module the fake is.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Module {
-    Accountd,
-    Inferd,
-    Syncd,
+/// Where each daemon's module is: its bus name, the daemon it is looked for as, and its path.
+pub trait ModuleAt {
+    fn bus(self) -> &'static str;
+    fn daemon(self) -> Daemon;
+    fn path(self) -> &'static str;
 }
 
-impl Module {
-    pub fn bus(self) -> &'static str {
+impl ModuleAt for ModuleId {
+    fn bus(self) -> &'static str {
         match self {
-            Module::Accountd => ACCOUNTS_BUS,
-            Module::Inferd => INFERENCE_BUS,
-            Module::Syncd => SYNC_BUS,
+            ModuleId::Accountd => ACCOUNTS_BUS,
+            ModuleId::Inferd => INFERENCE_BUS,
+            ModuleId::Syncd => SYNC_BUS,
         }
     }
 
-    /// The daemon the module is looked for as.
-    pub fn daemon(self) -> Daemon {
+    fn daemon(self) -> Daemon {
         match self {
-            Module::Accountd => Daemon::accountd(),
-            Module::Inferd => Daemon::inferd(),
-            Module::Syncd => Daemon::syncd_settings(),
+            ModuleId::Accountd => Daemon::accountd(),
+            ModuleId::Inferd => Daemon::inferd(),
+            ModuleId::Syncd => Daemon::syncd_settings(),
         }
     }
 
     fn path(self) -> &'static str {
         match self {
-            Module::Accountd => ACCOUNTS_SETTINGS_PATH,
-            Module::Inferd => INFERENCE_SETTINGS_PATH,
-            Module::Syncd => "/org/quire/Sync1/settings",
+            ModuleId::Accountd => ACCOUNTS_SETTINGS_PATH,
+            ModuleId::Inferd => INFERENCE_SETTINGS_PATH,
+            ModuleId::Syncd => "/org/quire/Sync1/settings",
         }
     }
-}
-
-/// What the fake does with a caller.
-#[derive(Clone, Copy)]
-pub enum Policy {
-    /// Everyone may.
-    Allow,
-    /// Nobody may: accountd without the Settings caller row.
-    Refuse,
 }
 
 /// One account the fake holds.
@@ -200,19 +190,19 @@ pub struct Accountd {
     pub sets: Arc<Mutex<Vec<(String, toml::Value)>>>,
     /// How many calls (reads and sets) the module was asked to permit: what reached it at all.
     pub calls: Arc<Mutex<usize>>,
-    policy: Policy,
-    module: Module,
+    policy: Verdict,
+    module: ModuleId,
     /// Whether the module has syncd's `accounts.sync.add` row.
     continue_as: bool,
 }
 
 impl Accountd {
-    pub fn new(policy: Policy, accounts: Vec<Held>) -> Accountd {
-        Accountd::on(Module::Accountd, policy, accounts)
+    pub fn new(policy: Verdict, accounts: Vec<Held>) -> Accountd {
+        Accountd::on(ModuleId::Accountd, policy, accounts)
     }
 
     /// The module of `module`'s daemon.
-    pub fn on(module: Module, policy: Policy, accounts: Vec<Held>) -> Accountd {
+    pub fn on(module: ModuleId, policy: Verdict, accounts: Vec<Held>) -> Accountd {
         Accountd {
             module,
             continue_as: false,

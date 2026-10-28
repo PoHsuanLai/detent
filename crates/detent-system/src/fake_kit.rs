@@ -33,8 +33,13 @@ impl<S: Clone, A: Clone> Kit<S, A> {
 
     /// Moves the service to `standing` and tells whoever follows it.
     pub(crate) fn set(&self, standing: Result<S, Absence>) {
-        *locked(&self.standing) = standing;
+        self.set_unseen(standing);
         self.tick();
+    }
+
+    /// Moves the service to `standing` without telling anyone.
+    pub(crate) fn set_unseen(&self, standing: Result<S, Absence>) {
+        *locked(&self.standing) = standing;
     }
 
     /// Changes the standing in place, when there is one, and tells whoever follows it.

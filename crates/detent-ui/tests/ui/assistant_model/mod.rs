@@ -3,10 +3,11 @@
 
 use crate::support::Sandbox;
 use crate::support::drive::{click, scroll_into_view, sidebar_page};
-use crate::support::inferd::{Inferd, Policy};
+use crate::support::inferd::Inferd;
 use detent_model::{ASSISTANT_MODEL_SLUG, ASSISTANT_SETUP_SLUG, Notice, PageSlug};
 use detent_ui::Opening;
 use ds_harness::{Harness, Input};
+use ds_settings::live::Verdict;
 use std::time::Duration;
 
 mod first_run;

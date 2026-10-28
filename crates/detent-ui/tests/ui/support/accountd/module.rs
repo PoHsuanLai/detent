@@ -6,10 +6,7 @@ use super::*;
 impl LiveModule for Accountd {
     async fn permit(&self, _caller: &Caller, _access: Access) -> Verdict {
         *self.calls.lock().expect("calls") += 1;
-        match self.policy {
-            Policy::Allow => Verdict::Allow,
-            Policy::Refuse => Verdict::Refuse,
-        }
+        self.policy
     }
 
     async fn describe(&self) -> LiveSchema {
@@ -45,7 +42,7 @@ impl LiveModule for Accountd {
             toml::Value::String(String::new()),
         );
         secret.exposure = Exposure::Advanced;
-        if matches!(self.module, Module::Accountd) {
+        if matches!(self.module, ModuleId::Accountd) {
             key.push(client);
             key.push(secret);
         }

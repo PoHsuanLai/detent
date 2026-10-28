@@ -120,7 +120,7 @@ fn the_list_stays_beside_the_detail_of_the_account_chosen_in_it() {
 fn one_module_vanishing_leaves_the_others_shown() {
     let mut w = world("accounts-vanish");
     assert_eq!(w.harness.count(".account-row-body"), 4);
-    w.stop(Module::Syncd);
+    w.stop(ModuleId::Syncd);
     settle(&mut w.harness, "sync to leave the list", |h| {
         !h.html().contains("Home sync")
     });
@@ -210,7 +210,7 @@ fn resting_the_pointer_on_an_app_names_the_services_it_uses() {
             .granted_on("g3", "2026-10-08", "always")
             .granting("g4", "Companion can use Speech");
     }
-    w.announce(Module::Inferd, "accounts.claude-key.grant.g4", "added");
+    w.announce(ModuleId::Inferd, "accounts.claude-key.grant.g4", "added");
     open(&mut w, KEY);
     let row = "#permission-accounts-claude-key-grant-g3";
     settle(&mut w.harness, "the permit rows", |h| {

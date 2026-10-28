@@ -7,12 +7,13 @@
 use crate::support::Sandbox;
 use crate::support::bus::PrivateBus;
 use crate::support::drive::{click, keys, scroll_into_view};
-use crate::support::inferd::{Inferd, NOT_WHOLE, Policy};
+use crate::support::inferd::{Inferd, NOT_WHOLE};
 use crate::support::running::{Fake, serve};
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds::prelude::ShortcutKey;
 use ds_harness::{Harness, Input};
+use ds_settings::live::Verdict;
 use porter_dbus::{RunState, RunningModel};
 use std::time::Duration;
 
@@ -65,7 +66,7 @@ fn world(name: &str, rows: Vec<RunningModel>) -> World {
         .build()
         .expect("a runtime for the fake daemon");
     let bus = PrivateBus::start(name);
-    let module = Inferd::new(Policy::Allow).on_slots().with_programs();
+    let module = Inferd::new(Verdict::Allow).on_slots().with_programs();
     let fake = rt.block_on(serve(&bus, rows));
     let harness = Sandbox::new(name)
         .on_bus(&bus.address)

@@ -5,10 +5,7 @@ use super::*;
 
 impl LiveModule for Inferd {
     async fn permit(&self, _caller: &Caller, _access: Access) -> Verdict {
-        match self.policy {
-            Policy::Allow => Verdict::Allow,
-            Policy::Refuse => Verdict::Refuse,
-        }
+        self.policy
     }
 
     async fn describe(&self) -> LiveSchema {

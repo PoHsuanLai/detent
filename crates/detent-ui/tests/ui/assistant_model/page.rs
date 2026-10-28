@@ -7,7 +7,7 @@ fn the_page_follows_intelligence_in_the_sidebar_and_draws_only_the_assistants_ro
     let mut world = world(
         "assistant-page",
         ASSISTANT_MODEL_SLUG,
-        Inferd::new(Policy::Allow).on_slots(),
+        Inferd::new(Verdict::Allow).on_slots(),
     );
     ready(&mut world);
     // The fixtures' pages: Intelligence is the sixth, the page follows it.
@@ -46,7 +46,7 @@ fn a_model_nobody_chose_shows_a_prompt_and_marks_no_item_while_a_chosen_one_is_m
     let mut empty = world(
         "assistant-unset",
         ASSISTANT_MODEL_SLUG,
-        Inferd::new(Policy::Allow).on_slots(),
+        Inferd::new(Verdict::Allow).on_slots(),
     );
     ready(&mut empty);
     assert_eq!(
@@ -65,7 +65,7 @@ fn a_model_nobody_chose_shows_a_prompt_and_marks_no_item_while_a_chosen_one_is_m
         assert!(!html.contains(banned), "{banned} is on the page:\n{html}");
     }
 
-    let fake = Inferd::new(Policy::Allow).on_slots();
+    let fake = Inferd::new(Verdict::Allow).on_slots();
     fake.values
         .lock()
         .expect("values")
@@ -89,7 +89,7 @@ fn picking_a_model_sets_the_assistants_row_and_no_other() {
     let mut world = world(
         "assistant-pick",
         ASSISTANT_MODEL_SLUG,
-        Inferd::new(Policy::Allow).on_slots(),
+        Inferd::new(Verdict::Allow).on_slots(),
     );
     ready(&mut world);
     open_and_count_marked(&mut world.harness, BUTTON);
@@ -106,7 +106,7 @@ fn picking_a_model_sets_the_assistants_row_and_no_other() {
 
 #[test]
 fn a_model_that_needs_an_account_stays_pickable_and_offers_to_add_one_instead_of_setting() {
-    let fake = Inferd::new(Policy::Allow).on_slots();
+    let fake = Inferd::new(Verdict::Allow).on_slots();
     fake.gated.lock().expect("gated").insert(
         "anthropic/claude".to_owned(),
         "Add an account to use".to_owned(),

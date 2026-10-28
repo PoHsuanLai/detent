@@ -2,7 +2,7 @@
 //! accountd and a fake syncd on a private bus.
 
 use crate::support::Sandbox;
-use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::accountd::{Accountd, Held};
 use crate::support::bus::PrivateBus;
 use crate::support::drive::click;
 use crate::support::handover::HandsOver;
@@ -12,7 +12,7 @@ use detent_client::Vouch;
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::Harness;
-use ds_settings::live::AnyOwner;
+use ds_settings::live::{AnyOwner, Verdict};
 use porter_dbus::names::SYNC_BUS;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -77,7 +77,7 @@ fn world_trusting(name: &str, before: &[(&str, u64, u64)], trust: Trust) -> Worl
         .expect("a runtime for the fake daemons");
     let bus = PrivateBus::start(name);
     let fake = Accountd::new(
-        Policy::Allow,
+        Verdict::Allow,
         vec![Held::new("home", "Home cloud", "ok", &["storage"]).syncing()],
     );
     let (accounts, served) = rt.block_on(fake.serve_announcing(&bus));

@@ -39,6 +39,17 @@ impl FakeUpdates {
         self.0.set(Ok(status));
     }
 
+    /// The service goes off the bus and tells whoever follows it.
+    pub fn goes(&self) {
+        self.0.set(Err(Absence::NotRunning));
+    }
+
+    /// The service moves to `status` without telling anyone, as when a release lands between the
+    /// page reading the service and the person pressing: the page still shows the old standing.
+    pub fn changes_unseen(&self, status: UpdateStatus) {
+        self.0.set_unseen(Ok(status));
+    }
+
     /// The service refuses the next requests, in these words.
     pub fn refuses(&self, words: &str) {
         self.0.refuse_with(Some(words.to_owned()));

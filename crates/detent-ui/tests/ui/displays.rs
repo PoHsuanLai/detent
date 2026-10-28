@@ -3,12 +3,12 @@
 //! beside each other; each change goes to the compositor as one change, and a refusal is told.
 
 use crate::support::Sandbox;
-use crate::support::displays::Displays;
 use crate::support::drive::{click, page_of, settle, showing, sidebar_page, title_of};
 use detent_model::{
     Absence, DisplayChange, DisplayEdit, DisplayMode, DisplayPosition, DisplayRotation,
     DisplaysStatus, Millimetres, Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli,
 };
+use detent_system::displays::FakeDisplays;
 use detent_ui::Opening;
 use ds_harness::{Harness, Input};
 
@@ -69,7 +69,7 @@ fn monitor() -> Monitor {
     }
 }
 
-fn world(name: &str, service: &Displays) -> (Sandbox, Harness) {
+fn world(name: &str, service: &FakeDisplays) -> (Sandbox, Harness) {
     let sandbox = Sandbox::new(name).with_displays(service.clone());
     let harness = sandbox.harness(displays());
     (sandbox, harness)
@@ -134,7 +134,7 @@ fn the_page_sits_after_desktop_and_dock_and_says_plainly_when_there_is_no_compos
 
 #[test]
 fn a_computer_with_no_display_connected_says_so() {
-    let service = Displays::missing(Absence::NoDevice);
+    let service = FakeDisplays::missing(Absence::NoDevice);
     let (_sandbox, mut harness) = world("displays-none", &service);
     showing(
         &mut harness,
@@ -149,7 +149,7 @@ fn a_computer_with_no_display_connected_says_so() {
 
 #[test]
 fn a_display_shows_its_name_and_its_resolution_refresh_rate_and_rotation() {
-    let service = Displays::answering(one());
+    let service = FakeDisplays::answering(one());
     let (_sandbox, mut harness) = world("displays-one", &service);
     showing(&mut harness, "the page", PAGE);
     showing(&mut harness, "the display", "[data-display=\"eDP-1\"]");
@@ -183,7 +183,7 @@ fn a_display_shows_its_name_and_its_resolution_refresh_rate_and_rotation() {
 
 #[test]
 fn choosing_a_scaled_resolution_sends_that_scale_and_the_row_follows() {
-    let service = Displays::answering(one());
+    let service = FakeDisplays::answering(one());
     let (_sandbox, mut harness) = world("displays-resolution", &service);
     showing(&mut harness, "the display", "[data-display=\"eDP-1\"]");
     // Widest first: native, 2419, 2016, 1728, 1512 (the default), 1209, 1008.
@@ -204,7 +204,7 @@ fn choosing_a_scaled_resolution_sends_that_scale_and_the_row_follows() {
 
 #[test]
 fn choosing_a_refresh_rate_sends_it_for_the_size_the_display_runs_at() {
-    let service = Displays::answering(one());
+    let service = FakeDisplays::answering(one());
     let (_sandbox, mut harness) = world("displays-refresh", &service);
     showing(&mut harness, "the display", "[data-display=\"eDP-1\"]");
     pick(&mut harness, &button("eDP-1", 2), 2);
@@ -235,7 +235,7 @@ fn flexible() -> DisplaysStatus {
 
 #[test]
 fn choosing_another_mode_size_sends_it_and_a_display_with_one_size_has_nothing_to_choose() {
-    let service = Displays::answering(flexible());
+    let service = FakeDisplays::answering(flexible());
     let (_sandbox, mut harness) = world("displays-mode-size", &service);
     showing(&mut harness, "the display", "[data-display=\"DP-1\"]");
     let words = harness.text_of(&row("DP-1", 4)).unwrap_or_default();
@@ -259,7 +259,7 @@ fn choosing_another_mode_size_sends_it_and_a_display_with_one_size_has_nothing_t
             .unwrap_or_default()
             .contains("1920 \u{d7} 1080")
     });
-    let single = Displays::answering(one());
+    let single = FakeDisplays::answering(one());
     let (_other, mut alone) = world("displays-one-size", &single);
     showing(&mut alone, "the display", "[data-display=\"eDP-1\"]");
     assert_eq!(
@@ -270,7 +270,7 @@ fn choosing_another_mode_size_sends_it_and_a_display_with_one_size_has_nothing_t
 
 #[test]
 fn a_display_with_one_refresh_rate_has_nothing_to_choose() {
-    let service = Displays::answering(two());
+    let service = FakeDisplays::answering(two());
     let (_sandbox, mut harness) = world("displays-one-rate", &service);
     showing(&mut harness, "the display", "[data-display=\"DP-1\"]");
     assert_eq!(
@@ -281,7 +281,7 @@ fn a_display_with_one_refresh_rate_has_nothing_to_choose() {
 
 #[test]
 fn rotating_a_display_sends_the_rotation() {
-    let service = Displays::answering(one());
+    let service = FakeDisplays::answering(one());
     let (_sandbox, mut harness) = world("displays-rotate", &service);
     showing(&mut harness, "the display", "[data-display=\"eDP-1\"]");
     pick(&mut harness, &button("eDP-1", 3), 2);
@@ -301,7 +301,7 @@ fn rotating_a_display_sends_the_rotation() {
 
 #[test]
 fn with_two_displays_each_says_where_it_sits_and_can_be_moved_to_another_side() {
-    let service = Displays::answering(two());
+    let service = FakeDisplays::answering(two());
     let (_sandbox, mut harness) = world("displays-arrange", &service);
     showing(
         &mut harness,
@@ -332,7 +332,7 @@ fn with_two_displays_each_says_where_it_sits_and_can_be_moved_to_another_side() 
 
 #[test]
 fn a_change_the_compositor_refuses_is_told_in_a_toast() {
-    let service = Displays::answering(one());
+    let service = FakeDisplays::answering(one());
     service.refuses("This display can\u{2019}t be set that way.");
     let (_sandbox, mut harness) = world("displays-refused", &service);
     showing(&mut harness, "the display", "[data-display=\"eDP-1\"]");

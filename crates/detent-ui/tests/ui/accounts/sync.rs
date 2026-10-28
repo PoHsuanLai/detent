@@ -16,7 +16,7 @@ fn show_in_files_is_syncds_switch_with_its_line_under_it_and_a_turn_on_is_a_set(
         "accounts-show-in-files",
         Scheme::Light,
         identities(),
-        &[Module::Accountd, Module::Inferd, Module::Syncd],
+        &[ModuleId::Accountd, ModuleId::Inferd, ModuleId::Syncd],
         mirrored,
         Syncd::default(),
     );
@@ -121,7 +121,7 @@ fn a_synced_dataset_says_when_it_synced_and_how_full_the_storage_is_and_a_ring_t
         "accounts-sync-status",
         Scheme::Light,
         identities(),
-        &[Module::Accountd, Module::Inferd, Module::Syncd],
+        &[ModuleId::Accountd, ModuleId::Inferd, ModuleId::Syncd],
         mirrored_files(),
         sync1,
     );
@@ -133,7 +133,7 @@ fn a_synced_dataset_says_when_it_synced_and_how_full_the_storage_is_and_a_ring_t
 
     // Items are left to send: the avatar in the list and the one at the head of the detail turn.
     w.sync1.stands(FILES, Standing { pending: 4, ..idle });
-    w.announce(Module::Syncd, "accounts.home.sync.files", "on");
+    w.announce(ModuleId::Syncd, "accounts.home.sync.files", "on");
     settle(&mut w.harness, "the ring", |h| h.count(RING) == 1);
     assert_eq!(
         w.harness
@@ -150,6 +150,6 @@ fn a_synced_dataset_says_when_it_synced_and_how_full_the_storage_is_and_a_ring_t
 
     // It catches up: the ring goes away and the line is the age again.
     w.sync1.stands(FILES, idle);
-    w.announce(Module::Syncd, "accounts.home.sync.files", "on");
+    w.announce(ModuleId::Syncd, "accounts.home.sync.files", "on");
     settle(&mut w.harness, "the ring to stop", |h| h.count(RING) == 0);
 }

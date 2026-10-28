@@ -47,7 +47,7 @@ fn the_pane_says_no_developer_words_with_the_modules_up_or_gone() {
 #[test]
 fn the_account_type_is_drawn_with_the_providers_mark() {
     let fake = Accountd::new(
-        Policy::Allow,
+        Verdict::Allow,
         vec![
             Held::new("local-ai", "Ollama", "ok", &["llm"]).of_provider("ollama", "Ollama"),
             Held::new("mail", "Fastmail", "ok", &["mail"]).of_provider("fastmail", "Fastmail"),

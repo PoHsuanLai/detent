@@ -8,7 +8,7 @@ use crate::copy;
 use crate::copy::absence::Subject;
 use crate::icons::tile_of;
 use crate::live::use_live;
-use crate::system::Unavailable;
+use crate::system::{RowWork, Unavailable};
 use detent_client::Client;
 use detent_model::{
     PageKind, SignalBars, Ssid, WifiAsking, WifiInput, WifiNetwork, WifiRadio, WifiReady,
@@ -152,17 +152,6 @@ fn JoinedNetwork(network: WifiNetwork, press: EventHandler<WifiInput>) -> Elemen
     }
 }
 
-/// Whether the page is busy with this row, another row, or neither.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum RowWork {
-    /// A press joins it.
-    Free,
-    /// It is being joined.
-    Joining,
-    /// Another network is being joined, so a press waits.
-    Held,
-}
-
 /// A card of networks, each with a Join button.
 #[component]
 fn Networks(
@@ -178,7 +167,7 @@ fn Networks(
                 NetworkRow {
                     key: "{network.ssid.0}",
                     work: match &busy {
-                        Some(ssid) if *ssid == network.ssid => RowWork::Joining,
+                        Some(ssid) if *ssid == network.ssid => RowWork::Working,
                         Some(_) => RowWork::Held,
                         None => RowWork::Free,
                     },
@@ -213,14 +202,9 @@ fn OtherRow(press: EventHandler<WifiInput>) -> Element {
 #[component]
 fn NetworkRow(network: WifiNetwork, work: RowWork, press: EventHandler<WifiInput>) -> Element {
     let ssid = network.ssid.clone();
-    let (availability, help) = match work {
-        RowWork::Free => (Availability::Enabled, None),
-        RowWork::Joining => (
-            Availability::Busy,
-            Some(TextLine::from(crate::copy::wifi::CONNECTING_ELLIPSIS)),
-        ),
-        RowWork::Held => (Availability::Disabled, None),
-    };
+    let availability = work.availability();
+    let help =
+        (work == RowWork::Working).then(|| TextLine::from(crate::copy::wifi::CONNECTING_ELLIPSIS));
     rsx! {
         FieldRow { label: TextLine::from(network.ssid.0.clone()), help,
             Glyphs { network: network.clone() }

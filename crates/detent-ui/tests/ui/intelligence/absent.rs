@@ -38,7 +38,7 @@ fn a_bus_with_no_inferd_on_it_says_inferd_is_not_running() {
 #[test]
 fn inferd_refusing_settings_is_said_in_its_own_words() {
     let sandbox = Sandbox::new("intelligence-refused");
-    let fake = Inferd::new(Policy::Refuse);
+    let fake = Inferd::new(Verdict::Refuse);
     let mut harness = sandbox.with_modules(fake.hosted()).harness(intelligence());
     settle(&mut harness, "the refusal", |h| {
         h.attr(".picker", "data-picker").as_deref() == Some("unavailable")
@@ -59,7 +59,7 @@ fn an_inferd_that_starts_after_the_page_opened_is_found_and_one_that_stops_is_mi
     assert!(harness.html().contains("Models are not available now"));
     assert_eq!(harness.count(".picker-kind"), 0);
 
-    let fake = Inferd::new(Policy::Allow);
+    let fake = Inferd::new(Verdict::Allow);
     fake.host_on(&modules);
     settle(&mut harness, "the picker to appear", |h| {
         h.count(".picker-kind") == 2

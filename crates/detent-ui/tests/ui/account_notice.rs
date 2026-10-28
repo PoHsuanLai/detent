@@ -2,11 +2,12 @@
 //! moves to that account's detail, or to the list when the account is not known.
 
 use crate::support::Sandbox;
-use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::accountd::{Accountd, Held};
 use crate::support::drive::page_of;
 use detent_model::{AccountSegment, AccountTarget, Notice, PageSlug};
 use detent_ui::Opening;
 use ds_harness::Harness;
+use ds_settings::live::Verdict;
 use std::time::Duration;
 
 fn settle(harness: &mut Harness, what: &str, done: impl Fn(&Harness) -> bool) {
@@ -29,7 +30,7 @@ fn detail(segment: &str) -> Notice {
 /// The window on another page, over a fake accountd holding two accounts.
 fn world(name: &str) -> (Harness, detent_model::Outbox, impl Sized) {
     let fake = Accountd::new(
-        Policy::Allow,
+        Verdict::Allow,
         vec![
             Held::new("home", "Home cloud", "ok", &["storage"]),
             Held::new("work.example", "Work mail", "ok", &["mail"]),

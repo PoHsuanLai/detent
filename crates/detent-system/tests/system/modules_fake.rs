@@ -1,9 +1,10 @@
 //! The in-memory modules link: a module hosted in the process is opened, refused as the skeleton
 //! refuses, heard when it changes, and found again after it goes away and comes back.
 
-use crate::modules_bus::{Policy, ROW, Words, daemon, is_text};
+use crate::modules_bus::{ROW, Words, daemon, is_text};
 use detent_model::Absence;
 use detent_system::modules::{FakeModules, Followed, ModulesLink};
+use ds_settings::live::Verdict;
 use ds_settings::schema::KeyPath;
 use tokio::sync::mpsc::{UnboundedReceiver, unbounded_channel};
 
@@ -20,7 +21,7 @@ async fn next(heard: &mut UnboundedReceiver<Followed>) -> Followed {
 async fn a_hosted_module_is_opened_and_a_set_is_told_to_the_follower() {
     let modules = FakeModules::new();
     let daemon = daemon();
-    modules.host(&daemon, Words::holding("first", Policy::Allow));
+    modules.host(&daemon, Words::holding("first", Verdict::Allow));
     let (told, mut heard) = unbounded_channel();
     let following = modules.follow(&daemon, is_text, told);
     let checking = async {
@@ -45,7 +46,7 @@ async fn a_hosted_module_is_opened_and_a_set_is_told_to_the_follower() {
 async fn a_module_that_refuses_is_gone_as_not_permitted() {
     let modules = FakeModules::new();
     let daemon = daemon();
-    modules.host(&daemon, Words::holding("first", Policy::Refuse));
+    modules.host(&daemon, Words::holding("first", Verdict::Refuse));
     let (told, mut heard) = unbounded_channel();
     let following = modules.follow(&daemon, is_text, told);
     let checking = async {
@@ -71,14 +72,14 @@ async fn a_module_that_goes_away_and_comes_back_is_read_again() {
             next(&mut heard).await,
             Followed::Gone(Absence::NotRunning)
         ));
-        modules.host(&daemon, Words::holding("first", Policy::Allow));
+        modules.host(&daemon, Words::holding("first", Verdict::Allow));
         assert!(matches!(next(&mut heard).await, Followed::Opened(..)));
         modules.away(&daemon, Absence::Unavailable);
         assert!(matches!(
             next(&mut heard).await,
             Followed::Gone(Absence::Unavailable)
         ));
-        modules.host(&daemon, Words::holding("second", Policy::Allow));
+        modules.host(&daemon, Words::holding("second", Verdict::Allow));
         let Followed::Opened(_, described) = next(&mut heard).await else {
             panic!("expected the module to come back");
         };

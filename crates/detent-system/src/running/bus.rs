@@ -2,7 +2,7 @@
 //! signal that says to read again. Looking never starts the assistant.
 
 use super::RunningLink;
-use crate::bus::{BusSource, absence_of_bus, inferd};
+use crate::bus::{BusSource, ToAbsence, inferd};
 use crate::computers::relay;
 use crate::deadline::{Deadline, answered, peer};
 use crate::ticks::Ticks;
@@ -37,14 +37,6 @@ fn run_of(row: &RunningModel) -> ModelRun {
     }
 }
 
-fn absence_of(error: &TransportError) -> Absence {
-    match error {
-        TransportError::Unreachable | TransportError::Closed => Absence::NotRunning,
-        TransportError::Denied(_) => Absence::NotPermitted,
-        _ => Absence::Failed,
-    }
-}
-
 /// The models inferd runs itself, as it lists them now.
 async fn read(bus: &BusSource) -> Result<Vec<ModelRun>, Absence> {
     let running = inferd(bus).await?;
@@ -52,7 +44,7 @@ async fn read(bus: &BusSource) -> Result<Vec<ModelRun>, Absence> {
     let found = answered(Deadline::READ, peer::ASSISTANT, transport.list_running())
         .await
         .ok_or(Absence::Failed)?
-        .map_err(|error| absence_of(&error))?;
+        .map_err(|error| error.absence())?;
     Ok(found.rows.iter().map(run_of).collect())
 }
 
@@ -111,13 +103,13 @@ impl Watch {
         let subscribed = async {
             InferenceProxy::builder(&running.connection)
                 .destination(running.destination())
-                .map_err(|e| absence_of_bus(&e))?
+                .map_err(|e| e.absence())?
                 .build()
                 .await
-                .map_err(|e| absence_of_bus(&e))?
+                .map_err(|e| e.absence())?
                 .receive_running_changed()
                 .await
-                .map_err(|e| absence_of_bus(&e))
+                .map_err(|e| e.absence())
         };
         let changes = within(Deadline::READ, peer::ASSISTANT, subscribed)
             .await

@@ -31,15 +31,6 @@ pub enum Layout {
     Slots,
 }
 
-/// What the fake does with a caller.
-#[derive(Clone, Copy)]
-pub enum Policy {
-    /// Everyone may.
-    Allow,
-    /// Nobody may: inferd without the Settings caller row.
-    Refuse,
-}
-
 /// The fake's state, shared with the test that watches it.
 #[derive(Clone)]
 pub struct Inferd {
@@ -59,12 +50,12 @@ pub struct Inferd {
     pub programs: Arc<Mutex<BTreeMap<String, String>>>,
     /// The line the slots layout's rows and Automatic list carry as their `note`.
     note: Option<String>,
-    policy: Policy,
+    policy: Verdict,
     layout: Layout,
 }
 
 impl Inferd {
-    pub fn new(policy: Policy) -> Inferd {
+    pub fn new(policy: Verdict) -> Inferd {
         Inferd {
             values: Arc::default(),
             sets: Arc::default(),

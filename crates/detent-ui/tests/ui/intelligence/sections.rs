@@ -66,7 +66,7 @@ fn open_first_menu(harness: &mut Harness) -> String {
 #[test]
 fn rows_render_from_the_schemas_sections_and_labels_with_no_local_table() {
     let sandbox = Sandbox::new("intelligence-slots");
-    let fake = Inferd::new(Policy::Allow).on_slots();
+    let fake = Inferd::new(Verdict::Allow).on_slots();
     let mut harness = sandbox.with_modules(fake.hosted()).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 3);
     assert_eq!(harness.count(".picker-kind .ds-field-row"), 5);
@@ -94,7 +94,7 @@ fn rows_render_from_the_schemas_sections_and_labels_with_no_local_table() {
 #[test]
 fn grouped_choices_render_under_headers_ungrouped_first_in_first_appearance_order() {
     let sandbox = Sandbox::new("intelligence-groups");
-    let fake = Inferd::new(Policy::Allow).on_slots();
+    let fake = Inferd::new(Verdict::Allow).on_slots();
     let mut harness = sandbox.with_modules(fake.hosted()).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 3);
     open_first_menu(&mut harness);
@@ -115,7 +115,7 @@ fn grouped_choices_render_under_headers_ungrouped_first_in_first_appearance_orde
 #[test]
 fn an_old_key_module_still_renders() {
     let sandbox = Sandbox::new("intelligence-old-keys");
-    let fake = Inferd::new(Policy::Allow);
+    let fake = Inferd::new(Verdict::Allow);
     let mut harness = sandbox.with_modules(fake.hosted()).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 2);
     assert_eq!(harness.count(".picker-area"), 1, "the section is the area");
@@ -136,7 +136,7 @@ fn an_old_key_module_still_renders() {
 #[test]
 fn an_unavailable_choice_is_greyed_with_its_reason_and_cannot_be_set() {
     let sandbox = Sandbox::new("intelligence-unavailable");
-    let fake = Inferd::new(Policy::Allow).on_slots();
+    let fake = Inferd::new(Verdict::Allow).on_slots();
     fake.gated.lock().expect("gated").insert(
         "google/gemini".to_owned(),
         "Needs a newer version".to_owned(),

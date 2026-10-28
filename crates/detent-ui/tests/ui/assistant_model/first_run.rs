@@ -7,7 +7,7 @@ fn the_first_run_step_has_no_sidebar_and_continue_waits_for_a_choice() {
     let mut world = world(
         "assistant-setup",
         ASSISTANT_SETUP_SLUG,
-        Inferd::new(Policy::Allow).on_slots(),
+        Inferd::new(Verdict::Allow).on_slots(),
     );
     ready(&mut world);
     assert_eq!(world.harness.count(".assistant-setup"), 1);
@@ -47,7 +47,7 @@ fn skip_writes_nothing() {
     let mut world = world(
         "assistant-skip",
         ASSISTANT_SETUP_SLUG,
-        Inferd::new(Policy::Allow).on_slots(),
+        Inferd::new(Verdict::Allow).on_slots(),
     );
     ready(&mut world);
     click(&mut world.harness, SKIP);

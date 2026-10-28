@@ -2,7 +2,7 @@
 //! runtimes it lists, a stopped one greyed, each linking to its account in the Accounts pane.
 
 use crate::support::Sandbox;
-use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::accountd::{Accountd, Held};
 use crate::support::drive::{click, page_of, scroll_into_view};
 use detent_model::PageSlug;
 use detent_system::bus::Daemon;
@@ -10,6 +10,7 @@ use detent_system::modules::FakeModules;
 use detent_ui::Opening;
 use ds::prelude::Scheme;
 use ds_harness::Harness;
+use ds_settings::live::Verdict;
 use std::time::Duration;
 
 const ROWS: &str = ".runtimes .ds-field-row";
@@ -53,7 +54,7 @@ struct World {
 }
 
 fn world_in(name: &str, scheme: Scheme, accounts: Vec<Held>) -> World {
-    let fake = Accountd::new(Policy::Allow, accounts);
+    let fake = Accountd::new(Verdict::Allow, accounts);
     let modules = fake.hosted();
     let mut harness = Sandbox::new(name)
         .with_modules(modules.clone())
@@ -158,7 +159,7 @@ fn managing_a_runtime_opens_its_account_in_the_accounts_pane() {
 fn an_accountd_that_names_no_place_lists_no_runtime() {
     let name = "runtimes-none";
     let fake = Accountd::new(
-        Policy::Allow,
+        Verdict::Allow,
         vec![Held::new("ollama", "Ollama", "ok", &["llm"])],
     );
     let mut harness = Sandbox::new(name)

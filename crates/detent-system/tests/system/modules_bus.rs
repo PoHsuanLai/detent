@@ -21,21 +21,14 @@ const PATH: &str = "/org/quire/TestModules1/settings";
 /// The one row the module has.
 pub(crate) const ROW: &str = "words.one";
 
-/// Whether the module lets the Settings app in.
-#[derive(Clone, Copy)]
-pub(crate) enum Policy {
-    Allow,
-    Refuse,
-}
-
 /// A module of one text row.
 pub(crate) struct Words {
     value: Mutex<String>,
-    policy: Policy,
+    policy: Verdict,
 }
 
 impl Words {
-    pub(crate) fn holding(word: &str, policy: Policy) -> Words {
+    pub(crate) fn holding(word: &str, policy: Verdict) -> Words {
         Words {
             value: Mutex::new(word.to_owned()),
             policy,
@@ -45,10 +38,7 @@ impl Words {
 
 impl LiveModule for Words {
     async fn permit(&self, _caller: &Caller, _access: Access) -> Verdict {
-        match self.policy {
-            Policy::Allow => Verdict::Allow,
-            Policy::Refuse => Verdict::Refuse,
-        }
+        self.policy
     }
 
     async fn describe(&self) -> LiveSchema {
@@ -125,7 +115,7 @@ async fn opened(
 async fn a_module_on_the_bus_is_opened_and_its_changes_are_heard() {
     let bus = PrivateBus::start("modules-follow");
     let connection = bus.connect().await;
-    serve(&connection, PATH, Words::holding("first", Policy::Allow))
+    serve(&connection, PATH, Words::holding("first", Verdict::Allow))
         .await
         .expect("serves");
     connection.request_name(NAME).await.expect("name");
@@ -159,7 +149,7 @@ async fn a_module_on_the_bus_is_opened_and_its_changes_are_heard() {
 async fn a_module_that_refuses_the_settings_app_is_gone_as_not_permitted() {
     let bus = PrivateBus::start("modules-refused");
     let connection = bus.connect().await;
-    serve(&connection, PATH, Words::holding("first", Policy::Refuse))
+    serve(&connection, PATH, Words::holding("first", Verdict::Refuse))
         .await
         .expect("serves");
     connection.request_name(NAME).await.expect("name");

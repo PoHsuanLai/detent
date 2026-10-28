@@ -2,14 +2,13 @@
 //! goes to the owner of the service's name that was confirmed, never to the name.
 
 use super::SpacesLink;
-use crate::bus::{BusSource, pinned_starting};
+use crate::bus::{BusSource, absence_of, pinned_starting};
 use crate::deadline::{Deadline, answered, peer};
 use crate::memory_consent::control;
 use almanac_core::Removal;
 use detent_callers::{ACCOUNTS_BUS, MEMORY_BUS};
 use detent_model::{Absence, SpaceKey, SpaceRow, Work, needs_memory};
 use ds_peer::within;
-use porter_client::SpacesError;
 use porter_dbus::{BusFailure, SpacesProxy, classify};
 
 /// What the person reads when a delete choice cannot be carried out because memory is not running.
@@ -17,14 +16,6 @@ const MEMORY_NOT_RUNNING: &str = "Memory isn\u{2019}t running right now, so this
 
 /// What the person reads when a removal could not be done.
 const COULD_NOT_REMOVE: &str = "The Space could not be removed. Try again in a moment.";
-
-fn absence_of(error: SpacesError) -> Absence {
-    match error {
-        SpacesError::Unreachable => Absence::NotRunning,
-        SpacesError::Denied(_) => Absence::NotPermitted,
-        _ => Absence::Failed,
-    }
-}
 
 /// The desktop-wide Spaces, in the order they were made.
 async fn list(bus: &BusSource) -> Result<Vec<SpaceRow>, Absence> {

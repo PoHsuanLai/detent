@@ -5,15 +5,16 @@
 //! one's) over a fake inferd.
 
 use crate::support::Sandbox;
-use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::accountd::{Accountd, Held};
 use crate::support::bus::PrivateBus;
 use crate::support::computers::{Asker, Fake, Lender, Own, serve_with};
 use crate::support::drive::{click, click_when_still, scroll_into_view, type_into};
-use crate::support::inferd::{Inferd, Policy as InferdPolicy};
+use crate::support::inferd::Inferd;
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use docket_settings::{CloudAllowed, Toggle, read_places};
 use ds_harness::{Harness, Input};
+use ds_settings::live::Verdict;
 use std::time::Duration;
 
 mod agents;
@@ -56,7 +57,7 @@ fn world(name: &str, held: Vec<Held>, file: Option<&str>) -> World {
 
 /// The same, with docket's list of agents too.
 fn world_with(name: &str, held: Vec<Held>, file: Option<&str>, agents: Option<&str>) -> World {
-    let fake = Accountd::new(Policy::Allow, held);
+    let fake = Accountd::new(Verdict::Allow, held);
     let sandbox = Sandbox::new(name).with_modules(fake.hosted());
     if let Some(text) = file {
         sandbox.write(SETTINGS, text);
@@ -128,7 +129,7 @@ fn computers_with_models(name: &str, own: Vec<Own>) -> Computers {
         own,
         vec![],
         vec![],
-        Some(Inferd::new(InferdPolicy::Allow).on_slots()),
+        Some(Inferd::new(Verdict::Allow).on_slots()),
     )
 }
 

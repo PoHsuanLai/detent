@@ -3,7 +3,7 @@
 
 use super::wire::wire_of;
 use super::{InstallRefusal, UpdateTicks, UpdatesLink};
-use crate::bus::{BusSource, Pinned, connect, pinned, relay};
+use crate::bus::{BusSource, Pinned, ToAbsence, absence_of, connect, pinned, relay};
 use crate::deadline::{Deadline, peer};
 use crate::ticks::Ticks;
 use detent_model::{Absence, UnixSeconds, UpdateStatus, UpdateVersion, Work};
@@ -60,14 +60,6 @@ enum Ask {
     Install(UpdateVersion),
 }
 
-fn absence(error: zbus::Error) -> Absence {
-    match classify(&error) {
-        BusFailure::NoDaemon => Absence::NotRunning,
-        BusFailure::Denied(_) => Absence::NotPermitted,
-        _ => Absence::Failed,
-    }
-}
-
 /// What the person reads when no service answers.
 fn not_available() -> String {
     "Software updates are not available on this computer.".to_owned()
@@ -121,17 +113,17 @@ fn silent(_error: NotAnswering) -> Absence {
 async fn get_all(running: &Pinned) -> Result<HashMap<String, OwnedValue>, Absence> {
     let properties = PropertiesProxy::builder(&running.connection)
         .destination(running.destination())
-        .map_err(absence)?
+        .map_err(absence_of)?
         .path(PATH)
-        .map_err(absence)?
+        .map_err(absence_of)?
         .build()
         .await
-        .map_err(absence)?;
+        .map_err(absence_of)?;
     let interface = InterfaceName::try_from(INTERFACE).map_err(|_| Absence::Failed)?;
     properties
         .get_all(interface)
         .await
-        .map_err(|error| absence(error.into()))
+        .map_err(|error| zbus::Error::from(error).absence())
 }
 
 async fn read(bus: &BusSource) -> Result<UpdateStatus, Absence> {
@@ -150,21 +142,21 @@ async fn watch(bus: &BusSource) -> Result<UpdateTicks, Absence> {
     let subscribed = async {
         let owners = DBusProxy::new(&connection)
             .await
-            .map_err(absence)?
+            .map_err(absence_of)?
             .receive_name_owner_changed_with_args(&[(0, BUS_NAME)])
             .await
-            .map_err(absence)?;
+            .map_err(absence_of)?;
         let properties = PropertiesProxy::builder(&connection)
             .destination(BUS_NAME)
-            .map_err(absence)?
+            .map_err(absence_of)?
             .path(PATH)
-            .map_err(absence)?
+            .map_err(absence_of)?
             .build()
             .await
-            .map_err(absence)?
+            .map_err(absence_of)?
             .receive_properties_changed()
             .await
-            .map_err(absence)?;
+            .map_err(absence_of)?;
         Ok::<_, Absence>((owners, properties))
     };
     let (owners, properties) = within(Deadline::READ, peer::DESKTOP, subscribed)

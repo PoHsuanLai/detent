@@ -2,12 +2,13 @@
 //! is about to end it. Over a fake accountd module in memory.
 
 use crate::support::Sandbox;
-use crate::support::accountd::{Accountd, Held, Policy};
+use crate::support::accountd::{Accountd, Held};
 use crate::support::drive::click;
 use detent_model::PageSlug;
 use detent_ui::{Opening, STYLE};
 use ds_harness::Harness;
 use ds_lint::{LintConfig, markup};
+use ds_settings::live::Verdict;
 use std::time::Duration;
 
 const BANNER: &str = "[data-accounts=\"attention\"]";
@@ -47,7 +48,7 @@ struct World {
 
 fn world(name: &str, rows: Vec<Held>, chosen: &str) -> World {
     let count = rows.len();
-    let fake = Accountd::new(Policy::Allow, rows);
+    let fake = Accountd::new(Verdict::Allow, rows);
     let opening = Opening {
         page: Some(PageSlug("accounts".to_owned())),
         query: String::new(),

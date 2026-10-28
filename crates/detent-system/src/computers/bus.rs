@@ -2,7 +2,7 @@
 //! guests and the changes. The engines signal (a computer answering or not) comes from its proxy.
 
 use super::{Change, ChangeFailure, ComputersLink};
-use crate::bus::{BusSource, Daemon, Pinned, absence_of_bus, inferd, read_once};
+use crate::bus::{BusSource, Daemon, Pinned, ToAbsence, absence_of, inferd, read_once};
 use crate::deadline::{Deadline, answered, peer};
 use crate::ticks::{Ticker, Ticks};
 use detent_model::{
@@ -17,16 +17,6 @@ use porter_client::{
 use porter_core::lending::ComputerCandidate;
 use porter_dbus::{BusStream, InferenceProxy};
 use std::path::Path;
-
-fn absence_of(error: ClientError) -> Absence {
-    match error {
-        ClientError::Transport(TransportError::Unreachable | TransportError::Closed) => {
-            Absence::NotRunning
-        }
-        ClientError::Transport(TransportError::Denied(_)) => Absence::NotPermitted,
-        _ => Absence::Failed,
-    }
-}
 
 /// Why a call was refused, as the pane knows it.
 fn reason_of(error: &ClientError) -> ComputersReason {
@@ -181,13 +171,13 @@ async fn watch(bus: &BusSource) -> Result<Ticks, Absence> {
             let guests = accounts.watch_guests().await.map_err(absence_of)?;
             let engines = InferenceProxy::builder(&running.connection)
                 .destination(running.destination())
-                .map_err(|e| absence_of_bus(&e))?
+                .map_err(|e| e.absence())?
                 .build()
                 .await
-                .map_err(|e| absence_of_bus(&e))?
+                .map_err(|e| e.absence())?
                 .receive_engines_changed()
                 .await
-                .map_err(|e| absence_of_bus(&e))?;
+                .map_err(|e| e.absence())?;
             Ok::<_, Absence>((guests, engines))
         };
         let (guests, engines) = within(Deadline::READ, peer::ASSISTANT, subscribed)

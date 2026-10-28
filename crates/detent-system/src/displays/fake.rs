@@ -1,10 +1,12 @@
 //! The compositor's displays from memory: nothing here reaches a compositor. It writes down what
-//! was asked and tells whoever follows it.
+//! was asked and moves its own standing the way the real one would.
 
 use super::DisplaysLink;
 use crate::fake_kit::Kit;
 use crate::ticks::Ticks;
-use detent_model::{Absence, DisplayChange, DisplaysStatus, Work};
+use detent_model::{
+    Absence, DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, Work, mode_at,
+};
 use std::sync::Arc;
 
 /// Displays that answer from what they were given.
@@ -43,8 +45,32 @@ impl DisplaysLink for FakeDisplays {
     }
 
     fn apply(&self, change: DisplayChange) -> Work<'_, Result<(), String>> {
-        self.0.record(change);
-        self.0.tick();
-        Box::pin(std::future::ready(self.0.admit()))
+        self.0.record(change.clone());
+        let done = self.0.admit();
+        if done.is_ok() {
+            self.0.edit(|status| apply_to(status, &change));
+        }
+        Box::pin(std::future::ready(done))
+    }
+}
+
+/// Moves the display `change` names the way the compositor would.
+fn apply_to(status: &mut DisplaysStatus, change: &DisplayChange) {
+    for display in status.displays.iter_mut().filter(|d| d.id == change.output) {
+        match &change.edit {
+            DisplayEdit::Scale(scale) => display.scale = *scale,
+            DisplayEdit::Rotate(rotation) => display.rotation = *rotation,
+            DisplayEdit::Move(at) => display.position = *at,
+            DisplayEdit::Size(size) => {
+                display.current = mode_at(&display.modes, display.current, *size);
+            }
+            DisplayEdit::Refresh(rate) => {
+                display.current = display.current.map(|mode| DisplayMode {
+                    refresh: *rate,
+                    preferred: false,
+                    ..mode
+                });
+            }
+        }
     }
 }

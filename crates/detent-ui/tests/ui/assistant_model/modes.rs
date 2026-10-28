@@ -10,7 +10,7 @@ fn automatic_opens_its_list_and_is_not_ready_until_a_model_is_in_it() {
     let mut world = world(
         "assistant-automatic",
         ASSISTANT_SETUP_SLUG,
-        Inferd::new(Policy::Allow).on_slots(),
+        Inferd::new(Verdict::Allow).on_slots(),
     );
     ready(&mut world);
     assert_eq!(world.harness.count("[data-pool=\"editor\"]"), 0);
@@ -55,7 +55,7 @@ fn local_asks_how_it_runs_then_which_model_and_sets_only_the_model() {
     let mut world = world(
         "assistant-local",
         ASSISTANT_MODEL_SLUG,
-        Inferd::new(Policy::Allow).on_slots(),
+        Inferd::new(Verdict::Allow).on_slots(),
     );
     ready(&mut world);
     open_and_count_marked(&mut world.harness, BUTTON);

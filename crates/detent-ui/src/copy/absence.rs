@@ -32,176 +32,151 @@ pub(crate) enum Subject {
 
 /// What `subject` says when `absence` is why it has nothing to show.
 pub(crate) fn absence(subject: Subject, absence: Absence) -> &'static str {
-    match subject {
-        Subject::Accounts => accounts(absence),
-        Subject::Runtimes => runtimes(absence),
-        Subject::Computers => computers(absence),
-        Subject::Models => models(absence),
-        Subject::ScreenSharing => screen_sharing(absence),
-        Subject::Spaces => spaces(absence),
-        Subject::Privacy => privacy(absence),
-        Subject::Wifi => system_page(absence, WIFI),
-        Subject::Bluetooth => system_page(absence, BLUETOOTH),
-        Subject::Displays => system_page(absence, DISPLAYS),
-        Subject::Updates => updates(absence),
-    }
-}
-
-fn accounts(absence: Absence) -> &'static str {
+    let words = match subject {
+        Subject::Accounts => &ACCOUNTS,
+        Subject::Runtimes => &RUNTIMES,
+        Subject::Computers => &COMPUTERS,
+        Subject::Models => &MODELS,
+        Subject::ScreenSharing => &SCREEN_SHARING,
+        Subject::Spaces => &SPACES,
+        Subject::Privacy => &PRIVACY,
+        Subject::Wifi => &WIFI,
+        Subject::Bluetooth => &BLUETOOTH,
+        Subject::Displays => &DISPLAYS,
+        Subject::Updates => &UPDATES,
+    };
     match absence {
-        Absence::NoBus => {
-            "Settings is not connected to the desktop, so there are no accounts to show."
-        }
-        Absence::NotRunning => {
-            "The accounts service is not running, so there are no accounts to show."
-        }
-        Absence::NotPermitted => {
-            "Accounts can only be managed when Settings is opened from the desktop. Close this \
-             window and open Settings again from the launcher."
-        }
-        Absence::Unavailable | Absence::NoDevice => {
-            "The accounts service could not be confirmed, so there are no accounts to show."
-        }
-        Absence::Failed => "The accounts service did not answer. Try again in a moment.",
+        Absence::NoBus => words.no_bus,
+        Absence::NotRunning => words.not_running,
+        Absence::NotPermitted => words.not_permitted,
+        Absence::Unavailable => words.unavailable,
+        Absence::NoDevice => words.no_device,
+        Absence::Failed => words.failed,
     }
 }
 
-fn runtimes(absence: Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => "Settings is not connected to the desktop.",
-        Absence::NotRunning => {
-            "The accounts service is not running, so nothing on this computer can be listed."
-        }
-        Absence::NotPermitted => {
-            "Models on this computer can only be listed when Settings is opened from the \
-             desktop. Close this window and open Settings again from the launcher."
-        }
-        Absence::Unavailable | Absence::NoDevice => {
-            "The accounts service could not be confirmed, so nothing on this computer can be \
-             listed."
-        }
-        Absence::Failed => "The accounts service did not answer. Try again in a moment.",
-    }
-}
-
-fn computers(absence: Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => {
-            "Settings is not connected to the desktop, so your computers cannot be listed."
-        }
-        Absence::NotRunning => "The assistant is not running, so your computers cannot be listed.",
-        Absence::NotPermitted => {
-            "Your computers can only be managed when Settings is opened from the desktop."
-        }
-        Absence::Unavailable | Absence::NoDevice => {
-            "The assistant could not be confirmed, so your computers cannot be listed."
-        }
-        Absence::Failed => "The assistant did not answer. Try again in a moment.",
-    }
-}
-
-fn models(absence: Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => "Settings is not connected to the desktop.",
-        Absence::NotRunning | Absence::Unavailable | Absence::NoDevice => {
-            "Models are not available now."
-        }
-        Absence::NotPermitted => "Open Settings from the desktop to choose models.",
-        Absence::Failed => "Models did not answer. Try again in a moment.",
-    }
-}
-
-fn screen_sharing(absence: Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => "Settings is not connected to the desktop, so there are no apps to show.",
-        Absence::NotRunning => {
-            "The screen sharing service could not be started, so there are no apps to show."
-        }
-        Absence::NotPermitted => {
-            "Apps that may share your screen can only be managed when Settings is opened from the \
-             desktop."
-        }
-        Absence::Unavailable | Absence::NoDevice => {
-            "The screen sharing service could not be confirmed, so there are no apps to show."
-        }
-        Absence::Failed => "The screen sharing service did not answer. Try again in a moment.",
-    }
-}
-
-fn spaces(absence: Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => {
-            "Settings is not connected to the desktop, so there are no Spaces to show."
-        }
-        Absence::NotRunning => {
-            "The accounts service is not running, so there are no Spaces to show."
-        }
-        Absence::NotPermitted => {
-            "Spaces can only be managed when Settings is opened from the desktop."
-        }
-        Absence::Unavailable | Absence::NoDevice => {
-            "The accounts service could not be confirmed, so there are no Spaces to show."
-        }
-        Absence::Failed => "The accounts service did not answer. Try again in a moment.",
-    }
-}
-
-fn privacy(absence: Absence) -> &'static str {
-    match absence {
-        Absence::NoBus => "Settings is not connected to the desktop.",
-        Absence::NotRunning => "The desktop is not running.",
-        Absence::NotPermitted => "Open Settings from the desktop to see Privacy.",
-        Absence::Unavailable | Absence::NoDevice => "The desktop is not available now.",
-        Absence::Failed => "The desktop did not answer. Try again in a moment.",
-    }
-}
-
-/// What a page of the computer's own hardware says: when the service is not there, when there is
-/// none of the hardware, and when it did not answer.
-struct SystemPage {
-    gone: &'static str,
+/// What one pane says for each [`Absence`].
+struct Words {
+    no_bus: &'static str,
+    not_running: &'static str,
+    not_permitted: &'static str,
+    unavailable: &'static str,
     no_device: &'static str,
     failed: &'static str,
 }
 
-const WIFI: SystemPage = SystemPage {
-    gone: "Wi-Fi isn\u{2019}t available right now.",
-    no_device: "This computer has no Wi-Fi.",
-    failed: "Wi-Fi didn\u{2019}t answer. Try again in a moment.",
-};
-
-const BLUETOOTH: SystemPage = SystemPage {
-    gone: "Bluetooth isn\u{2019}t available right now.",
-    no_device: "This computer has no Bluetooth.",
-    failed: "Bluetooth didn\u{2019}t answer. Try again in a moment.",
-};
-
-const DISPLAYS: SystemPage = SystemPage {
-    gone: "Displays aren\u{2019}t available right now.",
-    no_device: "No display is connected.",
-    failed: "The desktop didn\u{2019}t answer. Try again in a moment.",
-};
-
-fn system_page(absence: Absence, page: SystemPage) -> &'static str {
-    match absence {
-        Absence::NoBus | Absence::NotRunning | Absence::NotPermitted | Absence::Unavailable => {
-            page.gone
+impl Words {
+    /// A page of the computer's own hardware: one sentence when the service is not there, one when
+    /// there is none of the hardware, and one when it did not answer.
+    const fn system_page(
+        gone: &'static str,
+        no_device: &'static str,
+        failed: &'static str,
+    ) -> Self {
+        Self {
+            no_bus: gone,
+            not_running: gone,
+            not_permitted: gone,
+            unavailable: gone,
+            no_device,
+            failed,
         }
-        Absence::NoDevice => page.no_device,
-        Absence::Failed => page.failed,
     }
 }
 
-fn updates(absence: Absence) -> &'static str {
-    match absence {
-        Absence::Failed => "Software updates did not answer. Try again in a moment.",
-        Absence::NoBus
-        | Absence::NotRunning
-        | Absence::NotPermitted
-        | Absence::Unavailable
-        | Absence::NoDevice => "Software updates are not available on this computer.",
-    }
-}
+const NOT_CONNECTED: &str = "Settings is not connected to the desktop.";
+
+const ACCOUNTS: Words = Words {
+    no_bus: "Settings is not connected to the desktop, so there are no accounts to show.",
+    not_running: "The accounts service is not running, so there are no accounts to show.",
+    not_permitted: "Accounts can only be managed when Settings is opened from the desktop. Close \
+                    this window and open Settings again from the launcher.",
+    unavailable: "The accounts service could not be confirmed, so there are no accounts to show.",
+    no_device: "The accounts service could not be confirmed, so there are no accounts to show.",
+    failed: "The accounts service did not answer. Try again in a moment.",
+};
+
+const RUNTIMES: Words = Words {
+    no_bus: NOT_CONNECTED,
+    not_running: "The accounts service is not running, so nothing on this computer can be listed.",
+    not_permitted: "Models on this computer can only be listed when Settings is opened from the \
+                    desktop. Close this window and open Settings again from the launcher.",
+    unavailable: "The accounts service could not be confirmed, so nothing on this computer can be \
+                  listed.",
+    no_device: "The accounts service could not be confirmed, so nothing on this computer can be \
+                listed.",
+    failed: "The accounts service did not answer. Try again in a moment.",
+};
+
+const COMPUTERS: Words = Words {
+    no_bus: "Settings is not connected to the desktop, so your computers cannot be listed.",
+    not_running: "The assistant is not running, so your computers cannot be listed.",
+    not_permitted: "Your computers can only be managed when Settings is opened from the desktop.",
+    unavailable: "The assistant could not be confirmed, so your computers cannot be listed.",
+    no_device: "The assistant could not be confirmed, so your computers cannot be listed.",
+    failed: "The assistant did not answer. Try again in a moment.",
+};
+
+const MODELS: Words = Words {
+    no_bus: NOT_CONNECTED,
+    not_running: "Models are not available now.",
+    not_permitted: "Open Settings from the desktop to choose models.",
+    unavailable: "Models are not available now.",
+    no_device: "Models are not available now.",
+    failed: "Models did not answer. Try again in a moment.",
+};
+
+const SCREEN_SHARING: Words = Words {
+    no_bus: "Settings is not connected to the desktop, so there are no apps to show.",
+    not_running: "The screen sharing service could not be started, so there are no apps to show.",
+    not_permitted: "Apps that may share your screen can only be managed when Settings is opened \
+                    from the desktop.",
+    unavailable: "The screen sharing service could not be confirmed, so there are no apps to show.",
+    no_device: "The screen sharing service could not be confirmed, so there are no apps to show.",
+    failed: "The screen sharing service did not answer. Try again in a moment.",
+};
+
+const SPACES: Words = Words {
+    no_bus: "Settings is not connected to the desktop, so there are no Spaces to show.",
+    not_running: "The accounts service is not running, so there are no Spaces to show.",
+    not_permitted: "Spaces can only be managed when Settings is opened from the desktop.",
+    unavailable: "The accounts service could not be confirmed, so there are no Spaces to show.",
+    no_device: "The accounts service could not be confirmed, so there are no Spaces to show.",
+    failed: "The accounts service did not answer. Try again in a moment.",
+};
+
+const PRIVACY: Words = Words {
+    no_bus: NOT_CONNECTED,
+    not_running: "The desktop is not running.",
+    not_permitted: "Open Settings from the desktop to see Privacy.",
+    unavailable: "The desktop is not available now.",
+    no_device: "The desktop is not available now.",
+    failed: "The desktop did not answer. Try again in a moment.",
+};
+
+const WIFI: Words = Words::system_page(
+    "Wi-Fi isn\u{2019}t available right now.",
+    "This computer has no Wi-Fi.",
+    "Wi-Fi didn\u{2019}t answer. Try again in a moment.",
+);
+
+const BLUETOOTH: Words = Words::system_page(
+    "Bluetooth isn\u{2019}t available right now.",
+    "This computer has no Bluetooth.",
+    "Bluetooth didn\u{2019}t answer. Try again in a moment.",
+);
+
+const DISPLAYS: Words = Words::system_page(
+    "Displays aren\u{2019}t available right now.",
+    "No display is connected.",
+    "The desktop didn\u{2019}t answer. Try again in a moment.",
+);
+
+const UPDATES: Words = Words::system_page(
+    "Software updates are not available on this computer.",
+    "Software updates are not available on this computer.",
+    "Software updates did not answer. Try again in a moment.",
+);
 
 #[cfg(test)]
 mod tests {

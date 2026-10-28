@@ -26,7 +26,7 @@ fn a_bus_with_none_of_the_three_says_the_service_is_not_running() {
 
 #[test]
 fn accountd_refusing_settings_is_said_in_its_own_words() {
-    let fake = Accountd::new(Policy::Refuse, identities());
+    let fake = Accountd::new(Verdict::Refuse, identities());
     let mut harness = Sandbox::new("accounts-refused")
         .with_modules(fake.hosted())
         .harness(accounts());
@@ -66,7 +66,7 @@ fn vouching(
 fn a_program_that_took_accountds_name_is_not_read_and_is_sent_nothing() {
     let rt = runtime();
     let bus = PrivateBus::start("accounts-squatter");
-    let squatter = Accountd::new(Policy::Allow, identities());
+    let squatter = Accountd::new(Verdict::Allow, identities());
     let daemon = rt.block_on(squatter.serve_on(&bus));
     let vouch = vouching(&rt, &bus, &daemon, Owner::Nobody);
     let mut harness = Sandbox::new("accounts-squatter")
@@ -89,7 +89,7 @@ fn a_program_that_took_accountds_name_is_not_read_and_is_sent_nothing() {
 fn a_program_with_another_services_role_is_not_accountd_either() {
     let rt = runtime();
     let bus = PrivateBus::start("accounts-wrong-role");
-    let other = Accountd::new(Policy::Allow, identities());
+    let other = Accountd::new(Verdict::Allow, identities());
     let daemon = rt.block_on(other.serve_on(&bus));
     let vouch = vouching(&rt, &bus, &daemon, Owner::Holding(roles::SYNC));
     let mut harness = Sandbox::new("accounts-wrong-role")
@@ -105,7 +105,7 @@ fn a_program_with_another_services_role_is_not_accountd_either() {
 fn the_program_that_holds_accountds_role_is_read() {
     let rt = runtime();
     let bus = PrivateBus::start("accounts-owner-vouched");
-    let accountd = Accountd::new(Policy::Allow, identities());
+    let accountd = Accountd::new(Verdict::Allow, identities());
     let daemon = rt.block_on(accountd.serve_on(&bus));
     let vouch = vouching(&rt, &bus, &daemon, Owner::Holding(roles::ACCOUNTS));
     let mut harness = Sandbox::new("accounts-owner-vouched")
@@ -121,7 +121,7 @@ fn the_program_that_holds_accountds_role_is_read() {
 fn a_typed_secret_is_never_sent_to_a_program_that_took_the_name() {
     let rt = runtime();
     let bus = PrivateBus::start("accounts-squatter-secret");
-    let squatter = Accountd::new(Policy::Allow, identities());
+    let squatter = Accountd::new(Verdict::Allow, identities());
     let daemon = rt.block_on(squatter.serve_on(&bus));
     let vouch = vouching(&rt, &bus, &daemon, Owner::Nobody);
     let sent = rt.block_on(async {

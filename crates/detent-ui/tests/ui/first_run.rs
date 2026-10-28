@@ -4,10 +4,11 @@
 
 use crate::support::Sandbox;
 use crate::support::drive::click;
-use crate::support::inferd::{Inferd, Policy as InferPolicy};
+use crate::support::inferd::Inferd;
 use detent_files::FirstRunMark;
 use ds::prelude::Scheme;
 use ds_harness::{Harness, Input};
+use ds_settings::live::Verdict;
 use std::time::Duration;
 
 const LOCAL_ONLY: &str = ".first-run [aria-label=\"Keep AI on this computer\"] .ds-toggle";
@@ -48,7 +49,7 @@ fn world(name: &str) -> World {
 }
 
 fn world_in(name: &str, scheme: Scheme) -> World {
-    world_with(name, scheme, Inferd::new(InferPolicy::Allow).on_slots())
+    world_with(name, scheme, Inferd::new(Verdict::Allow).on_slots())
 }
 
 fn world_with(name: &str, scheme: Scheme, inferd: Inferd) -> World {
@@ -170,7 +171,7 @@ fn automatic_opens_its_list_and_local_asks_how_it_runs_then_which_model() {
 fn the_modules_note_shows_under_the_row_and_under_the_list_once() {
     const NOTE: &str = "Running models on this computer needs llama.cpp, which is not installed.";
     let note = |w: &World, kind: &str| w.harness.count(&format!("[data-note=\"{kind}\"]"));
-    let inferd = Inferd::new(InferPolicy::Allow).on_slots().noting(NOTE);
+    let inferd = Inferd::new(Verdict::Allow).on_slots().noting(NOTE);
     let mut w = world_with("first-run-note", Scheme::Light, inferd);
     assert_eq!((note(&w, "row"), note(&w, "pool")), (1, 0));
     assert!(w.harness.html().contains(NOTE));

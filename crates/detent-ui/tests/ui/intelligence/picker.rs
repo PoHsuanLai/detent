@@ -5,7 +5,7 @@ use super::*;
 #[test]
 fn the_picker_lists_a_group_per_kind_and_a_row_per_tier_in_design_words() {
     let sandbox = Sandbox::new("intelligence-picker");
-    let fake = Inferd::new(Policy::Allow);
+    let fake = Inferd::new(Verdict::Allow);
     fake.values
         .lock()
         .expect("values")
@@ -40,7 +40,7 @@ fn the_picker_lists_a_group_per_kind_and_a_row_per_tier_in_design_words() {
 #[test]
 fn choosing_a_model_shows_loading_it_until_inferd_answers_then_sets_it() {
     let sandbox = Sandbox::new("intelligence-choose");
-    let fake = Inferd::new(Policy::Allow);
+    let fake = Inferd::new(Verdict::Allow);
     *fake.held.lock().expect("held") = true;
     let mut harness = sandbox.with_modules(fake.hosted()).harness(intelligence());
     settle(&mut harness, "the picker", |h| h.count(".picker-kind") == 2);
@@ -105,7 +105,7 @@ fn the_footer_says_why_when_it_is_on_and_is_gone_when_it_is_off() {
                 &format!("[ai.auto]\nshow_reason = \"{word}\"\n"),
             );
         }
-        let fake = Inferd::new(Policy::Allow);
+        let fake = Inferd::new(Verdict::Allow);
         let (events, feed) = ReasonFeed::channel();
         let mut harness = sandbox
             .with_reasons(feed)

@@ -4,7 +4,7 @@
 
 use super::ScreenSharingLink;
 use super::proxy::portal;
-use crate::bus::{BusSource, absence_of_bus, pinned, pinned_starting};
+use crate::bus::{BusSource, ToAbsence, pinned, pinned_starting};
 use crate::deadline::{Deadline, answered, peer};
 use detent_callers::PORTAL_BUS;
 use detent_model::{Absence, ProgramSubject, ScreenGrant, Work, screen_grants_of};
@@ -17,11 +17,11 @@ const COULD_NOT_REMOVE: &str = "Screen sharing could not be changed. Try again i
 /// start first, and its owner must hold the portal's role before it is called, as for any owner.
 async fn list(bus: &BusSource) -> Result<Vec<ScreenGrant>, Absence> {
     let running = pinned_starting(bus, PORTAL_BUS).await?;
-    let proxy = portal(&running).await.map_err(|e| absence_of_bus(&e))?;
+    let proxy = portal(&running).await.map_err(|e| e.absence())?;
     let rows = within(Deadline::READ, peer::PORTAL, proxy.list_grants())
         .await
         .map_err(|_| Absence::Failed)?
-        .map_err(|e| absence_of_bus(&e))?;
+        .map_err(|e| e.absence())?;
     Ok(screen_grants_of(&rows))
 }
 
