@@ -199,7 +199,7 @@ fn add_account_opens_the_sheet_once_and_each_end_is_told() {
     let state = ready_with(vec![fixed("accounts.a.label", "Home")], &[]);
     let (open, effects) = accounts_step(state, AccountsInput::AddAccount);
     assert_eq!(effects, [AccountsEffect::OpenAddSheet]);
-    assert_eq!(state_of(open.clone()).adding, Adding::SheetOpen);
+    assert!(state_of(open.clone()).sheet_open);
     // A second press while the sheet is open does nothing.
     let (_, effects) = accounts_step(open.clone(), AccountsInput::AddAccount);
     assert!(effects.is_empty());
@@ -208,7 +208,7 @@ fn add_account_opens_the_sheet_once_and_each_end_is_told() {
         AccountsInput::AddEnded(ModuleId::Accountd, AddEnd::Closed),
     );
     assert_eq!(effects, [AccountsEffect::Reload(ModuleId::Accountd)]);
-    assert_eq!(state_of(done).adding, Adding::Idle);
+    assert!(!state_of(done).sheet_open);
     let (_, effects) = accounts_step(
         open.clone(),
         AccountsInput::AddEnded(
@@ -244,9 +244,9 @@ fn the_remove_question_says_kept_files_go_too_only_when_a_sync_row_is_on() {
         action("accounts.a.remove", "Remove account"),
     ];
     let remove = ModuleRow::new(ModuleId::Accountd, KeyPath("accounts.a.remove".to_owned()));
-    for (word, files) in [("on", LocalFiles::Kept), ("off", LocalFiles::None)] {
+    for (word, kept) in [("on", true), ("off", false)] {
         let state = ready_with(keys.clone(), &[("accounts.a.sync.files", word)]);
         let (asked, _) = accounts_step(state, AccountsInput::AskRemove(remove.clone()));
-        assert_eq!(state_of(asked).confirming.map(|q| q.files), Some(files));
+        assert_eq!(state_of(asked).confirming.map(|q| q.files_kept), Some(kept));
     }
 }

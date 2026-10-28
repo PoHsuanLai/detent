@@ -282,15 +282,6 @@ impl AddForm {
     }
 }
 
-/// The person's answer to the question before an assistant is removed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RemoveAnswer {
-    /// Take it off the list.
-    Remove,
-    /// Leave it where it is.
-    Keep,
-}
-
 /// The question before an assistant is removed.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RemoveQuestion {

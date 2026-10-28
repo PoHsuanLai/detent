@@ -60,15 +60,6 @@ pub enum RunAction {
     Stop,
 }
 
-/// Whether the row's action waits for something.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum InFlight {
-    /// A start or stop the person asked for has not ended, or the model is being stopped.
-    Yes,
-    /// Nothing waits.
-    No,
-}
-
 /// One model the computer runs itself.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModelRun {
@@ -92,7 +83,7 @@ pub struct RunRowView {
     /// What can be done to it.
     pub action: RunAction,
     /// Whether the action waits.
-    pub in_flight: InFlight,
+    pub in_flight: bool,
     /// The line under the row: the refusal of the last action, else why the model failed.
     pub note: Option<String>,
 }

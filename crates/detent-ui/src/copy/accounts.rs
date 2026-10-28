@@ -4,7 +4,7 @@
 use detent_model::external::SignInWay;
 use detent_model::{
     Account, AccountPermission, AccountService, AccountStatus, Ask, Attention, CalendarDay,
-    GrantDecision, GrantScope, LocalFiles, RemovalQuestion, SecretStanding, humanize,
+    GrantDecision, GrantScope, RemovalQuestion, humanize,
 };
 
 /// What a person reads for how an account stands.
@@ -104,11 +104,8 @@ pub(crate) fn grant_when(permission: &AccountPermission) -> Option<String> {
 }
 
 /// The word a sign-in field shows in place of a secret it never reads back.
-pub(crate) fn secret_standing(standing: SecretStanding) -> &'static str {
-    match standing {
-        SecretStanding::Set => "Set",
-        SecretStanding::NotSet => "Not set",
-    }
+pub(crate) fn secret_standing(set: bool) -> &'static str {
+    if set { "Set" } else { "Not set" }
 }
 
 /// What the alert before a removal or a sign-out says.
@@ -129,16 +126,13 @@ pub(crate) fn removal(question: &RemovalQuestion, remove_name: &str) -> RemovalW
     match question.ask {
         Ask::Remove => RemovalWords {
             title: format!("{remove_name} {}?", question.account),
-            message: match question.files {
-                LocalFiles::Kept => {
-                    "Its stored credentials and every permission given for it are deleted. \
-                     Files kept on this computer for the account are deleted too. \
-                     It cannot be undone."
-                }
-                LocalFiles::None => {
-                    "Its stored credentials and every permission given for it are deleted. \
-                     It cannot be undone."
-                }
+            message: if question.files_kept {
+                "Its stored credentials and every permission given for it are deleted. \
+                 Files kept on this computer for the account are deleted too. \
+                 It cannot be undone."
+            } else {
+                "Its stored credentials and every permission given for it are deleted. \
+                 It cannot be undone."
             },
             keep: "Keep",
             action: remove_name.to_owned(),
@@ -368,25 +362,22 @@ mod tests {
 
     #[test]
     fn a_secret_says_whether_it_is_set() {
-        for (standing, want) in [
-            (SecretStanding::Set, "Set"),
-            (SecretStanding::NotSet, "Not set"),
-        ] {
-            assert_eq!(secret_standing(standing), want);
+        for (set, want) in [(true, "Set"), (false, "Not set")] {
+            assert_eq!(secret_standing(set), want);
         }
     }
 
     #[test]
     fn the_question_names_what_goes_with_the_account() {
-        let asked = |ask, files| RemovalQuestion {
+        let asked = |ask, files_kept| RemovalQuestion {
             ask,
             row: ModuleRow::new(ModuleId::Accountd, KeyPath("accounts.a.remove".to_owned())),
             account: "Home cloud".to_owned(),
-            files,
+            files_kept,
         };
         let cases = [
             (
-                asked(Ask::Remove, LocalFiles::Kept),
+                asked(Ask::Remove, true),
                 RemovalWords {
                     title: "Remove account Home cloud?".to_owned(),
                     message: "Its stored credentials and every permission given for it are \
@@ -397,7 +388,7 @@ mod tests {
                 },
             ),
             (
-                asked(Ask::Remove, LocalFiles::None),
+                asked(Ask::Remove, false),
                 RemovalWords {
                     title: "Remove account Home cloud?".to_owned(),
                     message: "Its stored credentials and every permission given for it are \
@@ -407,7 +398,7 @@ mod tests {
                 },
             ),
             (
-                asked(Ask::SignOut, LocalFiles::None),
+                asked(Ask::SignOut, false),
                 RemovalWords {
                     title: "Sign out of Home cloud?".to_owned(),
                     message: "You'll need to sign in again to use it.",

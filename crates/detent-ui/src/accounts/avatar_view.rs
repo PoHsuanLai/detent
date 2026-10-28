@@ -2,7 +2,7 @@
 //! provider; a ring turns round it while the sync service is moving data for the account.
 
 use crate::marks::ProviderMarks;
-use detent_model::{AccountProvider, SyncWork};
+use detent_model::AccountProvider;
 use dioxus::prelude::*;
 use ds::components::content::avatar::{AvatarSize, AvatarTone, person_hue};
 use ds::prelude::*;
@@ -42,7 +42,7 @@ pub(super) fn AccountAvatar(
     provider: Option<AccountProvider>,
     marks: ProviderMarks,
     place: AvatarPlace,
-    work: SyncWork,
+    syncing: bool,
 ) -> Element {
     let face = match provider {
         Some(provider) => {
@@ -59,11 +59,12 @@ pub(super) fn AccountAvatar(
             }
         },
     };
-    match work {
-        SyncWork::Resting => face,
-        SyncWork::Working => rsx! {
+    if syncing {
+        rsx! {
             Halo { centre: face, label }
-        },
+        }
+    } else {
+        face
     }
 }
 

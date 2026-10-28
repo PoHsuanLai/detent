@@ -2,7 +2,7 @@
 //! asked.
 
 use detent_model::{
-    AccessPoint, NetworkLink, NetworkLock, SignalStrength, Ssid, WifiRadio, WifiStatus, WifiWire,
+    AccessPoint, NetworkLink, SignalStrength, Ssid, WifiRadio, WifiSecurity, WifiStatus, WifiWire,
 };
 use detent_system::wifi::{FakeWifi, WifiAsked, WifiLink};
 
@@ -10,7 +10,7 @@ fn status() -> WifiStatus {
     let point = |name: &str| AccessPoint {
         ssid: Ssid(name.to_owned()),
         strength: SignalStrength(80),
-        lock: NetworkLock::Open,
+        security: WifiSecurity::Open,
         link: NetworkLink::Idle,
     };
     WifiStatus::of_wire(WifiWire {

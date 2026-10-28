@@ -2,9 +2,7 @@
 
 use crate::support::builder;
 use detent_client::Pane;
-use detent_model::{
-    BtAddress, BtDevice, BtInput, BtKind, BtLink, BtPairing, BtPower, BtState, BtStatus,
-};
+use detent_model::{BtAddress, BtDevice, BtInput, BtKind, BtLink, BtState, BtStatus};
 use detent_system::bluetooth::{BtAsked, FakeBluetooth};
 use std::sync::Arc;
 
@@ -14,7 +12,7 @@ fn nearby(address: &BtAddress) -> BtDevice {
         name: "Keyboard".to_owned(),
         kind: BtKind::Keyboard,
         link: BtLink::Disconnected,
-        pairing: BtPairing::Unpaired,
+        paired: false,
         battery: None,
     }
 }
@@ -22,7 +20,7 @@ fn nearby(address: &BtAddress) -> BtDevice {
 #[tokio::test]
 async fn pressing_connect_on_a_nearby_device_pairs_it() {
     let address = BtAddress("AA:BB:CC:DD:EE:FF".to_owned());
-    let status = BtStatus::new(BtPower::On, vec![nearby(&address)]);
+    let status = BtStatus::new(true, vec![nearby(&address)]);
     let link = FakeBluetooth::answering(status.clone());
     let client = builder().with_bluetooth(Arc::new(link.clone())).build();
     let bluetooth = client.bluetooth();

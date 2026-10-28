@@ -20,11 +20,10 @@ mod pick_tests;
 mod tests;
 
 pub use add::{
-    AddForm, AddRefusal, FoundAgent, RemoveAnswer, RemoveQuestion, Request, removal_of,
-    unlisted_found,
+    AddForm, AddRefusal, FoundAgent, RemoveQuestion, Request, removal_of, unlisted_found,
 };
 pub use add_choice::{AddAction, Candidate, Listing, Presence, Step};
-pub use offer::{AgentOffer, AgentReason, AgentStanding, offers};
+pub use offer::{AgentOffer, AgentReason, offers};
 
 use crate::picker::Described;
 use ds_settings::schema::{ChoiceGroup, ChoiceWord, KeyKind, KeySpec, UnavailableReason};
@@ -141,12 +140,10 @@ fn lay(spec: &mut KeySpec, place: ChoiceKind, offers: &[AgentOffer]) {
         labels.0.insert(offer.word.clone(), offer.label.clone());
         let word = ChoiceWord(offer.word.clone());
         groups.insert(word.clone(), ChoiceGroup(AgentWord::Group.key()));
-        let reason = match (place, &offer.standing) {
+        let reason = match (place, &offer.blocked) {
             (ChoiceKind::Pool, _) => Some(AgentWord::ChooseDirectly.key()),
-            (ChoiceKind::Choice, AgentStanding::Blocked(reason)) => {
-                Some(AgentWord::Reason(reason.clone()).key())
-            }
-            (ChoiceKind::Choice, AgentStanding::Ready) => None,
+            (ChoiceKind::Choice, Some(reason)) => Some(AgentWord::Reason(reason.clone()).key()),
+            (ChoiceKind::Choice, None) => None,
         };
         match reason {
             Some(reason) => {

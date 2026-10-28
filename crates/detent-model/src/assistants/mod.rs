@@ -7,7 +7,7 @@ mod step;
 
 pub use known::known_of;
 pub use offers::{ModelOffer, offers_for};
-pub use step::{Confirm, PlaceRef, PlacesEffect, PlacesInput, PlacesState, places_step};
+pub use step::{PlaceRef, PlacesEffect, PlacesInput, PlacesState, places_step};
 
 #[cfg(test)]
 mod tests;

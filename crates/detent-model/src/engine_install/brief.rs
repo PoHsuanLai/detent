@@ -1,7 +1,7 @@
 //! What the offer to get an engine tells the person, as facts: which matter it is about, what can
 //! be done, and how far a download has come. The window words them (`detent-ui`'s copy).
 
-use super::offer::{EngineOffer, EngineOfferInput, EngineRef, Replacing};
+use super::offer::{EngineOffer, EngineOfferInput, EngineRef};
 use super::rows::{EngineFailure, EngineWay, InstallScope};
 
 /// What the person may do about the offer.
@@ -41,7 +41,7 @@ pub enum EngineMatter {
     /// The engine can be downloaded: of this size when known, again when an install was changed.
     Download {
         /// Whether an install that was changed is being replaced.
-        replacing: Replacing,
+        replacing: bool,
         /// How many bytes, when that is known.
         size: Option<u64>,
     },
@@ -62,15 +62,6 @@ pub enum EngineMatter {
     },
 }
 
-/// Whether the offer shows a bar that only says something is going on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Waiting {
-    /// No.
-    No,
-    /// Yes.
-    Yes,
-}
-
 /// The offer as it is told.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EngineBrief {
@@ -85,7 +76,7 @@ pub struct EngineBrief {
     /// How far a download has come, in thousandths, when one is going on.
     pub progress: Option<u32>,
     /// Whether work with no end in sight is going on.
-    pub waiting: Waiting,
+    pub waiting: bool,
     /// The action that goes on.
     pub primary: Option<EngineAction>,
     /// The action that leaves.
@@ -100,7 +91,7 @@ pub fn engine_brief(offer: &EngineOffer) -> Option<EngineBrief> {
         scopes: Vec::new(),
         scope: InstallScope::JustMe,
         progress: None,
-        waiting: Waiting::No,
+        waiting: false,
         primary: None,
         secondary: None,
     };

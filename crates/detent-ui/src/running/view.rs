@@ -8,7 +8,7 @@ use crate::key_row::row_id;
 use crate::live::use_live;
 use crate::picker::NoteLine;
 use detent_client::Client;
-use detent_model::{InFlight, Live, RunInput, RunRowView};
+use detent_model::{Live, RunInput, RunRowView};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -52,9 +52,10 @@ fn ModelRow(row: RunRowView, onpress: EventHandler<String>) -> Element {
             .unwrap_or_default(),
         ..Common::default()
     };
-    let availability = match row.in_flight {
-        InFlight::Yes => Availability::Busy,
-        InFlight::No => Availability::Enabled,
+    let availability = if row.in_flight {
+        Availability::Busy
+    } else {
+        Availability::Enabled
     };
     let model = row.model.clone();
     let name = copy::running::model_name(&row.model);

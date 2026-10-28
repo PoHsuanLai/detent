@@ -7,11 +7,11 @@ fn ssid(name: &str) -> Ssid {
     Ssid(name.to_owned())
 }
 
-fn point(name: &str, strength: u8, lock: NetworkLock, link: NetworkLink) -> AccessPoint {
+fn point(name: &str, strength: u8, security: WifiSecurity, link: NetworkLink) -> AccessPoint {
     AccessPoint {
         ssid: ssid(name),
         strength: SignalStrength(strength),
-        lock,
+        security,
         link,
     }
 }
@@ -46,12 +46,12 @@ fn page_of(state: &WifiState) -> &WifiReady {
 fn world() -> WifiStatus {
     status(
         vec![
-            point("Cafe", 80, NetworkLock::Open, NetworkLink::Idle),
-            point("Home", 40, NetworkLock::Secured, NetworkLink::Idle),
-            point("Home", 70, NetworkLock::Secured, NetworkLink::Idle),
-            point("Office", 90, NetworkLock::Secured, NetworkLink::Joined),
-            point("Neighbour", 60, NetworkLock::Secured, NetworkLink::Idle),
-            point("", 99, NetworkLock::Open, NetworkLink::Idle),
+            point("Cafe", 80, WifiSecurity::Open, NetworkLink::Idle),
+            point("Home", 40, WifiSecurity::Psk, NetworkLink::Idle),
+            point("Home", 70, WifiSecurity::Psk, NetworkLink::Idle),
+            point("Office", 90, WifiSecurity::Psk, NetworkLink::Joined),
+            point("Neighbour", 60, WifiSecurity::Psk, NetworkLink::Idle),
+            point("", 99, WifiSecurity::Open, NetworkLink::Idle),
         ],
         &["Home"],
     )
@@ -67,7 +67,7 @@ fn access_points_fold_to_one_network_and_sort_joined_then_remembered_then_signal
         SignalStrength(70),
         "the strongest access point"
     );
-    assert_eq!(home.remembered, Remembered::Yes);
+    assert!(home.remembered);
     assert_eq!(status.joined().map(|n| n.ssid.0.as_str()), Some("Office"));
     assert_eq!(status.others().count(), 3);
 }
@@ -76,8 +76,8 @@ fn access_points_fold_to_one_network_and_sort_joined_then_remembered_then_signal
 fn a_network_is_joining_if_any_of_its_access_points_is() {
     let status = status(
         vec![
-            point("Home", 70, NetworkLock::Secured, NetworkLink::Idle),
-            point("Home", 30, NetworkLock::Secured, NetworkLink::Joining),
+            point("Home", 70, WifiSecurity::Psk, NetworkLink::Idle),
+            point("Home", 30, WifiSecurity::Psk, NetworkLink::Joining),
         ],
         &[],
     );
@@ -224,7 +224,7 @@ fn hearing_again_keeps_the_sheet_and_drops_a_join_that_has_ended() {
 
     let (joining, _) = wifi_step(ready_with(world()), WifiInput::Pick(ssid("Cafe")));
     let now_on = status(
-        vec![point("Cafe", 80, NetworkLock::Open, NetworkLink::Joined)],
+        vec![point("Cafe", 80, WifiSecurity::Open, NetworkLink::Joined)],
         &[],
     );
     let (next, _) = wifi_step(joining, WifiInput::Heard(Ok(now_on)));
@@ -256,12 +256,7 @@ fn a_password_is_long_enough_at_eight_characters_and_never_printed() {
 #[test]
 fn a_network_that_signs_in_asks_for_an_account_and_asks_again_for_one() {
     let status = status(
-        vec![point(
-            "Campus",
-            70,
-            NetworkLock::Enterprise,
-            NetworkLink::Idle,
-        )],
+        vec![point("Campus", 70, WifiSecurity::Eap, NetworkLink::Idle)],
         &[],
     );
     let (asked, effects) = wifi_step(ready_with(status), WifiInput::Pick(ssid("Campus")));

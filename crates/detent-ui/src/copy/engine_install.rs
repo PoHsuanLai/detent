@@ -1,6 +1,6 @@
 //! What the offer to get an engine says: Mac wording, and no path, program name or protocol.
 
-use detent_model::{EngineAction, EngineFailure, EngineMatter, InstallScope, Replacing};
+use detent_model::{EngineAction, EngineFailure, EngineMatter, InstallScope};
 
 /// What the label above the choice of who it is for says.
 pub(crate) fn install_for() -> &'static str {
@@ -32,12 +32,10 @@ pub(crate) fn action(action: EngineAction) -> &'static str {
 pub(crate) fn title(name: &str, matter: &EngineMatter) -> String {
     match matter {
         EngineMatter::Download {
-            replacing: Replacing::No,
-            ..
+            replacing: false, ..
         } => format!("Download {name}?"),
         EngineMatter::Download {
-            replacing: Replacing::Yes,
-            ..
+            replacing: true, ..
         } => format!("Download {name} Again?"),
         EngineMatter::Folder => format!("{name} Isn't Available to Download"),
         EngineMatter::Unavailable => format!("{name} Isn't Available"),
@@ -52,14 +50,13 @@ pub(crate) fn title(name: &str, matter: &EngineMatter) -> String {
 pub(crate) fn message(name: &str, matter: &EngineMatter) -> String {
     match matter {
         EngineMatter::Download { replacing, size } => {
-            let lead = match replacing {
-                Replacing::No => {
-                    format!("Your assistant needs {name} to run models on this computer.")
-                }
-                Replacing::Yes => format!(
+            let lead = if *replacing {
+                format!(
                     "{name} was changed since it was installed, so your assistant won't use it. \
                      Download it again to run models on this computer."
-                ),
+                )
+            } else {
+                format!("Your assistant needs {name} to run models on this computer.")
             };
             match size {
                 Some(bytes) => format!("{lead} It's about {}.", size_words(*bytes)),
@@ -119,7 +116,7 @@ pub(crate) const CHECKING: &str = "Checking";
 mod tests {
     use super::*;
 
-    fn download(replacing: Replacing, size: Option<u64>) -> EngineMatter {
+    fn download(replacing: bool, size: Option<u64>) -> EngineMatter {
         EngineMatter::Download { replacing, size }
     }
 
@@ -142,19 +139,19 @@ mod tests {
         let cases = [
             (
                 "llama.cpp",
-                download(Replacing::No, Some(30_497_889)),
+                download(false, Some(30_497_889)),
                 "Download llama.cpp?",
                 "Your assistant needs llama.cpp to run models on this computer. It's about 30 MB.",
             ),
             (
                 "vLLM",
-                download(Replacing::No, Some(4_411_066_545)),
+                download(false, Some(4_411_066_545)),
                 "Download vLLM?",
                 "Your assistant needs vLLM to run models on this computer. It's about 4.4 GB.",
             ),
             (
                 "llama.cpp",
-                download(Replacing::Yes, None),
+                download(true, None),
                 "Download llama.cpp Again?",
                 "llama.cpp was changed since it was installed, so your assistant won't use it. \
                  Download it again to run models on this computer.",

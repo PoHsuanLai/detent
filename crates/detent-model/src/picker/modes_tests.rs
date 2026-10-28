@@ -152,41 +152,38 @@ fn toggled(state: PickerState, word: &str) -> (PickerState, Vec<PickerEffect>) {
     )
 }
 
+/// `(case, stored word, the pool, what the row says it still needs)`.
+type ReadyCase<'a> = (&'a str, &'a str, &'a [&'a str], Result<(), ChoiceGap>);
+
 #[test]
 fn a_choice_is_ready_when_it_can_be_used() {
-    // `(case, stored word, the pool, what the row says it still needs)`.
-    let cases: [(&str, &str, &[&str], ChoiceReadiness); 6] = [
-        (
-            "nothing chosen",
-            "",
-            &[],
-            ChoiceReadiness::Missing(ChoiceGap::Choice),
-        ),
+    let cases: [ReadyCase<'_>; 6] = [
+        ("nothing chosen", "", &[], Err(ChoiceGap::Choice)),
         (
             "Automatic with an empty pool",
             "auto",
             &[],
-            ChoiceReadiness::Missing(ChoiceGap::PoolEmpty),
+            Err(ChoiceGap::PoolEmpty),
         ),
         (
             "Automatic with a model to choose from",
             "auto",
             &["anthropic/claude"],
-            ChoiceReadiness::Ready,
+            Ok(()),
         ),
         (
             "Automatic whose every model went",
             "auto",
             &["gone/model"],
-            ChoiceReadiness::Missing(ChoiceGap::PoolGone),
+            Err(ChoiceGap::PoolGone),
         ),
         (
             "Automatic with one model gone and one left",
             "auto",
             &["gone/model", "local/qwen"],
-            ChoiceReadiness::Ready,
+            Ok(()),
         ),
-        ("a model", "anthropic/claude", &[], ChoiceReadiness::Ready),
+        ("a model", "anthropic/claude", &[], Ok(())),
     ];
     for (case, value, held, want) in cases {
         let state = ready_with(value, held);
@@ -211,7 +208,7 @@ fn an_unready_choice_names_what_is_missing_and_nothing_chosen_names_nothing() {
 }
 
 /// One pool group as the test reads it: its name and each model with whether it is in.
-type ShownGroup<'a> = (Option<&'a str>, Vec<(&'a str, PoolMembership)>);
+type ShownGroup<'a> = (Option<&'a str>, Vec<(&'a str, bool)>);
 
 #[test]
 fn the_pool_offers_the_pickers_models_without_nothing_and_automatic() {
@@ -223,7 +220,7 @@ fn the_pool_offers_the_pickers_models_without_nothing_and_automatic() {
             let entries = group
                 .entries
                 .iter()
-                .map(|entry| (entry.word.as_str(), entry.membership))
+                .map(|entry| (entry.word.as_str(), entry.in_pool))
                 .collect();
             let name = match &group.heading {
                 PoolHeading::Named(name) => Some(name.as_str()),
@@ -238,15 +235,12 @@ fn the_pool_offers_the_pickers_models_without_nothing_and_automatic() {
             (
                 Some("On this computer"),
                 vec![
-                    ("local/qwen", PoolMembership::Out),
-                    ("local/holo", PoolMembership::Out),
-                    ("ollama/llama3", PoolMembership::Out)
+                    ("local/qwen", false),
+                    ("local/holo", false),
+                    ("ollama/llama3", false)
                 ]
             ),
-            (
-                Some("Anthropic"),
-                vec![("anthropic/claude", PoolMembership::In)]
-            ),
+            (Some("Anthropic"), vec![("anthropic/claude", true)]),
         ]
     );
 }
@@ -311,8 +305,8 @@ fn a_model_the_list_holds_and_the_module_dropped_is_listed_apart_and_can_be_remo
     assert_eq!(apart.heading, PoolHeading::NoLongerOffered);
     let entry = &apart.entries[0];
     assert_eq!(
-        (entry.word.as_str(), entry.membership, &entry.standing),
-        ("gone/model", PoolMembership::In, &PoolStanding::Gone)
+        (entry.word.as_str(), entry.in_pool, &entry.standing),
+        ("gone/model", true, &PoolStanding::Gone)
     );
     assert!(entry.can_toggle(), "it can be taken out");
 
@@ -333,7 +327,7 @@ fn a_model_the_list_holds_and_the_module_dropped_is_listed_apart_and_can_be_remo
             .all(|group| group.heading != PoolHeading::NoLongerOffered),
         "nothing is left apart"
     );
-    assert_eq!(row_of(&state, ROW).readiness(), ChoiceReadiness::Ready);
+    assert_eq!(row_of(&state, ROW).readiness(), Ok(()));
 }
 
 #[test]
@@ -383,7 +377,7 @@ fn choosing_automatic_writes_the_word_and_never_picks_a_pool_for_the_person() {
     assert_eq!(row.pool.chosen, Vec::<String>::new());
     assert_eq!(
         row.readiness(),
-        ChoiceReadiness::Missing(ChoiceGap::PoolEmpty),
+        Err(ChoiceGap::PoolEmpty),
         "Automatic is not ready until a model is in the list"
     );
 }

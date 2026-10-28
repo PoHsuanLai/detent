@@ -2,8 +2,8 @@
 
 use desktop_client::output::{Enabled, Head, Mode, Outputs, Preferred, Transform};
 use detent_model::{
-    DisplayMode, DisplayPosition, DisplayRotation, Millimetres, ModePreference, Monitor, OutputId,
-    PixelSize, RefreshMilliHz, ScaleMilli,
+    DisplayMode, DisplayPosition, DisplayRotation, Millimetres, Monitor, OutputId, PixelSize,
+    RefreshMilliHz, ScaleMilli,
 };
 
 /// The displays that are switched on, in the order the compositor announced them.
@@ -64,10 +64,7 @@ pub fn mode_of(mode: &Mode) -> DisplayMode {
             height: mode.size.h,
         },
         refresh: RefreshMilliHz(mode.refresh.get()),
-        preferred: match mode.preferred {
-            Preferred::Yes => ModePreference::Yes,
-            Preferred::No => ModePreference::No,
-        },
+        preferred: matches!(mode.preferred, Preferred::Yes),
     }
 }
 

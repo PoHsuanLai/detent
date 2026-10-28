@@ -14,12 +14,11 @@ pub use model::{
 };
 pub(crate) use page::{SOFTWARE_UPDATE_NAME, SOFTWARE_UPDATE_SLUG, software_update_page};
 pub use shown::{
-    CheckActivity, Checked, Downloaded, ReleaseNotes, UpdateAction, UpdateMeter, UpdateStanding,
-    UpdatesPage, UpdatesShown, updates_shown,
+    Checked, Downloaded, ReleaseNotes, UpdateAction, UpdateMeter, UpdateStanding, UpdatesPage,
+    UpdatesShown, updates_shown,
 };
 pub use step::{
-    NotesState, UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState,
-    updates_step,
+    UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState, updates_step,
 };
 
 #[cfg(test)]

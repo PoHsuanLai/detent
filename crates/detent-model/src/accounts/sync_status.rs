@@ -10,15 +10,6 @@ use std::collections::BTreeMap;
 /// dataset is `<account>/<kind>`.
 const SYNCED_KINDS: [&str; 3] = ["calendar", "contacts", "tasks"];
 
-/// Whether the person stopped a dataset from syncing.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SyncPause {
-    /// They did.
-    Paused,
-    /// They did not.
-    Running,
-}
-
 /// How full the account's storage is, as the provider reports it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct StorageQuota {
@@ -26,15 +17,6 @@ pub struct StorageQuota {
     pub used: u64,
     /// Bytes allowed; none when the provider reports no limit.
     pub total: Option<u64>,
-}
-
-/// Whether the sync service is moving data for a dataset now.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SyncWork {
-    /// It has items left to send or fetch.
-    Working,
-    /// It is waiting, paused or caught up.
-    Resting,
 }
 
 /// What `Sync1.Status` answers for one dataset.
@@ -47,18 +29,15 @@ pub struct SyncStatus {
     /// Conflicts nobody has settled.
     pub conflicts: u64,
     /// Whether the person paused it.
-    pub pause: SyncPause,
+    pub paused: bool,
     /// The storage the account has used, when the provider says.
     pub quota: Option<StorageQuota>,
 }
 
 impl SyncStatus {
     /// Whether data is moving now: a paused dataset moves nothing.
-    pub fn work(&self) -> SyncWork {
-        match self.pause {
-            SyncPause::Running if self.pending > 0 => SyncWork::Working,
-            SyncPause::Running | SyncPause::Paused => SyncWork::Resting,
-        }
+    pub fn working(&self) -> bool {
+        !self.paused && self.pending > 0
     }
 }
 
@@ -78,17 +57,12 @@ impl SyncBook {
     }
 
     /// Whether the service is moving data for any dataset of `account` now.
-    pub fn work_of(&self, account: &Account) -> SyncWork {
-        let busy = account
+    pub fn syncing(&self, account: &Account) -> bool {
+        account
             .datasets()
             .iter()
             .filter_map(|dataset| self.status_of(dataset))
-            .any(|status| status.work() == SyncWork::Working);
-        if busy {
-            SyncWork::Working
-        } else {
-            SyncWork::Resting
-        }
+            .any(SyncStatus::working)
     }
 }
 
@@ -129,14 +103,14 @@ impl AccountsPane {
 
 #[cfg(test)]
 mod tests {
-    use super::{SyncPause, SyncStatus, SyncWork};
+    use super::SyncStatus;
 
-    fn status(pending: u64, pause: SyncPause) -> SyncStatus {
+    fn status(pending: u64, paused: bool) -> SyncStatus {
         SyncStatus {
             anchor_age: Some(60),
             pending,
             conflicts: 0,
-            pause,
+            paused,
             quota: None,
         }
     }
@@ -144,13 +118,13 @@ mod tests {
     #[test]
     fn a_dataset_is_working_only_while_it_has_items_left_and_is_not_paused() {
         let cases = [
-            (status(0, SyncPause::Running), SyncWork::Resting),
-            (status(3, SyncPause::Running), SyncWork::Working),
-            (status(1, SyncPause::Running), SyncWork::Working),
-            (status(3, SyncPause::Paused), SyncWork::Resting),
+            (status(0, false), false),
+            (status(3, false), true),
+            (status(1, false), true),
+            (status(3, true), false),
         ];
-        for (held, work) in cases {
-            assert_eq!(held.work(), work, "{held:?}");
+        for (held, working) in cases {
+            assert_eq!(held.working(), working, "{held:?}");
         }
     }
 }

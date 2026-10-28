@@ -5,8 +5,8 @@ use super::{FORGET, JOINED, OTHER, PASSWORD, join_button, listed, point, ssid, s
 use crate::support::drive::{click, keys, settle, showing, type_into};
 use crate::support::wifi::{Asked, Wifi};
 use detent_model::{
-    HiddenLogin, HiddenNetwork, JoinFailure, NetworkLink, NetworkLock, Passphrase, WifiLogin,
-    WifiRadio, WifiStatus, WifiWire,
+    HiddenLogin, HiddenNetwork, JoinFailure, NetworkLink, Passphrase, WifiLogin, WifiRadio,
+    WifiSecurity, WifiStatus, WifiWire,
 };
 
 #[test]
@@ -80,20 +80,11 @@ fn a_new_secured_network_asks_for_its_password_and_joins_with_it() {
 fn a_network_that_signs_in_asks_for_a_username_and_a_password() {
     let mut wire = WifiWire {
         radio: WifiRadio::On,
-        access_points: vec![point(
-            "Office",
-            90,
-            NetworkLock::Secured,
-            NetworkLink::Joined,
-        )],
+        access_points: vec![point("Office", 90, WifiSecurity::Psk, NetworkLink::Joined)],
         saved: vec![ssid("Office")],
     };
-    wire.access_points.push(point(
-        "Campus",
-        70,
-        NetworkLock::Enterprise,
-        NetworkLink::Idle,
-    ));
+    wire.access_points
+        .push(point("Campus", 70, WifiSecurity::Eap, NetworkLink::Idle));
     let service = Wifi::answering(WifiStatus::of_wire(wire));
     let (_sandbox, mut harness) = world("wifi-sign-in", &service);
     listed(&mut harness);

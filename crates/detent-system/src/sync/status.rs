@@ -5,7 +5,7 @@
 use super::holds::{sync_of, syncd_running};
 use crate::bus::BusSource;
 use crate::deadline::{Deadline, answered, peer};
-use detent_model::{DatasetName, StorageQuota, SyncPause, SyncStatus};
+use detent_model::{DatasetName, StorageQuota, SyncStatus};
 use porter_dbus::names::STATUS_KEY_QUOTA;
 use std::collections::HashMap;
 use zbus::zvariant::OwnedValue;
@@ -41,10 +41,7 @@ fn status_of(details: &HashMap<String, OwnedValue>) -> Option<SyncStatus> {
         anchor_age: details.get(ANCHOR_AGE).and_then(|v| i64::try_from(v).ok()),
         pending: number(details, PENDING)?,
         conflicts: number(details, CONFLICTS).unwrap_or_default(),
-        pause: match paused {
-            Some(true) => SyncPause::Paused,
-            Some(false) | None => SyncPause::Running,
-        },
+        paused: paused == Some(true),
         quota: quota_of(details),
     })
 }

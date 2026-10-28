@@ -11,8 +11,8 @@ use crate::live::use_live;
 use crate::system::Unavailable;
 use detent_client::Client;
 use detent_model::{
-    NetworkLock, PageKind, Remembered, SignalBars, Ssid, WifiAsking, WifiInput, WifiNetwork,
-    WifiRadio, WifiReady, WifiState,
+    PageKind, SignalBars, Ssid, WifiAsking, WifiInput, WifiNetwork, WifiRadio, WifiReady,
+    WifiSecurity, WifiState,
 };
 use dioxus::prelude::*;
 use ds::components::controls::button_model::Bezel;
@@ -60,14 +60,14 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
         radio,
         joined.as_deref(),
     )));
-    let others = |wanted: Remembered| -> Vec<WifiNetwork> {
+    let others = |wanted: bool| -> Vec<WifiNetwork> {
         page.status
             .others()
             .filter(|network| network.remembered == wanted)
             .cloned()
             .collect()
     };
-    let (known, new) = (others(Remembered::Yes), others(Remembered::No));
+    let (known, new) = (others(true), others(false));
     let busy = page.joining.clone();
     rsx! {
         div { class: "system-page", "data-system": "wifi",
@@ -90,9 +90,9 @@ fn Listed(page: WifiReady, press: EventHandler<WifiInput>) -> Element {
                     JoinedNetwork { network: joined, press }
                 }
                 if !known.is_empty() {
-                    Networks { title: crate::copy::wifi::KNOWN_NETWORKS, networks: known, busy: busy.clone(), closing: Closing::Plain, press }
+                    Networks { title: crate::copy::wifi::KNOWN_NETWORKS, networks: known, busy: busy.clone(), other_row: false, press }
                 }
-                Networks { title: crate::copy::wifi::OTHER_NETWORKS, networks: new, busy: busy.clone(), closing: Closing::OtherRow, press }
+                Networks { title: crate::copy::wifi::OTHER_NETWORKS, networks: new, busy: busy.clone(), other_row: true, press }
             }
             match page.asking.clone() {
                 WifiAsking::Nothing => rsx! {},
@@ -117,7 +117,7 @@ fn Glyphs(network: WifiNetwork) -> Element {
         SignalBars::Fair => Icon::WifiHigh,
         SignalBars::Good => Icon::Wifi,
     };
-    let locked = network.lock != NetworkLock::Open;
+    let locked = network.security != WifiSecurity::Open;
     rsx! {
         div {
             class: "system-glyphs",
@@ -163,22 +163,13 @@ enum RowWork {
     Held,
 }
 
-/// What ends a card of networks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Closing {
-    /// The last network.
-    Plain,
-    /// The row that joins a network by its name.
-    OtherRow,
-}
-
 /// A card of networks, each with a Join button.
 #[component]
 fn Networks(
     title: String,
     networks: Vec<WifiNetwork>,
     busy: Option<Ssid>,
-    closing: Closing,
+    other_row: bool,
     press: EventHandler<WifiInput>,
 ) -> Element {
     rsx! {
@@ -195,7 +186,7 @@ fn Networks(
                     press,
                 }
             }
-            if closing == Closing::OtherRow {
+            if other_row {
                 OtherRow { press }
             }
         }
@@ -243,7 +234,7 @@ fn NetworkRow(network: WifiNetwork, work: RowWork, press: EventHandler<WifiInput
                     move |_| press.call(WifiInput::Pick(ssid.clone()))
                 },
             }
-            if network.remembered == Remembered::Yes {
+            if network.remembered {
                 Button {
                     label: crate::copy::common::FORGET_ELLIPSIS,
                     bezel: Bezel::Inline,

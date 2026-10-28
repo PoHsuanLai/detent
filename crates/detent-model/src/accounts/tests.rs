@@ -188,7 +188,7 @@ fn the_pane_opens_on_the_list_and_an_account_chosen_shows_beside_it_until_none_i
             "{input:?}"
         );
         let back = state_of(apply(state, [AccountsInput::Back]).0);
-        assert_eq!(back.screen, AccountsScreen::List);
+        assert_eq!(back.detail, None);
         assert_eq!(back.selected, None);
     }
 }
@@ -199,7 +199,7 @@ fn an_account_nobody_listed_does_not_open() {
         ready(),
         [AccountsInput::Open(AccountKey("nobody".to_owned()))],
     );
-    assert_eq!(state_of(state).screen, AccountsScreen::List);
+    assert_eq!(state_of(state).detail, None);
 }
 
 #[test]
@@ -212,8 +212,8 @@ fn a_reading_keeps_the_screen_when_its_account_is_still_there() {
         ],
     );
     assert_eq!(
-        state_of(state).screen,
-        AccountsScreen::Detail(AccountKey("work.example".to_owned()))
+        state_of(state).detail,
+        Some(AccountKey("work.example".to_owned()))
     );
 }
 

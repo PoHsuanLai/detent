@@ -2,6 +2,7 @@
 
 use super::{account_notices, account_sync, computers, engines, picker, sharing, wifi};
 use detent_client::Notice;
+use detent_model::AccountsNotice;
 
 /// What the person reads for `notice`; nothing for one that is not for them to read.
 pub(crate) fn notice(notice: &Notice) -> Option<String> {
@@ -14,8 +15,10 @@ pub(crate) fn notice(notice: &Notice) -> Option<String> {
         Notice::RestartFailed => Some(engines::restart_failed().to_owned()),
         Notice::PoolRefused => Some(picker::pool_refused().to_owned()),
         Notice::HoldNotRemoved => Some(account_sync::HOLD_NOT_REMOVED.to_owned()),
+        Notice::Account(AccountsNotice::AddEnded(end)) => {
+            account_notices::add_end_line(end).map(str::to_owned)
+        }
         Notice::Account(notice) => Some(account_notices::account_notice(notice)),
-        Notice::AddEnded(end) => account_notices::add_end_line(end).map(str::to_owned),
         Notice::SyncNow(end) => Some(account_sync::sync_now_line(*end).to_owned()),
         Notice::Recorded(_) => None,
     }

@@ -7,8 +7,8 @@ mod offers;
 mod page;
 
 pub use list::{
-    ExtensionGroup, ExtensionKeep, ExtensionKind, ExtensionList, ExtensionPower, ExtensionRow,
-    ExtensionStanding, ExtensionTrouble, InstalledExtensions,
+    ExtensionGroup, ExtensionKind, ExtensionList, ExtensionRow, ExtensionStanding,
+    ExtensionTrouble, InstalledExtensions,
 };
 pub use offers::{Offer, Offers, stray_word};
 pub use page::{EXTENSIONS_SLUG, extensions_page};

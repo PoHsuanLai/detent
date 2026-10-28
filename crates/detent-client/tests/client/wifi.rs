@@ -3,8 +3,8 @@
 use crate::support::builder;
 use detent_client::Pane;
 use detent_model::{
-    AccessPoint, NetworkLink, NetworkLock, Passphrase, SignalStrength, Ssid, WifiAsking, WifiInput,
-    WifiRadio, WifiState, WifiStatus, WifiWire,
+    AccessPoint, NetworkLink, Passphrase, SignalStrength, Ssid, WifiAsking, WifiInput, WifiRadio,
+    WifiSecurity, WifiState, WifiStatus, WifiWire,
 };
 use detent_system::wifi::{FakeWifi, WifiAsked};
 use std::sync::Arc;
@@ -15,7 +15,7 @@ fn status() -> WifiStatus {
         access_points: vec![AccessPoint {
             ssid: Ssid("Home".to_owned()),
             strength: SignalStrength(80),
-            lock: NetworkLock::Secured,
+            security: WifiSecurity::Psk,
             link: NetworkLink::Idle,
         }],
         saved: Vec::new(),

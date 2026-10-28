@@ -68,10 +68,7 @@ fn local_asks_how_it_runs_then_which_model_and_writes_only_the_model() {
             model: None
         }
     );
-    assert_eq!(
-        row.readiness(),
-        ChoiceReadiness::Missing(ChoiceGap::LocalEngine)
-    );
+    assert_eq!(row.readiness(), Err(ChoiceGap::LocalEngine));
     let view = row.local_view().expect("Local is open");
     let engines: Vec<(&str, &str)> = view
         .engines
@@ -89,10 +86,7 @@ fn local_asks_how_it_runs_then_which_model_and_writes_only_the_model() {
     );
     assert_eq!(effects, []);
     let row = row_of(&state, ROW);
-    assert_eq!(
-        row.readiness(),
-        ChoiceReadiness::Missing(ChoiceGap::LocalModel)
-    );
+    assert_eq!(row.readiness(), Err(ChoiceGap::LocalModel));
     let view = row.local_view().expect("Local is open");
     let models: Vec<&str> = view.models().iter().map(|m| m.word.as_str()).collect();
     assert_eq!(models, ["ollama/llama3"], "only the engine's own models");
@@ -114,7 +108,7 @@ fn local_asks_how_it_runs_then_which_model_and_writes_only_the_model() {
             model: Some("ollama/llama3".to_owned())
         }
     );
-    assert_eq!(row.readiness(), ChoiceReadiness::Ready);
+    assert_eq!(row.readiness(), Ok(()));
     assert_eq!(row.choice().selected().as_deref(), Some(LOCAL_ITEM));
 }
 
@@ -148,10 +142,7 @@ fn a_stored_local_model_shows_as_local_and_another_engine_asks_for_its_model() {
         row.value, "local/qwen",
         "the stored model stays until another is chosen"
     );
-    assert_eq!(
-        row.readiness(),
-        ChoiceReadiness::Missing(ChoiceGap::LocalModel)
-    );
+    assert_eq!(row.readiness(), Err(ChoiceGap::LocalModel));
 }
 
 #[test]
@@ -187,10 +178,7 @@ fn local_with_nothing_set_up_says_so_and_the_way_to_add_one_waits_for_the_accoun
     let none = [("anthropic/claude", "Anthropic")];
     let (state, _) = chose(state_of(described_with(&none, "", &[])), LOCAL_ITEM);
     let row = row_of(&state, ROW);
-    assert_eq!(
-        row.readiness(),
-        ChoiceReadiness::Missing(ChoiceGap::NoLocalEngine)
-    );
+    assert_eq!(row.readiness(), Err(ChoiceGap::NoLocalEngine));
     assert_eq!(row.engines(), []);
 
     let (waiting, effects) = step(state, PickerInput::SetUpEngine(path(ROW)));

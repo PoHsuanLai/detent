@@ -22,15 +22,6 @@ pub struct FirstRunMark {
     path: PathBuf,
 }
 
-/// Where a first run stands.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum FirstRunStanding {
-    /// It has not run: `--first-run` opens the window.
-    Pending,
-    /// It ran once: `--first-run` exits at once.
-    Done,
-}
-
 impl FirstRunMark {
     /// The mark under `home`: `<home>/detent/first-run`.
     pub fn under(home: &StateHome) -> FirstRunMark {
@@ -39,13 +30,10 @@ impl FirstRunMark {
         }
     }
 
-    /// Whether the first run has happened.
-    pub fn standing(&self) -> FirstRunStanding {
-        if self.path.is_file() {
-            FirstRunStanding::Done
-        } else {
-            FirstRunStanding::Pending
-        }
+    /// Whether the first run has happened: `--first-run` exits at once when it has, and opens the
+    /// window when it has not.
+    pub fn done(&self) -> bool {
+        self.path.is_file()
     }
 
     /// Records that the first run happened.

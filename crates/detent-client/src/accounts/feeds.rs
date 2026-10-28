@@ -3,7 +3,7 @@
 //! up. Reading again goes one read at a time: the latest ask wins.
 
 use crate::follow::Slot;
-use detent_model::{Absence, Described, ModuleId, ReadTurn, Reads, accounts_row_is_valued};
+use detent_model::{Absence, Described, ModuleId, Reads, accounts_row_is_valued};
 use detent_system::modules::{Module, reread};
 use std::sync::{Arc, Mutex, PoisonError};
 use std::time::Duration;
@@ -20,8 +20,8 @@ pub(crate) struct Feed {
 }
 
 impl Feed {
-    /// Moves the reads on by `turn`, which says how, and what turn that gives.
-    pub(super) fn turn(&self, turn: fn(Reads) -> (Reads, ReadTurn)) -> ReadTurn {
+    /// Moves the reads on by `turn`, which says how, and whether it is time to read.
+    pub(super) fn turn(&self, turn: fn(Reads) -> (Reads, bool)) -> bool {
         let mut reads = self.reads.lock().unwrap_or_else(PoisonError::into_inner);
         let (next, turn) = turn(*reads);
         *reads = next;
@@ -31,12 +31,12 @@ impl Feed {
     /// The module read again, or `None` when another read is running: that one reads once more
     /// after it ends and answers for both. A result that something asked past is dropped for it.
     pub(crate) async fn reload(&self, opened: &Module) -> Option<Result<Described, Absence>> {
-        if self.turn(Reads::ask) == ReadTurn::Rest {
+        if !self.turn(Reads::ask) {
             return None;
         }
         loop {
             let found = reread(opened, accounts_row_is_valued).await;
-            if self.turn(Reads::finish) == ReadTurn::Rest {
+            if !self.turn(Reads::finish) {
                 return Some(found);
             }
         }

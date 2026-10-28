@@ -4,7 +4,7 @@
 use super::read::{find_device, managed};
 use crate::deadline::{Deadline, peer};
 use airwaves_bluez::{Adapter1Proxy, Device1Proxy};
-use detent_model::{BtAddress, BtPower};
+use detent_model::BtAddress;
 use ds_peer::within;
 use zbus::Connection;
 use zbus::zvariant::{ObjectPath, OwnedObjectPath};
@@ -53,7 +53,7 @@ async fn bounded<T>(
 }
 
 /// Moves the switch. The adapter lets go of the radio when it is blocked outside the software.
-pub async fn set_power(connection: &Connection, power: BtPower) -> Result<(), String> {
+pub async fn set_power(connection: &Connection, on: bool) -> Result<(), String> {
     let objects = managed(connection)
         .await
         .map_err(|_| NOT_AVAILABLE.to_owned())?;
@@ -64,7 +64,6 @@ pub async fn set_power(connection: &Connection, power: BtPower) -> Result<(), St
         .build()
         .await
         .map_err(|_| NOT_AVAILABLE.to_owned())?;
-    let on = power == BtPower::On;
     bounded(Deadline::ACTION, proxy.set_powered(on), |_| {
         "Bluetooth couldn\u{2019}t be switched. Check that it isn\u{2019}t switched off on this computer."
             .to_owned()

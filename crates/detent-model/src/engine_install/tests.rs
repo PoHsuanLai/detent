@@ -68,7 +68,7 @@ fn an_engine_that_is_not_there_is_asked_about_and_one_that_is_ready_is_not() {
     assert_eq!(
         brief.matter,
         EngineMatter::Download {
-            replacing: Replacing::No,
+            replacing: false,
             size: Some(30_497_889)
         }
     );
@@ -116,7 +116,7 @@ fn only_the_persons_own_way_is_the_default_when_it_is_the_only_one_and_asks_no_c
     assert_eq!(
         brief.matter,
         EngineMatter::Download {
-            replacing: Replacing::No,
+            replacing: false,
             size: Some(4_411_066_545)
         }
     );
@@ -218,7 +218,7 @@ fn an_install_that_was_changed_asks_to_download_again() {
     assert_eq!(
         brief.matter,
         EngineMatter::Download {
-            replacing: Replacing::Yes,
+            replacing: true,
             size: Some(30_497_889)
         }
     );

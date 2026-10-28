@@ -1,7 +1,7 @@
 //! The first-run step's two actions: Skip always, Continue once a model is chosen.
 
 use super::row::assistant_of;
-use crate::picker::{ChoiceReadiness, PickerState};
+use crate::picker::PickerState;
 
 /// What the step can do.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,7 +35,7 @@ fn continue_now(state: &PickerState) -> SetupAvailability {
     let PickerState::Ready(ready) = state else {
         return SetupAvailability::NotYet;
     };
-    let usable = assistant_of(state).is_some_and(|row| row.readiness() == ChoiceReadiness::Ready);
+    let usable = assistant_of(state).is_some_and(|row| row.readiness().is_ok());
     if usable && ready.is_idle() {
         SetupAvailability::Now
     } else {

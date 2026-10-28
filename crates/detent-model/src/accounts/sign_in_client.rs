@@ -31,15 +31,6 @@ pub(super) fn standing_only(mut described: Described) -> Described {
     described
 }
 
-/// Whether a sign-in client field can be filled in now.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ClientEntry {
-    /// Yes.
-    Open,
-    /// Not yet: it is a secret, and the sign-in key it belongs to is still empty.
-    WaitsForKey,
-}
-
 /// The text of a sign-in secret. Its `Debug` is written by hand and never prints the text, so no
 /// log line of an input or an effect that carries one can leak it.
 #[derive(Clone, PartialEq, Eq)]
@@ -68,22 +59,17 @@ impl std::fmt::Debug for Secret {
     }
 }
 
-/// Whether a secret is held. A secret is never read back, so this is all the pane knows of it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SecretStanding {
-    /// There is one.
-    Set,
-    /// There is none.
-    NotSet,
-}
-
 /// What a sign-in row holds, as far as the window may know.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientValue {
     /// A sign-in key, drawn as it is; empty when the build's own is used.
     Text(String),
-    /// A secret: only whether there is one.
-    Secret(SecretStanding),
+    /// A secret: only whether there is one. It is never read back, so this is all the pane knows
+    /// of it.
+    Secret {
+        /// Whether one is held.
+        set: bool,
+    },
 }
 
 impl ClientValue {
@@ -91,7 +77,7 @@ impl ClientValue {
     pub fn key(&self) -> String {
         match self {
             ClientValue::Text(text) => text.clone(),
-            ClientValue::Secret(standing) => format!("{standing:?}"),
+            ClientValue::Secret { set } => format!("{set}"),
         }
     }
 
@@ -99,7 +85,7 @@ impl ClientValue {
     pub fn typed(&self, text: String) -> ClientText {
         match self {
             ClientValue::Text(_) => ClientText::Plain(text),
-            ClientValue::Secret(_) => ClientText::Secret(Secret::new(&text)),
+            ClientValue::Secret { .. } => ClientText::Secret(Secret::new(&text)),
         }
     }
 }
@@ -126,15 +112,15 @@ pub struct SignInClient {
     pub help: String,
     /// What the row holds now.
     pub value: ClientValue,
-    /// Whether it can be filled in now.
-    pub entry: ClientEntry,
+    /// Whether it cannot be filled in yet: it is a secret, and the sign-in key it belongs to is
+    /// still empty.
+    pub waits_for_key: bool,
 }
 
-/// What an edit of a sign-in row comes to.
+/// What an edit of a sign-in row comes to, when it comes to anything: nothing when the text is what
+/// the row holds, or a secret was left empty.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum ClientChange {
-    /// Nothing: the text is what the row holds, or a secret was left empty.
-    Nothing,
     /// The secret was typed before its key.
     KeyFirst,
     /// Write this key.
@@ -150,11 +136,9 @@ impl SignInClient {
     /// dropped here: only whether it is empty is kept (`standing_only` has already marked it).
     pub(super) fn read(module: ModuleId, spec: &KeySpec, text: &str) -> SignInClient {
         let value = if is_secret_row(&spec.path) {
-            ClientValue::Secret(if text.is_empty() {
-                SecretStanding::NotSet
-            } else {
-                SecretStanding::Set
-            })
+            ClientValue::Secret {
+                set: !text.is_empty(),
+            }
         } else {
             ClientValue::Text(text.to_owned())
         };
@@ -164,36 +148,36 @@ impl SignInClient {
             label: spec.label.0.clone(),
             help: spec.help.0.clone(),
             value,
-            entry: ClientEntry::Open,
+            waits_for_key: false,
         }
     }
 
     /// The row after `text` was typed into it, and what that asks of the service. A key is
     /// written only when it changed; a secret only when something was typed, and not before its
     /// key.
-    pub(super) fn edited(&mut self, text: ClientText) -> ClientChange {
+    pub(super) fn edited(&mut self, text: ClientText) -> Option<ClientChange> {
         match (&mut self.value, text) {
             (ClientValue::Text(held), ClientText::Plain(text)) => {
                 let text = text.trim().to_owned();
                 if *held == text {
-                    ClientChange::Nothing
+                    None
                 } else {
                     held.clone_from(&text);
-                    ClientChange::Key(text)
+                    Some(ClientChange::Key(text))
                 }
             }
-            (ClientValue::Secret(standing), ClientText::Secret(secret)) => {
+            (ClientValue::Secret { set }, ClientText::Secret(secret)) => {
                 if secret.is_blank() {
-                    ClientChange::Nothing
-                } else if self.entry == ClientEntry::WaitsForKey {
-                    ClientChange::KeyFirst
+                    None
+                } else if self.waits_for_key {
+                    Some(ClientChange::KeyFirst)
                 } else {
-                    *standing = SecretStanding::Set;
-                    ClientChange::NewSecret(secret)
+                    *set = true;
+                    Some(ClientChange::NewSecret(secret))
                 }
             }
             (ClientValue::Text(_), ClientText::Secret(_))
-            | (ClientValue::Secret(_), ClientText::Plain(_)) => ClientChange::Nothing,
+            | (ClientValue::Secret { .. }, ClientText::Plain(_)) => None,
         }
     }
 }
@@ -201,15 +185,13 @@ impl SignInClient {
 impl SignInClient {
     /// The row after the person pressed Clear: a held secret is removed (the service takes the
     /// empty text for that); a key, or a secret there is none of, is left alone.
-    pub(super) fn cleared(&mut self) -> ClientChange {
+    pub(super) fn cleared(&mut self) -> Option<ClientChange> {
         match &mut self.value {
-            ClientValue::Secret(standing @ SecretStanding::Set) => {
-                *standing = SecretStanding::NotSet;
-                ClientChange::ClearSecret
+            ClientValue::Secret { set } if *set => {
+                *set = false;
+                Some(ClientChange::ClearSecret)
             }
-            ClientValue::Secret(SecretStanding::NotSet) | ClientValue::Text(_) => {
-                ClientChange::Nothing
-            }
+            ClientValue::Secret { .. } | ClientValue::Text(_) => None,
         }
     }
 }
@@ -233,7 +215,7 @@ pub(super) fn wait_for_keys(clients: &mut [SignInClient]) {
         .collect();
     for client in clients.iter_mut() {
         if waiting.contains(&client.path) {
-            client.entry = ClientEntry::WaitsForKey;
+            client.waits_for_key = true;
         }
     }
 }

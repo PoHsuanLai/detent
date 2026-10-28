@@ -11,7 +11,7 @@ pub use server::{
 };
 pub use step::{
     AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,
-    ComputersState, Standing, computers_step,
+    ComputersState, computers_step,
 };
 
 #[cfg(test)]

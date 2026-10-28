@@ -1,6 +1,6 @@
 //! The modes a display lists: the pixel sizes it can draw, and which mode a size means.
 
-use super::model::{DisplayMode, ModePreference, PixelSize};
+use super::model::{DisplayMode, PixelSize};
 
 /// The distinct pixel sizes `modes` list, the largest first.
 pub fn mode_sizes(modes: &[DisplayMode]) -> Vec<PixelSize> {
@@ -16,7 +16,7 @@ pub fn mode_sizes(modes: &[DisplayMode]) -> Vec<PixelSize> {
 pub fn native_size(modes: &[DisplayMode]) -> Option<PixelSize> {
     modes
         .iter()
-        .find(|mode| mode.preferred == ModePreference::Yes)
+        .find(|mode| mode.preferred)
         .map(|mode| mode.size)
 }
 

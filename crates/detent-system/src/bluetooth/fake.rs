@@ -5,7 +5,7 @@ use super::{BluetoothLink, BtSession, PairingReply, PairingRequest};
 use crate::fake_kit::Kit;
 use crate::lock::locked;
 use crate::ticks::Ticks;
-use detent_model::{Absence, BtAddress, BtPower, BtStatus, PairingAnswer, PairingQuestion, Work};
+use detent_model::{Absence, BtAddress, BtStatus, PairingAnswer, PairingQuestion, Work};
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, oneshot};
 
@@ -13,7 +13,7 @@ use tokio::sync::{mpsc, oneshot};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BtAsked {
     /// The switch was moved.
-    Power(BtPower),
+    Power(bool),
     /// A device was connected.
     Connect(BtAddress),
     /// A device was disconnected.
@@ -90,10 +90,10 @@ impl BluetoothLink for FakeBluetooth {
         Box::pin(std::future::ready(Ok(BtSession::new(asks, ()))))
     }
 
-    fn set_power(&self, power: BtPower) -> Work<'_, Result<(), String>> {
-        let done = self.take(BtAsked::Power(power));
+    fn set_power(&self, on: bool) -> Work<'_, Result<(), String>> {
+        let done = self.take(BtAsked::Power(on));
         if self.kit.admit().is_ok() {
-            self.kit.edit(|status| status.power = power);
+            self.kit.edit(|status| status.powered = on);
         }
         done
     }

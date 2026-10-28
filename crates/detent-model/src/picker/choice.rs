@@ -48,15 +48,6 @@ pub enum ChoiceGap {
     LocalModel,
 }
 
-/// Whether a choice can be used.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ChoiceReadiness {
-    /// It can.
-    Ready,
-    /// It cannot yet.
-    Missing(ChoiceGap),
-}
-
 impl Choice {
     /// The menu word to mark as chosen; `None` when nothing is chosen, so no item is marked.
     pub fn selected(&self) -> Option<String> {
@@ -70,13 +61,13 @@ impl Choice {
 
     /// Whether the choice can be used. A model is as soon as it is chosen; Automatic needs a
     /// model to choose from, and Local the way to run it and the model.
-    pub fn readiness(&self) -> ChoiceReadiness {
+    pub fn readiness(&self) -> Result<(), ChoiceGap> {
         match self {
-            Choice::Nothing => ChoiceReadiness::Missing(ChoiceGap::Choice),
+            Choice::Nothing => Err(ChoiceGap::Choice),
             Choice::Automatic { pool } => pool.readiness(),
-            Choice::Local { engine: None, .. } => ChoiceReadiness::Missing(ChoiceGap::LocalEngine),
-            Choice::Local { model: None, .. } => ChoiceReadiness::Missing(ChoiceGap::LocalModel),
-            Choice::Local { .. } | Choice::Model(_) => ChoiceReadiness::Ready,
+            Choice::Local { engine: None, .. } => Err(ChoiceGap::LocalEngine),
+            Choice::Local { model: None, .. } => Err(ChoiceGap::LocalModel),
+            Choice::Local { .. } | Choice::Model(_) => Ok(()),
         }
     }
 }
@@ -138,10 +129,10 @@ impl ModelRow {
     }
 
     /// Whether the row's choice can be used.
-    pub fn readiness(&self) -> ChoiceReadiness {
+    pub fn readiness(&self) -> Result<(), ChoiceGap> {
         match self.choice() {
             Choice::Local { engine: None, .. } if self.engines().is_empty() => {
-                ChoiceReadiness::Missing(ChoiceGap::NoLocalEngine)
+                Err(ChoiceGap::NoLocalEngine)
             }
             choice => choice.readiness(),
         }
@@ -151,8 +142,8 @@ impl ModelRow {
     /// chosen (the button already asks) or the choice is ready.
     pub fn unready_gap(&self) -> Option<ChoiceGap> {
         match (self.choice(), self.readiness()) {
-            (Choice::Nothing, _) | (_, ChoiceReadiness::Ready) => None,
-            (_, ChoiceReadiness::Missing(missing)) => Some(missing),
+            (Choice::Nothing, _) | (_, Ok(())) => None,
+            (_, Err(missing)) => Some(missing),
         }
     }
 

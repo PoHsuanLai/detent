@@ -1,6 +1,6 @@
 //! The removal question and its wire, and the list's transitions.
 
-use super::removal::{RemovalInput, WithoutMemory};
+use super::removal::{RemovalInput, needs_memory};
 use super::{
     RemovalAsk, RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesState,
     spaces_step,
@@ -142,38 +142,33 @@ fn a_failed_removal_is_told_and_the_list_read_again() {
 
 #[test]
 fn a_delete_choice_waits_for_memory_and_a_keeping_one_does_not() {
-    // `(case, memories, history, what happens while memory is not running)`.
-    const CASES: &[(&str, MemoryFate, HistoryFate, WithoutMemory)] = &[
+    // `(case, memories, history, whether it waits for memory)`.
+    const CASES: &[(&str, MemoryFate, HistoryFate, bool)] = &[
         (
             "keep everything",
             MemoryFate::MoveToApps,
             HistoryFate::Keep,
-            WithoutMemory::Proceed,
+            false,
         ),
         (
             "delete the memories",
             MemoryFate::Delete,
             HistoryFate::Keep,
-            WithoutMemory::Refuse,
+            true,
         ),
         (
             "delete the history",
             MemoryFate::MoveToApps,
             HistoryFate::Delete,
-            WithoutMemory::Refuse,
+            true,
         ),
-        (
-            "delete both",
-            MemoryFate::Delete,
-            HistoryFate::Delete,
-            WithoutMemory::Refuse,
-        ),
+        ("delete both", MemoryFate::Delete, HistoryFate::Delete, true),
     ];
     for (name, memories, history, want) in CASES {
         let removal = Removal {
             memories: *memories,
             history: *history,
         };
-        assert_eq!(WithoutMemory::of(&removal), *want, "{name}");
+        assert_eq!(needs_memory(&removal), *want, "{name}");
     }
 }

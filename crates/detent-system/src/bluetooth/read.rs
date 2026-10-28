@@ -5,8 +5,7 @@ use crate::bus::is_running;
 use crate::deadline::{Deadline, peer};
 use airwaves_bluez::{Objects, SERVICE};
 use detent_model::{
-    Absence, BtAddress, BtDeviceWire, BtHearing, BtLink, BtPairing, BtPower, BtStatus,
-    bt_device_of, is_under_adapter,
+    Absence, BtAddress, BtDeviceWire, BtLink, BtStatus, bt_device_of, is_under_adapter,
 };
 use ds_peer::within;
 use std::collections::HashMap;
@@ -83,11 +82,7 @@ fn under(path: &OwnedObjectPath, adapter: &OwnedObjectPath) -> bool {
 /// BlueZ hears it (it has a signal strength): BlueZ remembers the ones it saw for a while.
 pub fn status_of(objects: &Objects) -> Result<BtStatus, Absence> {
     let (adapter_path, adapter) = adapter(objects).ok_or(Absence::NoDevice)?;
-    let power = if flag(adapter, "Powered") {
-        BtPower::On
-    } else {
-        BtPower::Off
-    };
+    let powered = flag(adapter, "Powered");
     let devices = objects
         .iter()
         .filter(|(path, _)| under(path, adapter_path))
@@ -96,7 +91,7 @@ pub fn status_of(objects: &Objects) -> Result<BtStatus, Absence> {
             bt_device_of(wire_of(device, properties_of(interfaces, BATTERY)))
         })
         .collect();
-    Ok(BtStatus::new(power, devices))
+    Ok(BtStatus::new(powered, devices))
 }
 
 /// The battery `Percentage` the device's `Battery1` interface reports, when it has one.
@@ -110,21 +105,13 @@ fn wire_of(properties: &Properties, battery: Option<&Properties>) -> BtDeviceWir
         address: text(properties, "Address"),
         alias: text(properties, "Alias"),
         icon: text(properties, "Icon"),
-        pairing: if flag(properties, "Paired") {
-            BtPairing::Paired
-        } else {
-            BtPairing::Unpaired
-        },
+        paired: flag(properties, "Paired"),
         link: if flag(properties, "Connected") {
             BtLink::Connected
         } else {
             BtLink::Disconnected
         },
-        hearing: if properties.contains_key("RSSI") {
-            BtHearing::Heard
-        } else {
-            BtHearing::Silent
-        },
+        heard: properties.contains_key("RSSI"),
         battery: battery_of(battery),
     }
 }
@@ -148,7 +135,7 @@ pub fn find_device(
 #[cfg(test)]
 mod tests {
     use super::{Objects, find_device, status_of};
-    use detent_model::{Absence, BtAddress, BtLink, BtPairing, BtPower};
+    use detent_model::{Absence, BtAddress, BtLink};
     use std::collections::HashMap;
     use zbus::names::OwnedInterfaceName;
     use zbus::zvariant::{OwnedObjectPath, OwnedValue, Value};
@@ -174,20 +161,13 @@ mod tests {
         )])
     }
 
-    /// Whether BlueZ hears a device now (it then reports a signal strength).
-    #[derive(Clone, Copy)]
-    enum Hearing {
-        Heard,
-        Silent,
-    }
-
     /// A device as BlueZ reports it.
     struct Seen<'a> {
         address: &'a str,
         alias: &'a str,
-        pairing: BtPairing,
+        paired: bool,
         link: BtLink,
-        hearing: Hearing,
+        heard: bool,
     }
 
     impl Seen<'_> {
@@ -196,99 +176,69 @@ mod tests {
                 ("Address", value(self.address.to_owned())),
                 ("Alias", value(self.alias.to_owned())),
                 ("Icon", value("input-mouse".to_owned())),
-                ("Paired", value(self.pairing == BtPairing::Paired)),
+                ("Paired", value(self.paired)),
                 ("Connected", value(self.link == BtLink::Connected)),
             ];
-            if matches!(self.hearing, Hearing::Heard) {
+            if self.heard {
                 properties.push(("RSSI", value(-60_i16)));
             }
             object("org.bluez.Device1", properties)
         }
     }
 
-    fn world(power: BtPower) -> Objects {
-        let seen = |address, alias, pairing, link, hearing| {
+    fn world(powered: bool) -> Objects {
+        let seen = |address, alias, paired, link, heard| {
             Seen {
                 address,
                 alias,
-                pairing,
+                paired,
                 link,
-                hearing,
+                heard,
             }
             .object()
         };
         HashMap::from([
             (
                 path("/org/bluez/hci0"),
-                object(
-                    "org.bluez.Adapter1",
-                    vec![("Powered", value(power == BtPower::On))],
-                ),
+                object("org.bluez.Adapter1", vec![("Powered", value(powered))]),
             ),
             (
                 path("/org/bluez/hci0/dev_A"),
-                seen(
-                    "AA:00",
-                    "Mouse",
-                    BtPairing::Paired,
-                    BtLink::Connected,
-                    Hearing::Silent,
-                ),
+                seen("AA:00", "Mouse", true, BtLink::Connected, false),
             ),
             (
                 path("/org/bluez/hci0/dev_B"),
-                seen(
-                    "BB:00",
-                    "Seen Pad",
-                    BtPairing::Unpaired,
-                    BtLink::Disconnected,
-                    Hearing::Heard,
-                ),
+                seen("BB:00", "Seen Pad", false, BtLink::Disconnected, true),
             ),
             (
                 path("/org/bluez/hci0/dev_C"),
-                seen(
-                    "CC:00",
-                    "Gone Pad",
-                    BtPairing::Unpaired,
-                    BtLink::Disconnected,
-                    Hearing::Silent,
-                ),
+                seen("CC:00", "Gone Pad", false, BtLink::Disconnected, false),
             ),
             (
                 path("/org/bluez/hci1/dev_D"),
-                seen(
-                    "DD:00",
-                    "Other Adapter",
-                    BtPairing::Paired,
-                    BtLink::Disconnected,
-                    Hearing::Silent,
-                ),
+                seen("DD:00", "Other Adapter", true, BtLink::Disconnected, false),
             ),
         ])
     }
 
     #[test]
     fn the_adapter_and_the_devices_under_it_make_the_status() {
-        let status = status_of(&world(BtPower::On)).expect("a status");
-        assert_eq!(status.power, BtPower::On);
-        let listed: Vec<(&str, BtPairing, BtLink)> = status
+        let status = status_of(&world(true)).expect("a status");
+        assert!(status.powered);
+        let listed: Vec<(&str, bool, BtLink)> = status
             .devices
             .iter()
-            .map(|d| (d.name.as_str(), d.pairing, d.link))
+            .map(|d| (d.name.as_str(), d.paired, d.link))
             .collect();
         assert_eq!(
             listed,
             [
-                ("Mouse", BtPairing::Paired, BtLink::Connected),
-                ("Seen Pad", BtPairing::Unpaired, BtLink::Disconnected),
+                ("Mouse", true, BtLink::Connected),
+                ("Seen Pad", false, BtLink::Disconnected),
             ],
             "a device nobody hears and one under another adapter are not listed"
         );
-        assert_eq!(
-            status_of(&world(BtPower::Off)).expect("a status").power,
-            BtPower::Off
-        );
+        assert!(!status_of(&world(false)).expect("a status").powered);
     }
 
     #[test]
@@ -298,7 +248,7 @@ mod tests {
 
     #[test]
     fn a_device_is_found_by_its_address_with_its_adapter_and_name() {
-        let objects = world(BtPower::On);
+        let objects = world(true);
         let found = find_device(&objects, &BtAddress("BB:00".to_owned()));
         assert_eq!(
             found,

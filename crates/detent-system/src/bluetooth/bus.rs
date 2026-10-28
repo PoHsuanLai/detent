@@ -9,7 +9,7 @@ use super::{BluetoothLink, BtSession};
 use crate::bus::{BusSource, system_connection, watch_service};
 use crate::ticks::Ticks;
 use airwaves_bluez::SERVICE;
-use detent_model::{Absence, BtAddress, BtPower, BtStatus, Work, bt_change_matters};
+use detent_model::{Absence, BtAddress, BtStatus, Work, bt_change_matters};
 use std::collections::HashMap;
 use tokio::sync::OnceCell;
 use zbus::Connection;
@@ -85,8 +85,8 @@ impl BluetoothLink for OnBluetooth {
         Box::pin(async move { open(self.connection().await?).await })
     }
 
-    fn set_power(&self, power: BtPower) -> Work<'_, Result<(), String>> {
-        Box::pin(self.told(move |c| async move { actions::set_power(&c, power).await }))
+    fn set_power(&self, on: bool) -> Work<'_, Result<(), String>> {
+        Box::pin(self.told(move |c| async move { actions::set_power(&c, on).await }))
     }
 
     fn connect(&self, address: BtAddress) -> Work<'_, Result<(), String>> {

@@ -1,7 +1,7 @@
 use super::*;
 use crate::Absence;
 
-fn mode(width: u32, height: u32, hz: u32, preferred: ModePreference) -> DisplayMode {
+fn mode(width: u32, height: u32, hz: u32, preferred: bool) -> DisplayMode {
     DisplayMode {
         size: PixelSize { width, height },
         refresh: RefreshMilliHz(hz * 1000),
@@ -10,11 +10,11 @@ fn mode(width: u32, height: u32, hz: u32, preferred: ModePreference) -> DisplayM
 }
 
 fn display(name: &str, x: i32, y: i32, size_mm: Option<(u32, u32)>) -> Monitor {
-    let native = mode(3024, 1964, 120, ModePreference::Yes);
+    let native = mode(3024, 1964, 120, true);
     Monitor {
         id: OutputId(name.to_owned()),
         name: format!("{name} panel"),
-        modes: vec![native, mode(3024, 1964, 60, ModePreference::No)],
+        modes: vec![native, mode(3024, 1964, 60, false)],
         current: Some(native),
         scale: ScaleMilli(2000),
         rotation: DisplayRotation::Standard,
@@ -49,7 +49,7 @@ fn the_default_scale_follows_the_density_the_display_reports() {
         (
             "a 27 inch 4K monitor",
             Monitor {
-                current: Some(mode(3840, 2160, 60, ModePreference::Yes)),
+                current: Some(mode(3840, 2160, 60, true)),
                 ..display("DP-1", 0, 0, Some((597, 336)))
             },
             1500,
@@ -90,7 +90,7 @@ fn resolutions_are_the_mode_over_each_scale_widest_first_and_include_the_default
 #[test]
 fn a_narrow_display_is_not_offered_what_cannot_fit() {
     let small = Monitor {
-        current: Some(mode(1280, 800, 60, ModePreference::Yes)),
+        current: Some(mode(1280, 800, 60, true)),
         ..display("DSI-1", 0, 0, Some((200, 125)))
     };
     let widths: Vec<u32> = looks_like(&small).iter().map(|l| l.size.width).collect();
@@ -237,12 +237,12 @@ fn a_compositor_that_goes_leaves_nothing() {
 
 #[test]
 fn the_sizes_a_display_lists_are_distinct_and_widest_first_with_its_native_one_known() {
-    let native = mode(3840, 2160, 60, ModePreference::Yes);
+    let native = mode(3840, 2160, 60, true);
     let modes = [
-        mode(1920, 1080, 60, ModePreference::No),
+        mode(1920, 1080, 60, false),
         native,
-        mode(1920, 1080, 120, ModePreference::No),
-        mode(2560, 1440, 60, ModePreference::No),
+        mode(1920, 1080, 120, false),
+        mode(2560, 1440, 60, false),
     ];
     let sizes: Vec<(u32, u32)> = mode_sizes(&modes)
         .iter()
@@ -256,11 +256,11 @@ fn the_sizes_a_display_lists_are_distinct_and_widest_first_with_its_native_one_k
 #[test]
 fn a_size_runs_at_the_refresh_rate_the_display_runs_now_else_at_its_fastest() {
     let modes = [
-        mode(3840, 2160, 60, ModePreference::Yes),
-        mode(1920, 1080, 60, ModePreference::No),
-        mode(1920, 1080, 120, ModePreference::No),
-        mode(1280, 720, 30, ModePreference::No),
-        mode(1280, 720, 50, ModePreference::No),
+        mode(3840, 2160, 60, true),
+        mode(1920, 1080, 60, false),
+        mode(1920, 1080, 120, false),
+        mode(1280, 720, 30, false),
+        mode(1280, 720, 50, false),
     ];
     let size = |width, height| PixelSize { width, height };
     let now = Some(modes[0]);

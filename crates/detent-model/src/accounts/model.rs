@@ -2,7 +2,6 @@
 //! actions, and where the pane stands. Nothing here knows an account or a service by name; the
 //! rows are read into these in `pane.rs`.
 
-use super::add_account::Adding;
 use super::grant::AccountPermission;
 use super::module::{ModuleId, ModuleRow, Sources};
 use super::sign_in_client::SignInClient;
@@ -254,15 +253,6 @@ pub struct AccountsPane {
     pub sync_add: Option<SyncAdd>,
 }
 
-/// Which of the pane's two screens is up.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AccountsScreen {
-    /// The list of accounts.
-    List,
-    /// One account.
-    Detail(AccountKey),
-}
-
 /// What an action waiting for the person's answer does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Ask {
@@ -270,16 +260,6 @@ pub enum Ask {
     Remove,
     /// Sign an assistant's account out.
     SignOut,
-}
-
-/// Whether this computer keeps files for the account that a removal would delete too: a sync
-/// switch of the account is on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LocalFiles {
-    /// A sync switch is on: files kept for the account go with it.
-    Kept,
-    /// None are kept.
-    None,
 }
 
 /// A removal or sign-out waiting for the person's answer.
@@ -292,7 +272,7 @@ pub struct RemovalQuestion {
     /// The account's label, for the question.
     pub account: String,
     /// Whether files kept on this computer for the account are deleted with it.
-    pub files: LocalFiles,
+    pub files_kept: bool,
 }
 
 /// A pane that is there.
@@ -300,8 +280,8 @@ pub struct RemovalQuestion {
 pub struct AccountsReady {
     /// What the module described.
     pub pane: AccountsPane,
-    /// The screen up.
-    pub screen: AccountsScreen,
+    /// The account whose detail screen is up; none while the list is.
+    pub detail: Option<AccountKey>,
     /// The account the list rests on: the one its foot's minus acts on.
     pub selected: Option<AccountKey>,
     /// The row being set or run: one at a time.
@@ -309,7 +289,7 @@ pub struct AccountsReady {
     /// The removal asked about, if any.
     pub confirming: Option<RemovalQuestion>,
     /// Whether the add sheet is open.
-    pub adding: Adding,
+    pub sheet_open: bool,
     /// What the modules told.
     pub sources: Sources,
 }
@@ -336,20 +316,17 @@ impl AccountsReady {
     pub(crate) fn new(pane: AccountsPane, sources: Sources) -> AccountsReady {
         AccountsReady {
             pane,
-            screen: AccountsScreen::List,
+            detail: None,
             selected: None,
             pending: None,
             confirming: None,
-            adding: Adding::Idle,
+            sheet_open: false,
             sources,
         }
     }
 
     /// The account the detail screen shows, when it is up and the account still exists.
     pub fn open(&self) -> Option<&Account> {
-        match &self.screen {
-            AccountsScreen::Detail(key) => self.pane.account(key),
-            AccountsScreen::List => None,
-        }
+        self.detail.as_ref().and_then(|key| self.pane.account(key))
     }
 }

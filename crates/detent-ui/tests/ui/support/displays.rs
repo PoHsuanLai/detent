@@ -3,7 +3,7 @@
 
 use detent_client::{DisplaysLink, Ticker, Ticks};
 use detent_model::{
-    Absence, DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, ModePreference, Work, mode_at,
+    Absence, DisplayChange, DisplayEdit, DisplayMode, DisplaysStatus, Work, mode_at,
 };
 use std::sync::{Arc, Mutex};
 
@@ -90,7 +90,7 @@ impl DisplaysLink for Displays {
                     DisplayEdit::Refresh(rate) => {
                         display.current = display.current.map(|mode| DisplayMode {
                             refresh: *rate,
-                            preferred: ModePreference::No,
+                            preferred: false,
                             ..mode
                         });
                     }

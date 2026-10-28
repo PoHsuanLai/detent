@@ -29,7 +29,7 @@ pub use agents_tool::{AgentsTool, find_agents_program};
 pub use coding_agents::{agents_switch, programs_on, turn_on_agents};
 pub use error::FilesError;
 pub use extensions::ExtensionHome;
-pub use first_run::{FirstRunMark, FirstRunStanding, StateHome};
+pub use first_run::{FirstRunMark, StateHome};
 pub use intents::read_manifests;
 pub use keymap::KeymapFiles;
 pub use load::load;

@@ -224,7 +224,7 @@ fn a_model_that_needs_an_account_offers_the_sheet_and_waits_without_setting() {
         }),
         "nothing is written yet"
     );
-    assert_eq!(ready.adding(), crate::accounts::Adding::SheetOpen);
+    assert!(ready.sheet_open());
     assert_eq!(
         value_at(&state, "ai.model.text.balanced").as_deref(),
         Some("auto")

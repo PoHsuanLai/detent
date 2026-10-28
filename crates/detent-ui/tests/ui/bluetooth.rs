@@ -6,8 +6,8 @@ use crate::support::Sandbox;
 use crate::support::bluetooth::{Asked, Bluetooth};
 use crate::support::drive::{click, page_of, settle, showing, sidebar_page, title_of, type_into};
 use detent_model::{
-    Absence, BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing, BtPower, BtStatus,
-    PairingAnswer, PairingAsk, PairingCode, PairingQuestion,
+    Absence, BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtStatus, PairingAnswer,
+    PairingAsk, PairingCode, PairingQuestion,
 };
 use detent_ui::Opening;
 use ds_harness::Harness;
@@ -28,42 +28,36 @@ fn address(last: u8) -> BtAddress {
     BtAddress(format!("AA:BB:CC:DD:EE:{last:02X}"))
 }
 
-fn device(last: u8, name: &str, kind: BtKind, link: BtLink, pairing: BtPairing) -> BtDevice {
+fn device(last: u8, name: &str, kind: BtKind, link: BtLink, paired: bool) -> BtDevice {
     BtDevice {
         address: address(last),
         name: name.to_owned(),
         kind,
         link,
-        pairing,
+        paired,
         battery: None,
     }
 }
 
 /// Paired with a connected mouse and idle headphones, and a nearby game pad it has not paired with.
-fn status(power: BtPower) -> BtStatus {
+fn status(on: bool) -> BtStatus {
     BtStatus::new(
-        power,
+        on,
         vec![
-            device(
-                1,
-                "Quiet Mouse",
-                BtKind::Mouse,
-                BtLink::Connected,
-                BtPairing::Paired,
-            ),
+            device(1, "Quiet Mouse", BtKind::Mouse, BtLink::Connected, true),
             device(
                 2,
                 "Big Headphones",
                 BtKind::Audio,
                 BtLink::Disconnected,
-                BtPairing::Paired,
+                true,
             ),
             device(
                 3,
                 "Nearby Pad",
                 BtKind::Gamepad,
                 BtLink::Disconnected,
-                BtPairing::Unpaired,
+                false,
             ),
         ],
     )
@@ -120,7 +114,7 @@ fn a_computer_without_bluetooth_says_so() {
 
 #[test]
 fn devices_are_listed_as_mine_and_nearby_with_whether_they_are_connected() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-list", &service);
     showing(&mut harness, "the page", PAGE);
     showing(
@@ -147,7 +141,7 @@ fn devices_are_listed_as_mine_and_nearby_with_whether_they_are_connected() {
 
 #[test]
 fn the_switch_asks_bluez_and_the_lists_go_when_it_says_it_is_off() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-switch", &service);
     showing(&mut harness, "the page", PAGE);
     assert_eq!(
@@ -155,7 +149,7 @@ fn the_switch_asks_bluez_and_the_lists_go_when_it_says_it_is_off() {
         Some("true")
     );
     click(&mut harness, TOGGLE);
-    assert_eq!(service.asked(), [Asked::Power(BtPower::Off)]);
+    assert_eq!(service.asked(), [Asked::Power(false)]);
     settle(&mut harness, "the switch off", |h| {
         h.attr(TOGGLE, "aria-checked").as_deref() == Some("false")
     });
@@ -168,7 +162,7 @@ fn the_switch_asks_bluez_and_the_lists_go_when_it_says_it_is_off() {
 
 #[test]
 fn connecting_and_disconnecting_ask_bluez_and_the_row_follows() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-connect", &service);
     showing(
         &mut harness,
@@ -194,7 +188,7 @@ fn connecting_and_disconnecting_ask_bluez_and_the_row_follows() {
 
 #[test]
 fn a_nearby_device_pairs_after_the_person_confirms_the_number() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-pair", &service);
     showing(
         &mut harness,
@@ -225,7 +219,7 @@ fn a_nearby_device_pairs_after_the_person_confirms_the_number() {
 
 #[test]
 fn a_device_that_tells_its_battery_shows_it_in_its_row() {
-    let mut standing = status(BtPower::On);
+    let mut standing = status(true);
     for device in &mut standing.devices {
         if device.name == "Quiet Mouse" {
             device.battery = Some(BatteryLevel(80));
@@ -243,7 +237,7 @@ fn a_device_that_tells_its_battery_shows_it_in_its_row() {
 
 #[test]
 fn a_pin_is_typed_into_the_sheet_and_sent_to_the_device() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-pin", &service);
     showing(
         &mut harness,
@@ -271,7 +265,7 @@ fn a_pin_is_typed_into_the_sheet_and_sent_to_the_device() {
 
 #[test]
 fn cancelling_a_pairing_question_says_no_to_the_device() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-pair-cancel", &service);
     showing(
         &mut harness,
@@ -291,7 +285,7 @@ fn cancelling_a_pairing_question_says_no_to_the_device() {
 
 #[test]
 fn pressing_connect_on_a_nearby_device_pairs_with_it_and_it_moves_to_my_devices() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-pair-press", &service);
     showing(
         &mut harness,
@@ -309,7 +303,7 @@ fn pressing_connect_on_a_nearby_device_pairs_with_it_and_it_moves_to_my_devices(
 
 #[test]
 fn forgetting_asks_first_and_only_the_confirmation_forgets() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-forget", &service);
     showing(
         &mut harness,
@@ -343,7 +337,7 @@ fn forgetting_asks_first_and_only_the_confirmation_forgets() {
 
 #[test]
 fn devices_are_looked_for_only_while_the_page_is_open() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-discovery", &service);
     showing(&mut harness, "the page", PAGE);
     settle(&mut harness, "looking", |_| service.looking() == 1);
@@ -360,7 +354,7 @@ fn devices_are_looked_for_only_while_the_page_is_open() {
 
 #[test]
 fn the_switch_row_leads_with_the_tile_and_counts_the_connected_devices() {
-    let service = Bluetooth::answering(status(BtPower::On));
+    let service = Bluetooth::answering(status(true));
     let (_sandbox, mut harness) = world("bluetooth-head", &service);
     showing(&mut harness, "the page", "[data-system=\"bluetooth\"]");
     assert_eq!(

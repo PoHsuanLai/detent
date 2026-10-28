@@ -34,7 +34,7 @@ pub(crate) fn AssistantPicker(
     rsx! {
         div { class: "picker", "data-picker": "ready",
             FieldGroup {
-                TierRow { row, applying: ready.applying().cloned(), adding: ready.adding(), clearing, onask }
+                TierRow { row, applying: ready.applying().cloned(), sheet_open: ready.sheet_open(), clearing, onask }
             }
             EngineSheetView {}
             TurnOnAlert { ready: ready.clone(), onask }

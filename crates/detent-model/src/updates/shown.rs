@@ -2,23 +2,17 @@
 //! on offer and the notes. The window words them (`detent-ui`'s copy).
 
 use super::model::{ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus};
-use super::step::{NotesState, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState};
+use super::step::{UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState};
 use crate::Live;
-
-/// Whether the check is under way.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CheckActivity {
-    /// A check is under way: nothing more can be asked of it yet.
-    Running,
-    /// None is.
-    Resting,
-}
 
 /// What the person may do on the page.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UpdateAction {
     /// Look for a newer version.
-    Check(CheckActivity),
+    Check {
+        /// Whether a check is under way: nothing more can be asked of it yet.
+        running: bool,
+    },
     /// Read what the newer version changes.
     MoreInfo,
     /// Install the newer version.
@@ -33,7 +27,7 @@ impl UpdateAction {
     /// What taking the action tells the page.
     pub fn input(self) -> UpdatesInput {
         match self {
-            UpdateAction::Check(_) => UpdatesInput::Check,
+            UpdateAction::Check { .. } => UpdatesInput::Check,
             UpdateAction::MoreInfo => UpdatesInput::MoreInfo,
             UpdateAction::UpdateNow => UpdatesInput::UpdateNow,
             UpdateAction::TryAgain => UpdatesInput::TryAgain,
@@ -51,11 +45,9 @@ pub struct Downloaded {
     pub total: ByteCount,
 }
 
-/// The bar under the title.
+/// The bar under the title, for work that has one.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UpdateMeter {
-    /// There is none.
-    None,
     /// How far a download has come, with how much of how much when the size is known.
     Known {
         /// The share done.
@@ -97,11 +89,9 @@ pub enum UpdateStanding {
     Failed(Option<String>),
 }
 
-/// When the last check was, when it is worth saying.
+/// When the last check was.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Checked {
-    /// It is not said.
-    Unsaid,
     /// There has been none.
     Never,
     /// It finished this many seconds ago (a clock a little ahead counts as none).
@@ -118,11 +108,11 @@ pub struct UpdatesPage {
     /// What the page says besides the standing.
     pub notice: UpdatesNotice,
     /// The bar, if the work has one.
-    pub meter: UpdateMeter,
+    pub meter: Option<UpdateMeter>,
     /// The actions, the one to take last.
     pub actions: Vec<UpdateAction>,
-    /// When the last check was.
-    pub checked: Checked,
+    /// When the last check was, when it is worth saying.
+    pub checked: Option<Checked>,
     /// The notes, while they are up.
     pub notes: Option<ReleaseNotes>,
 }
@@ -147,9 +137,9 @@ fn plain(version: Option<String>, standing: UpdateStanding) -> UpdatesPage {
         version,
         standing,
         notice: UpdatesNotice::Nothing,
-        meter: UpdateMeter::None,
+        meter: None,
         actions: Vec::new(),
-        checked: Checked::Unsaid,
+        checked: None,
         notes: None,
     }
 }
@@ -164,27 +154,27 @@ fn page(ready: &UpdatesReady, now: UnixSeconds) -> UpdatesPage {
     match (status.phase, offered) {
         (UpdatePhase::Available, Some(offer)) => available(ready, offer, now),
         (UpdatePhase::Idle | UpdatePhase::Available, _) => UpdatesPage {
-            actions: vec![UpdateAction::Check(CheckActivity::Resting)],
-            checked: checked_of(status, now),
+            actions: vec![UpdateAction::Check { running: false }],
+            checked: Some(checked_of(status, now)),
             ..plain(current, UpdateStanding::UpToDate)
         },
         (UpdatePhase::Checking, _) => UpdatesPage {
-            actions: vec![UpdateAction::Check(CheckActivity::Running)],
+            actions: vec![UpdateAction::Check { running: true }],
             ..plain(current, UpdateStanding::Checking)
         },
         (UpdatePhase::Downloading, _) => UpdatesPage {
-            meter: UpdateMeter::Known {
+            meter: Some(UpdateMeter::Known {
                 share: status.progress,
                 done: offered.and_then(|offer| done_of(offer.size, status.progress)),
-            },
+            }),
             ..plain(newer, UpdateStanding::Downloading)
         },
         (UpdatePhase::Ready, _) => UpdatesPage {
-            meter: UpdateMeter::Pending,
+            meter: Some(UpdateMeter::Pending),
             ..plain(newer, UpdateStanding::Preparing)
         },
         (UpdatePhase::Installing, _) => UpdatesPage {
-            meter: UpdateMeter::Pending,
+            meter: Some(UpdateMeter::Pending),
             ..plain(newer, UpdateStanding::Installing)
         },
         (UpdatePhase::Installed, _) => UpdatesPage {
@@ -193,7 +183,7 @@ fn page(ready: &UpdatesReady, now: UnixSeconds) -> UpdatesPage {
         },
         (UpdatePhase::Failed, _) => UpdatesPage {
             actions: vec![UpdateAction::TryAgain],
-            checked: checked_of(status, now),
+            checked: Some(checked_of(status, now)),
             ..plain(newer, UpdateStanding::Failed(status.problem.clone()))
         },
     }
@@ -201,17 +191,14 @@ fn page(ready: &UpdatesReady, now: UnixSeconds) -> UpdatesPage {
 
 fn available(ready: &UpdatesReady, offer: &UpdateOffer, now: UnixSeconds) -> UpdatesPage {
     let version = offer.version.as_str().to_owned();
-    let notes = match ready.info {
-        NotesState::Open => Some(ReleaseNotes {
-            version: version.clone(),
-            text: Some(offer.notes.clone()).filter(|text| !text.trim().is_empty()),
-        }),
-        NotesState::Closed => None,
-    };
+    let notes = ready.notes_open.then(|| ReleaseNotes {
+        version: version.clone(),
+        text: Some(offer.notes.clone()).filter(|text| !text.trim().is_empty()),
+    });
     UpdatesPage {
         notice: ready.notice,
         actions: vec![UpdateAction::MoreInfo, UpdateAction::UpdateNow],
-        checked: checked_of(&ready.status, now),
+        checked: Some(checked_of(&ready.status, now)),
         notes,
         ..plain(Some(version), UpdateStanding::Available(offer.size))
     }

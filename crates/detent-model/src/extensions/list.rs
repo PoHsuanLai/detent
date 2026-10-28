@@ -3,22 +3,15 @@
 
 use super::offers::Offers;
 
-/// Whether an Extension is in use. `On` is the default for every Extension.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExtensionPower {
-    /// In use.
-    On,
-    /// Turned off by the person: it stays installed and does nothing.
-    Off,
-}
-
 /// Where an Extension stands.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExtensionStanding {
-    /// In use.
-    On,
-    /// Turned off.
-    Off,
+    /// Usable: in use when `on`, and turned off by the person when not (it stays installed and
+    /// does nothing). Every Extension starts on.
+    Usable {
+        /// Whether it is in use.
+        on: bool,
+    },
     /// Found and not usable, with why.
     Unusable(ExtensionTrouble),
 }
@@ -45,17 +38,6 @@ pub enum ExtensionKind {
     Unusable,
 }
 
-/// Whether an Extension may be switched off (and so taken away): the one that holds the
-/// person's own changes may not while it holds any, since that would throw them away.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum ExtensionKeep {
-    /// Nothing in it is the person's own: the switch is offered.
-    #[default]
-    Free,
-    /// It holds changes of the person's: no switch.
-    Holds,
-}
-
 /// One installed Extension.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExtensionRow {
@@ -69,8 +51,9 @@ pub struct ExtensionRow {
     pub provides: Vec<String>,
     /// Where it stands.
     pub standing: ExtensionStanding,
-    /// Whether the switch is offered.
-    pub keep: ExtensionKeep,
+    /// Whether it holds changes of the person's own: then it may not be switched off (and so
+    /// taken away), since that would throw them away.
+    pub holds_changes: bool,
 }
 
 /// The capability words that have a group of their own, in the order the groups come.
@@ -81,11 +64,10 @@ const GROUPS: &[(&str, ExtensionKind)] = &[
 
 impl ExtensionRow {
     /// The switch this row draws: none for an Extension that cannot be used.
-    pub fn power(&self) -> Option<ExtensionPower> {
-        match (&self.standing, self.keep) {
-            (_, ExtensionKeep::Holds) | (ExtensionStanding::Unusable(_), _) => None,
-            (ExtensionStanding::On, ExtensionKeep::Free) => Some(ExtensionPower::On),
-            (ExtensionStanding::Off, ExtensionKeep::Free) => Some(ExtensionPower::Off),
+    pub fn power(&self) -> Option<bool> {
+        match self.standing {
+            ExtensionStanding::Usable { on } if !self.holds_changes => Some(on),
+            _ => None,
         }
     }
 
@@ -159,10 +141,7 @@ pub struct InstalledExtensions {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        ExtensionKeep, ExtensionKind, ExtensionList, ExtensionPower, ExtensionRow,
-        ExtensionStanding, ExtensionTrouble,
-    };
+    use super::{ExtensionKind, ExtensionList, ExtensionRow, ExtensionStanding, ExtensionTrouble};
 
     fn row(id: &str, name: &str, provides: &[&str], standing: ExtensionStanding) -> ExtensionRow {
         ExtensionRow {
@@ -171,7 +150,7 @@ mod tests {
             summary: None,
             provides: provides.iter().map(|word| (*word).to_owned()).collect(),
             standing,
-            keep: ExtensionKeep::Free,
+            holds_changes: false,
         }
     }
 
@@ -180,14 +159,29 @@ mod tests {
         let broken = ExtensionStanding::Unusable(ExtensionTrouble::Unreadable);
         let list = ExtensionList::of(vec![
             row("c.broken", "Broken", &["look"], broken),
-            row("b.zed", "Zed", &["look"], ExtensionStanding::On),
-            row("a.icons", "Icons", &["file_icons"], ExtensionStanding::Off),
-            row("d.other", "Thumbs", &["thumbnail"], ExtensionStanding::On),
+            row(
+                "b.zed",
+                "Zed",
+                &["look"],
+                ExtensionStanding::Usable { on: true },
+            ),
+            row(
+                "a.icons",
+                "Icons",
+                &["file_icons"],
+                ExtensionStanding::Usable { on: false },
+            ),
+            row(
+                "d.other",
+                "Thumbs",
+                &["thumbnail"],
+                ExtensionStanding::Usable { on: true },
+            ),
             row(
                 "e.both",
                 "Alpha",
                 &["file_icons", "look"],
-                ExtensionStanding::On,
+                ExtensionStanding::Usable { on: true },
             ),
         ]);
         let shape: Vec<(ExtensionKind, Vec<&str>)> = list
@@ -213,9 +207,14 @@ mod tests {
 
     #[test]
     fn only_a_usable_extension_has_a_switch() {
-        let mut usable = row("a.b", "Paper", &["look"], ExtensionStanding::Off);
+        let mut usable = row(
+            "a.b",
+            "Paper",
+            &["look"],
+            ExtensionStanding::Usable { on: false },
+        );
         usable.summary = Some("Warm paper".to_owned());
-        assert_eq!(usable.power(), Some(ExtensionPower::Off));
+        assert_eq!(usable.power(), Some(false));
         let mut broken = row(
             "a.c",
             "Torn",
@@ -233,10 +232,10 @@ mod tests {
             "user.YourChanges",
             "Your changes",
             &["file_icons"],
-            ExtensionStanding::On,
+            ExtensionStanding::Usable { on: true },
         );
-        assert_eq!(mine.power(), Some(ExtensionPower::On));
-        mine.keep = ExtensionKeep::Holds;
+        assert_eq!(mine.power(), Some(true));
+        mine.holds_changes = true;
         assert_eq!(mine.power(), None);
         assert!(!mine.is_unusable());
     }

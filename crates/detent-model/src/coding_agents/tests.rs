@@ -139,17 +139,17 @@ fn reasons(spec: &KeySpec) -> Vec<(&str, &str)> {
 #[test]
 fn each_agent_is_ready_or_greyed_with_the_first_reason_a_person_can_act_on() {
     let offered = offers(&agents(), &[], AcpAgents::Off);
-    let got: Vec<(&str, &str, AgentStanding)> = offered
+    let got: Vec<(&str, &str, Option<AgentReason>)> = offered
         .iter()
         .map(|offer| {
             (
                 offer.word.as_str(),
                 offer.label.as_str(),
-                offer.standing.clone(),
+                offer.blocked.clone(),
             )
         })
         .collect();
-    let blocked = AgentStanding::Blocked;
+    let blocked = Some;
     assert_eq!(
         got,
         [
@@ -170,11 +170,8 @@ fn each_agent_is_ready_or_greyed_with_the_first_reason_a_person_can_act_on() {
         "not installed beats the switch; a name that is no id is no word"
     );
     let on = offers(&agents(), &[], AcpAgents::On);
-    assert_eq!(on[0].standing, AgentStanding::Ready);
-    assert_eq!(
-        on[1].standing,
-        AgentStanding::Blocked(AgentReason::NotInstalled)
-    );
+    assert_eq!(on[0].blocked, None);
+    assert_eq!(on[1].blocked, Some(AgentReason::NotInstalled));
 }
 
 #[test]
@@ -210,7 +207,7 @@ fn a_known_program_no_entry_runs_is_listed_as_not_set_up_once_per_agent() {
     assert!(
         offered
             .iter()
-            .all(|offer| offer.standing == AgentStanding::Blocked(AgentReason::NotSetUp))
+            .all(|offer| offer.blocked == Some(AgentReason::NotSetUp))
     );
 }
 

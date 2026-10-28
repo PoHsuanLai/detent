@@ -1,8 +1,8 @@
 //! The places' transitions: nothing turns a cloud account on without the person's yes.
 
-use super::{Confirm, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, places_step};
+use super::{PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, places_step};
 use crate::accounts::AccountsPane;
-use crate::computers::{ComputerRow, Standing};
+use crate::computers::ComputerRow;
 use docket_settings::{
     CloudAccount, CloudAllowed, Known, KnownPlace, ModelChoice, OwnComputer, PlaceName, Places,
     Toggle,
@@ -50,17 +50,17 @@ fn a_cloud_account_is_turned_on_only_after_the_person_says_yes() {
     assert_eq!(cloud(&asked).allowed, CloudAllowed::Off);
     assert!(effects.is_empty());
     // Yes turns it on and writes it.
-    let (next, effects) = places_step(asked.clone(), PlacesInput::Answered(Confirm::Yes));
+    let (next, effects) = places_step(asked.clone(), PlacesInput::Confirm);
     assert_eq!(cloud(&next).allowed, CloudAllowed::On);
     assert_eq!(next.confirming, None);
     assert_eq!(written(&effects), Some(&next.places));
     // No leaves it off and writes nothing.
-    let (next, effects) = places_step(asked, PlacesInput::Answered(Confirm::No));
+    let (next, effects) = places_step(asked, PlacesInput::Cancel);
     assert_eq!(cloud(&next).allowed, CloudAllowed::Off);
     assert_eq!(next.confirming, None);
     assert!(effects.is_empty());
     // An answer with nothing asked changes nothing.
-    let (next, effects) = places_step(state(), PlacesInput::Answered(Confirm::Yes));
+    let (next, effects) = places_step(state(), PlacesInput::Confirm);
     assert_eq!(next, state());
     assert!(effects.is_empty());
 }
@@ -260,7 +260,7 @@ fn the_computers_the_service_lists_are_known_places() {
         computer: ComputerName::parse("lab").expect("a name"),
         name: "lab".to_owned(),
         models: vec![],
-        standing: Standing::Silent,
+        answering: false,
     };
     assert_eq!(
         known_of(&AccountsPane::default(), &[lab]),

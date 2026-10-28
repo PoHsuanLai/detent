@@ -1,7 +1,7 @@
 //! The running models' transitions: the list inferd gives, the asks that wait for an answer,
 //! and the refusals that stay under their row until the next ask.
 
-use super::model::{InFlight, ModelRun, RunAction, RunRowView, RunStanding};
+use super::model::{ModelRun, RunAction, RunRowView, RunStanding};
 use crate::{Absence, Live};
 use std::collections::BTreeMap;
 
@@ -109,11 +109,7 @@ impl RunBoard {
                         Some(asked) => *asked,
                         None => row.standing.action(),
                     },
-                    in_flight: if asked || stopping {
-                        InFlight::Yes
-                    } else {
-                        InFlight::No
-                    },
+                    in_flight: asked || stopping,
                     note: self
                         .refused
                         .get(&row.model)

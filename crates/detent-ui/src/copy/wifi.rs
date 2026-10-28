@@ -2,8 +2,8 @@
 //! password and forget questions ask, and the rows of the details.
 
 use detent_model::{
-    AskKind, AskStanding, HiddenSecurity, NetworkLock, SignalBars, SignalStrength, WifiNetwork,
-    WifiRadio,
+    AskKind, AskStanding, HiddenSecurity, SignalBars, SignalStrength, WifiNetwork, WifiRadio,
+    WifiSecurity,
 };
 
 /// The line under the switch: only a switch the computer's own key or switch turned off has one.
@@ -75,11 +75,11 @@ pub(crate) fn signal(bars: SignalBars) -> &'static str {
 }
 
 /// The security as a person reads it.
-pub(crate) fn lock(lock: NetworkLock) -> &'static str {
-    match lock {
-        NetworkLock::Open => "None",
-        NetworkLock::Secured => "Password protected",
-        NetworkLock::Enterprise => "Enterprise",
+pub(crate) fn lock(security: WifiSecurity) -> &'static str {
+    match security {
+        WifiSecurity::Open => "None",
+        WifiSecurity::Eap => "Enterprise",
+        WifiSecurity::Psk | WifiSecurity::Sae | WifiSecurity::Unsupported => "Password protected",
     }
 }
 
@@ -102,7 +102,7 @@ pub(crate) fn percent(strength: SignalStrength) -> String {
 pub(crate) fn details_rows(network: &WifiNetwork) -> Vec<(&'static str, String)> {
     vec![
         ("Network Name", network.ssid.0.clone()),
-        ("Security", lock(network.lock).to_owned()),
+        ("Security", lock(network.security).to_owned()),
         (
             "Signal",
             format!(
@@ -180,7 +180,7 @@ pub(crate) fn status_line(radio: WifiRadio, joined: Option<&str>) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use detent_model::{NetworkLink, Remembered, Ssid};
+    use detent_model::{NetworkLink, Ssid};
 
     #[test]
     fn the_switch_has_a_line_only_when_the_computer_turned_it_off() {
@@ -265,9 +265,9 @@ mod tests {
         let office = WifiNetwork {
             ssid: Ssid("Office".to_owned()),
             strength: SignalStrength(90),
-            lock: NetworkLock::Secured,
+            security: WifiSecurity::Psk,
             link: NetworkLink::Joined,
-            remembered: Remembered::Yes,
+            remembered: true,
         };
         assert_eq!(
             details_rows(&office),
@@ -290,9 +290,9 @@ mod tests {
             assert_eq!(signal(bars), want, "{bars:?}");
         }
         let locks = [
-            (NetworkLock::Open, "None"),
-            (NetworkLock::Secured, "Password protected"),
-            (NetworkLock::Enterprise, "Enterprise"),
+            (WifiSecurity::Open, "None"),
+            (WifiSecurity::Psk, "Password protected"),
+            (WifiSecurity::Eap, "Enterprise"),
         ];
         for (mark, want) in locks {
             assert_eq!(lock(mark), want, "{mark:?}");

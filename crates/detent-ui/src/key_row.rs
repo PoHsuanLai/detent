@@ -10,15 +10,6 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::root::pass_through::ExtraClass;
 
-/// Whether a search found this key.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Match {
-    /// It did: the row is highlighted.
-    Hit,
-    /// It did not, or there is no search.
-    Miss,
-}
-
 /// A row's stable `id`: `scope`, then `text` with every run of other characters as one `-`, so
 /// two rows with the same label keep different help ids.
 pub(crate) fn row_id(scope: &str, text: &str) -> String {
@@ -38,13 +29,10 @@ pub(crate) fn row_id(scope: &str, text: &str) -> String {
 /// The class a highlighted row carries.
 pub(crate) const HIT_CLASS: &str = "key-hit";
 
-fn common_for(found: Match, entry: &KeyEntry) -> Common {
+fn common_for(hit: bool, entry: &KeyEntry) -> Common {
     Common {
         id: Some(row_id("key", &entry.spec.path.0)),
-        extra_class: match found {
-            Match::Hit => ExtraClass::parse(HIT_CLASS).ok(),
-            Match::Miss => None,
-        },
+        extra_class: hit.then(|| ExtraClass::parse(HIT_CLASS).ok()).flatten(),
         ..Common::default()
     }
 }
@@ -53,7 +41,7 @@ fn common_for(found: Match, entry: &KeyEntry) -> Common {
 #[component]
 pub fn KeyRow(
     entry: KeyEntry,
-    found: Match,
+    hit: bool,
     files: Signal<Files>,
     onedit: EventHandler<Edit>,
 ) -> Element {
@@ -69,7 +57,7 @@ pub fn KeyRow(
         FieldRow {
             label: TextLine::from(entry.spec.label.0.clone()),
             help,
-            common: common_for(found, &entry),
+            common: common_for(hit, &entry),
             if let Some(written) = written_value(&files(), &entry) {
                 FileOnlyControl { value: written }
             } else {

@@ -19,15 +19,6 @@ pub enum AgentReason {
     TurnedOff,
 }
 
-/// Whether an agent can be chosen.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AgentStanding {
-    /// It can.
-    Ready,
-    /// It cannot, and why.
-    Blocked(AgentReason),
-}
-
 /// One agent as a word of the assistant's menu.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AgentOffer {
@@ -35,8 +26,8 @@ pub struct AgentOffer {
     pub word: String,
     /// What the person reads.
     pub label: String,
-    /// Whether it can be chosen.
-    pub standing: AgentStanding,
+    /// Why it cannot be chosen now; none when it can.
+    pub blocked: Option<AgentReason>,
 }
 
 /// Whether `program` can be the second half of a word: inferd's id grammar (lower-case letters
@@ -65,10 +56,10 @@ fn missing(source: &Source) -> bool {
     )
 }
 
-/// An entry's standing, in the order a person can act on: a program that is not there first,
-/// then a sign-in, then the switch.
-fn standing_of(row: &AgentRow, switch: AcpAgents) -> AgentStanding {
-    let reason = if missing(&row.source) {
+/// Why an entry cannot be chosen, in the order a person can act on: a program that is not there
+/// first, then a sign-in, then the switch.
+fn blocked_by(row: &AgentRow, switch: AcpAgents) -> Option<AgentReason> {
+    if missing(&row.source) {
         Some(AgentReason::NotInstalled)
     } else if matches!(row.sign_in, SignInState::NeedsSignIn { .. }) {
         Some(AgentReason::NeedsSignIn {
@@ -78,8 +69,7 @@ fn standing_of(row: &AgentRow, switch: AcpAgents) -> AgentStanding {
         Some(AgentReason::TurnedOff)
     } else {
         None
-    };
-    reason.map_or(AgentStanding::Ready, AgentStanding::Blocked)
+    }
 }
 
 /// The agents the assistant can be handed to, in the file's order, then the known programs found
@@ -93,7 +83,7 @@ pub fn offers(agents: &Agents, found: &[Found], switch: AcpAgents) -> Vec<AgentO
         .map(|row| AgentOffer {
             word: format!("{WORD_PREFIX}{}", row.program),
             label: row.label.clone(),
-            standing: standing_of(row, switch),
+            blocked: blocked_by(row, switch),
         });
     let mut unset: Vec<AgentOffer> = Vec::new();
     for one in docket_settings::unlisted(agents, found) {
@@ -106,7 +96,7 @@ pub fn offers(agents: &Agents, found: &[Found], switch: AcpAgents) -> Vec<AgentO
         unset.push(AgentOffer {
             word,
             label: one.known.label.to_owned(),
-            standing: AgentStanding::Blocked(AgentReason::NotSetUp),
+            blocked: Some(AgentReason::NotSetUp),
         });
     }
     listed.chain(unset).collect()

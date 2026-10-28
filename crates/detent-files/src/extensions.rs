@@ -8,8 +8,8 @@ use crate::read::text_of;
 use crate::save::save_keys;
 use crate::values::{ConfigHome, DataHome};
 use detent_model::{
-    ConfigFile, ExtensionKeep, ExtensionList, ExtensionPower, ExtensionRow, ExtensionStanding,
-    ExtensionTrouble, InstalledExtensions, Offer, Offers,
+    ConfigFile, ExtensionList, ExtensionRow, ExtensionStanding, ExtensionTrouble,
+    InstalledExtensions, Offer, Offers,
 };
 use ds_extensions::bayonet::manifest::Raw;
 use ds_extensions::bayonet::registry::Candidate;
@@ -57,21 +57,18 @@ impl ExtensionHome {
         let found = self.search.scan(&self.off_ids());
         InstalledExtensions {
             offers: offers_of(&found),
-            list: list_of(&found, keep_of(&self.search)),
+            list: list_of(&found, holds_changes(&self.search)),
         }
     }
 
     /// Turns the Extension `id` on or off. Every other line of the file stays as it was.
-    pub fn set_power(&self, id: &str, power: ExtensionPower) -> Result<(), FilesError> {
+    pub fn set_power(&self, id: &str, on: bool) -> Result<(), FilesError> {
         let file =
             ConfigFile::parse(&FilePath(FILE.to_owned())).map_err(|reason| FilesError::Io {
                 path: PathBuf::from(FILE),
                 source: std::io::Error::other(format!("{reason:?}")),
             })?;
-        let wanted = match power {
-            ExtensionPower::On => Power::On,
-            ExtensionPower::Off => Power::Off,
-        };
+        let wanted = if on { Power::On } else { Power::Off };
         let settings = self
             .file()
             .extensions
@@ -136,44 +133,36 @@ fn words_of(candidate: &Candidate<Raw>) -> Vec<String> {
 
 /// Whether the person's own changes block taking their Extension away: they do while it holds
 /// any, and a folder that cannot be read counts as holding some (quire's rule).
-fn keep_of(search: &Search) -> ExtensionKeep {
+fn holds_changes(search: &Search) -> bool {
     match YourChanges::of(search).map(|changes| changes.removal()) {
-        Some(Removal::Blocked) => ExtensionKeep::Holds,
-        Some(Removal::Allowed) | None => ExtensionKeep::Free,
+        Some(Removal::Blocked) => true,
+        Some(Removal::Allowed) | None => false,
     }
 }
 
-/// A row for `candidate`, standing as `standing`. The person's changes get `own`, the rest are free.
-fn row_of(
-    candidate: &Candidate<Raw>,
-    standing: ExtensionStanding,
-    own: ExtensionKeep,
-) -> ExtensionRow {
-    let keep = if candidate.manifest.id.as_str() == YOUR_CHANGES_ID {
-        own
-    } else {
-        ExtensionKeep::Free
-    };
+/// A row for `candidate`, standing as `standing`. The person's changes get `own`, the rest hold none.
+fn row_of(candidate: &Candidate<Raw>, standing: ExtensionStanding, own: bool) -> ExtensionRow {
+    let holds_changes = candidate.manifest.id.as_str() == YOUR_CHANGES_ID && own;
     ExtensionRow {
         id: candidate.manifest.id.as_str().to_owned(),
         name: candidate.manifest.name.clone(),
         summary: candidate.manifest.summary.clone(),
         provides: words_of(candidate),
         standing,
-        keep,
+        holds_changes,
     }
 }
 
 /// Every Extension found: the ones in use, the ones turned off and the ones that cannot be used.
 /// An id found in two places is one row, the first copy (the person's own comes first).
-fn list_of(found: &Found, own: ExtensionKeep) -> ExtensionList {
+fn list_of(found: &Found, own: bool) -> ExtensionList {
     let problems: Vec<Problem> = DATA_WORDS
         .iter()
         .flat_map(|(_, capability)| found.resolve(*capability).problems())
         .collect();
     let standing_of = |id: &str| {
         problems.iter().find(|problem| problem.id.0 == id).map_or(
-            ExtensionStanding::On,
+            ExtensionStanding::Usable { on: true },
             |problem| {
                 ExtensionStanding::Unusable(ExtensionTrouble::Reported(problem.words().to_owned()))
             },
@@ -186,7 +175,7 @@ fn list_of(found: &Found, own: ExtensionKeep) -> ExtensionList {
     let off = found.off.iter().filter_map(|off| {
         off.candidates
             .first()
-            .map(|candidate| row_of(candidate, ExtensionStanding::Off, own))
+            .map(|candidate| row_of(candidate, ExtensionStanding::Usable { on: false }, own))
     });
     let unread = found.rejected.iter().filter_map(|rejected| {
         let folder = rejected.file.parent()?.file_name()?.to_str()?;
@@ -196,7 +185,7 @@ fn list_of(found: &Found, own: ExtensionKeep) -> ExtensionList {
             summary: None,
             provides: Vec::new(),
             standing: ExtensionStanding::Unusable(ExtensionTrouble::Unreadable),
-            keep: ExtensionKeep::Free,
+            holds_changes: false,
         })
     });
     let mut seen = BTreeSet::new();

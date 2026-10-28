@@ -5,8 +5,8 @@ use super::WifiLink;
 use crate::lock::locked;
 use crate::ticks::{Ticker, Ticks};
 use detent_model::{
-    Absence, HiddenNetwork, JoinFailure, NetworkLink, Passphrase, Remembered, Ssid, WifiLogin,
-    WifiRadio, WifiStatus, Work,
+    Absence, HiddenNetwork, JoinFailure, NetworkLink, Passphrase, Ssid, WifiLogin, WifiRadio,
+    WifiStatus, Work,
 };
 use std::sync::{Arc, Mutex};
 
@@ -149,7 +149,7 @@ impl WifiLink for FakeWifi {
         self.change(|status| {
             for network in &mut status.networks {
                 if network.ssid == ssid {
-                    network.remembered = Remembered::No;
+                    network.remembered = false;
                 }
             }
         });

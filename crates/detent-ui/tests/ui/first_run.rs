@@ -5,7 +5,7 @@
 use crate::support::Sandbox;
 use crate::support::drive::click;
 use crate::support::inferd::{Inferd, Policy as InferPolicy};
-use detent_files::{FirstRunMark, FirstRunStanding};
+use detent_files::FirstRunMark;
 use ds::prelude::Scheme;
 use ds_harness::{Harness, Input};
 use std::time::Duration;
@@ -32,8 +32,8 @@ fn stage(harness: &Harness) -> Option<String> {
     harness.attr(".first-run", "data-first-run")
 }
 
-fn mark(sandbox: &Sandbox) -> FirstRunStanding {
-    FirstRunMark::under(&sandbox.state_home()).standing()
+fn mark(sandbox: &Sandbox) -> bool {
+    FirstRunMark::under(&sandbox.state_home()).done()
 }
 
 /// Everything a first run meets: inferd's module in memory, serving the text slot.
@@ -77,7 +77,7 @@ fn ai_stays_on_this_computer_by_default_and_done_writes_it_and_remembers() {
         w.harness.attr(LOCAL_ONLY, "aria-checked").as_deref(),
         Some("true")
     );
-    assert_eq!(mark(&w.sandbox), FirstRunStanding::Pending);
+    assert!(!mark(&w.sandbox));
     click(&mut w.harness, DONE);
     settle(&mut w.harness, "the save", |h| {
         stage(h).as_deref() == Some("done")
@@ -87,7 +87,7 @@ fn ai_stays_on_this_computer_by_default_and_done_writes_it_and_remembers() {
         "{}",
         written(&w.sandbox)
     );
-    assert_eq!(mark(&w.sandbox), FirstRunStanding::Done);
+    assert!(mark(&w.sandbox));
     assert_eq!(
         *w.inferd.sets.lock().expect("sets"),
         [],
@@ -212,7 +212,7 @@ fn without_a_bus_there_is_no_model_menu_and_done_still_finishes() {
         stage(h).as_deref() == Some("done")
     });
     assert!(written(&sandbox).contains("local_only = \"on\""));
-    assert_eq!(mark(&sandbox), FirstRunStanding::Done);
+    assert!(mark(&sandbox));
 }
 
 #[test]
@@ -225,7 +225,7 @@ fn without_inferds_schema_nothing_is_written_and_nothing_is_remembered() {
     settle(&mut harness, "the refusal", |h| {
         h.html().contains("The model settings are not installed")
     });
-    assert_eq!(mark(&sandbox), FirstRunStanding::Pending);
+    assert!(!mark(&sandbox));
     assert_eq!(sandbox.read("inferd/inferd.toml"), None);
 }
 

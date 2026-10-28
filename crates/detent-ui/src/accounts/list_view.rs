@@ -9,8 +9,8 @@ use crate::key_row::row_id;
 use crate::marks::ProviderMarks;
 use detent_model::external::ProviderGroup;
 use detent_model::{
-    Account, AccountKey, AccountStatus, AccountsPane as Pane, Adding, Attention, ClientEntry,
-    ClientText, ClientValue, ModuleId, ModuleRow, SecretStanding, SyncBook,
+    Account, AccountKey, AccountStatus, AccountsPane as Pane, Attention, ClientText, ClientValue,
+    ModuleId, ModuleRow, SyncBook,
 };
 use dioxus::prelude::*;
 use ds::base::vocab::RowState;
@@ -42,14 +42,14 @@ pub(super) struct FootHandlers {
 /// one, which waits while nothing is selected or the selection cannot be removed.
 #[component]
 fn ListFoot(
-    adding: Adding,
+    sheet_open: bool,
     availability: Availability,
     removal: Availability,
     on: FootHandlers,
 ) -> Element {
     rsx! {
         div { class: "accounts-add", "data-accounts": "add",
-            AddAccountButton { adding, availability, onpress: move |()| on.add.call(()) }
+            AddAccountButton { sheet_open, availability, onpress: move |()| on.add.call(()) }
             RemoveAccountButton { availability: removal, onpress: move |()| on.remove.call(()) }
         }
     }
@@ -164,7 +164,7 @@ fn account_item(
                 provider: account.provider.clone(),
                 marks: marks.clone(),
                 place: AvatarPlace::Row,
-                work: book.work_of(account),
+                syncing: book.syncing(account),
             }
             div { class: "account-row-words",
                 Label { text: account.label.clone(), role: LabelRole::Primary }
@@ -199,7 +199,7 @@ fn account_item(
 pub(super) fn AccountList(
     pane: Pane,
     selected: Option<AccountKey>,
-    adding: Adding,
+    sheet_open: bool,
     availability: Availability,
     marks: ProviderMarks,
     book: SyncBook,
@@ -218,8 +218,8 @@ pub(super) fn AccountList(
                     description: crate::copy::account_views::NO_ACCOUNTS_HINT,
                 }
             }
-            ListFoot { adding, availability, removal, on }
-            MoreRows { pane, adding, availability, on }
+            ListFoot { sheet_open, availability, removal, on }
+            MoreRows { pane, sheet_open, availability, on }
         };
     }
     let items = items_of(&pane, selected.as_ref(), &marks, &book, onselect);
@@ -233,8 +233,8 @@ pub(super) fn AccountList(
                 onselect: move |id: String| onselect.call(AccountKey(id)),
                 onpick: move |id: String| onselect.call(AccountKey(id)),
             }
-            ListFoot { adding, availability, removal, on }
-            MoreRows { pane: pane.clone(), adding, availability, on }
+            ListFoot { sheet_open, availability, removal, on }
+            MoreRows { pane: pane.clone(), sheet_open, availability, on }
         }
     }
 }
@@ -243,7 +243,7 @@ pub(super) fn AccountList(
 /// service is there) and, for sync, a new account to continue as (when the sync service offers
 /// one).
 #[component]
-fn MoreRows(pane: Pane, adding: Adding, availability: Availability, on: FootHandlers) -> Element {
+fn MoreRows(pane: Pane, sheet_open: bool, availability: Availability, on: FootHandlers) -> Element {
     let key_row = pane.has(ModuleId::Inferd);
     let continue_row = pane.sync_add.clone();
     if !key_row && continue_row.is_none() {
@@ -256,7 +256,7 @@ fn MoreRows(pane: Pane, adding: Adding, availability: Availability, on: FootHand
                     FieldRow {
                         label: TextLine::from(crate::copy::account_views::AI_KEYS),
                         help: Some(TextLine::from(crate::copy::account_views::ADD_A_KEY_OR_SIGN_IN)),
-                        AddKeyButton { adding, availability, onpress: move |()| on.add_key.call(()) }
+                        AddKeyButton { sheet_open, availability, onpress: move |()| on.add_key.call(()) }
                     }
                 }
                 if let Some(add) = continue_row {
@@ -310,9 +310,10 @@ pub(super) fn ClientIds(
                                 key: "{client.path.0}/{client.value.key()}",
                                 label: client.label.clone(),
                                 value: client.value.clone(),
-                                availability: match client.entry {
-                                    ClientEntry::Open => Availability::Enabled,
-                                    ClientEntry::WaitsForKey => Availability::Disabled,
+                                availability: if client.waits_for_key {
+                                    Availability::Disabled
+                                } else {
+                                    Availability::Enabled
                                 },
                                 onchange: {
                                     let row = ModuleRow::new(client.module, client.path.clone());
@@ -320,7 +321,7 @@ pub(super) fn ClientIds(
                                     move |text| onedit.call((row.clone(), held.typed(text)))
                                 },
                             }
-                            if client.value == ClientValue::Secret(SecretStanding::Set) {
+                            if client.value == (ClientValue::Secret { set: true }) {
                                 ActionButton {
                                     label: crate::copy::account_views::CLEAR.to_owned(),
                                     subject: client.label.clone(),

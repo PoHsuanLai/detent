@@ -34,21 +34,11 @@ pub(crate) struct Refusals(AtomicUsize);
 
 impl Refusals {
     /// Counts one more refusal; the first, the second, the fourth, the eighth and so on are worth a
-    /// line in the log.
-    fn mention(&self) -> Mention {
+    /// line in the log, and give how many there have been.
+    fn mention(&self) -> Option<usize> {
         let seen = self.0.fetch_add(1, Ordering::Relaxed) + 1;
-        if seen.is_power_of_two() {
-            Mention::Yes(seen)
-        } else {
-            Mention::No
-        }
+        seen.is_power_of_two().then_some(seen)
     }
-}
-
-/// Whether a refusal gets a line in the log, and how many there have been.
-enum Mention {
-    Yes(usize),
-    No,
 }
 
 /// `Ok` when the sender of the message in `header` holds one of the roles in [`activators`]. A
@@ -70,7 +60,7 @@ pub(crate) async fn admit(
 }
 
 fn note(refusals: &Refusals, refused: Refused, sender: &str) {
-    if let Mention::Yes(seen) = refusals.mention() {
+    if let Some(seen) = refusals.mention() {
         eprintln!(
             "detent: a call to show Settings from {sender} was dropped ({refused}); {seen} so far"
         );

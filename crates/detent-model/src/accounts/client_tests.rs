@@ -37,17 +37,14 @@ fn typed(text: &str) -> AccountsInput {
 fn a_secret_waits_for_its_key_and_says_so() {
     let state = ready_with(google_keys(), &[]);
     let pane = state_of(state.clone()).pane;
-    assert_eq!(pane.clients[0].entry, ClientEntry::Open);
-    assert_eq!(pane.clients[1].entry, ClientEntry::WaitsForKey);
+    assert!(!pane.clients[0].waits_for_key);
+    assert!(pane.clients[1].waits_for_key);
     let (after, effects) = accounts_step(state, typed("s3cret"));
     assert_eq!(effects, [AccountsEffect::Tell(AccountsNotice::KeyFirst)]);
     assert_eq!(state_of(after).pending, None);
     // With the key set, the secret is a row like the key.
     let keyed = ready_with(google_keys(), &[("accounts.clients.google", "abc")]);
-    assert_eq!(
-        state_of(keyed.clone()).pane.clients[1].entry,
-        ClientEntry::Open
-    );
+    assert!(!state_of(keyed.clone()).pane.clients[1].waits_for_key);
     let (_, effects) = accounts_step(keyed, typed("s3cret"));
     assert_eq!(
         effects,
@@ -66,10 +63,7 @@ fn a_stored_secret_is_never_kept_only_whether_there_is_one() {
     ];
     let ready = state_of(ready_with(google_keys(), &keys_set));
     let pane = ready.pane;
-    assert_eq!(
-        pane.clients[1].value,
-        ClientValue::Secret(SecretStanding::Set)
-    );
+    assert_eq!(pane.clients[1].value, ClientValue::Secret { set: true });
     assert!(!format!("{pane:?}").contains("hunter2"), "{pane:?}");
     assert!(
         !format!("{:?}", ready.sources).contains("hunter2"),
@@ -80,10 +74,7 @@ fn a_stored_secret_is_never_kept_only_whether_there_is_one() {
         &[("accounts.clients.google", "abc")],
     ))
     .pane;
-    assert_eq!(
-        none.clients[1].value,
-        ClientValue::Secret(SecretStanding::NotSet)
-    );
+    assert_eq!(none.clients[1].value, ClientValue::Secret { set: false });
     // The key beside it is drawn as it is.
     assert_eq!(pane.clients[0].value, ClientValue::Text("abc".to_owned()));
 }
@@ -132,7 +123,7 @@ fn clear_removes_a_set_secret_by_writing_nothing_and_only_that() {
     assert_eq!(cleared.pending, Some(secret_row()));
     assert_eq!(
         cleared.pane.clients[1].value,
-        ClientValue::Secret(SecretStanding::NotSet)
+        ClientValue::Secret { set: false }
     );
     // `(case, the rows, the row pressed)`: nothing is written for a secret there is none of,
     // for a key, or while another change is in flight.

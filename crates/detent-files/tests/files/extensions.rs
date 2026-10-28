@@ -5,11 +5,10 @@
 use crate::round_trip::{key, word};
 use detent_files::{ConfigHome, DataHome, ExtensionHome, load};
 use detent_model::{
-    ConfigFile, ExtensionKeep, ExtensionKind, ExtensionPower, ExtensionStanding, ExtensionTrouble,
-    FileSpec, InstalledExtensions,
+    ConfigFile, ExtensionKind, ExtensionStanding, ExtensionTrouble, FileSpec, InstalledExtensions,
 };
 use detent_testkit::{
-    Changes, Scratch, install_file_icons, install_look, install_torn_look, install_your_changes,
+    Scratch, install_file_icons, install_look, install_torn_look, install_your_changes,
 };
 use ds_settings::schema::{FilePath, KeyKind};
 
@@ -66,7 +65,7 @@ fn a_look_is_offered_after_standard_and_a_torn_one_is_listed_apart_with_its_reas
         [
             (
                 ExtensionKind::Looks,
-                vec![(PAPER.to_owned(), ExtensionStanding::On)]
+                vec![(PAPER.to_owned(), ExtensionStanding::Usable { on: true })]
             ),
             (
                 ExtensionKind::Unusable,
@@ -93,7 +92,7 @@ fn turning_one_off_writes_the_file_keeps_its_other_lines_and_turning_it_on_remov
     std::fs::create_dir_all(file.parent().expect("a file has a parent")).expect("mkdir");
     std::fs::write(&file, "# mine\nversion = 1\n").expect("write");
 
-    home.set_power(PAPER, ExtensionPower::Off).expect("written");
+    home.set_power(PAPER, false).expect("written");
     let text = std::fs::read_to_string(&file).expect("the file");
     assert!(text.starts_with("# mine\nversion = 1\n"), "{text}");
     assert!(text.contains(PAPER), "{text}");
@@ -103,12 +102,12 @@ fn turning_one_off_writes_the_file_keeps_its_other_lines_and_turning_it_on_remov
         groups,
         [(
             ExtensionKind::Looks,
-            vec![(PAPER.to_owned(), ExtensionStanding::Off)]
+            vec![(PAPER.to_owned(), ExtensionStanding::Usable { on: false })]
         )],
         "off stays listed, with its switch"
     );
 
-    home.set_power(PAPER, ExtensionPower::Off).expect("again");
+    home.set_power(PAPER, false).expect("again");
     let again = std::fs::read_to_string(&file).expect("the file");
     assert_eq!(
         again.matches(PAPER).count(),
@@ -116,7 +115,7 @@ fn turning_one_off_writes_the_file_keeps_its_other_lines_and_turning_it_on_remov
         "an id is listed once: {again}"
     );
 
-    home.set_power(PAPER, ExtensionPower::On).expect("written");
+    home.set_power(PAPER, true).expect("written");
     let (offered, _) = shape(&home.read());
     assert_eq!(offered, ["standard", PAPER]);
 }
@@ -129,7 +128,7 @@ fn a_file_that_cannot_be_understood_turns_nothing_off_and_is_not_written_over() 
     std::fs::create_dir_all(file.parent().expect("a file has a parent")).expect("mkdir");
     std::fs::write(&file, "[extensions\noff = ").expect("write");
     assert_eq!(shape(&home.read()).0, ["standard", PAPER]);
-    assert!(home.set_power(PAPER, ExtensionPower::Off).is_err());
+    assert!(home.set_power(PAPER, false).is_err());
     assert_eq!(
         std::fs::read_to_string(&file).expect("the file"),
         "[extensions\noff = "
@@ -187,10 +186,7 @@ fn a_file_icons_set_is_offered_after_standard_and_listed_under_file_icons() {
 
 #[test]
 fn your_changes_is_never_offered_and_has_a_switch_only_while_it_holds_nothing() {
-    for (changes, keep) in [
-        (Changes::None, ExtensionKeep::Free),
-        (Changes::Held, ExtensionKeep::Holds),
-    ] {
+    for holds in [false, true] {
         let (scratch, home) = world("extensions-your-changes");
         install_file_icons(
             &scratch.join("data"),
@@ -198,7 +194,7 @@ fn your_changes_is_never_offered_and_has_a_switch_only_while_it_holds_nothing() 
             "Dots",
             "Round dots",
         );
-        install_your_changes(&scratch.join("data"), changes);
+        install_your_changes(&scratch.join("data"), holds);
         let read = home.read();
         assert_eq!(
             read.offers.of("file_icons").words,
@@ -212,7 +208,7 @@ fn your_changes_is_never_offered_and_has_a_switch_only_while_it_holds_nothing() 
             .flat_map(|group| &group.rows)
             .find(|row| row.id == "user.YourChanges")
             .expect("the page lists it");
-        assert_eq!(mine.keep, keep);
-        assert_eq!(mine.power().is_some(), keep == ExtensionKeep::Free);
+        assert_eq!(mine.holds_changes, holds);
+        assert_eq!(mine.power().is_some(), !holds);
     }
 }

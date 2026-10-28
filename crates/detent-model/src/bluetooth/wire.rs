@@ -2,16 +2,7 @@
 //! BlueZ's signals are worth reading it again for. The system reads the wire into these values;
 //! nothing here knows the bus.
 
-use super::model::{BatteryLevel, BtAddress, BtDevice, BtKind, BtLink, BtPairing};
-
-/// Whether BlueZ hears a device now: it then reports a signal strength.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BtHearing {
-    /// BlueZ hears it.
-    Heard,
-    /// BlueZ remembers it from before.
-    Silent,
-}
+use super::model::{BatteryLevel, BtAddress, BtDevice, BtKind, BtLink};
 
 /// What BlueZ's `Device1` (and `Battery1`) properties say of one device, as the system read them.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,11 +14,11 @@ pub struct BtDeviceWire {
     /// `Icon`, when it has one.
     pub icon: Option<String>,
     /// `Paired`.
-    pub pairing: BtPairing,
+    pub paired: bool,
     /// `Connected`.
     pub link: BtLink,
-    /// Whether `RSSI` is there.
-    pub hearing: BtHearing,
+    /// Whether BlueZ hears the device now (`RSSI` is there).
+    pub heard: bool,
     /// The battery `Percentage`, when `Battery1` reports one.
     pub battery: Option<u8>,
 }
@@ -36,7 +27,7 @@ pub struct BtDeviceWire {
 /// BlueZ hears it: BlueZ remembers the ones it saw for a while. A device with no address is none.
 pub fn bt_device_of(wire: BtDeviceWire) -> Option<BtDevice> {
     let address = wire.address?;
-    if wire.pairing == BtPairing::Unpaired && wire.hearing == BtHearing::Silent {
+    if !wire.paired && !wire.heard {
         return None;
     }
     let name = wire
@@ -48,7 +39,7 @@ pub fn bt_device_of(wire: BtDeviceWire) -> Option<BtDevice> {
         name,
         kind: BtKind::of_icon(&wire.icon.unwrap_or_default()),
         link: wire.link,
-        pairing: wire.pairing,
+        paired: wire.paired,
         battery: wire.battery.map(BatteryLevel),
     })
 }
@@ -72,52 +63,32 @@ pub fn bt_change_matters(interface: &str, names: &[&str]) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{BtDeviceWire, BtHearing, bt_change_matters, bt_device_of, is_under_adapter};
-    use crate::bluetooth::{BtKind, BtLink, BtPairing};
+    use super::{BtDeviceWire, bt_change_matters, bt_device_of, is_under_adapter};
+    use crate::bluetooth::{BtKind, BtLink};
 
-    fn wire(pairing: BtPairing, hearing: BtHearing) -> BtDeviceWire {
+    fn wire(paired: bool, heard: bool) -> BtDeviceWire {
         BtDeviceWire {
             address: Some("AA:00".to_owned()),
             alias: Some("Mouse".to_owned()),
             icon: Some("input-mouse".to_owned()),
-            pairing,
+            paired,
             link: BtLink::Connected,
-            hearing,
+            heard,
             battery: Some(80),
         }
     }
 
     #[test]
     fn a_device_is_listed_when_paired_or_heard() {
-        const CASES: &[(&str, BtPairing, BtHearing, bool)] = &[
-            (
-                "paired and silent",
-                BtPairing::Paired,
-                BtHearing::Silent,
-                true,
-            ),
-            (
-                "paired and heard",
-                BtPairing::Paired,
-                BtHearing::Heard,
-                true,
-            ),
-            (
-                "seen and heard",
-                BtPairing::Unpaired,
-                BtHearing::Heard,
-                true,
-            ),
-            (
-                "remembered only",
-                BtPairing::Unpaired,
-                BtHearing::Silent,
-                false,
-            ),
+        const CASES: &[(&str, bool, bool, bool)] = &[
+            ("paired and silent", true, false, true),
+            ("paired and heard", true, true, true),
+            ("seen and heard", false, true, true),
+            ("remembered only", false, false, false),
         ];
-        for (case, pairing, hearing, listed) in CASES {
+        for (case, paired, heard, listed) in CASES {
             assert_eq!(
-                bt_device_of(wire(*pairing, *hearing)).is_some(),
+                bt_device_of(wire(*paired, *heard)).is_some(),
                 *listed,
                 "{case}"
             );
@@ -126,12 +97,12 @@ mod tests {
 
     #[test]
     fn a_device_is_named_by_its_alias_then_its_address() {
-        let named = bt_device_of(wire(BtPairing::Paired, BtHearing::Silent));
+        let named = bt_device_of(wire(true, false));
         assert_eq!(named.as_ref().map(|d| d.name.as_str()), Some("Mouse"));
         assert_eq!(named.as_ref().map(|d| d.kind), Some(BtKind::Mouse));
         let unnamed = BtDeviceWire {
             alias: Some(String::new()),
-            ..wire(BtPairing::Paired, BtHearing::Silent)
+            ..wire(true, false)
         };
         assert_eq!(
             bt_device_of(unnamed).map(|d| d.name),
@@ -139,7 +110,7 @@ mod tests {
         );
         let nameless = BtDeviceWire {
             address: None,
-            ..wire(BtPairing::Paired, BtHearing::Silent)
+            ..wire(true, false)
         };
         assert_eq!(bt_device_of(nameless), None);
     }

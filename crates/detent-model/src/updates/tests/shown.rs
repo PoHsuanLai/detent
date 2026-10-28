@@ -1,10 +1,9 @@
 //! What each standing shows, as facts, and the page's own place among the pages.
 
 use super::super::{
-    ByteCount, CheckActivity, Checked, Downloaded, NotesState, Permille, ReleaseNotes,
-    UpdateAction, UpdateMeter, UpdateOffer, UpdatePhase, UpdateStanding, UpdateStatus,
-    UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesShown, UpdatesState, software_update_page,
-    updates_shown,
+    ByteCount, Checked, Downloaded, Permille, ReleaseNotes, UpdateAction, UpdateMeter, UpdateOffer,
+    UpdatePhase, UpdateStanding, UpdateStatus, UpdatesInput, UpdatesNotice, UpdatesReady,
+    UpdatesShown, UpdatesState, software_update_page, updates_shown,
 };
 use super::{NOW, offer, offered, page_of, ready, status};
 use crate::Absence;
@@ -30,17 +29,17 @@ fn each_standing_shows_its_facts_actions_and_bar() {
         ..status(UpdatePhase::Idle)
     };
     let silent_failure = status(UpdatePhase::Failed);
-    let resting = vec![UpdateAction::Check(CheckActivity::Resting)];
-    let five_minutes = Checked::Ago(300);
+    let resting = vec![UpdateAction::Check { running: false }];
+    let five_minutes = Some(Checked::Ago(300));
     // `(case, the status, version, standing, bar, actions, last checked)`.
     type Case<'a> = (
         &'a str,
         UpdateStatus,
         &'a str,
         UpdateStanding,
-        UpdateMeter,
+        Option<UpdateMeter>,
         Vec<UpdateAction>,
-        Checked,
+        Option<Checked>,
     );
     let cases: Vec<Case> = vec![
         (
@@ -48,7 +47,7 @@ fn each_standing_shows_its_facts_actions_and_bar() {
             status(UpdatePhase::Idle),
             "0.3.1",
             UpdateStanding::UpToDate,
-            UpdateMeter::None,
+            None,
             resting.clone(),
             five_minutes,
         ),
@@ -57,25 +56,25 @@ fn each_standing_shows_its_facts_actions_and_bar() {
             never,
             "0.3.1",
             UpdateStanding::UpToDate,
-            UpdateMeter::None,
+            None,
             resting,
-            Checked::Never,
+            Some(Checked::Never),
         ),
         (
             "checking",
             status(UpdatePhase::Checking),
             "0.3.1",
             UpdateStanding::Checking,
-            UpdateMeter::None,
-            vec![UpdateAction::Check(CheckActivity::Running)],
-            Checked::Unsaid,
+            None,
+            vec![UpdateAction::Check { running: true }],
+            None,
         ),
         (
             "an update waits",
             offered(UpdatePhase::Available),
             "0.4.0",
             UpdateStanding::Available(ByteCount(45_600_000)),
-            UpdateMeter::None,
+            None,
             vec![UpdateAction::MoreInfo, UpdateAction::UpdateNow],
             five_minutes,
         ),
@@ -84,49 +83,49 @@ fn each_standing_shows_its_facts_actions_and_bar() {
             download,
             "0.4.0",
             UpdateStanding::Downloading,
-            UpdateMeter::Known {
+            Some(UpdateMeter::Known {
                 share: Permille(250),
                 done: Some(Downloaded {
                     done: ByteCount(11_400_000),
                     total: ByteCount(45_600_000),
                 }),
-            },
+            }),
             vec![],
-            Checked::Unsaid,
+            None,
         ),
         (
             "ready to install",
             offered(UpdatePhase::Ready),
             "0.4.0",
             UpdateStanding::Preparing,
-            UpdateMeter::Pending,
+            Some(UpdateMeter::Pending),
             vec![],
-            Checked::Unsaid,
+            None,
         ),
         (
             "installing",
             offered(UpdatePhase::Installing),
             "0.4.0",
             UpdateStanding::Installing,
-            UpdateMeter::Pending,
+            Some(UpdateMeter::Pending),
             vec![],
-            Checked::Unsaid,
+            None,
         ),
         (
             "installed",
             status(UpdatePhase::Installed),
             "0.3.1",
             UpdateStanding::Installed,
-            UpdateMeter::None,
+            None,
             vec![UpdateAction::LogOut],
-            Checked::Unsaid,
+            None,
         ),
         (
             "failed with the service's words",
             failed,
             "0.4.0",
             UpdateStanding::Failed(Some("There is no network.".to_owned())),
-            UpdateMeter::None,
+            None,
             vec![UpdateAction::TryAgain],
             five_minutes,
         ),
@@ -135,7 +134,7 @@ fn each_standing_shows_its_facts_actions_and_bar() {
             silent_failure,
             "0.3.1",
             UpdateStanding::Failed(None),
-            UpdateMeter::None,
+            None,
             vec![UpdateAction::TryAgain],
             five_minutes,
         ),
@@ -173,10 +172,10 @@ fn a_download_of_unknown_size_has_a_bar_and_no_count() {
     };
     assert_eq!(
         page_of(&ready(unknown)).meter,
-        UpdateMeter::Known {
+        Some(UpdateMeter::Known {
             share: Permille(400),
             done: None
-        }
+        })
     );
 }
 
@@ -185,7 +184,7 @@ fn the_notes_carry_the_notes_or_none_when_the_release_has_none() {
     let open = |status| {
         UpdatesState::Ready(UpdatesReady {
             status,
-            info: NotesState::Open,
+            notes_open: true,
             notice: UpdatesNotice::Nothing,
         })
     };
@@ -243,14 +242,8 @@ fn a_page_without_the_service_says_why() {
 fn every_action_makes_the_input_it_names() {
     // `(action, input)`.
     const CASES: &[(UpdateAction, UpdatesInput)] = &[
-        (
-            UpdateAction::Check(CheckActivity::Resting),
-            UpdatesInput::Check,
-        ),
-        (
-            UpdateAction::Check(CheckActivity::Running),
-            UpdatesInput::Check,
-        ),
+        (UpdateAction::Check { running: false }, UpdatesInput::Check),
+        (UpdateAction::Check { running: true }, UpdatesInput::Check),
         (UpdateAction::MoreInfo, UpdatesInput::MoreInfo),
         (UpdateAction::UpdateNow, UpdatesInput::UpdateNow),
         (UpdateAction::TryAgain, UpdatesInput::TryAgain),

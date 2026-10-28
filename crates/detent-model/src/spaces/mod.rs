@@ -4,7 +4,7 @@
 mod removal;
 mod step;
 
-pub use removal::{RemovalAsk, RemovalInput, WithoutMemory};
+pub use removal::{RemovalAsk, RemovalInput, needs_memory};
 pub use step::{
     RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput, SpacesReady, SpacesState,
     spaces_step,

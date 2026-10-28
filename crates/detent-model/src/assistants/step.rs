@@ -16,15 +16,6 @@ pub enum PlaceRef {
     Cloud(PlaceName),
 }
 
-/// The person's answer to the question before a cloud account is turned on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Confirm {
-    /// Turn it on.
-    Yes,
-    /// Leave it off.
-    No,
-}
-
 /// Where the places stand.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlacesState {
@@ -70,8 +61,10 @@ pub enum PlacesInput {
         /// Asking before each use, or not.
         to: Toggle,
     },
-    /// The person answered the question before a cloud account is turned on.
-    Answered(Confirm),
+    /// The person said yes to the question before a cloud account is turned on.
+    Confirm,
+    /// The person said no to it: the account stays off.
+    Cancel,
     /// The person picked a model for a place; none lets the assistant choose.
     Model {
         /// The place.
@@ -141,16 +134,14 @@ pub fn places_step(state: PlacesState, input: PlacesInput) -> (PlacesState, Vec<
                 (PlacesState { places, confirming }, vec![])
             }
         }
-        PlacesInput::Answered(answer) => {
-            let asked = confirming;
-            match (answer, asked) {
-                (Confirm::Yes, Some(name)) => {
-                    set_cloud(&mut places, &name, CloudAllowed::On);
-                    written(places, None)
-                }
-                _ => (PlacesState::of(places), vec![]),
+        PlacesInput::Confirm => match confirming {
+            Some(name) => {
+                set_cloud(&mut places, &name, CloudAllowed::On);
+                written(places, None)
             }
-        }
+            None => (PlacesState::of(places), vec![]),
+        },
+        PlacesInput::Cancel => (PlacesState::of(places), vec![]),
         PlacesInput::Model { place, model } => {
             match place {
                 PlaceRef::ThisComputer => places.this_computer = model,

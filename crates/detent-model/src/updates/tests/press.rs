@@ -1,7 +1,7 @@
 //! What an action may ask of the service: only what the standing allows.
 
 use super::super::{
-    NotesState, UpdatePhase, UpdateStatus, UpdatesEffect, UpdatesInput, UpdatesState, updates_step,
+    UpdatePhase, UpdateStatus, UpdatesEffect, UpdatesInput, UpdatesState, updates_step,
 };
 use super::{newer, offered, ready, status, version};
 use crate::Absence;
@@ -171,28 +171,28 @@ fn the_notes_open_while_an_update_waits_and_close_when_it_does_not() {
     let UpdatesState::Ready(open) = &state else {
         panic!("not ready: {state:?}");
     };
-    assert_eq!(open.info, NotesState::Open);
+    assert!(open.notes_open);
 
     // The same update, heard again: the sheet stays.
     let (state, _) = updates_step(
         state,
         UpdatesInput::Heard(Ok(offered(UpdatePhase::Available))),
     );
-    assert!(matches!(&state, UpdatesState::Ready(r) if r.info == NotesState::Open));
+    assert!(matches!(&state, UpdatesState::Ready(r) if r.notes_open));
 
     // The download starts behind the sheet: it goes.
     let (after, _) = updates_step(
         state.clone(),
         UpdatesInput::Heard(Ok(offered(UpdatePhase::Downloading))),
     );
-    assert!(matches!(&after, UpdatesState::Ready(r) if r.info == NotesState::Closed));
+    assert!(matches!(&after, UpdatesState::Ready(r) if !r.notes_open));
 
     let (closed, _) = updates_step(state, UpdatesInput::CloseInfo);
-    assert!(matches!(&closed, UpdatesState::Ready(r) if r.info == NotesState::Closed));
+    assert!(matches!(&closed, UpdatesState::Ready(r) if !r.notes_open));
 
     let (none, _) = updates_step(ready(status(UpdatePhase::Idle)), UpdatesInput::MoreInfo);
     assert!(
-        matches!(&none, UpdatesState::Ready(r) if r.info == NotesState::Closed),
+        matches!(&none, UpdatesState::Ready(r) if !r.notes_open),
         "nothing to read about"
     );
 }

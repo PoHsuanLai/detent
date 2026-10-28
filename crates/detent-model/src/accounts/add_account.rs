@@ -3,16 +3,6 @@
 
 use super::model::AccountKey;
 
-/// Whether an add sheet is open for this window.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum Adding {
-    /// No sheet is open; the button can be pressed.
-    #[default]
-    Idle,
-    /// A sheet is open; the button waits.
-    SheetOpen,
-}
-
 /// How the add sheet ended.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddEnd {

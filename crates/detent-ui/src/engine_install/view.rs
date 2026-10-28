@@ -4,7 +4,7 @@
 use super::board::Board;
 use crate::copy;
 use detent_model::{
-    EngineAction, EngineBrief, EngineOffer, EngineOfferInput, InstallScope, Waiting, engine_brief,
+    EngineAction, EngineBrief, EngineOffer, EngineOfferInput, InstallScope, engine_brief,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -142,8 +142,8 @@ fn Meter(brief: EngineBrief) -> Element {
                 common: Common { aria_label: Some(crate::copy::common::DOWNLOAD_PROGRESS.to_owned()), ..Common::default() },
             }
         },
-        (None, Waiting::Yes) => rsx! { Pending {} },
-        (None, Waiting::No) => rsx! {},
+        (None, true) => rsx! { Pending {} },
+        (None, false) => rsx! {},
     }
 }
 

@@ -3,7 +3,8 @@
 
 use super::account::WifiLogin;
 use super::hidden::HiddenNetwork;
-use super::model::{NetworkLink, NetworkLock, Remembered, Ssid, WifiRadio, WifiStatus};
+use super::join::WifiSecurity;
+use super::model::{NetworkLink, Ssid, WifiRadio, WifiStatus};
 use super::passphrase::Passphrase;
 use crate::Absence;
 use crate::Live;
@@ -58,11 +59,11 @@ pub enum AskKind {
 }
 
 impl AskKind {
-    /// What a network with this `lock` wants when it has to be asked.
-    fn of(lock: NetworkLock) -> AskKind {
-        match lock {
-            NetworkLock::Enterprise => AskKind::Account,
-            NetworkLock::Open | NetworkLock::Secured => AskKind::Password,
+    /// What a network secured as `security` wants when it has to be asked.
+    fn of(security: WifiSecurity) -> AskKind {
+        match security {
+            WifiSecurity::Eap => AskKind::Account,
+            _ => AskKind::Password,
         }
     }
 }
@@ -247,12 +248,12 @@ fn confirm_forget(page: WifiReady) -> (WifiReady, Vec<WifiEffect>) {
 /// in is not (the name, the security or the password may be what is wrong).
 fn ask_again(page: WifiReady, ssid: Ssid) -> (WifiReady, Vec<WifiEffect>) {
     let page = without_joining(page, &ssid);
-    match page.status.network(&ssid).map(|network| network.lock) {
-        Some(lock) => {
+    match page.status.network(&ssid).map(|network| network.security) {
+        Some(security) => {
             let ask = PasswordAsk {
                 ssid,
                 standing: AskStanding::Wrong,
-                kind: AskKind::of(lock),
+                kind: AskKind::of(security),
             };
             (with_asking(page, WifiAsking::Password(ask)), Vec::new())
         }
@@ -274,7 +275,7 @@ fn pick(page: WifiReady, ssid: Ssid) -> (WifiReady, Vec<WifiEffect>) {
     if network.link != NetworkLink::Idle || page.joining.is_some() {
         return (page, Vec::new());
     }
-    if network.lock == NetworkLock::Open || network.remembered == Remembered::Yes {
+    if network.security == WifiSecurity::Open || network.remembered {
         let effects = vec![WifiEffect::Join(ssid.clone(), None)];
         return (
             WifiReady {
@@ -287,7 +288,7 @@ fn pick(page: WifiReady, ssid: Ssid) -> (WifiReady, Vec<WifiEffect>) {
     let ask = PasswordAsk {
         ssid,
         standing: AskStanding::First,
-        kind: AskKind::of(network.lock),
+        kind: AskKind::of(network.security),
     };
     (with_asking(page, WifiAsking::Password(ask)), Vec::new())
 }

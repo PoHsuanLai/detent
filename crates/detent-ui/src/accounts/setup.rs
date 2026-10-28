@@ -10,9 +10,7 @@ use crate::env::Env;
 use crate::key_row::row_id;
 use crate::live::use_client;
 use crate::marks::ProviderMarks;
-use detent_model::{
-    Adding, SetupAction, SetupAvailability, SignedIn, SyncWork, accounts_setup_offer, signed_in,
-};
+use detent_model::{SetupAction, SetupAvailability, SignedIn, accounts_setup_offer, signed_in};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button::Button;
@@ -44,7 +42,7 @@ fn rows_of(rows: &[SignedIn], marks: &ProviderMarks) -> Vec<ListItem<String>> {
                         provider: row.provider.clone(),
                         marks: marks.clone(),
                         place: AvatarPlace::Row,
-                        work: SyncWork::Resting,
+                        syncing: false,
                     }
                     div { class: "account-row-words",
                         Label { text: row.label.clone(), role: LabelRole::Primary }
@@ -77,16 +75,17 @@ pub(crate) fn AccountsSetup() -> Element {
     let toasts = use_toasts();
     let app = use_app_handle();
     let listed = use_listed();
-    let adding = use_signal(|| Adding::Idle);
+    let adding = use_signal(|| false);
     let rows = match listed() {
         Listed::Ready(pane) => signed_in(&pane),
         Listed::Looking | Listed::Unavailable(_) => Vec::new(),
     };
     let skip = availability_of(accounts_setup_offer(&rows, SetupAction::Skip));
     let next = availability_of(accounts_setup_offer(&rows, SetupAction::Continue));
-    let add = match adding() {
-        Adding::Idle => Availability::Enabled,
-        Adding::SheetOpen => Availability::Disabled,
+    let add = if adding() {
+        Availability::Disabled
+    } else {
+        Availability::Enabled
     };
     let items = rows_of(&rows, &env.marks);
     let empty = rows.is_empty();
@@ -118,10 +117,10 @@ pub(crate) fn AccountsSetup() -> Element {
                 availability: add,
                 onclick: move |_| {
                     let (client, mut adding) = (client.clone(), adding);
-                    adding.set(Adding::SheetOpen);
+                    adding.set(true);
                     spawn(async move {
                         let end = client.add_account().await;
-                        adding.set(Adding::Idle);
+                        adding.set(false);
                         if let Some(line) = add_end_line(&end) {
                             toasts.push(line.to_owned(), None);
                         }

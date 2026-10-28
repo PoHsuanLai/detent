@@ -62,11 +62,11 @@ pub fn install_file_icons(data_home: &Path, id: &str, name: &str, summary: &str)
 }
 
 /// Installs the person's own Extension (`user.YourChanges`) as quire writes it, holding one
-/// picture when `changes` is true, else an empty folder.
+/// picture when `holds_changes` is true, else an empty folder.
 ///
 /// # Panics
 /// If the files cannot be written.
-pub fn install_your_changes(data_home: &Path, changes: Changes) -> PathBuf {
+pub fn install_your_changes(data_home: &Path, holds_changes: bool) -> PathBuf {
     let folder = data_home
         .join("quire")
         .join("extensions")
@@ -79,7 +79,7 @@ pub fn install_your_changes(data_home: &Path, changes: Changes) -> PathBuf {
          [[provides]]\ncapability = \"file_icons\"\ndir = \"file-icons\"\n",
     );
     std::fs::create_dir_all(folder.join("file-icons")).expect("the pictures folder");
-    if changes == Changes::Held {
+    if holds_changes {
         write(
             &folder.join("file-icons"),
             "text.svg",
@@ -87,13 +87,4 @@ pub fn install_your_changes(data_home: &Path, changes: Changes) -> PathBuf {
         );
     }
     folder
-}
-
-/// Whether the person's own Extension holds a picture.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Changes {
-    /// One picture is set.
-    Held,
-    /// None is.
-    None,
 }

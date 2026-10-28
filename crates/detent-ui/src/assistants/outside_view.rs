@@ -12,9 +12,8 @@ use detent_client::{installed_agents, load_agents, remove_agent, save_agent_choi
 use detent_model::external::ProviderGroup;
 use detent_model::external::{AgentChoice, AgentRow, Agents};
 use detent_model::{
-    AccountsPane, AddForm, Assistant, Entry, FoundAgent, RemoveAnswer, RemoveQuestion,
-    assistants_of, model_choice, model_menu, model_word, removal_of, unlisted_found, way_choice,
-    way_menu,
+    AccountsPane, AddForm, Assistant, Entry, FoundAgent, RemoveQuestion, assistants_of,
+    model_choice, model_menu, model_word, removal_of, unlisted_found, way_choice, way_menu,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -76,14 +75,12 @@ pub(super) fn OutsideAssistants(pane: AccountsPane) -> Element {
     });
     let answer = EventHandler::new({
         let env = env.clone();
-        move |answer: RemoveAnswer| {
+        move |remove: bool| {
             let Some(question) = removing.peek().clone() else {
                 return;
             };
             removing.set(None);
-            if answer == RemoveAnswer::Remove
-                && let Err(fault) = remove_agent(&env.config_home, &question.program)
-            {
+            if remove && let Err(fault) = remove_agent(&env.config_home, &question.program) {
                 toasts.push(coding_agents::remove_refusal(fault).to_owned(), None);
             }
             now.set(shown(&env));

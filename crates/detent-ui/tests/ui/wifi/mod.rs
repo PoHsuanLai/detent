@@ -7,7 +7,7 @@ use crate::support::Sandbox;
 use crate::support::drive::{click, page_of, settle, showing, sidebar_page, title_of};
 use crate::support::wifi::{Asked, Wifi};
 use detent_model::{
-    Absence, AccessPoint, NetworkLink, NetworkLock, SignalStrength, Ssid, WifiRadio, WifiStatus,
+    Absence, AccessPoint, NetworkLink, SignalStrength, Ssid, WifiRadio, WifiSecurity, WifiStatus,
     WifiWire,
 };
 use detent_ui::Opening;
@@ -36,11 +36,11 @@ fn ssid(name: &str) -> Ssid {
     Ssid(name.to_owned())
 }
 
-fn point(name: &str, strength: u8, lock: NetworkLock, link: NetworkLink) -> AccessPoint {
+fn point(name: &str, strength: u8, security: WifiSecurity, link: NetworkLink) -> AccessPoint {
     AccessPoint {
         ssid: ssid(name),
         strength: SignalStrength(strength),
-        lock,
+        security,
         link,
     }
 }
@@ -50,10 +50,10 @@ fn status(radio: WifiRadio) -> WifiStatus {
     WifiStatus::of_wire(WifiWire {
         radio,
         access_points: vec![
-            point("Office", 90, NetworkLock::Secured, NetworkLink::Joined),
-            point("Home", 70, NetworkLock::Secured, NetworkLink::Idle),
-            point("Cafe", 80, NetworkLock::Open, NetworkLink::Idle),
-            point("Neighbour", 60, NetworkLock::Secured, NetworkLink::Idle),
+            point("Office", 90, WifiSecurity::Psk, NetworkLink::Joined),
+            point("Home", 70, WifiSecurity::Psk, NetworkLink::Idle),
+            point("Cafe", 80, WifiSecurity::Open, NetworkLink::Idle),
+            point("Neighbour", 60, WifiSecurity::Psk, NetworkLink::Idle),
         ],
         saved: vec![ssid("Office"), ssid("Home")],
     })

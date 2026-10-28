@@ -1,7 +1,7 @@
 //! `detent --first-run` run as the binary: once the first run has happened it exits at once, with
 //! no window, no bus and nothing written, whatever the environment lacks.
 
-use detent_files::{FirstRunMark, FirstRunStanding, StateHome};
+use detent_files::{FirstRunMark, StateHome};
 use detent_testkit::Scratch;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
@@ -49,7 +49,7 @@ fn a_second_first_run_exits_at_once_and_touches_nothing() {
     let mark = FirstRunMark::under(&state);
     mark.record().expect("the first run happened");
     assert!(run(&scratch).success());
-    assert_eq!(mark.standing(), FirstRunStanding::Done);
+    assert!(mark.done());
     assert!(
         !scratch.join("config").exists(),
         "nothing was written to the config home"

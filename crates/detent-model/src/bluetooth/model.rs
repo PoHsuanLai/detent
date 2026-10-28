@@ -5,15 +5,6 @@
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BtAddress(pub String);
 
-/// The Bluetooth switch.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BtPower {
-    /// Off.
-    Off,
-    /// On.
-    On,
-}
-
 /// A device's relation to this computer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BtLink {
@@ -23,15 +14,6 @@ pub enum BtLink {
     Connecting,
     /// Connected.
     Connected,
-}
-
-/// Whether this computer has paired with a device.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BtPairing {
-    /// It has.
-    Paired,
-    /// It has not: the device was only seen.
-    Unpaired,
 }
 
 /// What a device is, for its glyph.
@@ -81,7 +63,7 @@ pub struct BtDevice {
     /// Whether it is connected.
     pub link: BtLink,
     /// Whether this computer is paired with it.
-    pub pairing: BtPairing,
+    pub paired: bool,
     /// Its battery, when it tells.
     pub battery: Option<BatteryLevel>,
 }
@@ -89,15 +71,15 @@ pub struct BtDevice {
 /// The switch and the devices, the connected ones first, then by name.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BtStatus {
-    /// The switch.
-    pub power: BtPower,
+    /// Whether the switch is on.
+    pub powered: bool,
     /// The devices, in the order the page lists them.
     pub devices: Vec<BtDevice>,
 }
 
 impl BtStatus {
-    /// The status of `devices` under `power`, sorted.
-    pub fn new(power: BtPower, mut devices: Vec<BtDevice>) -> BtStatus {
+    /// The status of `devices` with the switch `powered` or not, sorted.
+    pub fn new(powered: bool, mut devices: Vec<BtDevice>) -> BtStatus {
         devices.sort_by(|a, b| {
             let rank = |d: &BtDevice| d.link == BtLink::Disconnected;
             rank(a)
@@ -105,21 +87,17 @@ impl BtStatus {
                 .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
                 .then_with(|| a.address.cmp(&b.address))
         });
-        BtStatus { power, devices }
+        BtStatus { powered, devices }
     }
 
     /// The devices this computer is paired with: "My Devices".
     pub fn mine(&self) -> impl Iterator<Item = &BtDevice> {
-        self.devices
-            .iter()
-            .filter(|d| d.pairing == BtPairing::Paired)
+        self.devices.iter().filter(|d| d.paired)
     }
 
     /// The devices it only sees: "Nearby Devices".
     pub fn nearby(&self) -> impl Iterator<Item = &BtDevice> {
-        self.devices
-            .iter()
-            .filter(|d| d.pairing == BtPairing::Unpaired)
+        self.devices.iter().filter(|d| !d.paired)
     }
 
     /// The device at `address`.

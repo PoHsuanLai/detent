@@ -10,8 +10,8 @@ use crate::bus::{BusSource, next, system_connection};
 use crate::deadline::{Deadline, peer};
 use airwaves_nm::NetworkManagerProxy;
 use detent_model::{
-    DeviceProgress, HiddenLogin, HiddenNetwork, JoinFailure, JoinSecret, JoinVerdict, Passphrase,
-    Ssid, WifiLogin, WifiSecurity, WifiVisibility, join_verdict, wifi_security_of,
+    HiddenLogin, HiddenNetwork, JoinFailure, JoinSecret, JoinVerdict, Passphrase, Ssid, WifiLogin,
+    WifiSecurity, WifiVisibility, join_verdict, wifi_security_of,
 };
 use ds_peer::within;
 use zbus::Connection;
@@ -160,17 +160,17 @@ async fn joining(connection: &Connection, attempt: &Attempt) -> Result<(), JoinF
         security,
     )
     .await?;
-    let mut progress = DeviceProgress::NotStarted;
+    let mut started = false;
     let ended = loop {
         let Some(change) = next(&mut changes).await else {
             break Err(could_not(ssid));
         };
         let Ok(args) = change.args() else { continue };
-        match join_verdict(*args.new_state(), *args.reason(), progress, security) {
+        match join_verdict(*args.new_state(), *args.reason(), started, security) {
             JoinVerdict::Done => break Ok(()),
             JoinVerdict::WrongPassword => break Err(JoinFailure::WrongPassword),
             JoinVerdict::CouldNot => break Err(could_not(ssid)),
-            JoinVerdict::Going => progress = DeviceProgress::Started,
+            JoinVerdict::Going => started = true,
             JoinVerdict::Waiting => {}
         }
     };

@@ -92,7 +92,7 @@ fn removing_an_account_is_never_run_without_the_question_answered() {
             ask: Ask::Remove,
             row: remove.clone(),
             account: "Home cloud".to_owned(),
-            files: LocalFiles::Kept,
+            files_kept: true,
         })
     );
 
@@ -137,7 +137,7 @@ fn a_removed_account_takes_the_pane_back_to_the_list() {
         .retain(|spec| !spec.path.0.starts_with("accounts.home."));
     let (state, _) = apply(state, [AccountsInput::Found(ModuleId::Accountd, Ok(rest))]);
     let up = state_of(state);
-    assert_eq!(up.screen, AccountsScreen::List);
+    assert_eq!(up.detail, None);
     assert_eq!(up.pane.accounts.len(), 1);
 }
 

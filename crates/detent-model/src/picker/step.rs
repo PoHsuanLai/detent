@@ -69,19 +69,13 @@ pub enum PickerInput {
     AccountSheetEnded(AddEnd),
     /// The module's rows, read again after an account was added.
     Reread(Described),
-    /// The person answered whether to turn coding agents on, asked when they picked one.
-    TurnOn(TurnOnAnswer),
+    /// The person said to turn coding agents on, asked when they picked one: it uses the one
+    /// picked.
+    ConfirmTurnOn,
+    /// The person said to leave them off.
+    CancelTurnOn,
     /// Coding agents were switched on, or the reason they could not be.
     AgentsTurnedOn(Result<(), String>),
-}
-
-/// What the person said to turning coding agents on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TurnOnAnswer {
-    /// Turn them on, and use the one picked.
-    Yes,
-    /// Leave them off.
-    No,
 }
 
 /// What the caller must do.
@@ -179,10 +173,10 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (Ready, Vec<PickerEffect>
             ready = Ready::of(&described);
             effects.extend(awaiting.and_then(|pick| pick_again(&mut ready, pick)));
         }
-        PickerInput::TurnOn(answer) if ready.turning_on().is_some() => match answer {
-            TurnOnAnswer::No => ready.busy = Busy::Idle,
-            TurnOnAnswer::Yes => effects.push(PickerEffect::TurnOnAgents),
-        },
+        PickerInput::ConfirmTurnOn if ready.turning_on().is_some() => {
+            effects.push(PickerEffect::TurnOnAgents);
+        }
+        PickerInput::CancelTurnOn if ready.turning_on().is_some() => ready.busy = Busy::Idle,
         PickerInput::AgentsTurnedOn(done) if ready.turning_on().is_some() => {
             let asked = take_turning_on(&mut ready);
             match done {
@@ -194,7 +188,8 @@ fn ready_step(mut ready: Ready, input: PickerInput) -> (Ready, Vec<PickerEffect>
             }
         }
         PickerInput::Chose { .. }
-        | PickerInput::TurnOn(_)
+        | PickerInput::ConfirmTurnOn
+        | PickerInput::CancelTurnOn
         | PickerInput::AgentsTurnedOn(_)
         | PickerInput::Engine { .. }
         | PickerInput::SetUpEngine(_)

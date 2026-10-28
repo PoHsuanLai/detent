@@ -16,7 +16,7 @@ use crate::notice::Notice;
 use crate::pane::{Machine, Pending, pane};
 use detent_files::{ConfigHome, DataHome, agents_switch, load_agents, programs_on, turn_on_agents};
 use detent_model::{
-    AgentWord, Described, PickerEffect, PickerInput, PickerState, agent_offers,
+    AccountsNotice, AgentWord, Described, PickerEffect, PickerInput, PickerState, agent_offers,
     picker_row_is_choice as is_choice, step, with_agents,
 };
 use detent_system::accounts::AccountsLink;
@@ -127,7 +127,8 @@ impl Machine for Picker {
                 Vec::new()
             }
             PickerEffect::AccountNotAdded(end) => {
-                self.live.notice(Notice::AddEnded(end));
+                self.live
+                    .notice(Notice::Account(AccountsNotice::AddEnded(end)));
                 Vec::new()
             }
             PickerEffect::PoolRefused => {

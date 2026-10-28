@@ -7,7 +7,7 @@ use crate::page_view::PageView;
 use crate::person_card::PersonCard;
 use crate::sharing::use_sharing;
 use crate::sidebar::sidebar_items;
-use crate::view::{Searching, View};
+use crate::view::View;
 use detent_model::{PageKind, PageSlug, search};
 use dioxus::prelude::*;
 use ds::components::chrome::sidebar::Sidebar;
@@ -105,14 +105,14 @@ pub fn Window(
                         (Some(slug), _) => rsx! {
                             PageView { key: "{slug.0}", slug: slug.clone(), hits, files, onedit }
                         },
-                        (None, Searching::Yes) => rsx! {
+                        (None, true) => rsx! {
                             EmptyState {
                                 form: EmptyForm::NoResults,
                                 title: crate::copy::window::NO_RESULTS,
                                 description: crate::copy::window::NOTHING_IN_SETTINGS_MATCHES_THAT_SEARCH,
                             }
                         },
-                        (None, Searching::No) => rsx! {
+                        (None, false) => rsx! {
                             EmptyState {
                                 title: crate::copy::window::NO_SETTINGS,
                                 description: crate::copy::window::NO_SCHEMAS,

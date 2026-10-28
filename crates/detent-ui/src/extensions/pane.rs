@@ -7,8 +7,8 @@ use crate::copy::extensions::{
     EXTENSIONS_EMPTY_HELP, EXTENSIONS_EMPTY_TITLE, NOT_AVAILABLE, extension_line, group_title,
 };
 use crate::env::Env;
-use crate::key_row::{HIT_CLASS, Match, row_id};
-use detent_model::{ExtensionPower, ExtensionRow};
+use crate::key_row::{HIT_CLASS, row_id};
+use detent_model::ExtensionRow;
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::{FieldGroup, FieldRow};
@@ -36,7 +36,7 @@ pub(crate) fn ExtensionsPane() -> Element {
         }
     });
 
-    let switch = EventHandler::new(move |(id, power): (String, ExtensionPower)| {
+    let switch = EventHandler::new(move |(id, power): (String, bool)| {
         match env.extensions.set_power(&id, power) {
             Ok(()) => list.set(env.extensions.read().list),
             Err(error) => toasts.push(error.to_string(), None),
@@ -58,11 +58,7 @@ pub(crate) fn ExtensionsPane() -> Element {
                     for row in group.rows {
                         ExtensionLine {
                             key: "{row.id}",
-                            found: if marked().as_deref() == Some(row.id.as_str()) {
-                                Match::Hit
-                            } else {
-                                Match::Miss
-                            },
+                            hit: marked().as_deref() == Some(row.id.as_str()),
                             row,
                             onswitch: switch,
                         }
@@ -75,19 +71,12 @@ pub(crate) fn ExtensionsPane() -> Element {
 
 /// One Extension: its name and line, and the switch (or why there is none).
 #[component]
-fn ExtensionLine(
-    row: ExtensionRow,
-    found: Match,
-    onswitch: EventHandler<(String, ExtensionPower)>,
-) -> Element {
+fn ExtensionLine(row: ExtensionRow, hit: bool, onswitch: EventHandler<(String, bool)>) -> Element {
     let id = row.id.clone();
     let name = row.name.clone();
     let common = Common {
         id: Some(row_id("extension", &row.id)),
-        extra_class: match found {
-            Match::Hit => ExtraClass::parse(HIT_CLASS).ok(),
-            Match::Miss => None,
-        },
+        extra_class: hit.then(|| ExtraClass::parse(HIT_CLASS).ok()).flatten(),
         ..Common::default()
     };
     rsx! {
@@ -99,15 +88,9 @@ fn ExtensionLine(
                 Some(power) => rsx! {
                     Toggle {
                         label: name,
-                        value: match power {
-                            ExtensionPower::On => Check::On,
-                            ExtensionPower::Off => Check::Off,
-                        },
+                        value: if power { Check::On } else { Check::Off },
                         onchange: move |next| {
-                            let wanted = match next {
-                                Check::On => ExtensionPower::On,
-                                Check::Off | Check::Mixed => ExtensionPower::Off,
-                            };
+                            let wanted = matches!(next, Check::On);
                             onswitch.call((id.clone(), wanted));
                         },
                     }

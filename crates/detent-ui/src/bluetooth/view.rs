@@ -8,9 +8,7 @@ use crate::icons::tile_of;
 use crate::live::use_live;
 use crate::system::Unavailable;
 use detent_client::Client;
-use detent_model::{
-    BtAsking, BtDevice, BtInput, BtKind, BtLink, BtPower, BtReady, BtState, PageKind,
-};
+use detent_model::{BtAsking, BtDevice, BtInput, BtKind, BtLink, BtReady, BtState, PageKind};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::controls::button_model::Bezel;
@@ -34,13 +32,6 @@ pub(crate) fn BluetoothPane() -> Element {
             });
             rsx! { Listed { page, press } }
         }
-    }
-}
-
-fn power_of(check: Check) -> BtPower {
-    match check {
-        Check::On => BtPower::On,
-        Check::Off | Check::Mixed => BtPower::Off,
     }
 }
 
@@ -77,7 +68,7 @@ enum Group {
 
 #[component]
 fn Listed(page: BtReady, press: EventHandler<BtInput>) -> Element {
-    let on = page.status.power == BtPower::On;
+    let on = page.status.powered;
     let work_of = |device: &BtDevice| {
         if page.is_working(&device.address) {
             RowWork::Working
@@ -103,7 +94,7 @@ fn Listed(page: BtReady, press: EventHandler<BtInput>) -> Element {
         .mine()
         .filter(|device| device.link == BtLink::Connected)
         .count();
-    let status = crate::copy::bluetooth::status_line(page.status.power, connected);
+    let status = crate::copy::bluetooth::status_line(page.status.powered, connected);
     rsx! {
         div { class: "system-page", "data-system": "bluetooth",
             FieldGroup {
@@ -114,7 +105,7 @@ fn Listed(page: BtReady, press: EventHandler<BtInput>) -> Element {
                     Toggle {
                         label: crate::copy::bluetooth::BLUETOOTH,
                         value: if on { Check::On } else { Check::Off },
-                        onchange: move |next| press.call(BtInput::Switch(power_of(next))),
+                        onchange: move |next| press.call(BtInput::Switch(matches!(next, Check::On))),
                     }
                 }
             }

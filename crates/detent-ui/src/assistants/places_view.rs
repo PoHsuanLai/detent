@@ -16,8 +16,8 @@ use detent_model::external::{
     Toggle, kind_label,
 };
 use detent_model::{
-    AccountsPane, ComputerRow, ComputersInput, ComputersState, Confirm, PlaceRef, PlacesEffect,
-    PlacesInput, PlacesState, Ready, Standing, known_of, offers_for, places_step,
+    AccountsPane, ComputerRow, ComputersInput, ComputersState, PlaceRef, PlacesEffect, PlacesInput,
+    PlacesState, Ready, known_of, offers_for, places_step,
 };
 use dioxus::prelude::*;
 use ds::components::fields::field_row::FieldGroup;
@@ -57,9 +57,10 @@ fn own_view(
     PlaceView {
         name: own.name.0.clone(),
         detail: Some(models_line(computer)),
-        standing: Some(match computer.standing {
-            Standing::Answering => crate::copy::assistants::READY,
-            Standing::Silent => crate::copy::assistants::NOT_ANSWERING,
+        standing: Some(if computer.answering {
+            crate::copy::assistants::READY
+        } else {
+            crate::copy::assistants::NOT_ANSWERING
         }),
         switch: Switch::Is(check_of(own.allowed)),
         model: own.model.clone(),
@@ -228,12 +229,12 @@ pub(crate) fn Assistants() -> Element {
                         AlertButton::new(
                             crate::copy::common::TURN_ON,
                             AlertRole::Normal,
-                            EventHandler::new(move |()| apply.call(PlacesInput::Answered(Confirm::Yes))),
+                            EventHandler::new(move |()| apply.call(PlacesInput::Confirm)),
                         ),
                         AlertButton::new(
                             crate::copy::common::CANCEL,
                             AlertRole::Cancel,
-                            EventHandler::new(move |()| apply.call(PlacesInput::Answered(Confirm::No))),
+                            EventHandler::new(move |()| apply.call(PlacesInput::Cancel)),
                         ),
                     ],
                 }

@@ -5,25 +5,25 @@ fn addr(last: u8) -> BtAddress {
     BtAddress(format!("AA:BB:CC:DD:EE:{last:02X}"))
 }
 
-fn device(last: u8, name: &str, link: BtLink, pairing: BtPairing) -> BtDevice {
+fn device(last: u8, name: &str, link: BtLink, paired: bool) -> BtDevice {
     BtDevice {
         address: addr(last),
         name: name.to_owned(),
         kind: BtKind::Audio,
         link,
-        pairing,
+        paired,
         battery: None,
     }
 }
 
 fn world() -> BtStatus {
     BtStatus::new(
-        BtPower::On,
+        true,
         vec![
-            device(1, "Zed Buds", BtLink::Disconnected, BtPairing::Paired),
-            device(2, "alpha mouse", BtLink::Connected, BtPairing::Paired),
-            device(3, "Beta Speaker", BtLink::Disconnected, BtPairing::Paired),
-            device(4, "Nearby Pad", BtLink::Disconnected, BtPairing::Unpaired),
+            device(1, "Zed Buds", BtLink::Disconnected, true),
+            device(2, "alpha mouse", BtLink::Connected, true),
+            device(3, "Beta Speaker", BtLink::Disconnected, true),
+            device(4, "Nearby Pad", BtLink::Disconnected, false),
         ],
     )
 }
@@ -159,9 +159,9 @@ fn a_service_that_goes_leaves_nothing_and_a_return_brings_the_page_back() {
 
 #[test]
 fn the_switch_asks_and_waits_for_bluez_to_say() {
-    let (next, effects) = bluetooth_step(ready(), BtInput::Switch(BtPower::Off));
-    assert_eq!(effects, [BtEffect::SetPower(BtPower::Off)]);
-    assert_eq!(page_of(&next).status.power, BtPower::On);
+    let (next, effects) = bluetooth_step(ready(), BtInput::Switch(false));
+    assert_eq!(effects, [BtEffect::SetPower(false)]);
+    assert!(page_of(&next).status.powered);
 }
 
 #[test]

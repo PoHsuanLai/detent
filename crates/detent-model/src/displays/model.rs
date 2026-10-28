@@ -40,15 +40,6 @@ pub struct Millimetres {
     pub height: u32,
 }
 
-/// Whether a mode is the one the display prefers.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ModePreference {
-    /// It is.
-    Yes,
-    /// It is not.
-    No,
-}
-
 /// How a display is turned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DisplayRotation {
@@ -88,7 +79,7 @@ pub struct DisplayMode {
     /// Its refresh rate.
     pub refresh: RefreshMilliHz,
     /// Whether the display prefers it.
-    pub preferred: ModePreference,
+    pub preferred: bool,
 }
 
 /// One display.

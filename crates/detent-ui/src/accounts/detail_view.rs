@@ -218,7 +218,7 @@ fn Header(account: Account, marks: ProviderMarks, book: SyncBook) -> Element {
                 provider: account.provider.clone(),
                 marks,
                 place: AvatarPlace::Header,
-                work: book.work_of(&account),
+                syncing: book.syncing(&account),
             }
             div { class: "accounts-header-words",
                 Label { text: account.label.clone(), role: LabelRole::Primary, style: LabelStyle::Title }

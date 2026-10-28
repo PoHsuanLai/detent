@@ -6,16 +6,6 @@ use super::model::{ProblemKind, UpdatePhase, UpdateStatus, UpdateVersion};
 use crate::Absence;
 use crate::Live;
 
-/// Whether the release notes are up in a sheet.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum NotesState {
-    /// They are not.
-    #[default]
-    Closed,
-    /// They are.
-    Open,
-}
-
 /// What the page says besides the standing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum UpdatesNotice {
@@ -32,8 +22,8 @@ pub enum UpdatesNotice {
 pub struct UpdatesReady {
     /// What the service says.
     pub status: UpdateStatus,
-    /// The notes sheet.
-    pub info: NotesState,
+    /// Whether the release notes are up in a sheet.
+    pub notes_open: bool,
     /// What the page says besides the standing.
     pub notice: UpdatesNotice,
 }
@@ -125,13 +115,10 @@ fn overtaken(status: UpdateStatus) -> (UpdateStatus, UpdatesNotice) {
 fn heard(before: Option<&UpdatesReady>, status: UpdateStatus) -> UpdatesReady {
     let (status, found) = overtaken(status);
     let offering = is_offering(&status);
-    let (info, kept) = before.map_or((NotesState::Closed, UpdatesNotice::Nothing), |ready| {
-        (ready.info, ready.notice)
+    let (notes_open, kept) = before.map_or((false, UpdatesNotice::Nothing), |ready| {
+        (ready.notes_open, ready.notice)
     });
-    let info = match info {
-        NotesState::Open if offering => NotesState::Open,
-        _ => NotesState::Closed,
-    };
+    let notes_open = notes_open && offering;
     let notice = match (found, kept) {
         (UpdatesNotice::Nothing, UpdatesNotice::Nothing) => UpdatesNotice::Nothing,
         _ if offering => UpdatesNotice::NewerVersion,
@@ -139,7 +126,7 @@ fn heard(before: Option<&UpdatesReady>, status: UpdateStatus) -> UpdatesReady {
     };
     UpdatesReady {
         status,
-        info,
+        notes_open,
         notice,
     }
 }
@@ -178,11 +165,11 @@ fn ready_step(mut ready: UpdatesReady, input: UpdatesInput) -> (UpdatesReady, Ve
             }
         }
         UpdatesInput::MoreInfo if is_offering(&ready.status) => {
-            ready.info = NotesState::Open;
+            ready.notes_open = true;
             vec![]
         }
         UpdatesInput::CloseInfo => {
-            ready.info = NotesState::Closed;
+            ready.notes_open = false;
             vec![]
         }
         UpdatesInput::LogOut if phase == UpdatePhase::Installed => vec![UpdatesEffect::LogOut],

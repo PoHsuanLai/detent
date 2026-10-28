@@ -2,9 +2,7 @@
 //! many sessions look for devices, and lets a test make a device ask something.
 
 use detent_client::{BluetoothLink, BtSession, PairingReply, PairingRequest, Ticker, Ticks};
-use detent_model::{
-    Absence, BtAddress, BtLink, BtPairing, BtPower, BtStatus, PairingAnswer, PairingQuestion, Work,
-};
+use detent_model::{Absence, BtAddress, BtLink, BtStatus, PairingAnswer, PairingQuestion, Work};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, oneshot};
@@ -12,7 +10,7 @@ use tokio::sync::{mpsc, oneshot};
 /// What the page asked of BlueZ.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Asked {
-    Power(BtPower),
+    Power(bool),
     Connect(BtAddress),
     Disconnect(BtAddress),
     Pair(BtAddress),
@@ -123,9 +121,9 @@ impl BluetoothLink for Bluetooth {
         Box::pin(std::future::ready(Ok(session)))
     }
 
-    fn set_power(&self, power: BtPower) -> Work<'_, Result<(), String>> {
-        self.record(Asked::Power(power));
-        self.change(|status| status.power = power);
+    fn set_power(&self, on: bool) -> Work<'_, Result<(), String>> {
+        self.record(Asked::Power(on));
+        self.change(|status| status.powered = on);
         Box::pin(std::future::ready(Ok(())))
     }
 
@@ -147,7 +145,7 @@ impl BluetoothLink for Bluetooth {
             set_link(status, &address, BtLink::Connected);
             for device in &mut status.devices {
                 if device.address == address {
-                    device.pairing = BtPairing::Paired;
+                    device.paired = true;
                 }
             }
         });

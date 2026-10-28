@@ -1,7 +1,7 @@
 //! One section: a titled card of its rows, and the grey footnote under it when the schema has one.
 
 use crate::files::{Edit, Files};
-use crate::key_row::{KeyBlock, KeyRow, Match};
+use crate::key_row::{KeyBlock, KeyRow};
 use crate::memory_consent::ConfinementNote;
 use detent_model::{Control as Kind, KeyEntry, SectionModel, tells_confinement};
 use dioxus::prelude::*;
@@ -13,15 +13,6 @@ use ds_settings::schema::KeyPath;
 /// Whether a search found `entry`.
 pub(crate) fn is_hit(entry: &KeyEntry, hits: &[KeyPath]) -> bool {
     hits.contains(&entry.spec.path)
-}
-
-/// `entry`'s row highlight.
-pub(crate) fn match_of(entry: &KeyEntry, hits: &[KeyPath]) -> Match {
-    if is_hit(entry, hits) {
-        Match::Hit
-    } else {
-        Match::Miss
-    }
 }
 
 /// Whether `entry` is drawn as a block of its own and not as a row of the card (the pictures).
@@ -50,7 +41,7 @@ pub fn SectionView(
             if !rows.is_empty() {
                 FieldGroup { title,
                     for entry in rows {
-                        KeyRow { key: "{entry.spec.path.0}", found: match_of(&entry, &hits), entry, files, onedit }
+                        KeyRow { key: "{entry.spec.path.0}", hit: is_hit(&entry, &hits), entry, files, onedit }
                     }
                 }
             }

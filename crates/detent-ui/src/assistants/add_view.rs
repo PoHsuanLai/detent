@@ -1,7 +1,7 @@
 //! The coding assistants' Add sheet, and the question before one is removed.
 
 use crate::copy::coding_agents as copy;
-use detent_model::{AddAction, AddForm, Candidate, Listing, RemoveAnswer, RemoveQuestion};
+use detent_model::{AddAction, AddForm, Candidate, Listing, RemoveQuestion};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::controls::button_model::{Answers, ButtonRole};
@@ -126,17 +126,18 @@ fn Looking() -> Element {
     }
 }
 
-/// Asks before an assistant is taken off the list; Cancel is the one Return presses.
+/// Asks before an assistant is taken off the list; Cancel is the one Return presses. `answer` is
+/// told `true` to remove it and `false` to keep it.
 #[component]
-pub(super) fn RemoveAlert(question: RemoveQuestion, answer: EventHandler<RemoveAnswer>) -> Element {
+pub(super) fn RemoveAlert(question: RemoveQuestion, answer: EventHandler<bool>) -> Element {
     rsx! {
         Alert {
             title: copy::remove_title(&question),
             message: Some(TextLine::from(copy::remove_message())),
             style: AlertStyle::Critical,
             buttons: vec![
-                AlertButton::new(crate::copy::common::CANCEL, AlertRole::Cancel, EventHandler::new(move |()| answer.call(RemoveAnswer::Keep))),
-                AlertButton::new(crate::copy::common::REMOVE, AlertRole::Destructive, EventHandler::new(move |()| answer.call(RemoveAnswer::Remove))),
+                AlertButton::new(crate::copy::common::CANCEL, AlertRole::Cancel, EventHandler::new(move |()| answer.call(false))),
+                AlertButton::new(crate::copy::common::REMOVE, AlertRole::Destructive, EventHandler::new(move |()| answer.call(true))),
             ],
         }
     }

@@ -133,7 +133,7 @@ fn Ready(
             AccountList {
                 pane: ready.pane.clone(),
                 selected: ready.selected.clone(),
-                adding: ready.adding,
+                sheet_open: ready.sheet_open,
                 availability,
                 marks: marks.clone(),
                 book: book.clone(),

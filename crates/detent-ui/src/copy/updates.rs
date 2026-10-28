@@ -1,8 +1,8 @@
 //! What the Software Update page says: the standing, the actions, the sizes and the ages.
 
 use detent_model::{
-    ByteCount, CheckActivity, Checked, Downloaded, ReleaseNotes, UnixSeconds, UpdateAction,
-    UpdateStanding, UpdatesNotice,
+    ByteCount, Checked, Downloaded, ReleaseNotes, UnixSeconds, UpdateAction, UpdateStanding,
+    UpdatesNotice,
 };
 
 /// The sizes a download is told in, largest first (decimal, as the Mac tells them).
@@ -42,12 +42,11 @@ pub(crate) fn standing(standing: &UpdateStanding) -> String {
     }
 }
 
-/// The line about the last check, when there is one to say.
-pub(crate) fn checked(checked: Checked) -> Option<String> {
+/// The line about the last check.
+pub(crate) fn checked(checked: Checked) -> String {
     match checked {
-        Checked::Unsaid => None,
-        Checked::Never => Some("Not checked yet".to_owned()),
-        Checked::Ago(seconds) => Some(format!("Last checked {}", elapsed_words(seconds))),
+        Checked::Never => "Not checked yet".to_owned(),
+        Checked::Ago(seconds) => format!("Last checked {}", elapsed_words(seconds)),
     }
 }
 
@@ -64,7 +63,7 @@ pub(crate) fn notice(notice: UpdatesNotice) -> Option<&'static str> {
 /// The words on an action's button.
 pub(crate) fn action(action: UpdateAction) -> &'static str {
     match action {
-        UpdateAction::Check(CheckActivity::Running | CheckActivity::Resting) => "Check for Updates",
+        UpdateAction::Check { .. } => "Check for Updates",
         UpdateAction::MoreInfo => "More Info\u{2026}",
         UpdateAction::UpdateNow => "Update Now",
         UpdateAction::TryAgain => "Try Again",
@@ -205,12 +204,8 @@ mod tests {
             assert_eq!(standing(&fact), want);
         }
 
-        assert_eq!(checked(Checked::Unsaid), None);
-        assert_eq!(checked(Checked::Never).as_deref(), Some("Not checked yet"));
-        assert_eq!(
-            checked(Checked::Ago(300)).as_deref(),
-            Some("Last checked 5 minutes ago")
-        );
+        assert_eq!(checked(Checked::Never), "Not checked yet");
+        assert_eq!(checked(Checked::Ago(300)), "Last checked 5 minutes ago");
         assert_eq!(notice(UpdatesNotice::Nothing), None);
         assert_eq!(
             notice(UpdatesNotice::NewerVersion),
@@ -219,14 +214,8 @@ mod tests {
 
         // `(action, the label)`.
         const ACTIONS: &[(UpdateAction, &str)] = &[
-            (
-                UpdateAction::Check(CheckActivity::Resting),
-                "Check for Updates",
-            ),
-            (
-                UpdateAction::Check(CheckActivity::Running),
-                "Check for Updates",
-            ),
+            (UpdateAction::Check { running: false }, "Check for Updates"),
+            (UpdateAction::Check { running: true }, "Check for Updates"),
             (UpdateAction::MoreInfo, "More Info\u{2026}"),
             (UpdateAction::UpdateNow, "Update Now"),
             (UpdateAction::TryAgain, "Try Again"),

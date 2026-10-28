@@ -13,8 +13,8 @@ pub use arrange::{ArrangeSide, place_beside, side_of};
 pub use brightness::{Brightness, BrightnessList};
 pub use looks::{LooksLike, default_scale, looks_like};
 pub use model::{
-    DisplayMode, DisplayPosition, DisplayRotation, DisplaysStatus, Millimetres, ModePreference,
-    Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli,
+    DisplayMode, DisplayPosition, DisplayRotation, DisplaysStatus, Millimetres, Monitor, OutputId,
+    PixelSize, RefreshMilliHz, ScaleMilli,
 };
 pub use modes::{mode_at, mode_sizes, native_size};
 pub use page::{DISPLAYS_SLUG, displays_page};

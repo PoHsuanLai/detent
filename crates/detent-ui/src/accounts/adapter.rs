@@ -4,7 +4,7 @@
 
 use crate::copy::account_sync::{KEEP_HELP, hold_banner};
 use crate::copy::accounts::{removal, secret_standing};
-use detent_model::{Adding, ClientValue, HoldCounts, RemovalQuestion, SecretStanding, SyncHold};
+use detent_model::{ClientValue, HoldCounts, RemovalQuestion, SyncHold};
 use dioxus::prelude::*;
 use ds::components::controls::button::Button;
 use ds::components::controls::button_model::{Answers, Bezel, ButtonRole, ImagePosition};
@@ -111,8 +111,8 @@ pub(super) fn ClientField(
         ClientValue::Text(text) => rsx! {
             KeyField { label, value: text, availability, onchange }
         },
-        ClientValue::Secret(standing) => rsx! {
-            SecretField { label, standing, availability, onchange }
+        ClientValue::Secret { set } => rsx! {
+            SecretField { label, set, availability, onchange }
         },
     }
 }
@@ -143,7 +143,7 @@ fn KeyField(
 #[component]
 fn SecretField(
     label: String,
-    standing: SecretStanding,
+    set: bool,
     availability: Availability,
     onchange: EventHandler<String>,
 ) -> Element {
@@ -153,7 +153,7 @@ fn SecretField(
             TextField {
                 label,
                 value: String::new(),
-                placeholder: secret_standing(standing).to_owned(),
+                placeholder: secret_standing(set).to_owned(),
                 kind: FieldKind::Secure,
                 availability,
                 size: ControlSize::Small,
@@ -171,13 +171,14 @@ fn SecretField(
 /// is in flight.
 #[component]
 pub(super) fn AddAccountButton(
-    adding: Adding,
+    sheet_open: bool,
     availability: Availability,
     onpress: EventHandler<()>,
 ) -> Element {
-    let availability = match adding {
-        Adding::Idle => availability,
-        Adding::SheetOpen => Availability::Disabled,
+    let availability = if sheet_open {
+        Availability::Disabled
+    } else {
+        availability
     };
     rsx! {
         Button {
@@ -196,13 +197,14 @@ pub(super) fn AddAccountButton(
 /// sheet is open or a change is in flight.
 #[component]
 pub(super) fn AddKeyButton(
-    adding: Adding,
+    sheet_open: bool,
     availability: Availability,
     onpress: EventHandler<()>,
 ) -> Element {
-    let availability = match adding {
-        Adding::Idle => availability,
-        Adding::SheetOpen => Availability::Disabled,
+    let availability = if sheet_open {
+        Availability::Disabled
+    } else {
+        availability
     };
     rsx! {
         Button {

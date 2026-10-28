@@ -1,6 +1,6 @@
 //! The question asked when a coding agent is picked while coding agents are switched off.
 
-use detent_model::{PickerInput, Ready, TurnOnAnswer};
+use detent_model::{PickerInput, Ready};
 use dioxus::prelude::*;
 use ds::components::overlays::alert_model::{AlertButton, AlertRole, AlertStyle};
 use ds::prelude::*;
@@ -24,12 +24,12 @@ pub(crate) fn TurnOnAlert(ready: Ready, onask: EventHandler<PickerInput>) -> Ele
                 AlertButton::new(
                     crate::copy::common::TURN_ON,
                     AlertRole::Normal,
-                    EventHandler::new(move |()| onask.call(PickerInput::TurnOn(TurnOnAnswer::Yes))),
+                    EventHandler::new(move |()| onask.call(PickerInput::ConfirmTurnOn)),
                 ),
                 AlertButton::new(
                     crate::copy::common::CANCEL,
                     AlertRole::Cancel,
-                    EventHandler::new(move |()| onask.call(PickerInput::TurnOn(TurnOnAnswer::No))),
+                    EventHandler::new(move |()| onask.call(PickerInput::CancelTurnOn)),
                 ),
             ],
         }

@@ -1,7 +1,7 @@
 //! The models Automatic chooses among for a slot: the module's `ai.auto.pool.<slot>` list, the
 //! slot picker's own choices without the empty word and Automatic.
 
-use super::choice::{ChoiceGap, ChoiceReadiness, Gate, gate_of};
+use super::choice::{ChoiceGap, Gate, gate_of};
 use super::model::{ChoiceSection, Ready, sections_of, slot_of, unavailable_of};
 use crate::coding_agents::GROUP_KEY;
 use crate::words::word_label;
@@ -34,15 +34,6 @@ pub struct AutoPool {
     pub chosen: Vec<String>,
 }
 
-/// Whether a model is in the pool.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PoolMembership {
-    /// It is in the pool.
-    In,
-    /// It is not.
-    Out,
-}
-
 /// How a model stands in the pool editor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PoolStanding {
@@ -60,7 +51,7 @@ pub struct PoolEntry {
     /// What a person reads for it.
     pub label: String,
     /// Whether it is in the pool.
-    pub membership: PoolMembership,
+    pub in_pool: bool,
     /// How it stands.
     pub standing: PoolStanding,
 }
@@ -73,7 +64,7 @@ impl PoolEntry {
             self.standing,
             PoolStanding::Offered(Gate::Open | Gate::NeedsAccount)
         );
-        addable || self.membership == PoolMembership::In
+        addable || self.in_pool
     }
 }
 
@@ -153,11 +144,7 @@ impl AutoPool {
         PoolEntry {
             word: word.to_owned(),
             label: word_label(&self.labels, word),
-            membership: if self.chosen.iter().any(|held| held == word) {
-                PoolMembership::In
-            } else {
-                PoolMembership::Out
-            },
+            in_pool: self.chosen.iter().any(|held| held == word),
             standing,
         }
     }
@@ -210,15 +197,15 @@ impl AutoPool {
 
     /// Whether Automatic has something to choose from: a model in the pool that is offered and
     /// not blocked.
-    pub fn readiness(&self) -> ChoiceReadiness {
+    pub fn readiness(&self) -> Result<(), ChoiceGap> {
         let usable = self
             .chosen
             .iter()
             .any(|word| self.offers(word) && !matches!(self.gate(word), Gate::Blocked(_)));
         match (self.chosen.is_empty(), usable) {
-            (true, _) => ChoiceReadiness::Missing(ChoiceGap::PoolEmpty),
-            (false, false) => ChoiceReadiness::Missing(ChoiceGap::PoolGone),
-            (false, true) => ChoiceReadiness::Ready,
+            (true, _) => Err(ChoiceGap::PoolEmpty),
+            (false, false) => Err(ChoiceGap::PoolGone),
+            (false, true) => Ok(()),
         }
     }
 }

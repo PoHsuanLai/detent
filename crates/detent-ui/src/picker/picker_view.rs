@@ -11,7 +11,7 @@ use crate::env::Env;
 use crate::files::{Files, value_of};
 use crate::live::use_client;
 use crate::system::Absent;
-use detent_model::{Absence, Adding, Clearing, KindRows, PickerInput, PickerState, Reason};
+use detent_model::{Absence, Clearing, KindRows, PickerInput, PickerState, Reason};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::FieldGroup;
@@ -53,7 +53,7 @@ pub fn ModelPicker(reasons: Shown) -> Element {
         PickerState::Unavailable(absence) => rsx! { Unavailable { absence } },
         PickerState::Ready(ready) => {
             let applying = ready.applying().cloned();
-            let adding = ready.adding();
+            let sheet_open = ready.sheet_open();
             rsx! {
                 div { class: "picker", "data-picker": "ready",
                     for (at, kind) in ready.kinds.iter().cloned().enumerate() {
@@ -66,7 +66,7 @@ pub fn ModelPicker(reasons: Shown) -> Element {
                             },
                             kind,
                             applying: applying.clone(),
-                            adding,
+                            sheet_open,
                             onask: ask,
                         }
                     }
@@ -119,7 +119,7 @@ fn KindCard(
     kind: KindRows,
     heading: AreaHeading,
     applying: Option<detent_model::Applying>,
-    adding: Adding,
+    sheet_open: bool,
     onask: EventHandler<PickerInput>,
 ) -> Element {
     let area = kind.area.clone().filter(|_| heading == AreaHeading::Title);
@@ -130,7 +130,7 @@ fn KindCard(
         div { class: "picker-kind",
             FieldGroup { title: Some(kind.label.clone()),
                 for row in kind.rows.iter().cloned() {
-                    TierRow { key: "{row.path.0}", applying: applying.clone(), adding, clearing: Clearing::Offered, row, onask }
+                    TierRow { key: "{row.path.0}", applying: applying.clone(), sheet_open, clearing: Clearing::Offered, row, onask }
                 }
             }
         }

@@ -3,9 +3,7 @@
 use crate::support::Sandbox;
 use crate::support::drive::{click, page_of, scroll_into_view, sidebar_page, title_of};
 use detent_model::{Notice, PageSlug};
-use detent_testkit::{
-    Changes, install_file_icons, install_look, install_torn_look, install_your_changes,
-};
+use detent_testkit::{install_file_icons, install_look, install_torn_look, install_your_changes};
 use detent_ui::Opening;
 use ds_harness::Harness;
 use ds_settings::target::SettingsTarget;
@@ -201,9 +199,9 @@ fn an_installed_file_icons_set_is_in_the_file_icons_menu_after_standard() {
 
 #[test]
 fn your_changes_is_not_in_the_menu_and_has_a_switch_only_while_it_holds_nothing() {
-    for (changes, switches) in [(Changes::None, 1), (Changes::Held, 0)] {
+    for (holds_changes, switches) in [(false, 1), (true, 0)] {
         let sandbox = Sandbox::new("extensions-your-changes");
-        install_your_changes(&sandbox.data_home().0, changes);
+        install_your_changes(&sandbox.data_home().0, holds_changes);
         let mut harness = sandbox.harness(opening("appearance"));
         assert_eq!(menu_items(&mut harness, ICONS_MENU), ["Standard"]);
         drop(harness);

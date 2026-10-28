@@ -14,7 +14,7 @@ pub use bus::OnBluetooth;
 pub use fake::{BtAsked, FakeBluetooth};
 
 use crate::ticks::Ticks;
-use detent_model::{Absence, BtAddress, BtPower, BtStatus, PairingAnswer, PairingQuestion, Work};
+use detent_model::{Absence, BtAddress, BtStatus, PairingAnswer, PairingQuestion, Work};
 use std::fmt::{self, Debug};
 use tokio::sync::{mpsc, oneshot};
 
@@ -84,7 +84,7 @@ pub trait BluetoothLink: Debug + Send + Sync {
     /// is held.
     fn open(&self) -> Work<'_, Result<BtSession, Absence>>;
     /// Moves the switch; BlueZ's words when it cannot.
-    fn set_power(&self, power: BtPower) -> Work<'_, Result<(), String>>;
+    fn set_power(&self, on: bool) -> Work<'_, Result<(), String>>;
     /// Connects to a device this computer is paired with.
     fn connect(&self, address: BtAddress) -> Work<'_, Result<(), String>>;
     /// Disconnects from a device.

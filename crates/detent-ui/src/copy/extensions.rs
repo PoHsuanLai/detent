@@ -36,14 +36,13 @@ fn trouble_line(trouble: &ExtensionTrouble) -> &str {
 pub(crate) fn extension_line(row: &ExtensionRow) -> Option<&str> {
     match &row.standing {
         ExtensionStanding::Unusable(trouble) => Some(trouble_line(trouble)),
-        ExtensionStanding::On | ExtensionStanding::Off => row.summary.as_deref(),
+        ExtensionStanding::Usable { .. } => row.summary.as_deref(),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use detent_model::ExtensionKeep;
 
     fn row(standing: ExtensionStanding) -> ExtensionRow {
         ExtensionRow {
@@ -52,7 +51,7 @@ mod tests {
             summary: Some("Warm paper".to_owned()),
             provides: vec!["look".to_owned()],
             standing,
-            keep: ExtensionKeep::Free,
+            holds_changes: false,
         }
     }
 
@@ -72,8 +71,8 @@ mod tests {
     #[test]
     fn the_reason_replaces_the_summary_of_an_extension_that_cannot_be_used() {
         let cases = [
-            (ExtensionStanding::On, Some("Warm paper")),
-            (ExtensionStanding::Off, Some("Warm paper")),
+            (ExtensionStanding::Usable { on: true }, Some("Warm paper")),
+            (ExtensionStanding::Usable { on: false }, Some("Warm paper")),
             (
                 ExtensionStanding::Unusable(ExtensionTrouble::Unreadable),
                 Some("This Extension\u{2019}s description could not be read"),

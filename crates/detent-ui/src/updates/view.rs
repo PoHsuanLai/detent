@@ -8,8 +8,8 @@ use crate::live::use_live;
 use crate::system::Absent;
 use detent_client::Client;
 use detent_model::{
-    CheckActivity, PageKind, ReleaseNotes, UpdateAction, UpdateMeter, UpdatesInput, UpdatesPage,
-    UpdatesShown, updates_shown,
+    PageKind, ReleaseNotes, UpdateAction, UpdateMeter, UpdatesInput, UpdatesPage, UpdatesShown,
+    updates_shown,
 };
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
@@ -63,7 +63,7 @@ fn Listed(page: UpdatesPage, press: EventHandler<UpdatesInput>) -> Element {
                 }
             }
             Meter { meter: page.meter.clone() }
-            if let Some(line) = copy::updates::checked(page.checked) {
+            if let Some(line) = page.checked.map(copy::updates::checked) {
                 div { class: "updates-note",
                     Label { text: line, role: LabelRole::Tertiary, style: LabelStyle::Footnote }
                 }
@@ -85,7 +85,7 @@ fn Listed(page: UpdatesPage, press: EventHandler<UpdatesInput>) -> Element {
 #[component]
 fn ActionButton(action: UpdateAction, press: EventHandler<UpdatesInput>) -> Element {
     let (bezel, availability) = match action {
-        UpdateAction::Check(CheckActivity::Running) => (Bezel::Push, Availability::Busy),
+        UpdateAction::Check { running: true } => (Bezel::Push, Availability::Busy),
         UpdateAction::MoreInfo => (Bezel::Inline, Availability::Enabled),
         _ => (Bezel::Push, Availability::Enabled),
     };
@@ -103,10 +103,10 @@ fn ActionButton(action: UpdateAction, press: EventHandler<UpdatesInput>) -> Elem
 
 /// The bar under the version row: how far a download has come, or work with no end in sight.
 #[component]
-fn Meter(meter: UpdateMeter) -> Element {
+fn Meter(meter: Option<UpdateMeter>) -> Element {
     match meter {
-        UpdateMeter::None => rsx! {},
-        UpdateMeter::Known { share, done } => rsx! {
+        None => rsx! {},
+        Some(UpdateMeter::Known { share, done }) => rsx! {
             div { class: "updates-meter",
                 ProgressIndicator {
                     style: ProgressStyle::Bar,
@@ -118,7 +118,7 @@ fn Meter(meter: UpdateMeter) -> Element {
                 }
             }
         },
-        UpdateMeter::Pending => rsx! {
+        Some(UpdateMeter::Pending) => rsx! {
             div { class: "updates-meter", PendingBar {} }
         },
     }

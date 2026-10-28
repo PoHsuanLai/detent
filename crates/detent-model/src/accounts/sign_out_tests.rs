@@ -53,7 +53,7 @@ fn an_agent_account_shows_its_sign_out_row_and_signs_out_only_when_confirmed() {
             ask: Ask::SignOut,
             row: sign_out.clone(),
             account: "Claude Code".to_owned(),
-            files: LocalFiles::None,
+            files_kept: false,
         })
     );
     // Cancel: still nothing.

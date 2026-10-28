@@ -12,13 +12,10 @@ mod step;
 
 pub use account::WifiLogin;
 pub use hidden::{HiddenForm, HiddenLogin, HiddenNetwork, HiddenSecurity};
-pub use join::{
-    DeviceProgress, JoinVerdict, WifiSecurity, join_verdict, wifi_link_of, wifi_lock_of,
-    wifi_security_of,
-};
+pub use join::{JoinVerdict, WifiSecurity, join_verdict, wifi_link_of, wifi_security_of};
 pub use model::{
-    AccessPoint, NetworkLink, NetworkLock, Remembered, SignalBars, SignalStrength, Ssid,
-    WifiNetwork, WifiRadio, WifiStatus, WifiWire,
+    AccessPoint, NetworkLink, SignalBars, SignalStrength, Ssid, WifiNetwork, WifiRadio, WifiStatus,
+    WifiWire,
 };
 pub use page::{WIFI_SLUG, wifi_page};
 pub use passphrase::Passphrase;

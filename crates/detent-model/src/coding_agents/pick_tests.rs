@@ -1,8 +1,6 @@
 use super::tests::{CHOOSE_DIRECTLY, agents, described, path};
 use super::{AgentOffer, offers, with_agents};
-use crate::picker::{
-    Clearing, Gate, MenuLine, PickerEffect, PickerInput, PickerState, TurnOnAnswer, step,
-};
+use crate::picker::{Clearing, Gate, MenuLine, PickerEffect, PickerInput, PickerState, step};
 use docket_settings::AcpAgents;
 
 fn ready_with(offered: &[AgentOffer]) -> PickerState {
@@ -115,7 +113,7 @@ fn picking_a_turned_off_agent_asks_and_a_yes_turns_them_on_and_sets_it() {
     assert!(effects.is_empty());
 
     // Yes asks the app to turn them on; once it has, the agent is set.
-    let (state, effects) = step(state, PickerInput::TurnOn(TurnOnAnswer::Yes));
+    let (state, effects) = step(state, PickerInput::ConfirmTurnOn);
     assert_eq!(effects, [PickerEffect::TurnOnAgents]);
     let (state, effects) = step(state, PickerInput::AgentsTurnedOn(Ok(())));
     assert_eq!(
@@ -143,7 +141,7 @@ fn a_no_leaves_them_off_and_a_failed_turn_on_says_so() {
     };
     let off = ready_with(&offers(&agents(), &[], AcpAgents::Off));
 
-    let (state, effects) = step(asked(off.clone()), PickerInput::TurnOn(TurnOnAnswer::No));
+    let (state, effects) = step(asked(off.clone()), PickerInput::CancelTurnOn);
     assert!(effects.is_empty());
     assert_eq!(row_of(&state).gate("agent/claude-code"), Gate::TurnOn);
     assert_eq!(row_of(&state).value, "");

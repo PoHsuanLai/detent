@@ -48,11 +48,8 @@ fn a_burst_of_asks_during_one_read_gives_exactly_one_more() {
         }
         let (reads, again) = reads.finish();
         let (idle, last) = reads.finish();
-        let more = [again, last]
-            .into_iter()
-            .filter(|t| *t == ReadTurn::Read)
-            .count();
-        let reads_started = started.iter().filter(|t| **t == ReadTurn::Read).count();
+        let more = [again, last].into_iter().filter(|t| *t).count();
+        let reads_started = started.iter().filter(|t| **t).count();
         assert_eq!(reads_started, 1, "burst of {burst}");
         assert_eq!(more, usize::from(burst > 0), "burst of {burst}");
         assert_eq!(idle, Reads::Idle);

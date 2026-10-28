@@ -8,7 +8,7 @@ mod service;
 use clap::Parser;
 use cli::Run;
 use detent_client::{BusSource, ClientBuilder, ClientHomes};
-use detent_files::{FirstRunMark, FirstRunStanding, KeymapFiles, find_agents_program};
+use detent_files::{FirstRunMark, KeymapFiles, find_agents_program};
 use detent_intents::{
     ServeFault, SettingsProvider, hand_over_session, search_entries, serve_session,
 };
@@ -132,7 +132,7 @@ fn first_run() -> ExitCode {
         );
         return ExitCode::FAILURE;
     };
-    if FirstRunMark::under(&state_home).standing() == FirstRunStanding::Done {
+    if FirstRunMark::under(&state_home).done() {
         return ExitCode::SUCCESS;
     }
     let env = match environment(Opening::default()) {

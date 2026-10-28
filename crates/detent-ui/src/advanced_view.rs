@@ -3,7 +3,7 @@
 
 use crate::files::{Edit, Files};
 use crate::icons::{GREY, tile_on};
-use crate::key_row::{HIT_CLASS, Match};
+use crate::key_row::HIT_CLASS;
 use crate::marked::marked;
 use crate::section_view::{SectionView, is_hit};
 use detent_model::{PageModel, PageSlug, SectionModel, advanced_name};
@@ -59,11 +59,7 @@ pub(crate) fn AdvancedView(
                         key: "{group.title}",
                         name: advanced_name(group, &basic),
                         title: group.title.clone(),
-                        found: if group.keys.iter().any(|entry| is_hit(entry, &hits)) {
-                            Match::Hit
-                        } else {
-                            Match::Miss
-                        },
+                        hit: group.keys.iter().any(|entry| is_hit(entry, &hits)),
                         on_open,
                     }
                 }
@@ -74,11 +70,8 @@ pub(crate) fn AdvancedView(
 
 /// One section's row: a grey tile, its name and a chevron.
 #[component]
-fn DrillRow(name: String, title: String, found: Match, on_open: EventHandler<String>) -> Element {
-    let class = match found {
-        Match::Hit => ExtraClass::parse(HIT_CLASS).ok(),
-        Match::Miss => None,
-    };
+fn DrillRow(name: String, title: String, hit: bool, on_open: EventHandler<String>) -> Element {
+    let class = hit.then(|| ExtraClass::parse(HIT_CLASS).ok()).flatten();
     let common = Common {
         extra_class: class,
         ..marked("advanced-row", &title)

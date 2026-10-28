@@ -2,7 +2,7 @@
 
 use super::{
     AddList, ComputerRow, ComputersEffect as Effect, ComputersFound, ComputersInput as Input,
-    ComputersReason, ComputersState as State, Standing, computers_step,
+    ComputersReason, ComputersState as State, computers_step,
 };
 use crate::Absence;
 use porter_core::NodeId;
@@ -18,7 +18,7 @@ fn lab() -> ComputerRow {
         computer: ComputerName::parse("lab").expect("a name"),
         name: "lab".to_owned(),
         models: vec!["Qwen".to_owned()],
-        standing: Standing::Answering,
+        answering: true,
     }
 }
 
@@ -70,7 +70,7 @@ fn only_the_persons_own_computers_make_rows() {
     assert_eq!(
         ComputerRow::of(&row(PlaceKind::OwnComputer, PlaceState::NotReady)),
         Some(ComputerRow {
-            standing: Standing::Silent,
+            answering: false,
             ..lab()
         })
     );

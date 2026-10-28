@@ -1,12 +1,9 @@
 //! The pane's one transition: `(state, input) -> (state, effects)`.
 
-use super::add_account::{AddEnd, Adding};
+use super::add_account::AddEnd;
 use super::effect::{AccountsEffect, AccountsNotice};
 use super::input::AccountsInput;
-use super::model::{
-    AccountsPane, AccountsReady, AccountsScreen, AccountsState, Ask, LocalFiles, RemovalQuestion,
-    SwitchState,
-};
+use super::model::{AccountsPane, AccountsReady, AccountsState, Ask, RemovalQuestion, SwitchState};
 use super::module::{ModuleId, ModuleRow, Sources};
 use super::sign_in_client::{ClientChange, ClientText, SignInClient};
 use crate::Absence;
@@ -77,19 +74,16 @@ fn hear(
     }
 }
 
-/// `ready` over a fresh reading: the screen stays unless its account is gone.
+/// `ready` over a fresh reading: the detail screen stays unless its account is gone.
 fn refreshed(ready: AccountsReady, pane: AccountsPane, sources: Sources) -> AccountsReady {
-    let screen = match ready.screen {
-        AccountsScreen::Detail(key) if pane.account(&key).is_some() => AccountsScreen::Detail(key),
-        _ => AccountsScreen::List,
-    };
+    let detail = ready.detail.filter(|key| pane.account(key).is_some());
     let confirming = ready
         .confirming
         .filter(|asked| pane.owner(&asked.row).is_some());
     let selected = ready.selected.filter(|key| pane.account(key).is_some());
     AccountsReady {
         pane,
-        screen,
+        detail,
         selected,
         confirming,
         sources,
@@ -109,10 +103,10 @@ fn ready_step(
             if ready.pane.account(&key).is_some() =>
         {
             ready.selected = Some(key.clone());
-            ready.screen = AccountsScreen::Detail(key);
+            ready.detail = Some(key);
         }
         AccountsInput::Back => {
-            ready.screen = AccountsScreen::List;
+            ready.detail = None;
             ready.selected = None;
             ready.confirming = None;
         }
@@ -155,16 +149,16 @@ fn ready_step(
             effects.push(AccountsEffect::Tell(AccountsNotice::Refused(why)));
             effects.push(AccountsEffect::Reload(row.module));
         }
-        AccountsInput::AddAccount if idle && ready.adding == Adding::Idle => {
-            ready.adding = Adding::SheetOpen;
+        AccountsInput::AddAccount if idle && !ready.sheet_open => {
+            ready.sheet_open = true;
             effects.push(AccountsEffect::OpenAddSheet);
         }
-        AccountsInput::AddAiKey if idle && ready.adding == Adding::Idle => {
-            ready.adding = Adding::SheetOpen;
+        AccountsInput::AddAiKey if idle && !ready.sheet_open => {
+            ready.sheet_open = true;
             effects.push(AccountsEffect::OpenAiKeySheet);
         }
         AccountsInput::AddEnded(module, end) => {
-            ready.adding = Adding::Idle;
+            ready.sheet_open = false;
             if !matches!(end, AddEnd::Added | AddEnd::Closed) {
                 effects.push(AccountsEffect::Tell(AccountsNotice::AddEnded(end.clone())));
             }
@@ -231,15 +225,12 @@ fn removal_question(pane: &AccountsPane, row: ModuleRow, ask: Ask) -> Option<Rem
         Ask::SignOut => account.sign_out.as_ref(),
     };
     action.filter(|(path, _)| *path == row.path)?;
-    let files = match ask {
-        Ask::Remove if account.sync.iter().any(|sync| sync.on.is_on()) => LocalFiles::Kept,
-        Ask::Remove | Ask::SignOut => LocalFiles::None,
-    };
+    let files_kept = ask == Ask::Remove && account.sync.iter().any(|sync| sync.on.is_on());
     Some(RemovalQuestion {
         ask,
         row,
         account: account.label.clone(),
-        files,
+        files_kept,
     })
 }
 
@@ -255,9 +246,8 @@ fn client_edited(
         .clients
         .iter_mut()
         .find(|client| client.module == row.module && client.path == row.path)
-        .map_or(ClientChange::Nothing, |client| client.edited(text));
+        .and_then(|client| client.edited(text))?;
     let effect = match change {
-        ClientChange::Nothing => return None,
         ClientChange::KeyFirst => return Some(AccountsEffect::Tell(AccountsNotice::KeyFirst)),
         ClientChange::Key(text) => AccountsEffect::Set {
             row: row.clone(),
@@ -281,8 +271,8 @@ fn secret_cleared(ready: &mut AccountsReady, row: ModuleRow) -> Option<AccountsE
         .clients
         .iter_mut()
         .find(|client| client.module == row.module && client.path == row.path)
-        .map_or(ClientChange::Nothing, SignInClient::cleared);
-    (change == ClientChange::ClearSecret).then(|| {
+        .and_then(SignInClient::cleared);
+    (change == Some(ClientChange::ClearSecret)).then(|| {
         ready.pending = Some(row.clone());
         // The empty text carries no secret, so it travels as a plain value.
         AccountsEffect::Set {

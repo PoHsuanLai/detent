@@ -1,8 +1,6 @@
 //! The running models' facts and transitions.
 
-use super::{
-    InFlight, ModelRun, RunAction, RunEffect, RunInput, RunPane, RunStanding, running_step,
-};
+use super::{ModelRun, RunAction, RunEffect, RunInput, RunPane, RunStanding, running_step};
 use crate::{Absence, Live};
 
 fn run(model: &str, standing: RunStanding, memory_mib: u32) -> ModelRun {
@@ -60,12 +58,12 @@ fn an_ask_is_made_once_waits_and_ends_with_a_look() {
     let pane = listed(vec![run("local/qwen", RunStanding::Stopped, 0)]);
     let (pane, effects) = running_step(pane, RunInput::Act("local/qwen".to_owned()));
     assert_eq!(effects, [RunEffect::Start("local/qwen".to_owned())]);
-    assert_eq!(board(&pane).rows()[0].in_flight, InFlight::Yes);
+    assert!(board(&pane).rows()[0].in_flight);
     let (pane, again) = running_step(pane, RunInput::Act("local/qwen".to_owned()));
     assert!(again.is_empty(), "an ask that waits is not a second ask");
     let (pane, effects) = running_step(pane, RunInput::Answered("local/qwen".to_owned(), Ok(())));
     assert_eq!(effects, [RunEffect::Look]);
-    assert_eq!(board(&pane).rows()[0].in_flight, InFlight::No);
+    assert!(!board(&pane).rows()[0].in_flight);
 }
 
 #[test]
@@ -94,7 +92,7 @@ fn a_failed_model_shows_its_reason_and_a_stopped_one_in_flight_shows_progress() 
     ]);
     let rows = board(&pane).rows();
     assert_eq!(rows[0].note.as_deref(), Some("no room"));
-    assert_eq!(rows[1].in_flight, InFlight::Yes);
+    assert!(rows[1].in_flight);
 }
 
 #[test]

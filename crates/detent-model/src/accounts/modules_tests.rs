@@ -253,15 +253,12 @@ fn a_module_that_vanishes_leaves_the_others_shown() {
 fn the_screen_of_a_vanished_modules_account_goes_back_to_the_list() {
     let sync_key = AccountKey::of(ModuleId::Syncd, "me");
     let (state, _) = accounts_step(heard_all(), AccountsInput::Open(sync_key));
-    assert!(matches!(
-        ready(state.clone()).screen,
-        AccountsScreen::Detail(_)
-    ));
+    assert!(ready(state.clone()).detail.is_some());
     let (state, _) = accounts_step(
         state,
         AccountsInput::Found(ModuleId::Syncd, Err(Absence::NotRunning)),
     );
-    assert_eq!(ready(state).screen, AccountsScreen::List);
+    assert_eq!(ready(state).detail, None);
 }
 
 #[test]
@@ -288,5 +285,5 @@ fn adding_an_ai_key_opens_its_own_sheet_and_reads_inferd_again() {
         AccountsInput::AddEnded(ModuleId::Inferd, AddEnd::Added),
     );
     assert_eq!(effects, [AccountsEffect::Reload(ModuleId::Inferd)]);
-    assert_eq!(ready(done).adding, Adding::Idle);
+    assert!(!ready(done).sheet_open);
 }

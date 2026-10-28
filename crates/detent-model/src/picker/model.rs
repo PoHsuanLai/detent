@@ -3,7 +3,6 @@
 use super::local::LocalAsk;
 use super::pool::{AutoPool, PoolWrite, is_pool};
 use crate::Live;
-use crate::accounts::Adding;
 use crate::coding_agents::TURNED_OFF;
 use crate::words::word_label;
 use ds_settings::schema::{
@@ -247,12 +246,8 @@ impl Ready {
     }
 
     /// Whether the add-account sheet is open on behalf of a pick.
-    pub fn adding(&self) -> Adding {
-        if matches!(self.busy, Busy::Awaiting(_)) {
-            Adding::SheetOpen
-        } else {
-            Adding::Idle
-        }
+    pub fn sheet_open(&self) -> bool {
+        matches!(self.busy, Busy::Awaiting(_))
     }
 
     /// Whether a pick may be taken: no set is in flight and no account is being added.

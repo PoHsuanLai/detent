@@ -63,13 +63,12 @@ pub use absence::Absence;
 pub use accounts::{
     ACCOUNTS_SETUP_SLUG, Account, AccountExpiry, AccountKey, AccountPermission, AccountProvider,
     AccountSegment, AccountService, AccountSpend, AccountStatus, AccountSync, AccountTarget,
-    AccountsEffect, AccountsInput, AccountsNotice, AccountsPane, AccountsReady, AccountsScreen,
-    AccountsState, AddEnd, Adding, Ask, Attention, CalendarDay, Cents, ClientEntry, ClientText,
-    ClientValue, DatasetName, GrantDecision, GrantScope, GrantSentence, HoldCounts, HoldEffect,
-    HoldInput, Holds, LocalFiles, ModuleId, ModuleRow, Place, ReadTurn, Reads, ReauthEnd,
-    RemovalQuestion, Secret, SecretStanding, SignInClient, SignOutEnd, SignedIn, Source, Sources,
-    SpendBar, SpendLine, StorageQuota, SwitchState, SyncAdd, SyncBook, SyncHold, SyncNowEnd,
-    SyncPause, SyncStatus, SyncWork, accounts_row_is_valued, accounts_setup_offer, accounts_step,
+    AccountsEffect, AccountsInput, AccountsNotice, AccountsPane, AccountsReady, AccountsState,
+    AddEnd, Ask, Attention, CalendarDay, Cents, ClientText, ClientValue, DatasetName,
+    GrantDecision, GrantScope, GrantSentence, HoldCounts, HoldEffect, HoldInput, Holds, ModuleId,
+    ModuleRow, Place, Reads, ReauthEnd, RemovalQuestion, Secret, SignInClient, SignOutEnd,
+    SignedIn, Source, Sources, SpendBar, SpendLine, StorageQuota, SwitchState, SyncAdd, SyncBook,
+    SyncHold, SyncNowEnd, SyncStatus, accounts_row_is_valued, accounts_setup_offer, accounts_step,
     hold_step, signed_in,
 };
 pub use advanced::advanced_name;
@@ -79,27 +78,25 @@ pub use assistant_model::{
     assistant_model_page, assistant_of, setup_availability,
 };
 pub use assistants::{
-    Confirm, ModelOffer, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, offers_for,
-    places_step,
+    ModelOffer, PlaceRef, PlacesEffect, PlacesInput, PlacesState, known_of, offers_for, places_step,
 };
 pub use bluetooth::{
-    BLUETOOTH_SLUG, BatteryLevel, BtAddress, BtAsking, BtDevice, BtDeviceWire, BtEffect, BtHearing,
-    BtInput, BtKind, BtLink, BtPairing, BtPower, BtReady, BtState, BtStatus, PairingAnswer,
-    PairingAsk, PairingCode, PairingQuestion, bluetooth_page, bluetooth_step, bt_change_matters,
-    bt_device_of, is_under_adapter,
+    BLUETOOTH_SLUG, BatteryLevel, BtAddress, BtAsking, BtDevice, BtDeviceWire, BtEffect, BtInput,
+    BtKind, BtLink, BtReady, BtState, BtStatus, PairingAnswer, PairingAsk, PairingCode,
+    PairingQuestion, bluetooth_page, bluetooth_step, bt_change_matters, bt_device_of,
+    is_under_adapter,
 };
 pub use catalogue::{Catalogue, FileSpec, PageModel, SectionModel};
 pub use coding_agents::{
-    AddAction, AddForm, AddRefusal, AgentOffer, AgentReason, AgentStanding, AgentWord,
-    CHOOSE_DIRECTLY_KEY, Candidate, FoundAgent, GROUP_KEY, Listing, Presence, RemoveAnswer,
-    RemoveQuestion, Request, Step, WORD_PREFIX, offers as agent_offers, removal_of, unlisted_found,
-    with_agents,
+    AddAction, AddForm, AddRefusal, AgentOffer, AgentReason, AgentWord, CHOOSE_DIRECTLY_KEY,
+    Candidate, FoundAgent, GROUP_KEY, Listing, Presence, RemoveQuestion, Request, Step,
+    WORD_PREFIX, offers as agent_offers, removal_of, unlisted_found, with_agents,
 };
 pub use computers::{
     AddList, ComputerRow, ComputersEffect, ComputersFound, ComputersInput, ComputersReady,
     ComputersReason, ComputersState, KeyField, NAME_MOST, NewServer, ServerDraft, ServerEdit,
     ServerFault, ServerForm, ServerModel, ServerModels, ServerPhase, ServerReach, ServerRefusal,
-    Standing, computers_step, server_models,
+    computers_step, server_models,
 };
 pub use config_file::ConfigFile;
 pub use control::{Control, FileOnly, TogglePair};
@@ -107,16 +104,16 @@ pub use discovery::{Discovery, ProgramSchema, discover, discover_under};
 pub use displays::{
     ArrangeSide, Brightness, BrightnessList, DISPLAYS_SLUG, DisplayChange, DisplayEdit,
     DisplayMode, DisplayPosition, DisplayRotation, DisplaysEffect, DisplaysInput, DisplaysReady,
-    DisplaysState, DisplaysStatus, LooksLike, Millimetres, ModePreference, Monitor, OutputId,
-    PixelSize, RefreshMilliHz, ScaleMilli, default_scale, displays_page, displays_step, looks_like,
-    mode_at, mode_sizes, native_size, place_beside, side_of,
+    DisplaysState, DisplaysStatus, LooksLike, Millimetres, Monitor, OutputId, PixelSize,
+    RefreshMilliHz, ScaleMilli, default_scale, displays_page, displays_step, looks_like, mode_at,
+    mode_sizes, native_size, place_beside, side_of,
 };
 /// Whether an agent may set a key: quire's own type, carried by each `KeySpec`.
 pub use ds_settings::schema::AgentSetting;
 pub use engine_install::{
     EngineAction, EngineBrief, EngineFailure, EngineMatter, EngineOffer, EngineOfferEffect,
     EngineOfferInput, EngineOfferState, EngineRef, EngineRow, EngineStanding, EngineWay,
-    InstallScope, Replacing, Waiting, engine_brief, engine_named, engine_offer_step,
+    InstallScope, engine_brief, engine_named, engine_offer_step,
 };
 pub use engines::{
     EnginesEffect, EnginesInput, EnginesState, InstallAdvice, LLAMA_CPP_ID, ListedEngine, LlamaCpp,
@@ -126,9 +123,8 @@ pub use engines::{
 };
 pub use entry::KeyEntry;
 pub use extensions::{
-    EXTENSIONS_SLUG, ExtensionGroup, ExtensionKeep, ExtensionKind, ExtensionList, ExtensionPower,
-    ExtensionRow, ExtensionStanding, ExtensionTrouble, InstalledExtensions, Offer, Offers,
-    extensions_page, stray_word,
+    EXTENSIONS_SLUG, ExtensionGroup, ExtensionKind, ExtensionList, ExtensionRow, ExtensionStanding,
+    ExtensionTrouble, InstalledExtensions, Offer, Offers, extensions_page, stray_word,
 };
 pub use file_uri::path_of_file_uri;
 pub use first_run::{
@@ -160,11 +156,10 @@ pub use page_kind::PageKind;
 pub use page_traits::{Body, LivePane, PageTraits};
 pub use person::{Person, passwd_name};
 pub use picker::{
-    Applying, AutoPool, AwaitingAccount, Busy, Choice, ChoiceGap, ChoiceReadiness, ChoiceSection,
-    Clearing, Described, Gate, KindRows, Loading, LocalAsk, LocalEngine, LocalModel, LocalView,
-    MenuLine, ModelRow, PickLabel, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup,
-    PoolHeading, PoolMembership, PoolStanding, PoolWrite, Ready, TurnOn, TurnOnAnswer, loading_of,
-    picker_row_is_choice, step,
+    Applying, AutoPool, AwaitingAccount, Busy, Choice, ChoiceGap, ChoiceSection, Clearing,
+    Described, Gate, KindRows, Loading, LocalAsk, LocalEngine, LocalModel, LocalView, MenuLine,
+    ModelRow, PickLabel, PickerEffect, PickerInput, PickerState, PoolEntry, PoolGroup, PoolHeading,
+    PoolStanding, PoolWrite, Ready, TurnOn, loading_of, picker_row_is_choice, step,
 };
 pub use picture_add::AddOutcome;
 pub use privacy::{
@@ -176,7 +171,7 @@ pub use range::{Number, Range};
 pub use reason::Reason;
 pub use rows::Columns;
 pub use running::{
-    InFlight, ModelRun, RunAction, RunBoard, RunEffect, RunInput, RunPane, RunRowView, RunStanding,
+    ModelRun, RunAction, RunBoard, RunEffect, RunInput, RunPane, RunRowView, RunStanding,
     running_step,
 };
 pub use screen_sharing::{
@@ -195,15 +190,15 @@ pub use shortcuts::{
 pub use sidebar_group::{SidebarGroup, sidebar_groups};
 pub use spaces::{
     RemovalAsk, RemovalInput, RemovalStage, SpaceKey, SpaceRow, SpacesEffect, SpacesInput,
-    SpacesReady, SpacesState, WithoutMemory, spaces_step,
+    SpacesReady, SpacesState, needs_memory, spaces_step,
 };
 pub use style_notes::{NoteRow, StyleFile, StyleNote, StyleNotes, StyleOwner};
 pub use text_form::{TextFault, show_value};
 pub use updates::{
-    ByteCount, CheckActivity, Checked, Downloaded, NotesState, Permille, ProblemKind, ReleaseNotes,
-    UnixSeconds, UpdateAction, UpdateMeter, UpdateOffer, UpdatePhase, UpdateStanding, UpdateStatus,
-    UpdateVersion, UpdateWire, UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesPage,
-    UpdatesReady, UpdatesShown, UpdatesState, updates_shown, updates_step,
+    ByteCount, Checked, Downloaded, Permille, ProblemKind, ReleaseNotes, UnixSeconds, UpdateAction,
+    UpdateMeter, UpdateOffer, UpdatePhase, UpdateStanding, UpdateStatus, UpdateVersion, UpdateWire,
+    UpdatesEffect, UpdatesInput, UpdatesNotice, UpdatesPage, UpdatesReady, UpdatesShown,
+    UpdatesState, updates_shown, updates_step,
 };
 pub use wallpaper::{
     Picture, PictureFrom, PictureMark, PictureSections, PictureTile, current_place, is_picture,
@@ -211,13 +206,12 @@ pub use wallpaper::{
 };
 pub use warning::{StaleReason, Warning};
 pub use wifi::{
-    AccessPoint, AskKind, AskStanding, DeviceProgress, HiddenForm, HiddenLogin, HiddenNetwork,
-    HiddenSecurity, JoinFailure, JoinSecret, JoinVerdict, NetworkLink, NetworkLock, Passphrase,
-    PasswordAsk, Remembered, SignalBars, SignalStrength, Ssid, WIFI_SLUG, WifiAsking,
-    WifiConnection, WifiEffect, WifiInput, WifiLogin, WifiNetwork, WifiRadio, WifiReady,
-    WifiSecurity, WifiSetting, WifiSettingGroup, WifiState, WifiStatus, WifiVisibility, WifiWire,
-    connection_for, join_verdict, wifi_link_of, wifi_lock_of, wifi_page, wifi_security_of,
-    wifi_step,
+    AccessPoint, AskKind, AskStanding, HiddenForm, HiddenLogin, HiddenNetwork, HiddenSecurity,
+    JoinFailure, JoinSecret, JoinVerdict, NetworkLink, Passphrase, PasswordAsk, SignalBars,
+    SignalStrength, Ssid, WIFI_SLUG, WifiAsking, WifiConnection, WifiEffect, WifiInput, WifiLogin,
+    WifiNetwork, WifiRadio, WifiReady, WifiSecurity, WifiSetting, WifiSettingGroup, WifiState,
+    WifiStatus, WifiVisibility, WifiWire, connection_for, join_verdict, wifi_link_of, wifi_page,
+    wifi_security_of, wifi_step,
 };
 pub use words::{humanize, word_label};
 pub use work::Work;

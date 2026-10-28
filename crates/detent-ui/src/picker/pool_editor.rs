@@ -4,7 +4,7 @@
 use super::note::NoteLine;
 use crate::copy::picker as copy;
 use crate::key_row::row_id;
-use detent_model::{AutoPool, PickerInput, PoolEntry, PoolMembership, PoolStanding};
+use detent_model::{AutoPool, PickerInput, PoolEntry, PoolStanding};
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::fields::field_row::FieldRow;
@@ -50,10 +50,7 @@ fn PoolRow(
     availability: Availability,
     onask: EventHandler<PickerInput>,
 ) -> Element {
-    let on = match entry.membership {
-        PoolMembership::In => Check::On,
-        PoolMembership::Out => Check::Off,
-    };
+    let on = if entry.in_pool { Check::On } else { Check::Off };
     let turnable = if entry.can_toggle() {
         availability
     } else {

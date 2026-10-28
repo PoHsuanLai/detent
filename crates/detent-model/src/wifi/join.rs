@@ -1,7 +1,7 @@
 //! What a change of the wireless device's state means for a join, and how an access point's flags
 //! say it is secured. Pure: the network service's numbers go in, facts come out.
 
-use super::model::{NetworkLink, NetworkLock};
+use super::model::NetworkLink;
 
 /// How a network is secured, from its access point's flags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,16 +38,6 @@ pub fn wifi_security_of(flags: u32, wpa: u32, rsn: u32) -> WifiSecurity {
     }
 }
 
-/// What joining an access point needs, from its flags: an access point with no privacy flag and
-/// no protection flags needs no secret to join.
-pub fn wifi_lock_of(flags: u32, wpa: u32, rsn: u32) -> NetworkLock {
-    match wifi_security_of(flags, wpa, rsn) {
-        WifiSecurity::Open => NetworkLock::Open,
-        WifiSecurity::Eap => NetworkLock::Enterprise,
-        WifiSecurity::Psk | WifiSecurity::Sae | WifiSecurity::Unsupported => NetworkLock::Secured,
-    }
-}
-
 /// What the device's state says of the access point it is on: `NM_DEVICE_STATE_ACTIVATED` is
 /// joined, the states from preparing to the last check are joining.
 pub fn wifi_link_of(state: u32) -> NetworkLink {
@@ -56,15 +46,6 @@ pub fn wifi_link_of(state: u32) -> NetworkLink {
         PREPARE..=SECONDARIES => NetworkLink::Joining,
         _ => NetworkLink::Idle,
     }
-}
-
-/// How far the device has got with a join.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DeviceProgress {
-    /// It has not started on the join yet.
-    NotStarted,
-    /// It has started on the join.
-    Started,
 }
 
 /// What a change of the device's state means for a join.
@@ -94,22 +75,17 @@ const FAILED: u32 = 120;
 /// password.
 const REFUSED_REASONS: std::ops::RangeInclusive<u32> = 7..=11;
 
-/// The meaning of the device entering `state` for `reason`, given how far it had got.
-pub fn join_verdict(
-    state: u32,
-    reason: u32,
-    progress: DeviceProgress,
-    security: WifiSecurity,
-) -> JoinVerdict {
-    let under_way = progress == DeviceProgress::Started;
+/// The meaning of the device entering `state` for `reason`, given whether it had `started` on the
+/// join.
+pub fn join_verdict(state: u32, reason: u32, started: bool, security: WifiSecurity) -> JoinVerdict {
     let refused = security != WifiSecurity::Open && REFUSED_REASONS.contains(&reason);
     match state {
         ACTIVATED => JoinVerdict::Done,
         NEED_AUTH if security != WifiSecurity::Open => JoinVerdict::WrongPassword,
         FAILED if refused => JoinVerdict::WrongPassword,
-        DISCONNECTED if refused && under_way => JoinVerdict::WrongPassword,
+        DISCONNECTED if refused && started => JoinVerdict::WrongPassword,
         FAILED => JoinVerdict::CouldNot,
-        DISCONNECTED if under_way => JoinVerdict::CouldNot,
+        DISCONNECTED if started => JoinVerdict::CouldNot,
         PREPARE..=SECONDARIES => JoinVerdict::Going,
         _ => JoinVerdict::Waiting,
     }
@@ -117,11 +93,8 @@ pub fn join_verdict(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        DeviceProgress, JoinVerdict, WifiSecurity, join_verdict, wifi_link_of, wifi_lock_of,
-        wifi_security_of,
-    };
-    use crate::wifi::{NetworkLink, NetworkLock};
+    use super::{JoinVerdict, WifiSecurity, join_verdict, wifi_link_of, wifi_security_of};
+    use crate::wifi::NetworkLink;
 
     #[test]
     fn flags_say_how_a_network_is_secured() {
@@ -135,20 +108,6 @@ mod tests {
         ];
         for (case, flags, wpa, rsn, want) in CASES {
             assert_eq!(wifi_security_of(*flags, *wpa, *rsn), *want, "{case}");
-        }
-    }
-
-    #[test]
-    fn a_network_is_locked_by_a_privacy_or_protection_flag() {
-        const CASES: &[(&str, u32, u32, u32, NetworkLock)] = &[
-            ("open", 0, 0, 0, NetworkLock::Open),
-            ("privacy", 1, 0, 0, NetworkLock::Secured),
-            ("wpa", 0, 0x100, 0, NetworkLock::Secured),
-            ("rsn", 0, 0, 0x100, NetworkLock::Secured),
-            ("enterprise", 0, 0, 0x200, NetworkLock::Enterprise),
-        ];
-        for (case, flags, wpa, rsn, want) in CASES {
-            assert_eq!(wifi_lock_of(*flags, *wpa, *rsn), *want, "{case}");
         }
     }
 
@@ -169,32 +128,24 @@ mod tests {
 
     #[test]
     fn the_device_state_ends_a_join_or_does_not() {
-        use DeviceProgress::{NotStarted as waiting, Started as started};
         use WifiSecurity::{Open, Psk, Sae};
-        // (case, state, reason, progress, security, verdict)
-        const CASES: &[(&str, u32, u32, DeviceProgress, WifiSecurity, JoinVerdict)] = &[
-            ("on the network", 100, 0, waiting, Psk, JoinVerdict::Done),
+        // (case, state, reason, started, security, verdict)
+        const CASES: &[(&str, u32, u32, bool, WifiSecurity, JoinVerdict)] = &[
+            ("on the network", 100, 0, false, Psk, JoinVerdict::Done),
             (
                 "asked for a secret",
                 60,
                 0,
-                started,
+                true,
                 Psk,
                 JoinVerdict::WrongPassword,
             ),
-            (
-                "no secrets",
-                120,
-                7,
-                started,
-                Psk,
-                JoinVerdict::WrongPassword,
-            ),
+            ("no secrets", 120, 7, true, Psk, JoinVerdict::WrongPassword),
             (
                 "timed out in the handshake",
                 120,
                 11,
-                started,
+                true,
                 Sae,
                 JoinVerdict::WrongPassword,
             ),
@@ -202,7 +153,7 @@ mod tests {
                 "an open network cannot be wrong",
                 120,
                 7,
-                started,
+                true,
                 Open,
                 JoinVerdict::CouldNot,
             ),
@@ -210,7 +161,7 @@ mod tests {
                 "leaving the old network",
                 30,
                 0,
-                waiting,
+                false,
                 Psk,
                 JoinVerdict::Waiting,
             ),
@@ -218,15 +169,15 @@ mod tests {
                 "dropped after starting",
                 30,
                 0,
-                started,
+                true,
                 Psk,
                 JoinVerdict::CouldNot,
             ),
-            ("preparing", 40, 0, waiting, Psk, JoinVerdict::Going),
+            ("preparing", 40, 0, false, Psk, JoinVerdict::Going),
         ];
-        for (case, state, reason, progress, security, want) in CASES {
+        for (case, state, reason, started, security, want) in CASES {
             assert_eq!(
-                join_verdict(*state, *reason, *progress, *security),
+                join_verdict(*state, *reason, *started, *security),
                 *want,
                 "{case}"
             );

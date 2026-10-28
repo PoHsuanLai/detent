@@ -7,8 +7,7 @@ use crate::support::displays::Displays;
 use crate::support::drive::{click, page_of, settle, showing, sidebar_page, title_of};
 use detent_model::{
     Absence, DisplayChange, DisplayEdit, DisplayMode, DisplayPosition, DisplayRotation,
-    DisplaysStatus, Millimetres, ModePreference, Monitor, OutputId, PixelSize, RefreshMilliHz,
-    ScaleMilli,
+    DisplaysStatus, Millimetres, Monitor, OutputId, PixelSize, RefreshMilliHz, ScaleMilli,
 };
 use detent_ui::Opening;
 use ds_harness::{Harness, Input};
@@ -22,7 +21,7 @@ fn displays() -> Opening {
     }
 }
 
-fn mode(width: u32, height: u32, hertz: u32, preferred: ModePreference) -> DisplayMode {
+fn mode(width: u32, height: u32, hertz: u32, preferred: bool) -> DisplayMode {
     DisplayMode {
         size: PixelSize { width, height },
         refresh: RefreshMilliHz(hertz * 1000),
@@ -36,11 +35,11 @@ fn id(name: &str) -> OutputId {
 
 /// A 14 inch panel: 3024 by 1964 at 120 or 60 Hertz, looking like 1512 by 982.
 fn laptop() -> Monitor {
-    let native = mode(3024, 1964, 120, ModePreference::Yes);
+    let native = mode(3024, 1964, 120, true);
     Monitor {
         id: id("eDP-1"),
         name: "Studio Panel".to_owned(),
-        modes: vec![native, mode(3024, 1964, 60, ModePreference::No)],
+        modes: vec![native, mode(3024, 1964, 60, false)],
         current: Some(native),
         scale: ScaleMilli(2000),
         rotation: DisplayRotation::Standard,
@@ -54,7 +53,7 @@ fn laptop() -> Monitor {
 
 /// A 27 inch 4K monitor at 60 Hertz, looking like 2560 by 1440, to the right of the panel.
 fn monitor() -> Monitor {
-    let native = mode(3840, 2160, 60, ModePreference::Yes);
+    let native = mode(3840, 2160, 60, true);
     Monitor {
         id: id("DP-1"),
         name: "Desk Monitor".to_owned(),
@@ -225,10 +224,10 @@ fn choosing_a_refresh_rate_sends_it_for_the_size_the_display_runs_at() {
 
 /// A monitor that also lists a smaller size, with nothing beside it so its rows keep their places.
 fn flexible() -> DisplaysStatus {
-    let native = mode(3840, 2160, 60, ModePreference::Yes);
+    let native = mode(3840, 2160, 60, true);
     DisplaysStatus {
         displays: vec![Monitor {
-            modes: vec![native, mode(1920, 1080, 60, ModePreference::No)],
+            modes: vec![native, mode(1920, 1080, 60, false)],
             ..monitor()
         }],
     }

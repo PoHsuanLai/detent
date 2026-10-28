@@ -7,9 +7,9 @@ mod press;
 mod shown;
 
 use super::{
-    ByteCount, NotesState, Permille, ProblemKind, UnixSeconds, UpdateOffer, UpdatePhase,
-    UpdateStatus, UpdateVersion, UpdatesNotice, UpdatesPage, UpdatesReady, UpdatesShown,
-    UpdatesState, updates_shown,
+    ByteCount, Permille, ProblemKind, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus,
+    UpdateVersion, UpdatesNotice, UpdatesPage, UpdatesReady, UpdatesShown, UpdatesState,
+    updates_shown,
 };
 
 pub(super) const NOW: UnixSeconds = UnixSeconds(1_000_000);
@@ -48,7 +48,7 @@ pub(super) fn offered(phase: UpdatePhase) -> UpdateStatus {
 pub(super) fn ready(status: UpdateStatus) -> UpdatesState {
     UpdatesState::Ready(UpdatesReady {
         status,
-        info: NotesState::Closed,
+        notes_open: false,
         notice: UpdatesNotice::Nothing,
     })
 }

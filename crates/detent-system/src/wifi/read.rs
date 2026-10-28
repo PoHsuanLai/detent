@@ -10,7 +10,7 @@ use airwaves_nm::{
 };
 use detent_model::{
     Absence, AccessPoint, NetworkLink, SignalStrength, Ssid, WifiRadio, WifiStatus, WifiWire,
-    wifi_link_of, wifi_lock_of,
+    wifi_link_of, wifi_security_of,
 };
 use ds_peer::within;
 use zbus::Connection;
@@ -149,7 +149,7 @@ async fn access_point(
     Some(AccessPoint {
         ssid: Ssid(String::from_utf8_lossy(&ssid).into_owned()),
         strength: SignalStrength(point.strength().await.unwrap_or(0).min(100)),
-        lock: wifi_lock_of(
+        security: wifi_security_of(
             point.flags().await.unwrap_or(0),
             point.wpa_flags().await.unwrap_or(0),
             point.rsn_flags().await.unwrap_or(0),

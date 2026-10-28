@@ -12,29 +12,21 @@ pub enum Reads {
     Stale,
 }
 
-/// What the one who asked or finished does next.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ReadTurn {
-    /// Read the module now.
-    Read,
-    /// Nothing: a running read will read again, or nothing is left to read.
-    Rest,
-}
-
 impl Reads {
-    /// A read is wanted: it starts now when none runs, else the running one reads again after.
-    pub fn ask(self) -> (Self, ReadTurn) {
+    /// A read is wanted: it starts now when none runs (the answer is `true`), else the running one
+    /// reads again after (`false`).
+    pub fn ask(self) -> (Self, bool) {
         match self {
-            Self::Idle => (Self::InFlight, ReadTurn::Read),
-            Self::InFlight | Self::Stale => (Self::Stale, ReadTurn::Rest),
+            Self::Idle => (Self::InFlight, true),
+            Self::InFlight | Self::Stale => (Self::Stale, false),
         }
     }
 
-    /// The running read ended: read once more when something asked meanwhile.
-    pub fn finish(self) -> (Self, ReadTurn) {
+    /// The running read ended: read once more when something asked meanwhile (`true`).
+    pub fn finish(self) -> (Self, bool) {
         match self {
-            Self::Stale => (Self::InFlight, ReadTurn::Read),
-            Self::Idle | Self::InFlight => (Self::Idle, ReadTurn::Rest),
+            Self::Stale => (Self::InFlight, true),
+            Self::Idle | Self::InFlight => (Self::Idle, false),
         }
     }
 }

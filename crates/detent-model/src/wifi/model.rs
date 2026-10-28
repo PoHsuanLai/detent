@@ -1,6 +1,7 @@
 //! What the Wi-Fi page knows: the radio and the access points the network service reports,
 //! folded into one row per network. Parsed once where it enters.
 
+use super::join::WifiSecurity;
 use std::collections::BTreeMap;
 
 /// A network's name. SSIDs are bytes on the air; a name that is not text is shown lossily.
@@ -44,17 +45,6 @@ pub enum WifiRadio {
     Blocked,
 }
 
-/// What joining a network needs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NetworkLock {
-    /// No password.
-    Open,
-    /// A password.
-    Secured,
-    /// A username and a password.
-    Enterprise,
-}
-
 /// A network's relation to this computer. The order is the order of how joined it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum NetworkLink {
@@ -66,15 +56,6 @@ pub enum NetworkLink {
     Joined,
 }
 
-/// Whether the computer has joined the network before and kept its password.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Remembered {
-    /// It has.
-    Yes,
-    /// It has not.
-    No,
-}
-
 /// One access point as the service reports it; a network may have several.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccessPoint {
@@ -82,8 +63,8 @@ pub struct AccessPoint {
     pub ssid: Ssid,
     /// Its signal.
     pub strength: SignalStrength,
-    /// Whether it wants a password.
-    pub lock: NetworkLock,
+    /// How it is secured.
+    pub security: WifiSecurity,
     /// Whether this computer is on it.
     pub link: NetworkLink,
 }
@@ -106,12 +87,12 @@ pub struct WifiNetwork {
     pub ssid: Ssid,
     /// The signal of its strongest access point.
     pub strength: SignalStrength,
-    /// Whether it wants a password.
-    pub lock: NetworkLock,
+    /// How it is secured.
+    pub security: WifiSecurity,
     /// Whether this computer is on it.
     pub link: NetworkLink,
     /// Whether its password is kept.
-    pub remembered: Remembered,
+    pub remembered: bool,
 }
 
 /// The switch and the networks in range, the one this computer is on first, then the ones it
@@ -133,11 +114,7 @@ impl WifiStatus {
             .into_iter()
             .filter(|p| !p.ssid.0.is_empty())
         {
-            let remembered = if wire.saved.contains(&point.ssid) {
-                Remembered::Yes
-            } else {
-                Remembered::No
-            };
+            let remembered = wire.saved.contains(&point.ssid);
             folded
                 .entry(point.ssid.clone())
                 .and_modify(|seen| {
@@ -147,19 +124,14 @@ impl WifiStatus {
                 .or_insert(WifiNetwork {
                     ssid: point.ssid,
                     strength: point.strength,
-                    lock: point.lock,
+                    security: point.security,
                     link: point.link,
                     remembered,
                 });
         }
         let mut networks: Vec<WifiNetwork> = folded.into_values().collect();
         networks.sort_by(|a, b| {
-            let rank = |n: &WifiNetwork| {
-                (
-                    n.link != NetworkLink::Joined,
-                    n.remembered == Remembered::No,
-                )
-            };
+            let rank = |n: &WifiNetwork| (n.link != NetworkLink::Joined, !n.remembered);
             rank(a)
                 .cmp(&rank(b))
                 .then(b.strength.cmp(&a.strength))

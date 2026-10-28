@@ -1,8 +1,6 @@
 //! The Bluetooth page as a machine.
 
-use super::model::{
-    BtAddress, BtLink, BtPairing, BtPower, BtStatus, PairingAnswer, PairingAsk, PairingQuestion,
-};
+use super::model::{BtAddress, BtLink, BtStatus, PairingAnswer, PairingAsk, PairingQuestion};
 use crate::Absence;
 use crate::Live;
 
@@ -37,7 +35,7 @@ pub enum BtInput {
     /// A read of BlueZ, or why there is none.
     Heard(Result<BtStatus, Absence>),
     /// The person moved the switch.
-    Switch(BtPower),
+    Switch(bool),
     /// The person pressed Connect on a device they have paired with.
     Connect(BtAddress),
     /// The person pressed Disconnect.
@@ -64,7 +62,7 @@ pub enum BtInput {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BtEffect {
     /// Move the switch.
-    SetPower(BtPower),
+    SetPower(bool),
     /// Connect to a paired device.
     Connect(BtAddress),
     /// Disconnect from a device.
@@ -109,7 +107,7 @@ fn heard_step(state: BtState, heard: Result<BtStatus, Absence>) -> BtState {
 fn press_step(page: BtReady, input: BtInput) -> (BtReady, Vec<BtEffect>) {
     match input {
         BtInput::Heard(_) => (page, Vec::new()),
-        BtInput::Switch(power) => (page, vec![BtEffect::SetPower(power)]),
+        BtInput::Switch(on) => (page, vec![BtEffect::SetPower(on)]),
         BtInput::Connect(address) => start(page, address, BtEffect::Connect),
         BtInput::Pair(address) => start(page, address, BtEffect::Pair),
         BtInput::Disconnect(address) => (page, vec![BtEffect::Disconnect(address)]),
@@ -200,9 +198,7 @@ impl BtReady {
 
     /// Whether `address` is a device this computer is paired with.
     pub fn is_paired(&self, address: &BtAddress) -> bool {
-        self.status
-            .device(address)
-            .is_some_and(|d| d.pairing == BtPairing::Paired)
+        self.status.device(address).is_some_and(|d| d.paired)
     }
 }
 

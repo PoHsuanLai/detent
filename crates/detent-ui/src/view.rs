@@ -12,16 +12,7 @@ pub struct View {
     /// The keys the search found, best first.
     pub hits: Vec<Hit>,
     /// Whether a query is in the box.
-    pub searching: Searching,
-}
-
-/// Whether the search box holds a query.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Searching {
-    /// It does.
-    Yes,
-    /// It is empty.
-    No,
+    pub searching: bool,
 }
 
 impl View {
@@ -34,11 +25,7 @@ impl View {
             current,
             listed: visible.iter().map(|page| page.slug.clone()).collect(),
             hits: found.hits().to_vec(),
-            searching: if query.trim().is_empty() {
-                Searching::No
-            } else {
-                Searching::Yes
-            },
+            searching: !query.trim().is_empty(),
         }
     }
 }

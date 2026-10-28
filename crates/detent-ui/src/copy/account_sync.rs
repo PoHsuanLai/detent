@@ -3,10 +3,7 @@
 
 use super::engine_install::size_words;
 use super::updates::elapsed_words;
-use detent_model::{
-    Cents, HoldCounts, SpendLine, StorageQuota, SyncHold, SyncNowEnd, SyncPause, SyncStatus,
-    SyncWork,
-};
+use detent_model::{Cents, HoldCounts, SpendLine, StorageQuota, SyncHold, SyncNowEnd, SyncStatus};
 
 /// What the banner's Keep button carries as its help.
 pub(crate) const KEEP_HELP: &str =
@@ -49,15 +46,19 @@ fn quota_line(quota: &StorageQuota) -> String {
 
 /// The line under the service: "Synced 5 minutes ago", "Syncing 3 items", "Paused".
 fn sync_line(status: &SyncStatus) -> String {
-    match (status.pause, status.anchor_age) {
-        (SyncPause::Paused, _) => "Paused".to_owned(),
-        _ if status.work() == SyncWork::Working => format!(
+    if status.paused {
+        "Paused".to_owned()
+    } else if status.working() {
+        format!(
             "Syncing {} {}",
             status.pending,
             if status.pending == 1 { "item" } else { "items" }
-        ),
-        (SyncPause::Running, Some(age)) => format!("Synced {}", elapsed_words(age)),
-        (SyncPause::Running, None) => "Waiting to sync".to_owned(),
+        )
+    } else {
+        match status.anchor_age {
+            Some(age) => format!("Synced {}", elapsed_words(age)),
+            None => "Waiting to sync".to_owned(),
+        }
     }
 }
 
@@ -91,14 +92,14 @@ mod tests {
     fn status(
         anchor_age: Option<i64>,
         pending: u64,
-        pause: SyncPause,
+        paused: bool,
         quota: Option<StorageQuota>,
     ) -> SyncStatus {
         SyncStatus {
             anchor_age,
             pending,
             conflicts: 0,
-            pause,
+            paused,
             quota,
         }
     }
@@ -111,29 +112,20 @@ mod tests {
                 status(
                     Some(300),
                     0,
-                    SyncPause::Running,
+                    false,
                     some(2_100_000_000, Some(15_000_000_000)),
                 ),
                 "Synced 5 minutes ago. 2.1 GB of 15 GB",
             ),
             (
-                status(Some(10), 0, SyncPause::Running, some(500_000_000, None)),
+                status(Some(10), 0, false, some(500_000_000, None)),
                 "Synced just now. 500 MB used",
             ),
-            (
-                status(Some(90_000), 0, SyncPause::Running, None),
-                "Synced yesterday",
-            ),
-            (status(None, 0, SyncPause::Running, None), "Waiting to sync"),
-            (
-                status(Some(60), 3, SyncPause::Running, None),
-                "Syncing 3 items",
-            ),
-            (
-                status(Some(60), 1, SyncPause::Running, None),
-                "Syncing 1 item",
-            ),
-            (status(Some(60), 3, SyncPause::Paused, None), "Paused"),
+            (status(Some(90_000), 0, false, None), "Synced yesterday"),
+            (status(None, 0, false, None), "Waiting to sync"),
+            (status(Some(60), 3, false, None), "Syncing 3 items"),
+            (status(Some(60), 1, false, None), "Syncing 1 item"),
+            (status(Some(60), 3, true, None), "Paused"),
         ];
         for (held, want) in cases {
             assert_eq!(sync_lines(&held), want, "{held:?}");

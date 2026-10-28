@@ -26,7 +26,7 @@ pub enum EngineOffer {
         /// For whom, when it is downloaded.
         scope: InstallScope,
         /// Whether an install that was changed is being replaced.
-        replacing: Replacing,
+        replacing: bool,
     },
     /// A folder the person chose is being counted as the engine's.
     Pointing {
@@ -56,15 +56,6 @@ pub enum EngineOffer {
         /// The reason.
         reason: EngineFailure,
     },
-}
-
-/// Whether the offer is about an engine whose install was changed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Replacing {
-    /// The engine is not there.
-    No,
-    /// An install of it is there and was changed since it was made.
-    Yes,
 }
 
 /// What the offer knows.
@@ -148,10 +139,7 @@ fn asking(row: &EngineRow) -> EngineOffer {
         engine: reference(row),
         way: row.way.clone(),
         scope: first_scope(&row.way),
-        replacing: match row.standing {
-            EngineStanding::Changed => Replacing::Yes,
-            _ => Replacing::No,
-        },
+        replacing: matches!(row.standing, EngineStanding::Changed),
     }
 }
 
@@ -304,13 +292,10 @@ pub fn engine_offer_step(
             },
             EngineOfferInput::Go,
         ) => {
-            let replacing =
-                rows.iter()
-                    .find(|row| row.id == engine.id)
-                    .map_or(Replacing::No, |row| match row.standing {
-                        EngineStanding::Changed => Replacing::Yes,
-                        _ => Replacing::No,
-                    });
+            let replacing = rows
+                .iter()
+                .find(|row| row.id == engine.id)
+                .is_some_and(|row| matches!(row.standing, EngineStanding::Changed));
             (
                 EngineOffer::Asking {
                     engine,

@@ -6,7 +6,7 @@ mod board;
 mod model;
 
 pub use board::{RunBoard, RunEffect, RunInput, RunPane, running_step};
-pub use model::{InFlight, ModelRun, RunAction, RunRowView, RunStanding};
+pub use model::{ModelRun, RunAction, RunRowView, RunStanding};
 
 #[cfg(test)]
 mod tests;

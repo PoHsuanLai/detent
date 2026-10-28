@@ -8,9 +8,9 @@ mod brief;
 mod offer;
 mod rows;
 
-pub use brief::{EngineAction, EngineBrief, EngineMatter, Waiting, engine_brief};
+pub use brief::{EngineAction, EngineBrief, EngineMatter, engine_brief};
 pub use offer::{
-    EngineOffer, EngineOfferEffect, EngineOfferInput, EngineOfferState, EngineRef, Replacing,
+    EngineOffer, EngineOfferEffect, EngineOfferInput, EngineOfferState, EngineRef,
     engine_offer_step,
 };
 pub use rows::{EngineFailure, EngineRow, EngineStanding, EngineWay, InstallScope, engine_named};

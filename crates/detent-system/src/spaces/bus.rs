@@ -7,7 +7,7 @@ use crate::deadline::{Deadline, answered, peer};
 use crate::memory_consent::control;
 use almanac_core::Removal;
 use detent_callers::{ACCOUNTS_BUS, MEMORY_BUS};
-use detent_model::{Absence, SpaceKey, SpaceRow, WithoutMemory, Work};
+use detent_model::{Absence, SpaceKey, SpaceRow, Work, needs_memory};
 use ds_peer::within;
 use porter_client::SpacesError;
 use porter_dbus::{BusFailure, SpacesProxy, classify};
@@ -101,9 +101,10 @@ async fn tell_memory(
 
 /// What a removal does when memory is not there: carries on when it keeps everything, else stops.
 fn without_memory(removal: &Removal) -> Result<(), String> {
-    match WithoutMemory::of(removal) {
-        WithoutMemory::Proceed => Ok(()),
-        WithoutMemory::Refuse => Err(MEMORY_NOT_RUNNING.to_owned()),
+    if needs_memory(removal) {
+        Err(MEMORY_NOT_RUNNING.to_owned())
+    } else {
+        Ok(())
     }
 }
 

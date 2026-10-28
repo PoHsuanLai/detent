@@ -6,9 +6,7 @@ use super::note::NoteLine;
 use super::pool_editor::PoolEditor;
 use crate::copy::picker as copy;
 use crate::key_row::row_id;
-use detent_model::{
-    Adding, Applying, Choice, Clearing, Gate, MenuLine, ModelRow, PickerInput, loading_of,
-};
+use detent_model::{Applying, Choice, Clearing, Gate, MenuLine, ModelRow, PickerInput, loading_of};
 use dioxus::prelude::*;
 use ds::components::content::label::LabelRole;
 use ds::components::fields::field_row::FieldRow;
@@ -25,15 +23,15 @@ use ds::style::tokens::control_size::ControlSize;
 pub(crate) fn TierRow(
     row: ModelRow,
     applying: Option<Applying>,
-    adding: Adding,
+    sheet_open: bool,
     clearing: Clearing,
     onask: EventHandler<PickerInput>,
 ) -> Element {
     let here = applying.as_ref().filter(|set| set.path == row.path);
-    let availability = match (&applying, here, adding) {
+    let availability = match (&applying, here, sheet_open) {
         (_, Some(_), _) => Availability::Busy,
-        (Some(_), None, _) | (None, None, Adding::SheetOpen) => Availability::Disabled,
-        (None, None, Adding::Idle) => Availability::Enabled,
+        (Some(_), None, _) | (None, None, true) => Availability::Disabled,
+        (None, None, false) => Availability::Enabled,
     };
     let loading = here.map(|set| copy::loading(&loading_of(&row, &set.word)));
     let shown = here.map_or_else(|| row.choice(), |set| row.choice_when(&set.word));

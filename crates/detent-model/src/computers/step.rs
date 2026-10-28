@@ -12,15 +12,6 @@ use super::server::{
     ComputersReason, NewServer, ServerDraft, ServerEdit, ServerModel, ServerPhase, ServerRefusal,
 };
 
-/// Whether a computer answers now.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Standing {
-    /// It does.
-    Answering,
-    /// It does not (off, or not lending).
-    Silent,
-}
-
 /// One of the person's computers the assistant may borrow models from.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ComputerRow {
@@ -30,8 +21,8 @@ pub struct ComputerRow {
     pub name: String,
     /// The names of the models it lends now.
     pub models: Vec<String>,
-    /// Whether it answers.
-    pub standing: Standing,
+    /// Whether it answers now (it does not when off, or not lending).
+    pub answering: bool,
 }
 
 impl ComputerRow {
@@ -42,9 +33,9 @@ impl ComputerRow {
                 computer,
                 name: place.name.clone(),
                 models: place.models.iter().map(|m| m.name.clone()).collect(),
-                standing: match place.state {
-                    PlaceState::Ready => Standing::Answering,
-                    PlaceState::NotReady => Standing::Silent,
+                answering: match place.state {
+                    PlaceState::Ready => true,
+                    PlaceState::NotReady => false,
                 },
             }),
             _ => None,
