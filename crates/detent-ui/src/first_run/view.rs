@@ -47,7 +47,7 @@ pub fn FirstRunApp() -> Element {
             appearance: now.settings.appearance.appearance(),
             system: now.system,
             material: Material::Window,
-            window: WindowFrame::titlebar(crate::copy::first_run::WELCOME.to_owned(), TrafficLights::Shown),
+            window: WindowFrame::titlebar(crate::copy::first_run::WELCOME.to_owned(), Shown::Visible),
             style { {crate::STYLE} }
             FirstRunWindow {}
         }

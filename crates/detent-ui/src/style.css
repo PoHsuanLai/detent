@@ -155,12 +155,10 @@
   text-align: center;
 }
 
-.hero-tile,
-.absent-tile {
+.hero-tile {
   --row-icon-tile: var(--s-48);
 }
-
-/* The empty state pads itself; the tile sits right above its padding. */
+/* The empty state pads itself and draws the page's tile above its title. */
 .absent {
   display: flex;
   flex-direction: column;

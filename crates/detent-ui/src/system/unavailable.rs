@@ -5,7 +5,6 @@ use crate::copy;
 use crate::copy::absence::Subject;
 use detent_model::Absence;
 use dioxus::prelude::*;
-use ds::components::forms::icon_tile::tile;
 use ds::components::overlays::empty_state::EmptyState;
 use ds::prelude::*;
 
@@ -22,10 +21,7 @@ pub(crate) fn Absent(
 ) -> Element {
     rsx! {
         div { class: "absent",
-            if let Some(face) = face {
-                div { class: "absent-tile", {tile(face)} }
-            }
-            EmptyState { title, description: Some(TextLine::from(words)), action }
+            EmptyState { title, description: Some(TextLine::from(words)), face, action }
         }
     }
 }
