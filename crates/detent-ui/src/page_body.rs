@@ -21,7 +21,7 @@ use crate::spaces::SpacesPane;
 use crate::style_notes::StyleNotesLine;
 use crate::updates::SoftwareUpdatePane;
 use crate::wifi::WifiPane;
-use detent_model::{Block, Head, PageModel, advanced_sections, blocks};
+use detent_model::{Block, LivePane, PageModel, advanced_sections, blocks};
 use dioxus::prelude::*;
 use ds_settings::schema::KeyPath;
 
@@ -38,32 +38,17 @@ pub(crate) fn PageBody(
     let env = use_context::<Env>();
     let advanced = advanced_sections(&page);
     rsx! {
-        if let Head::Hero(hero) = page.kind.head() {
-            HeroView { kind: page.kind, hero, title: page.title.clone() }
+        if page.kind.traits().hero {
+            HeroView { kind: page.kind, title: page.title.clone() }
         }
         for block in blocks(&page) {
             match block {
                 Block::Section(section) => rsx! {
                     SectionView { key: "{section.title}", section, hits: hits.clone(), files, onedit }
                 },
-                Block::AccountsPane => rsx! { AccountsPane {} },
-                Block::PrivacyPane => rsx! { PrivacyPane {} },
-                Block::ScreenSharing => rsx! { ScreenSharingPane {} },
-                Block::SpacesPane => rsx! { SpacesPane {} },
-                Block::Shortcuts => rsx! { ShortcutsPane {} },
-                Block::SoftwareUpdate => rsx! { SoftwareUpdatePane {} },
-                Block::AssistantModel => rsx! { AssistantModelPane {} },
-                Block::Wifi => rsx! { WifiPane {} },
-                Block::Bluetooth => rsx! { BluetoothPane {} },
-                Block::Displays => rsx! { DisplaysPane {} },
-                Block::Extensions => rsx! { ExtensionsPane {} },
-                Block::Assistants => rsx! { Assistants {} },
-                Block::LocalRuntimes => rsx! { LocalRuntimes {} },
+                Block::Pane(pane) => mount(pane, &env, files),
                 Block::StyleNotes => rsx! { StyleNotesLine {} },
                 Block::HotCorners(entries) => rsx! { HotCorners { entries, files, onedit } },
-                Block::ModelPicker => rsx! {
-                    ModelPicker { reasons: show_reason(&env, &files()) }
-                },
             }
         }
         if !advanced.is_empty() {
@@ -75,5 +60,25 @@ pub(crate) fn PageBody(
                 on_open,
             }
         }
+    }
+}
+
+/// The pane that fills `pane`'s rows.
+fn mount(pane: LivePane, env: &Env, files: Signal<Files>) -> Element {
+    match pane {
+        LivePane::Accounts => rsx! { AccountsPane {} },
+        LivePane::Privacy => rsx! { PrivacyPane {} },
+        LivePane::ScreenSharing => rsx! { ScreenSharingPane {} },
+        LivePane::Spaces => rsx! { SpacesPane {} },
+        LivePane::Shortcuts => rsx! { ShortcutsPane {} },
+        LivePane::SoftwareUpdate => rsx! { SoftwareUpdatePane {} },
+        LivePane::AssistantModel => rsx! { AssistantModelPane {} },
+        LivePane::Wifi => rsx! { WifiPane {} },
+        LivePane::Bluetooth => rsx! { BluetoothPane {} },
+        LivePane::Displays => rsx! { DisplaysPane {} },
+        LivePane::Extensions => rsx! { ExtensionsPane {} },
+        LivePane::Assistants => rsx! { Assistants {} },
+        LivePane::LocalRuntimes => rsx! { LocalRuntimes {} },
+        LivePane::ModelPicker => rsx! { ModelPicker { reasons: show_reason(env, &files()) } },
     }
 }

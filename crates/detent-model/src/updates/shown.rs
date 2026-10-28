@@ -3,7 +3,7 @@
 
 use super::model::{ByteCount, Permille, UnixSeconds, UpdateOffer, UpdatePhase, UpdateStatus};
 use super::step::{NotesState, UpdatesInput, UpdatesNotice, UpdatesReady, UpdatesState};
-use crate::Absence;
+use crate::Live;
 
 /// Whether the check is under way.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -127,24 +127,12 @@ pub struct UpdatesPage {
     pub notes: Option<ReleaseNotes>,
 }
 
-/// What the page draws.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum UpdatesShown {
-    /// Still looking: nothing yet.
-    Looking,
-    /// No updates here, and why.
-    Unavailable(Absence),
-    /// The service answered.
-    Page(UpdatesPage),
-}
+/// What the page draws: nothing yet, why there is nothing, or the page.
+pub type UpdatesShown = Live<UpdatesPage>;
 
 /// What the page draws for `state`, `now` being the time the last check counts from.
 pub fn updates_shown(state: &UpdatesState, now: UnixSeconds) -> UpdatesShown {
-    match state {
-        UpdatesState::Looking => UpdatesShown::Looking,
-        UpdatesState::Unavailable(absence) => UpdatesShown::Unavailable(*absence),
-        UpdatesState::Ready(ready) => UpdatesShown::Page(page(ready, now)),
-    }
+    state.map(|ready| page(ready, now))
 }
 
 fn checked_of(status: &UpdateStatus, now: UnixSeconds) -> Checked {

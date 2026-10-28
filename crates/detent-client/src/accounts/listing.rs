@@ -6,7 +6,9 @@ use super::feeds::Feeds;
 use crate::follow::{Followed, follow_with};
 use crate::live::Live;
 use crate::pane::{Pane, Pending};
-use detent_model::{Absence, AccountsPane, Described, ModuleId, Sources, accounts_row_is_valued};
+use detent_model::{
+    Absence, AccountsPane, Described, Live as ModelLive, ModuleId, Sources, accounts_row_is_valued,
+};
 use detent_system::bus::Daemon;
 use detent_system::modules::ModulesLink;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -14,25 +16,15 @@ use std::sync::{Arc, Mutex, PoisonError};
 /// How many times a failed read is tried again.
 const RETRIES: usize = 3;
 
-/// Where the reading stands.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub enum Listed {
-    /// No module has answered yet.
-    #[default]
-    Looking,
-    /// No module can be used, and why.
-    Absent(Absence),
-    /// The accounts the modules that answered list now.
-    Accounts(AccountsPane),
-}
+/// Where the reading stands: no module has answered yet, none can be used (and why), or the
+/// accounts the modules that answered list now.
+pub type Listed = ModelLive<AccountsPane>;
 
-impl Listed {
-    fn of(sources: &Sources) -> Listed {
-        match (sources.pane(), sources.absence()) {
-            (Some(pane), _) => Listed::Accounts(pane),
-            (None, Some(absence)) => Listed::Absent(absence),
-            (None, None) => Listed::Looking,
-        }
+fn listed_of(sources: &Sources) -> Listed {
+    match (sources.pane(), sources.absence()) {
+        (Some(pane), _) => Listed::Ready(pane),
+        (None, Some(absence)) => Listed::Unavailable(absence),
+        (None, None) => Listed::Looking,
     }
 }
 
@@ -59,7 +51,7 @@ impl Listing {
     fn hear(&self, module: ModuleId, found: Result<Described, Absence>) {
         let mut sources = self.sources.lock().unwrap_or_else(PoisonError::into_inner);
         sources.hear(module, found);
-        let now = Listed::of(&sources);
+        let now = listed_of(&sources);
         drop(sources);
         self.live.update(|_| now);
     }

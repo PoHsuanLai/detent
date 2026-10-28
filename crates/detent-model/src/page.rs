@@ -11,7 +11,7 @@ impl PageSlug {
     /// The slug of `page`: the fixed pages by their snake-case name, a third-party page by
     /// `app:<id>`.
     pub fn of(page: &Page) -> PageSlug {
-        PageSlug(match PageKind::of(page).slug() {
+        PageSlug(match PageKind::of(page).traits().slug {
             Some(slug) => slug.to_owned(),
             None => format!("app:{}", page.id().0),
         })

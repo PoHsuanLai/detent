@@ -2,6 +2,7 @@
 
 use super::sign_in_client::standing_only;
 use crate::Absence;
+use crate::Live;
 use crate::picker::Described;
 use ds_settings::schema::KeyPath;
 
@@ -38,17 +39,8 @@ impl ModuleRow {
     }
 }
 
-/// What one module has told the pane.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub enum Source {
-    /// Not heard from yet.
-    #[default]
-    Looking,
-    /// Not there, and why.
-    Absent(Absence),
-    /// Its rows, as last read.
-    Read(Described),
-}
+/// What one module has told the pane: nothing yet, why it is not there, or its rows as last read.
+pub type Source = Live<Described>;
 
 /// What the three modules have told the pane.
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -79,14 +71,14 @@ impl Sources {
     /// Takes in what `module` found: its rows, or that it is not there.
     pub fn hear(&mut self, module: ModuleId, found: Result<Described, Absence>) {
         *self.slot(module) = match found {
-            Ok(described) => Source::Read(standing_only(described)),
-            Err(absence) => Source::Absent(absence),
+            Ok(described) => Source::Ready(standing_only(described)),
+            Err(absence) => Source::Unavailable(absence),
         };
     }
 
     /// Whether `module`'s rows are held.
     pub fn has_read(&self, module: ModuleId) -> bool {
-        matches!(self.of(module), Source::Read(_))
+        matches!(self.of(module), Source::Ready(_))
     }
 
     /// The pane the modules that answered make; none when none did.
@@ -94,7 +86,7 @@ impl Sources {
         let read: Vec<(ModuleId, &Described)> = ModuleId::ALL
             .into_iter()
             .filter_map(|module| match self.of(module) {
-                Source::Read(described) => Some((module, described)),
+                Source::Ready(described) => Some((module, described)),
                 _ => None,
             })
             .collect();
@@ -107,8 +99,8 @@ impl Sources {
         let mut first = None;
         for module in ModuleId::ALL {
             match self.of(module) {
-                Source::Looking | Source::Read(_) => return None,
-                Source::Absent(absence) => {
+                Source::Looking | Source::Ready(_) => return None,
+                Source::Unavailable(absence) => {
                     first.get_or_insert(*absence);
                 }
             }

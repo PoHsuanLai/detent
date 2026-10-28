@@ -6,18 +6,10 @@ use super::model::{
     ScaleMilli,
 };
 use crate::Absence;
+use crate::Live;
 
-/// Where the page stands.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub enum DisplaysState {
-    /// Nothing heard yet.
-    #[default]
-    Looking,
-    /// There is nothing to show, for this reason.
-    Unavailable(Absence),
-    /// The displays.
-    Ready(DisplaysReady),
-}
+/// Where the page stands: the displays once read.
+pub type DisplaysState = Live<DisplaysReady>;
 
 /// The page with something to show.
 #[derive(Debug, Clone, PartialEq)]

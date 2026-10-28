@@ -2,11 +2,11 @@
 //! rows in place of the page, under quire's `PageHeader` with its back button.
 
 use crate::files::{Edit, Files};
-use crate::icons::tile_on;
+use crate::icons::{GREY, tile_on};
 use crate::key_row::{HIT_CLASS, Match};
 use crate::marked::marked;
 use crate::section_view::{SectionView, is_hit};
-use detent_model::{Ground, PageModel, PageSlug, SectionModel, advanced_name};
+use detent_model::{PageModel, PageSlug, SectionModel, advanced_name};
 use dioxus::prelude::*;
 use ds::components::fields::field_row::FieldGroup;
 use ds::components::lists::row::size::RowSize;
@@ -85,7 +85,7 @@ fn DrillRow(name: String, title: String, found: Match, on_open: EventHandler<Str
     };
     rsx! {
         Row {
-            leading: RowLeading::Tile(tile_on(Icon::Switches, Ground::Grey)),
+            leading: RowLeading::Tile(tile_on(Icon::Switches, GREY)),
             title: TextLine::from(name),
             accessory: Accessory::Chevron,
             size: RowSize::Settings,

@@ -55,7 +55,7 @@ pub(super) fn ready(status: UpdateStatus) -> UpdatesState {
 
 pub(super) fn page_of(state: &UpdatesState) -> UpdatesPage {
     match updates_shown(state, NOW) {
-        UpdatesShown::Page(page) => page,
+        UpdatesShown::Ready(page) => page,
         other => panic!("not a page: {other:?}"),
     }
 }

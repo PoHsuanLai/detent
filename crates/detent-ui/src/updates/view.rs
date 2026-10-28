@@ -35,7 +35,7 @@ pub(crate) fn SoftwareUpdatePane() -> Element {
                 }
             }
         },
-        UpdatesShown::Page(page) => {
+        UpdatesShown::Ready(page) => {
             let press = EventHandler::new(move |input: UpdatesInput| {
                 spawn(updates.pane.send(input));
             });

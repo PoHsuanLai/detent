@@ -2,20 +2,20 @@
 
 use crate::copy::heroes;
 use crate::icons::tile_of;
-use detent_model::{Hero, PageKind};
+use detent_model::PageKind;
 use dioxus::prelude::*;
 use ds::components::content::label::{LabelRole, LabelStyle};
 use ds::components::forms::icon_tile::tile;
 use ds::prelude::*;
 
-/// The hero of the page `title` of `kind`.
+/// The hero of the page `title` of `kind`, a kind whose row says it opens with one.
 #[component]
-pub(crate) fn HeroView(kind: PageKind, hero: Hero, title: String) -> Element {
+pub(crate) fn HeroView(kind: PageKind, title: String) -> Element {
     rsx! {
         div { class: "hero", "data-hero": "{title}",
             div { class: "hero-tile", {tile(tile_of(kind))} }
             Label { text: title.clone(), role: LabelRole::Primary, style: LabelStyle::Title }
-            Label { text: heroes::line(hero), role: LabelRole::Secondary }
+            Label { text: heroes::line(kind), role: LabelRole::Secondary }
         }
     }
 }

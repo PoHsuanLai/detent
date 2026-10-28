@@ -31,6 +31,15 @@ impl<R> Live<R> {
         }
     }
 
+    /// The same standing with the ready data turned into `S`.
+    pub fn map<S>(&self, ready: impl FnOnce(&R) -> S) -> Live<S> {
+        match self {
+            Live::Looking => Live::Looking,
+            Live::Unavailable(absence) => Live::Unavailable(*absence),
+            Live::Ready(r) => Live::Ready(ready(r)),
+        }
+    }
+
     /// The state after `step` on the ready state, and its effects; a pane that is not ready
     /// stays as it is and has none.
     pub fn inner<E>(self, step: impl FnOnce(R) -> (R, Vec<E>)) -> (Live<R>, Vec<E>) {

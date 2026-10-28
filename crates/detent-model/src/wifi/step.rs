@@ -6,18 +6,10 @@ use super::hidden::HiddenNetwork;
 use super::model::{NetworkLink, NetworkLock, Remembered, Ssid, WifiRadio, WifiStatus};
 use super::passphrase::Passphrase;
 use crate::Absence;
+use crate::Live;
 
-/// Where the page stands.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub enum WifiState {
-    /// Nothing heard yet.
-    #[default]
-    Looking,
-    /// There is nothing to show, for this reason.
-    Unavailable(Absence),
-    /// The switch and the networks.
-    Ready(WifiReady),
-}
+/// Where the page stands: the switch and the networks once read.
+pub type WifiState = Live<WifiReady>;
 
 /// The page with something to show.
 #[derive(Debug, Clone, PartialEq)]

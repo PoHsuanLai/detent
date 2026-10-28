@@ -27,7 +27,7 @@ pub fn PageView(
     let started = env
         .catalogue
         .page(&slug)
-        .map_or(&[][..], |page| page.kind.modules_read());
+        .map_or(&[][..], |page| page.kind.traits().modules);
     use_future({
         let client = env.client.clone();
         move || {

@@ -8,7 +8,7 @@ use super::place_row::{PlaceEntry, PlaceHandlers, PlaceRow, PlaceView, Switch};
 use crate::accounts::{Listed, use_listed};
 use crate::computers::{Computers, use_computers};
 use crate::env::Env;
-use crate::icons::tile_on;
+use crate::icons::{INDIGO, tile_on};
 use crate::system::Absent;
 use detent_client::{load_places, save_places};
 use detent_model::external::{
@@ -16,8 +16,8 @@ use detent_model::external::{
     Toggle, kind_label,
 };
 use detent_model::{
-    AccountsPane, ComputerRow, ComputersInput, ComputersState, Confirm, Ground, PlaceRef,
-    PlacesEffect, PlacesInput, PlacesState, Ready, Standing, known_of, offers_for, places_step,
+    AccountsPane, ComputerRow, ComputersInput, ComputersState, Confirm, PlaceRef, PlacesEffect,
+    PlacesInput, PlacesState, Ready, Standing, known_of, offers_for, places_step,
 };
 use dioxus::prelude::*;
 use ds::components::fields::field_row::FieldGroup;
@@ -99,8 +99,8 @@ pub(crate) fn Assistants() -> Element {
         move || PlacesState::of(load_places(&env.config_home).places)
     });
     let pane = match listed() {
-        Listed::Accounts(pane) => pane,
-        Listed::Looking | Listed::Absent(_) => AccountsPane::default(),
+        Listed::Ready(pane) => pane,
+        Listed::Looking | Listed::Unavailable(_) => AccountsPane::default(),
     };
 
     let listing = listed_computers(computers());
@@ -111,8 +111,8 @@ pub(crate) fn Assistants() -> Element {
         let env = env.clone();
         move || {
             let pane = match listed() {
-                Listed::Accounts(pane) => pane,
-                Listed::Looking | Listed::Absent(_) => AccountsPane::default(),
+                Listed::Ready(pane) => pane,
+                Listed::Looking | Listed::Unavailable(_) => AccountsPane::default(),
             };
             let computers = listed_computers(computers());
             let read = load_places(&env.config_home).places;
@@ -183,7 +183,7 @@ pub(crate) fn Assistants() -> Element {
             Computers { state: computers(), feed, rows: own_rows }
             if current.places.cloud.is_empty() {
                 Absent {
-                    face: Some(tile_on(Icon::Globe, Ground::Indigo)),
+                    face: Some(tile_on(Icon::Globe, INDIGO)),
                     title: kind_label(PlaceKind::Cloud),
                     words: crate::copy::assistants::SIGNED_IN_ACCOUNTS_THAT_OFFER_AI,
                 }

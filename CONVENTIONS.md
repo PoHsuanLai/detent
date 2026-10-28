@@ -87,12 +87,32 @@ remembers.
   coordinates several values, or makes a decision, is a free function or belongs to the type
   that owns the decision. If half a struct's methods never touch half its fields, it is two
   types.
-- **No `bool`** in a struct field, a parameter, a settings key or a message. Use a two-variant
-  enum whose names say what they mean (`Presence::{Present, Absent}`): `send(true)` tells the
-  reader nothing, `send(Confirm::Yes)` tells them everything. Predicates may return `bool`.
-- **Newtype every unit and identifier** (`Px`, `Permille`, `Ms`, `AppId`, `OutputId`). Never
-  pass a bare `u32` that means pixels. A newtype costs nothing at runtime and makes an
-  argument-order mistake a compile error.
+- **Types: plain Rust first** (owner, 2026-10-28; replaces "no bools, typed enums everywhere"),
+  quoting `agent-layers/LANE-RULES.md` rule 4:
+  - **bool is fine** for fields, return values, locals and private functions. Use an enum instead
+    only when a public function would read as `f(true, false)`, a third state is realistic, or the
+    value is written to disk or the bus where a named word reads better.
+  - **Newtypes only when they hold a rule:** parsed or validated (an app name, a URL), a unit
+    (`Tokens`, `Seconds`), or an id that must not be mixed with another. Otherwise plain `String`,
+    `u32`, etc.
+  - **Enums for closed sets the code branches on.** A set that grows (apps, providers, programs,
+    phrases, window classes) is data: a string id or a shipped file, not a variant list.
+  - **Behaviour that differs by case is a trait with default methods**, overridden where a case
+    differs. Generics by default; `Box<dyn Trait>` is fine when the implementation is picked from
+    configuration at run time.
+  - **One fact, one type.** No mirror enums across crates (`X`/`XKind`/`XWire`/`XState`); the
+    lower crate owns it. A field-less view of an enum is a method, not a second declaration.
+  - **Two-way outcomes are `Result` or `Option`**, not a two-arm enum. "Absent or one real thing"
+    is `Option<T>`.
+
+  And the four rules for the shell repos:
+  1. A two-way enum that is not persisted or on the bus is a `bool`, an `Option` or a `Result`.
+  2. One fact, one type, owned by the lowest crate that needs it; an upper crate never declares a
+     copy to map into.
+  3. A per-variant property used in more than one place is a row (a table or a method on the
+     type), never a second `match` in another file. *Because:* `PageKind` was matched in nine
+     places; now it has one row (`PageKind::traits`) and the window one table (`icons::look_of`).
+  4. Persisted words keep their spelling: change the Rust type, not the word in the file.
 - **No strings where a closed set exists.** Closed vocabularies are enums implementing `Word`
   (`ALL`, `slug`, `label`, `parse`). Never hand-write `slug()`/`parse()`/`ALL`. *Because:*
   there were 112 hand-written `slug`s.

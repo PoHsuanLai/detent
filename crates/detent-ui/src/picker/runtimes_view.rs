@@ -3,13 +3,13 @@
 //! Under the group, the models the assistant runs itself with a Start or Stop each, a note while
 //! it has not found llama.cpp, and the row that opens the engines' programs.
 
-use crate::accounts::{AccountLink, Listed, OpenButton, use_listed};
+use crate::accounts::{AccountLink, OpenButton, use_listed};
 use crate::copy;
 use crate::copy::absence::Subject;
 use crate::engines::{EnginePrograms, LocalEnginesNote};
 use crate::running::RunningModels;
 use crate::system::Absent;
-use detent_model::{Absence, Runtime};
+use detent_model::{Live, Runtime};
 use dioxus::prelude::*;
 use ds::base::vocab::Muting;
 use ds::components::content::avatar::{Avatar, AvatarSize, AvatarTone, person_hue};
@@ -19,25 +19,13 @@ use ds::prelude::*;
 use ds::root::common::Common;
 use ds::root::pass_through::{DataAttr, DataName};
 
-/// Where the list stands.
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) enum Found {
-    /// accountd has not answered yet.
-    Looking,
-    /// accountd cannot be used, and why.
-    Absent(Absence),
-    /// The local runtimes accountd lists now, none when none runs.
-    Runtimes(Vec<Runtime>),
-}
+/// Where the list stands: the local runtimes accountd lists now, none when none runs.
+pub(crate) type Found = Live<Vec<Runtime>>;
 
 /// What accountd lists as runtimes, kept current.
 pub(crate) fn use_runtimes() -> Memo<Found> {
     let listed = use_listed();
-    use_memo(move || match listed() {
-        Listed::Looking => Found::Looking,
-        Listed::Absent(absence) => Found::Absent(absence),
-        Listed::Accounts(pane) => Found::Runtimes(Runtime::all_of(&pane)),
-    })
+    use_memo(move || listed().map(Runtime::all_of))
 }
 
 /// The runtimes accountd lists, or why they are not there.
@@ -48,7 +36,7 @@ pub fn LocalRuntimes() -> Element {
 
     let group = match found() {
         Found::Looking => rsx! {},
-        Found::Absent(absence) => rsx! {
+        Found::Unavailable(absence) => rsx! {
             div { class: "runtimes", "data-runtimes": "unavailable",
                 Absent {
                     title: crate::copy::common::LOCAL_MODELS,
@@ -56,7 +44,7 @@ pub fn LocalRuntimes() -> Element {
                 }
             }
         },
-        Found::Runtimes(runtimes) if runtimes.is_empty() => rsx! {
+        Found::Ready(runtimes) if runtimes.is_empty() => rsx! {
             div { class: "runtimes", "data-runtimes": "empty",
                 Absent {
                     title: crate::copy::common::LOCAL_MODELS,
@@ -64,7 +52,7 @@ pub fn LocalRuntimes() -> Element {
                 }
             }
         },
-        Found::Runtimes(runtimes) => rsx! {
+        Found::Ready(runtimes) => rsx! {
             div { class: "runtimes", "data-runtimes": "list",
                 FieldGroup { title: Some(crate::copy::picker::MODELS_ON_THIS_COMPUTER.to_owned()),
                     for runtime in runtimes {

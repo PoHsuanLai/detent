@@ -1,28 +1,33 @@
 //! The one sentence under the name on a page that opens with a hero.
 
-use detent_model::Hero;
+use detent_model::PageKind;
 
-/// What the page of `hero` is for.
-pub(crate) fn line(hero: Hero) -> &'static str {
-    match hero {
-        Hero::Privacy => "Choose what each app can reach on this computer.",
-        Hero::Accounts => "Sign in to your accounts and choose what syncs.",
-        Hero::Intelligence => "Pick the assistant, its models and what it remembers.",
+/// What the page of `kind` is for; empty for a page that does not open with a hero.
+pub(crate) fn line(kind: PageKind) -> &'static str {
+    match kind {
+        PageKind::Privacy => "Choose what each app can reach on this computer.",
+        PageKind::Accounts => "Sign in to your accounts and choose what syncs.",
+        PageKind::Intelligence => "Pick the assistant, its models and what it remembers.",
+        _ => "",
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::line;
-    use detent_model::Hero;
+    use detent_model::PageKind;
 
     #[test]
     fn each_hero_has_one_short_sentence() {
-        for hero in [Hero::Privacy, Hero::Accounts, Hero::Intelligence] {
-            let words = line(hero);
+        for kind in [
+            PageKind::Privacy,
+            PageKind::Accounts,
+            PageKind::Intelligence,
+        ] {
+            let words = line(kind);
             assert!(
                 words.ends_with('.') && words.len() < 70,
-                "{hero:?}: {words}"
+                "{kind:?}: {words}"
             );
         }
     }

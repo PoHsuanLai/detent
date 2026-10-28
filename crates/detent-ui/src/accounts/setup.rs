@@ -79,8 +79,8 @@ pub(crate) fn AccountsSetup() -> Element {
     let listed = use_listed();
     let adding = use_signal(|| Adding::Idle);
     let rows = match listed() {
-        Listed::Accounts(pane) => signed_in(&pane),
-        Listed::Looking | Listed::Absent(_) => Vec::new(),
+        Listed::Ready(pane) => signed_in(&pane),
+        Listed::Looking | Listed::Unavailable(_) => Vec::new(),
     };
     let skip = availability_of(accounts_setup_offer(&rows, SetupAction::Skip));
     let next = availability_of(accounts_setup_offer(&rows, SetupAction::Continue));

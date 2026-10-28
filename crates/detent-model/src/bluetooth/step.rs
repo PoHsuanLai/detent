@@ -4,18 +4,10 @@ use super::model::{
     BtAddress, BtLink, BtPairing, BtPower, BtStatus, PairingAnswer, PairingAsk, PairingQuestion,
 };
 use crate::Absence;
+use crate::Live;
 
-/// Where the page stands.
-#[derive(Debug, Clone, PartialEq, Default)]
-pub enum BtState {
-    /// Nothing heard yet.
-    #[default]
-    Looking,
-    /// There is nothing to show, for this reason.
-    Unavailable(Absence),
-    /// The switch and the devices.
-    Ready(BtReady),
-}
+/// Where the page stands: the switch and the devices once read.
+pub type BtState = Live<BtReady>;
 
 /// The page with something to show.
 #[derive(Debug, Clone, PartialEq)]

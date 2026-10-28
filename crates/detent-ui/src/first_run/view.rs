@@ -67,7 +67,11 @@ fn FirstRunWindow() -> Element {
         let client = env.client.clone();
         move || {
             let client = client.clone();
-            async move { client.start(PageKind::AssistantModel.modules_read()).await }
+            async move {
+                client
+                    .start(PageKind::AssistantModel.traits().modules)
+                    .await
+            }
         }
     });
 

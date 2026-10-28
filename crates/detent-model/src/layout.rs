@@ -4,53 +4,15 @@ use crate::catalogue::{PageModel, SectionModel};
 use crate::control::Control;
 use crate::entry::KeyEntry;
 use crate::memory_consent::MEMORY_SECTION;
-use crate::page_kind::PageKind;
+use crate::page_traits::{Body, LivePane};
 
 /// One thing a page draws.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Block {
     /// A titled card of file rows.
     Section(SectionModel),
-    /// inferd's live model picker (design/22 section 9.4): the Intelligence page's rows that are
-    /// not in any file.
-    ModelPicker,
-    /// "On this computer": the local runtimes accountd lists (Ollama, llama.cpp, LM Studio), each
-    /// linked to its account. Not in any file.
-    LocalRuntimes,
-    /// accountd's live Accounts pane (PLAN section 2.5): the Accounts page's rows that are not in
-    /// any file.
-    AccountsPane,
-    /// Where the built-in assistant may run (this computer, "Your computers" with the Add list
-    /// and the computers asking to borrow this one's models, cloud accounts), and the assistants
-    /// that sign themselves in: the Intelligence page's rows that are in no schema.
-    Assistants,
-    /// The programs and the powers the compositor lists for them, each with Allowed, Denied or
-    /// Ask: the Privacy page's rows that are in no file.
-    PrivacyPane,
-    /// The apps the screen-sharing portal lets share the screen without asking again, each with
-    /// Remove: the Privacy page's rows that are in no file.
-    ScreenSharing,
-    /// The desktop-wide Spaces accountd keeps, each with Remove: the Spaces page's rows that are
-    /// in no file.
-    SpacesPane,
-    /// The desktop's shortcuts, grouped, each with its chord and who set it: the Keyboard
-    /// page's rows that are in no schema.
-    Shortcuts,
-    /// The update service's page: where the flow stands, and the buttons that move it. Not in
-    /// any file.
-    SoftwareUpdate,
-    /// The assistant's model: inferd's picker, reduced to the one row the assistant is routed by.
-    /// Not in any file.
-    AssistantModel,
-    /// The Wi-Fi switch, the network this computer is on and the ones in range. Not in any file.
-    Wifi,
-    /// The Bluetooth switch and the devices. Not in any file.
-    Bluetooth,
-    /// Each display's resolution, refresh rate, rotation and place. Not in any file.
-    Displays,
-    /// The installed Extensions, grouped by what they provide, each with a switch. Not in any
-    /// schema's keys.
-    Extensions,
+    /// A pane that reads a service, for rows that are in no file.
+    Pane(LivePane),
     /// The button that opens the Hot Corners sheet, over the corner keys the page's schema marks
     /// for it.
     HotCorners(Vec<KeyEntry>),
@@ -124,7 +86,7 @@ fn rank(title: &str) -> usize {
 /// section; and Accounts, whose live pane comes first.
 pub fn blocks(page: &PageModel) -> Vec<Block> {
     let corners = corner_keys(page);
-    let drawn = page.kind.blocks(page);
+    let drawn = drawn(page);
     let sheet = (!corners.is_empty()).then_some(Block::HotCorners(corners));
     drawn.into_iter().chain(sheet).collect()
 }
@@ -142,36 +104,17 @@ fn with_style_notes(block: Block) -> Vec<Block> {
     }
 }
 
-impl PageKind {
-    /// What the page draws before its Advanced disclosure and the Hot Corners button.
-    fn blocks(self, page: &PageModel) -> Vec<Block> {
-        let sections = basic_sections(page).into_iter().map(Block::Section);
-        let live = |block: Block| std::iter::once(block);
-        match self {
-            PageKind::Accounts => live(Block::AccountsPane).chain(sections).collect(),
-            PageKind::Privacy => [Block::PrivacyPane, Block::ScreenSharing]
-                .into_iter()
-                .chain(sections)
-                .collect(),
-            PageKind::Spaces => live(Block::SpacesPane).chain(sections).collect(),
-            PageKind::KeyboardAndShortcuts => sections.chain(live(Block::Shortcuts)).collect(),
-            PageKind::SoftwareUpdate => live(Block::SoftwareUpdate).collect(),
-            PageKind::AssistantModel => live(Block::AssistantModel).collect(),
-            PageKind::Wifi => live(Block::Wifi).collect(),
-            PageKind::Bluetooth => live(Block::Bluetooth).collect(),
-            PageKind::Displays => live(Block::Displays).collect(),
-            PageKind::Extensions => live(Block::Extensions).collect(),
-            PageKind::Intelligence => intelligence_blocks(page),
-            PageKind::Appearance => sections.flat_map(with_style_notes).collect(),
-            PageKind::Dock
-            | PageKind::MouseAndGestures
-            | PageKind::Notifications
-            | PageKind::Power
-            | PageKind::Apps
-            | PageKind::Viewer
-            | PageKind::Wallpaper
-            | PageKind::Program => sections.collect(),
-        }
+/// What `page` draws before its Advanced disclosure and the Hot Corners button.
+fn drawn(page: &PageModel) -> Vec<Block> {
+    let sections = basic_sections(page).into_iter().map(Block::Section);
+    let panes = |panes: &[LivePane]| panes.iter().copied().map(Block::Pane).collect::<Vec<_>>();
+    match page.kind.traits().body {
+        Body::Sections => sections.collect(),
+        Body::Before(live) => panes(live).into_iter().chain(sections).collect(),
+        Body::After(live) => sections.chain(panes(live)).collect(),
+        Body::Only(pane) => vec![Block::Pane(pane)],
+        Body::Intelligence => intelligence_blocks(page),
+        Body::Styles => sections.flat_map(with_style_notes).collect(),
     }
 }
 
@@ -185,9 +128,9 @@ fn intelligence_blocks(page: &PageModel) -> Vec<Block> {
         .collect();
     let live = rank(PICKER_AFTER) * 2 + 1;
     // Right after Assistant: the first section is about the assistant, and so is this.
-    slotted.push((rank("Assistant") * 2 + 1, Block::Assistants));
-    slotted.push((live, Block::LocalRuntimes));
-    slotted.push((live, Block::ModelPicker));
+    slotted.push((rank("Assistant") * 2 + 1, Block::Pane(LivePane::Assistants)));
+    slotted.push((live, Block::Pane(LivePane::LocalRuntimes)));
+    slotted.push((live, Block::Pane(LivePane::ModelPicker)));
     slotted.sort_by_key(|(slot, _)| *slot);
     slotted.into_iter().map(|(_, block)| block).collect()
 }
@@ -218,27 +161,14 @@ mod tests {
         }
     }
 
-    fn names(blocks: &[Block]) -> Vec<&str> {
+    fn names(blocks: &[Block]) -> Vec<String> {
         blocks
             .iter()
             .map(|block| match block {
-                Block::Section(section) => section.title.as_str(),
-                Block::LocalRuntimes => "<runtimes>",
-                Block::ModelPicker => "<picker>",
-                Block::AccountsPane => "<accounts>",
-                Block::Assistants => "<assistants>",
-                Block::PrivacyPane => "<privacy>",
-                Block::ScreenSharing => "<screen sharing>",
-                Block::SpacesPane => "<spaces>",
-                Block::Shortcuts => "<shortcuts>",
-                Block::SoftwareUpdate => "<updates>",
-                Block::AssistantModel => "<assistant>",
-                Block::Wifi => "<wifi>",
-                Block::Bluetooth => "<bluetooth>",
-                Block::Displays => "<displays>",
-                Block::Extensions => "<extensions>",
-                Block::HotCorners(_) => "<hot corners>",
-                Block::StyleNotes => "<style notes>",
+                Block::Section(section) => section.title.clone(),
+                Block::Pane(pane) => format!("<{pane:?}>"),
+                Block::HotCorners(_) => "<hot corners>".to_owned(),
+                Block::StyleNotes => "<style notes>".to_owned(),
             })
             .collect()
     }
@@ -251,10 +181,10 @@ mod tests {
             &["Models", "Assistant", "Memory", "Computer use"],
             &[
                 "Assistant",
-                "<assistants>",
+                "<Assistants>",
                 "Models",
-                "<runtimes>",
-                "<picker>",
+                "<LocalRuntimes>",
+                "<ModelPicker>",
                 "Memory",
                 "Computer use",
             ],
@@ -263,7 +193,12 @@ mod tests {
             "the picker takes the place of Models when no schema has it",
             Page::Intelligence,
             &["Assistant"],
-            &["Assistant", "<assistants>", "<runtimes>", "<picker>"],
+            &[
+                "Assistant",
+                "<Assistants>",
+                "<LocalRuntimes>",
+                "<ModelPicker>",
+            ],
         ),
         (
             "a section nobody listed follows the listed ones in schema order",
@@ -271,10 +206,10 @@ mod tests {
             &["Zed", "Assistant", "Alpha", "Models"],
             &[
                 "Assistant",
-                "<assistants>",
+                "<Assistants>",
                 "Models",
-                "<runtimes>",
-                "<picker>",
+                "<LocalRuntimes>",
+                "<ModelPicker>",
                 "Zed",
                 "Alpha",
             ],
@@ -283,25 +218,25 @@ mod tests {
             "the accounts pane comes before any section of the page",
             Page::Accounts,
             &["Sign-in clients"],
-            &["<accounts>", "Sign-in clients"],
+            &["<Accounts>", "Sign-in clients"],
         ),
         (
             "the privacy pane and the screen-sharing apps come before any section of the page",
             Page::Privacy,
             &["Screen"],
-            &["<privacy>", "<screen sharing>", "Screen"],
+            &["<Privacy>", "<ScreenSharing>", "Screen"],
         ),
         (
             "the spaces pane comes before any section of the page",
             Page::Spaces,
             &["Look"],
-            &["<spaces>", "Look"],
+            &["<Spaces>", "Look"],
         ),
         (
             "the shortcuts follow the sections of the keyboard page",
             Page::KeyboardAndShortcuts,
             &["Typing"],
-            &["Typing", "<shortcuts>"],
+            &["Typing", "<Shortcuts>"],
         ),
         (
             "the style notes follow the appearance section that holds the styles switch",
@@ -329,9 +264,9 @@ mod tests {
     fn the_computers_own_pages_draw_only_their_live_block() {
         use crate::{bluetooth_page, displays_page, wifi_page};
         let cases = [
-            (wifi_page(), "<wifi>"),
-            (bluetooth_page(), "<bluetooth>"),
-            (displays_page(), "<displays>"),
+            (wifi_page(), "<Wifi>"),
+            (bluetooth_page(), "<Bluetooth>"),
+            (displays_page(), "<Displays>"),
         ];
         for (kind, want) in cases {
             let drawn = blocks(&page(kind.clone(), &[]));
@@ -342,12 +277,12 @@ mod tests {
     #[test]
     fn the_extensions_page_is_its_list_and_nothing_else() {
         let drawn = blocks(&page(crate::extensions_page(), &["Turned off"]));
-        assert_eq!(names(&drawn), ["<extensions>"]);
+        assert_eq!(names(&drawn), ["<Extensions>"]);
     }
 
     #[test]
     fn the_assistants_model_page_draws_only_its_row_of_the_picker() {
         let drawn = blocks(&page(crate::assistant_model::assistant_model_page(), &[]));
-        assert_eq!(names(&drawn), ["<assistant>"]);
+        assert_eq!(names(&drawn), ["<AssistantModel>"]);
     }
 }
