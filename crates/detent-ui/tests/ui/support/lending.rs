@@ -1,7 +1,7 @@
 //! The lending switch's world: a shipped file in a scratch folder, and a service manager that
 //! writes down what it was asked and never touches the real one.
 
-use porter_client::{UnitFailure, UnitManager};
+use inferd_client::{UnitFailure, UnitManager};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 

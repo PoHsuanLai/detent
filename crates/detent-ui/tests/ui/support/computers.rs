@@ -4,13 +4,13 @@
 
 use super::bus::PrivateBus;
 use super::inferd::Inferd;
-use porter_dbus::inference::{
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use steward_dbus::inference::{
     CANDIDATE_KEY_MODELS, CANDIDATE_KEY_NAME, CANDIDATE_KEY_NEEDS_APPROVAL, GUEST_KEY_NAME,
     GUEST_KEY_SINCE, GUEST_KEY_STATE, INFERENCE_BUS, INFERENCE_PATH, PLACE_KEY_KIND,
     PLACE_KEY_MODELS, PLACE_KEY_NAME, PLACE_KEY_PROVIDER, PLACE_KEY_READY,
 };
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 use zbus::object_server::SignalEmitter;
 use zbus::zvariant::{OwnedValue, Value};
 

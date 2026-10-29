@@ -3,12 +3,13 @@
 //! restart does, lets inferd find llama.cpp from then on. Both are on the test's private bus.
 
 use super::bus::PrivateBus;
-use porter_dbus::inference::{EngineState, LocalEngine, local_engine_to_dbus};
-use porter_dbus::inference::{INFERENCE_BUS, INFERENCE_PATH};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
+use steward_dbus::inference::{
+    EngineState, INFERENCE_BUS, INFERENCE_PATH, LocalEngine, local_engine_to_dbus,
+};
 use zbus::fdo;
 use zbus::object_server::SignalEmitter;
 use zbus::zvariant::{ObjectPath, OwnedObjectPath, OwnedValue};

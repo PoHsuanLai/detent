@@ -5,8 +5,8 @@ use super::EnginesLink;
 use crate::bus::{BusSource, connect, inferd};
 use crate::deadline::{Deadline, answered, peer};
 use detent_model::{ListedEngine, LlamaCpp, Program, Restarted, Work, llama_cpp_of};
-use porter_client::{INFERD_UNIT, SessionUnits, UnitManager};
-use porter_dbus::inference::EngineState;
+use inferd_client::{INFERD_UNIT, SessionUnits, UnitManager};
+use steward_dbus::inference::EngineState;
 
 /// Where llama.cpp stands in the engines the assistant lists now. The assistant not running, not
 /// answering, or not allowing Settings to ask leaves it unknown.

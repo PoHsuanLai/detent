@@ -17,7 +17,7 @@ use ds::prelude::Scheme;
 use ds_harness::{Backdrop, Harness, Input};
 use ds_settings::live::{LiveClient, LiveError, Verdict};
 use ds_settings::schema::KeyPath;
-use porter_dbus::accounts::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
+use porter_wire::names::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
 use std::time::Duration;
 
 mod add;

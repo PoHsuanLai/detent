@@ -1,4 +1,4 @@
-//! The computers over inferd, through porter's client: the places, the Tailscale candidates, the
+//! The computers over inferd, through inferd's client: the places, the Tailscale candidates, the
 //! guests and the changes. The engines signal (a computer answering or not) comes from its proxy.
 
 mod bus;
@@ -13,7 +13,7 @@ use crate::ticks::Ticks;
 use detent_model::{
     Absence, ComputersFound, ComputersReason, ServerDraft, ServerFault, ServerModel, Work,
 };
-use porter_client::ComputerName;
+use inferd_client::ComputerName;
 use porter_tailnet::ComputerCandidate;
 use porter_tailnet::GuestAnswer;
 use porter_tailscale::NodeId;

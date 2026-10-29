@@ -282,10 +282,10 @@ Open items, each with its closing condition:
   (`support/lending.rs`); `Sandbox` always hands the window that fake, so no test can reach the
   real systemd or `~/.config`.
 - **One bad row hides every computer.** `Inference1.Places`, `Guests` and `Candidates` are decoded
-  inside porter-client (`transport/dbus.rs`, `dbus_computers.rs`: `rows.into_iter().map(..).collect::<Result<..>>()`),
+  inside inferd-client (`transport/dbus.rs`, `dbus_computers.rs`: `rows.into_iter().map(..).collect::<Result<..>>()`),
   so a single row with an invalid id fails the whole call and detent shows no computers. detent
-  only sees the finished `Vec`, so it cannot skip the row; the fix belongs in porter-client (decode
-  row by row, drop and log the bad one). Open until porter does it; no test here for it.
+  only sees the finished `Vec`, so it cannot skip the row; the fix belongs in inferd-client (decode
+  row by row, drop and log the bad one). Open until steward does it; no test here for it.
 
 ## Shortcuts (Keyboard page)
 
@@ -458,7 +458,7 @@ recommended; the person chooses, or skips and is asked when a turn needs one.
 
 - **The fact is the assistant's.** porter (58add48) answers `Inference1.LocalEngines`: one row per
   engine (`llama_cpp`, `vllm`, `speech`, `kokoro`) with `found` or `missing`. detent reads it with
-  porter-client's `DbusTransport::list_local_engines` and keeps only llama.cpp's row
+  inferd-client's `DbusTransport::list_local_engines` and keeps only llama.cpp's row
   (`llama_cpp_of`). vLLM is set up by hand and the page does not list speech or Kokoro, so none of
   them gets a line. The assistant not running, a refused or failed call, or a list without
   llama.cpp is `Unknown`: no note.
@@ -482,10 +482,10 @@ recommended; the person chooses, or skips and is asked when a turn needs one.
   restarts so it can find llama.cpp. A conversation that is open stops." detent cannot tell whether
   a conversation is open, so it always asks, with that neutral wording. Restart restarts the
   assistant's service in the person's own session and waits for the job to finish
-  (`porter_client::SessionUnits::restart(INFERD_UNIT)`, `RestartUnit(unit, "replace")`), then
+  (`inferd_client::SessionUnits::restart(INFERD_UNIT)`, `RestartUnit(unit, "replace")`), then
   looks at `LocalEngines` again; the button is busy meanwhile. A failed restart says so in a toast.
 - **One declaration of the manager's proxy.** The brief said to declare the manager's proxy in
-  detent; porter-client already declares it (`SessionUnits`, which the lending switch uses too, and
+  detent; inferd-client already declares it (`SessionUnits`, which the lending switch uses too, and
   waits for `JobRemoved` so "restarted" means up again). detent uses that one rather than a second.
   Its `new` takes any connection, so a test serves a fake manager on its private bus.
 - **Never started by looking.** `look` checks `NameHasOwner` first, like the Your computers group
@@ -611,9 +611,11 @@ is given before it, so a jail with no manager does not stop it (read in peephole
   from the portal's documentation and not tried against a portal.
 - The restart that follows Continue stops a conversation that is open; the person pressed Continue
   knowing the sheet says "Your assistant restarts to use it."
-- `detent`'s `Cargo.lock` needs the new path crates (`porter-engines`, `porter-engines-install`,
-  `porter-daemon`) and what they bring (`sha2`, `rustix`, porter-http's TLS stack): to be locked
-  with the sibling checkouts present.
+- `detent`'s `Cargo.lock` needs the new path crates (stoker's `engine-manifest`, `engine-probe`,
+  `engine-spec`, `engine-install` and `model-catalog`, which replaced porter's `porter-engines` and
+  `porter-engines-install` in the 2026-10-29 move; steward's `inferd-client` and `steward-dbus`;
+  porter's `porter-client-dbus`) and what they bring (`sha2`, `rustix`, the TLS stack of
+  `model-http`): to be locked with the sibling checkouts present.
 
 
 ## Re-audit fixes 2026-10-17

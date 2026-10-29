@@ -1723,17 +1723,23 @@ dependencies = [
  "detent-system",
  "ds-peer",
  "ds-settings",
+ "engine-install",
+ "engine-manifest",
+ "engine-probe",
+ "engine-spec",
+ "inferd-client",
  "md-5",
+ "model-catalog",
  "porter-callers",
  "porter-client",
+ "porter-client-dbus",
  "porter-core",
  "porter-dbus",
- "porter-engines",
- "porter-engines-install",
  "porter-tailnet",
  "porter-tailscale",
  "porter-wire",
  "serde_json",
+ "steward-dbus",
  "thiserror 2.0.21",
  "tokio",
  "toml",
@@ -1765,11 +1771,13 @@ dependencies = [
  "ds-lint",
  "ds-settings",
  "image",
+ "inferd-client",
  "porter-capability",
- "porter-client",
  "porter-core",
  "porter-dbus",
  "porter-infer",
+ "porter-wire",
+ "steward-dbus",
  "tokio",
  "toml",
  "zbus",
@@ -2198,10 +2206,10 @@ dependencies = [
  "porter-core",
  "porter-dbus",
  "porter-match",
- "porter-wire",
  "prov",
  "serde",
  "serde_json",
+ "steward-dbus",
  "thiserror 2.0.21",
  "zbus",
 ]
@@ -2612,6 +2620,56 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "66b7e2430c6dff6a955451e2cfc438f09cea1965a9d6f87f7e3b90decc014099"
 
 [[package]]
+name = "engine-install"
+version = "0.1.0"
+dependencies = [
+ "engine-manifest",
+ "engine-probe",
+ "engine-spec",
+ "flate2",
+ "model-catalog",
+ "model-http",
+ "rustix",
+ "sha2 0.10.9",
+ "tar",
+ "thiserror 2.0.21",
+ "tokio",
+ "url",
+]
+
+[[package]]
+name = "engine-manifest"
+version = "0.1.0"
+dependencies = [
+ "engine-spec",
+ "model-catalog",
+ "serde_json",
+ "sha2 0.10.9",
+]
+
+[[package]]
+name = "engine-probe"
+version = "0.1.0"
+dependencies = [
+ "engine-manifest",
+ "engine-spec",
+ "model-catalog",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "engine-spec"
+version = "0.1.0"
+dependencies = [
+ "model-catalog",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "enumflags2"
 version = "0.7.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3011,10 +3069,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff2abc00be7fca6ebc474524697ae276ad847ad0a6b3faa4bcb027e9a4614ad0"
 dependencies = [
  "cfg-if",
- "js-sys",
  "libc",
  "wasi",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -3277,12 +3333,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dbf3de79e51f3d586ab4cb9d5c3e2c14aa28ed23d180cf89b4df0454a69cc87"
 
 [[package]]
-name = "httpdate"
-version = "1.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
-
-[[package]]
 name = "hybrid-array"
 version = "0.4.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3320,7 +3370,6 @@ dependencies = [
  "hyper",
  "hyper-util",
  "rustls",
- "rustls-native-certs",
  "tokio",
  "tokio-rustls",
  "tower-service",
@@ -3569,6 +3618,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a588916bfdfd92e71cacef98a63d9b1f0d74d6599980d11894290e7ddefffcf7"
 dependencies = [
  "cfb",
+]
+
+[[package]]
+name = "inferd-client"
+version = "0.1.0"
+dependencies = [
+ "porter-callers",
+ "porter-capability",
+ "porter-core",
+ "porter-dbus",
+ "porter-fs",
+ "porter-ids",
+ "porter-infer",
+ "porter-match",
+ "porter-tailnet",
+ "porter-tailscale",
+ "porter-wire",
+ "rustix",
+ "serde",
+ "serde_json",
+ "steward-dbus",
+ "thiserror 2.0.21",
+ "tokio",
+ "zbus",
 ]
 
 [[package]]
@@ -4350,12 +4423,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3bd0dd2cd90571056fdb71f6275fada10131182f84899f4b2a916e565d81d86"
 
 [[package]]
-name = "lru-slab"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4050469837a6ff301cd14c1f8f24f88549e6d548f24f64e2148eb0f72cebc51f"
-
-[[package]]
 name = "malloc_size_of_derive"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4456,6 +4523,29 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "model-catalog"
+version = "0.1.0"
+dependencies = [
+ "model-provider",
+ "serde",
+ "speech-provider",
+ "thiserror 2.0.21",
+ "toml",
+]
+
+[[package]]
+name = "model-http"
+version = "0.1.0"
+dependencies = [
+ "reqwest",
+ "rustls",
+ "serde",
+ "thiserror 2.0.21",
+ "tokio",
+ "zeroize",
 ]
 
 [[package]]
@@ -5353,22 +5443,31 @@ dependencies = [
 name = "porter-client"
 version = "0.1.0"
 dependencies = [
- "porter-callers",
+ "futures-core",
+ "futures-util",
  "porter-capability",
  "porter-core",
- "porter-dbus",
- "porter-fs",
  "porter-ids",
- "porter-infer",
  "porter-match",
- "porter-tailnet",
  "porter-tailscale",
  "porter-wire",
- "rustix",
- "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "porter-client-dbus"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "porter-capability",
+ "porter-client",
+ "porter-core",
+ "porter-dbus",
+ "porter-ids",
+ "porter-tailscale",
+ "porter-wire",
  "serde_json",
  "thiserror 2.0.21",
- "tokio",
  "zbus",
  "zeroize",
 ]
@@ -5395,7 +5494,6 @@ dependencies = [
  "porter-core",
  "porter-dbus-macros",
  "porter-ids",
- "porter-match",
  "porter-tailscale",
  "porter-wire",
  "serde",
@@ -5415,56 +5513,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "porter-engines"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "porter-engines-install"
-version = "0.1.0"
-dependencies = [
- "flate2",
- "porter-engines",
- "porter-http",
- "porter-http-reqwest",
- "porter-ids",
- "rustix",
- "sha2 0.10.9",
- "tar",
- "thiserror 2.0.21",
- "tokio",
-]
-
-[[package]]
 name = "porter-fs"
 version = "0.1.0"
-
-[[package]]
-name = "porter-http"
-version = "0.1.0"
-dependencies = [
- "http",
- "httpdate",
- "porter-core",
- "porter-ids",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "porter-http-reqwest"
-version = "0.1.0"
-dependencies = [
- "porter-http",
- "porter-ids",
- "reqwest",
- "rustls",
- "tokio",
-]
 
 [[package]]
 name = "porter-ids"
@@ -5524,6 +5574,7 @@ dependencies = [
  "porter-core",
  "porter-ids",
  "porter-tailscale",
+ "porter-wire",
  "serde",
  "thiserror 2.0.21",
 ]
@@ -5719,62 +5770,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quinn"
-version = "0.11.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4051e23e9185c255a7e33ef59cdbca87a22d359052eecd22fc6b901fb37d9d11"
-dependencies = [
- "bytes",
- "cfg_aliases",
- "pin-project-lite",
- "quinn-proto",
- "quinn-udp",
- "rustc-hash 2.1.3",
- "rustls",
- "socket2",
- "thiserror 2.0.21",
- "tokio",
- "tracing",
- "web-time",
-]
-
-[[package]]
-name = "quinn-proto"
-version = "0.11.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e750cca55fe4f0439a15d0bb529da9651e79993e8e72c61a899a36d462befbe"
-dependencies = [
- "bytes",
- "getrandom 0.4.3",
- "lru-slab",
- "rand 0.10.3",
- "rand_pcg",
- "ring",
- "rustc-hash 2.1.3",
- "rustls",
- "rustls-pki-types",
- "slab",
- "thiserror 2.0.21",
- "tinyvec",
- "tracing",
- "web-time",
-]
-
-[[package]]
-name = "quinn-udp"
-version = "0.5.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af66907df18639dcf4db56ca65490cabc4b27a97dbadd96f2926cca73298f016"
-dependencies = [
- "cfg_aliases",
- "libc",
- "once_cell",
- "socket2",
- "tracing",
- "windows-sys 0.61.2",
-]
-
-[[package]]
 name = "quire-emoji"
 version = "0.1.0"
 dependencies = [
@@ -5877,15 +5872,6 @@ name = "rand_core"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
-
-[[package]]
-name = "rand_pcg"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "caa0f4137e1c0a72f4c651489402276c8e8e1cf081f3b0ba156d2cbeef09e86a"
-dependencies = [
- "rand_core 0.10.1",
-]
 
 [[package]]
 name = "rand_xorshift"
@@ -6058,11 +6044,11 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "reqwest"
-version = "0.12.28"
+version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eddd3ca559203180a307f12d114c268abf583f59b03cb906fd0b3ff8646c1147"
+checksum = "16a1cfa75cc186dd73d5818e510e042e40927bccc9c236b061cea97e1eb08029"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "bytes",
  "futures-core",
  "http",
@@ -6075,13 +6061,9 @@ dependencies = [
  "log",
  "percent-encoding",
  "pin-project-lite",
- "quinn",
  "rustls",
- "rustls-native-certs",
  "rustls-pki-types",
- "serde",
- "serde_json",
- "serde_urlencoded",
+ "rustls-platform-verifier",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",
@@ -6230,9 +6212,35 @@ version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f4925028c7eb5d1fcdaf196971378ed9d2c1c4efc7dc5d011256f76c99c0a96"
 dependencies = [
- "web-time",
  "zeroize",
 ]
+
+[[package]]
+name = "rustls-platform-verifier"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1167586491e2b18b8bfbb293e8180ec17c201c4f076d7cb3070ca964e7598f98"
+dependencies = [
+ "core-foundation",
+ "core-foundation-sys",
+ "jni 0.22.4",
+ "log",
+ "once_cell",
+ "rustls",
+ "rustls-native-certs",
+ "rustls-platform-verifier-android",
+ "rustls-webpki",
+ "security-framework",
+ "security-framework-sys",
+ "webpki-root-certs",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rustls-platform-verifier-android"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eec689c0bc40ff2458a5977b6619cb718087084a18e02a131c599b62d05e1a5f"
 
 [[package]]
 name = "rustls-webpki"
@@ -6250,12 +6258,6 @@ name = "rustversion"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
-
-[[package]]
-name = "ryu"
-version = "1.0.23"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
 name = "safe_arch"
@@ -6430,18 +6432,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6662b5879511e06e8999a8a235d848113e942c9124f211511b16466ee2995f26"
 dependencies = [
  "serde_core",
-]
-
-[[package]]
-name = "serde_urlencoded"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3491c14715ca2294c4d6a88f15e84739788c1d030eed8c110436aafdaa2f3fd"
-dependencies = [
- "form_urlencoded",
- "itoa",
- "ryu",
- "serde",
 ]
 
 [[package]]
@@ -6628,6 +6618,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "speech-provider"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "model-provider",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "zeroize",
+]
+
+[[package]]
 name = "spirv"
 version = "0.4.0+sdk-1.4.341.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6647,6 +6649,22 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "steward-dbus"
+version = "0.1.0"
+dependencies = [
+ "porter-core",
+ "porter-dbus",
+ "porter-dbus-macros",
+ "porter-ids",
+ "porter-match",
+ "porter-wire",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "zbus",
+]
 
 [[package]]
 name = "strict-num"
@@ -7893,6 +7911,15 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "url",
  "web-sys",
+]
+
+[[package]]
+name = "webpki-root-certs"
+version = "1.0.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e49d0e65abc00c142e8f9428da991da9f1a250c39be97459901eb12b9b49f62a"
+dependencies = [
+ "rustls-pki-types",
 ]
 
 [[package]]

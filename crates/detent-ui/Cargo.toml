@@ -40,16 +40,19 @@ toml = { workspace = true }
 detent-callers = { workspace = true, features = ["testing"] }
 # Reads and writes the settings files and desktop entries the tests seed and check.
 detent-files = { workspace = true }
-# The stand-in daemons' wire: bus names, paths and the zbus interfaces they serve.
+# The stand-in daemons' wire: bus names, paths and the zbus interfaces they serve (accountd's and
+# syncd's from porter, inferd's from steward).
 porter-dbus = { workspace = true }
+porter-wire = { workspace = true }
+steward-dbus = { workspace = true }
 zbus = { workspace = true, features = ["tokio"] }
 # The Intelligence test's stand-in inferd answers with porter's kinds and inference types.
 porter-core = { workspace = true }
 porter-infer = { workspace = true }
 # The Assistants test reads docket's places file.
 docket-settings = { workspace = true }
-# The lending test's service manager implements porter's `UnitManager`.
-porter-client = { workspace = true, features = ["infer", "lending"] }
+# The lending test's service manager implements inferd's `UnitManager`.
+inferd-client = { workspace = true, features = ["lending"] }
 # The Keyboard test names chords.
 chordkit = { workspace = true }
 

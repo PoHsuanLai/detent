@@ -31,12 +31,18 @@ detent-model = { workspace = true }
 ds-peer = { workspace = true }
 ds-settings = { workspace = true, features = ["live", "tokio"] }
 md-5 = { workspace = true }
-porter-client = { workspace = true, features = ["infer", "lending"] }
+engine-install = { workspace = true }
+engine-manifest = { workspace = true }
+engine-probe = { workspace = true }
+engine-spec = { workspace = true }
+inferd-client = { workspace = true, features = ["dbus", "lending"] }
+model-catalog = { workspace = true }
+porter-client = { workspace = true }
+porter-client-dbus = { workspace = true }
 porter-core = { workspace = true }
 porter-callers = { workspace = true }
 porter-dbus = { workspace = true }
-porter-engines = { workspace = true }
-porter-engines-install = { workspace = true }
+steward-dbus = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["net"] }

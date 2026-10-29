@@ -6,7 +6,7 @@ use crate::deadline::{Deadline, peer};
 use detent_files::ConfigHome;
 use detent_model::{Existing, LendFailure, Work};
 use ds_peer::within;
-use porter_client::{
+use inferd_client::{
     LendingConfig, LendingError, LendingState, SessionUnits, TailnetLending, UnitFailure,
     UnitManager,
 };

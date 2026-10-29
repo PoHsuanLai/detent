@@ -6,7 +6,9 @@ use super::io::{confirmed, connect};
 use super::source::BusSource;
 use detent_model::Absence;
 use ds_settings::live::SenderName;
-use porter_client::DbusTransport;
+use inferd_client::DbusTransport;
+use porter_client::Porter;
+use porter_client_dbus::Bus;
 use zbus::Connection;
 use zbus::names::UniqueName;
 
@@ -32,13 +34,15 @@ impl Pinned {
         UniqueName::try_from(self.owner.0.clone()).map_err(|_| Absence::Unavailable)
     }
 
-    /// Porter's carrier with every call to accountd (the sheets, the Spaces registry) sent to the
+    /// Porter's client with every call to accountd (the sheets, the Spaces registry) sent to the
     /// owner that was confirmed.
-    pub fn accounts(&self) -> Result<DbusTransport, Absence> {
-        Ok(DbusTransport::over(self.connection.clone()).accounts_at(self.unique()?))
+    pub fn accounts(&self) -> Result<Porter<Bus>, Absence> {
+        Ok(Porter::over(
+            Bus::over(self.connection.clone()).accounts_at(self.unique()?),
+        ))
     }
 
-    /// Porter's carrier with every call to inferd (the computers, the engines) sent to the owner
+    /// inferd's carrier with every call to inferd (the computers, the engines) sent to the owner
     /// that was confirmed.
     pub fn inference(&self) -> Result<DbusTransport, Absence> {
         Ok(DbusTransport::over(self.connection.clone()).inference_at(self.unique()?))
@@ -73,5 +77,5 @@ pub async fn pinned_starting(bus: &BusSource, name: &str) -> Result<Pinned, Abse
 /// inferd and its confirmed owner, only when it is already on the bus: asking would start it, and
 /// opening Settings must not. Every call goes to that owner.
 pub async fn inferd(bus: &BusSource) -> Result<Pinned, Absence> {
-    pinned(bus, porter_dbus::inference::INFERENCE_BUS).await
+    pinned(bus, porter_wire::names::INFERENCE_BUS).await
 }

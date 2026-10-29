@@ -1,4 +1,4 @@
-//! The computers over inferd, through porter's client: the places, the Tailscale candidates, the
+//! The computers over inferd, through inferd's client: the places, the Tailscale candidates, the
 //! guests and the changes. The engines signal (a computer answering or not) comes from its proxy.
 
 use super::{Change, ChangeFailure, ComputersLink};
@@ -10,14 +10,14 @@ use detent_model::{
     Work, picker_row_is_choice, server_models,
 };
 use ds_peer::within;
-use porter_client::{
-    Accounts, ClientError, ComputerReach, ComputerReason, DbusTransport, NewComputer,
+use inferd_client::{
+    ClientError, ComputerReach, ComputerReason, DbusTransport, Inference, NewComputer,
     NewComputerModel, TransportError,
 };
 use porter_dbus::BusStream;
-use porter_dbus::inference::InferenceProxy;
 use porter_tailnet::ComputerCandidate;
 use std::path::Path;
+use steward_dbus::inference::InferenceProxy;
 
 /// Why a call was refused, as the pane knows it.
 fn reason_of(error: &ClientError) -> ComputersReason {
@@ -47,8 +47,8 @@ fn reason_of(error: &ClientError) -> ComputersReason {
     }
 }
 
-fn accounts(inferd: &Pinned) -> Result<Accounts<DbusTransport>, Absence> {
-    Ok(Accounts::over(inferd.inference()?))
+fn accounts(inferd: &Pinned) -> Result<Inference<DbusTransport>, Absence> {
+    Ok(Inference::over(inferd.inference()?))
 }
 
 /// The person's computers and the guests, as inferd lists them now.

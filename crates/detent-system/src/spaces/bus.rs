@@ -9,7 +9,7 @@ use almanac_core::Removal;
 use detent_callers::{ACCOUNTS_BUS, MEMORY_BUS};
 use detent_model::{Absence, SpaceKey, SpaceRow, Work, needs_memory};
 use ds_peer::within;
-use porter_dbus::accounts::SpacesProxy;
+use porter_core::DesktopSpace;
 use porter_dbus::{BusFailure, classify};
 
 /// What the person reads when a delete choice cannot be carried out because memory is not running.
@@ -22,7 +22,7 @@ const COULD_NOT_REMOVE: &str = "The Space could not be removed. Try again in a m
 async fn list(bus: &BusSource) -> Result<Vec<SpaceRow>, Absence> {
     let accountd = pinned_starting(bus, ACCOUNTS_BUS).await?;
     let asked = async {
-        let spaces = accountd.accounts()?.spaces().await.map_err(absence_of)?;
+        let spaces = accountd.accounts()?.spaces();
         spaces.list().await.map_err(absence_of)
     };
     let records = within(Deadline::READ, peer::ACCOUNTS, asked)
@@ -48,13 +48,12 @@ async fn remove(bus: &BusSource, space: &SpaceKey, removal: &Removal) -> Result<
         .await
         .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
     tell_memory(bus, space, &wire, removal).await?;
-    let registry = SpacesProxy::builder(&accountd.connection)
-        .destination(accountd.destination())
+    let registry = accountd
+        .accounts()
         .map_err(|_| COULD_NOT_REMOVE.to_owned())?
-        .build()
-        .await
-        .map_err(|_| COULD_NOT_REMOVE.to_owned())?;
-    answered(Deadline::ACTION, peer::ACCOUNTS, registry.remove(&space.0))
+        .spaces();
+    let id = DesktopSpace::parse(&space.0).map_err(|_| COULD_NOT_REMOVE.to_owned())?;
+    answered(Deadline::ACTION, peer::ACCOUNTS, registry.remove(&id))
         .await
         .ok_or_else(|| COULD_NOT_REMOVE.to_owned())?
         .map_err(|_| COULD_NOT_REMOVE.to_owned())

@@ -14,9 +14,9 @@ use ds_settings::schema::{
     AgentSetting, ChoiceGroup, ChoicePlace, ChoiceWord, CompanyName, EngineName, Exposure, Help,
     KeyKind, KeyPath, KeySpec, Label, Note, Page, Section, UnavailableReason, WordLabels,
 };
-use porter_dbus::inference::INFERENCE_SETTINGS_PATH;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
+use steward_dbus::inference::INFERENCE_SETTINGS_PATH;
 use tokio::sync::Notify;
 
 /// What the module refuses a path that is not whole with, as the real one words it.

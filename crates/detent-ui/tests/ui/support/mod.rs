@@ -38,8 +38,8 @@ use ds_harness::{Clock, Harness, HarnessConfig, Viewport};
 use ds_settings::SystemPrefsSource;
 use ds_settings::live::AnyOwner;
 use ds_settings::schema::Schema;
+use inferd_client::LendingConfig;
 use lending::Units;
-use porter_client::LendingConfig;
 use std::sync::Arc;
 use wifi::Wifi;
 

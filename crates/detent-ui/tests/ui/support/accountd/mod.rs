@@ -18,10 +18,10 @@ use ds_settings::schema::{
     ActionLabel, ActionWeight, AgentSetting, Exposure, Help, KeyKind, KeyPath, KeySpec, Label,
     LiveAction, Page, Section,
 };
-use porter_dbus::accounts::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH};
-use porter_dbus::inference::{INFERENCE_BUS, INFERENCE_SETTINGS_PATH};
 use porter_dbus::sync::SYNC_BUS;
+use porter_wire::names::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS};
 use std::sync::{Arc, Mutex};
+use steward_dbus::inference::INFERENCE_SETTINGS_PATH;
 
 /// Where each daemon's module is: its bus name, the daemon it is looked for as, and its path.
 pub trait ModuleAt {
