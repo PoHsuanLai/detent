@@ -2,7 +2,7 @@
 
 use detent_callers::COMPOSITOR_BUS;
 use detent_model::ModuleId;
-use porter_dbus::sync::{SYNC_BUS, SYNC_PATH};
+use ferry_bus::{SYNC_BUS, SYNC_PATH};
 use porter_wire::names::{ACCOUNTS_BUS, ACCOUNTS_SETTINGS_PATH, INFERENCE_BUS};
 use steward_dbus::inference::INFERENCE_SETTINGS_PATH;
 

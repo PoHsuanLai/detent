@@ -41,6 +41,7 @@ porter-client = { workspace = true }
 porter-client-dbus = { workspace = true }
 porter-core = { workspace = true }
 porter-callers = { workspace = true }
+ferry-bus = { workspace = true }
 porter-dbus = { workspace = true }
 steward-dbus = { workspace = true }
 serde_json = { workspace = true }

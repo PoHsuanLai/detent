@@ -74,6 +74,8 @@ prov          = { path = "../prov/prov" }
 
 # porter: accountd's and syncd's bus vocabulary.
 porter-dbus  = { path = "../porter/crates/porter-dbus" }
+# ferry: syncd's bus vocabulary (org.quire.Sync1), a sibling checkout like porter. MIT OR Apache-2.0.
+ferry-bus = { path = "../ferry/crates/ferry-bus" }
 porter-callers = { path = "../porter/crates/porter-callers" }
 # Settings' own "Add Account…" goes through the app-facing client over its bus transport (the Settings
 # role may call AddAccount).

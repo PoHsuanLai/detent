@@ -41,7 +41,8 @@ detent-callers = { workspace = true, features = ["testing"] }
 # Reads and writes the settings files and desktop entries the tests seed and check.
 detent-files = { workspace = true }
 # The stand-in daemons' wire: bus names, paths and the zbus interfaces they serve (accountd's and
-# syncd's from porter, inferd's from steward).
+# syncd's from ferry, inferd's from steward).
+ferry-bus = { workspace = true }
 porter-dbus = { workspace = true }
 porter-wire = { workspace = true }
 steward-dbus = { workspace = true }

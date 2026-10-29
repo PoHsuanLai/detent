@@ -7,7 +7,7 @@ use crate::support::bus::PrivateBus;
 use detent_model::PageSlug;
 use detent_ui::Opening;
 use ds_harness::Harness;
-use porter_dbus::sync::SYNC_BUS;
+use ferry_bus::SYNC_BUS;
 use porter_wire::names::{ACCOUNTS_BUS, INFERENCE_BUS};
 use std::time::Duration;
 
